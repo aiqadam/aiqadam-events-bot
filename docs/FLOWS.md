@@ -39,7 +39,9 @@
 Вход: `telegram_id`, `event_id`, `utm`.
 
 1. **A** `tables get-record` `events` → проверки: `status = published`,
-   `now < reg_deadline_at`, есть места (если `capacity`).
+   `now < reg_deadline_at`, есть места:
+   `count(status=registered) < ceil(capacity × (1 + overbook_pct/100))` (OWN-15).
+   Мест нет → вежливый отказ, строка в `registrations` не создаётся.
 2. **A** `call-flow fn-event-card` → карточка ивента.
 3. **A** `telegram sendVenue` (OWN-2) + `sendMessage` с ссылкой на Я.Карты.
 4. **Шаг согласия на обработку данных** — кнопка «Согласен» (PAR-1).
@@ -159,6 +161,10 @@
 
 `scenario = broadcast` в `sessions`: сегмент (OWN-9) → текст → **предпросмотр** →
 **обязательный тест себе** (OWN-10).
+
+Сегмент `no_show` не предлагается, пока `now < ends_at`, и owner видит причину
+с указанием, когда сегмент откроется (OWN-9). Это проверка на сервере, а не
+скрытая кнопка в UI.
 
 Кнопка «Отправить» появляется, **только когда `broadcasts.test_sent_at` не пусто**.
 Это не UI-подсказка, а проверка на сервере: запуск без `test_sent_at` отклоняется.

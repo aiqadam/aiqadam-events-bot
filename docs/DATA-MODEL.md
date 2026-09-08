@@ -36,6 +36,7 @@
 | --- | --- | --- |
 | `id` | text, **PK** | короткий slug в алфавите `A-Za-z0-9_` — влезает в 64 символа deep link |
 | `owner_id` | text → `users.telegram_id` | роль owner (DAT-3) |
+| `chapter_id` | text → `chapters.id` | заведено заранее под второй чаптер, логики пока нет ([Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
@@ -46,9 +47,32 @@
 | `reg_deadline_at` | timestamp UTC | |
 | `status` | enum | `draft` \| `published` \| `cancelled` \| `finished` |
 | `capacity` | number | опционально; пусто = без лимита |
+| `overbook_pct` | number | перебор в расчёте на неявку, дефолт **40** (OWN-15) |
 | `published_at`, `cancelled_at`, `finished_at` | timestamp | |
 
 Ссылка на Яндекс.Карты **не хранится** — генерируется из `lat`/`lon` (OWN-2).
+
+Эффективный лимит регистраций (OWN-15):
+
+```
+limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
+```
+
+Дефолт `overbook_pct = 40` выбран под бесплатные митапы, где неявка обычно
+30–50%. Значение правится у каждого ивента: у камерного воркшопа с ограниченным
+залом перебор в 40% — это люди, которым негде сесть. Как накопится своя
+статистика неявок, дефолт стоит пересмотреть на фактах.
+
+## `chapters`
+
+| Поле | Тип | Примечание |
+| --- | --- | --- |
+| `id` | text, PK | slug |
+| `title` | text | |
+| `created_at` | timestamp | |
+
+Заведена сразу, чтобы второй чаптер не требовал миграции. Права, сегменты и
+видимость по чаптеру **пока не режутся** — это отдельное требование, когда появится.
 
 ### notify-on-change
 
@@ -78,8 +102,9 @@
 
 Счётчики owner'а (OWN-7): зарегистрировано = `status=registered`;
 пришло = `checked_in_at` не пусто; отменило = `status=cancelled`.
-Сегмент «зарегались, но не пришли» = `status=registered` и `checked_in_at` пусто,
-считается только после `ends_at`.
+Сегмент «зарегались, но не пришли» = `status=registered` и `checked_in_at` пусто.
+Доступен **только после `ends_at`** (OWN-9) — до конца ивента он означает
+«ещё не дошёл», а не «не пришёл».
 
 ## `event_staff`
 
