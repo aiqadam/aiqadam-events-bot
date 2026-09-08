@@ -23,7 +23,7 @@
 | 0.3 | Variables `QR_SIGNING_KEY`, `BOT_USERNAME` | **готов** 2026-09-08 | W2 |
 | 0.4 | GitHub Pages для `miniapp/` | **готов** 2026-09-08 | W7 |
 | 0.5 | `MINIAPP_URL` + Mini App URL в BotFather | **готов** 2026-09-08 | W7 |
-| 0.6 | Проект `events-prod` | не начат | W15 |
+| 0.6 | Проект `events-prod` | **отложен** до W15 (решено 2026-09-08) | W15 |
 
 ## Пакеты работ
 
