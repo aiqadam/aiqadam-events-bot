@@ -7,18 +7,19 @@
 
 ---
 
-## W0. Разведка инстанса — **первый**
+## W0. Разведка инстанса — ✅ сделано 2026-09-08
 
-**Цель:** закрыть [Q2](OPEN-QUESTIONS.md#q2), [Q6](OPEN-QUESTIONS.md#q6),
-[Q7](OPEN-QUESTIONS.md#q7) фактами с <https://app.flow.aiqadam.org>.
+Закрыты [Q1](OPEN-QUESTIONS.md#q1), [Q2](OPEN-QUESTIONS.md#q2),
+[Q6](OPEN-QUESTIONS.md#q6). Главное:
 
-**Зависит от:** доступа ([Q1](OPEN-QUESTIONS.md#q1)).
+- атомарных примитивов нет — идемпотентность переписана,
+  [ADR-0003](adr/0003-idempotency-without-atomicity.md);
+- песочница Code step: чистый ES + `Intl`, без `node:crypto`, `fetch`, `Buffer`, npm;
+- типы полей Tables: `TEXT` / `NUMBER` / `DATE` / `STATIC_DROPDOWN`;
+- проект инстанса пуст, начинаем с нуля.
 
-**Готово, когда:**
-- в OPEN-QUESTIONS проставлены ответы, а не догадки;
-- если уникальных индексов/атомарного upsert нет — [DATA-MODEL.md](DATA-MODEL.md)
-  переписан на `store`-захват ключа, и это отражено в ADR;
-- проверено, работает ли `Intl` с `Asia/Tashkent` в Code step.
+Осталось открытым: [Q7-остаток](OPEN-QUESTIONS.md#q7) (чем выгружать флоу в git),
+[Q11](OPEN-QUESTIONS.md#q11) (CORS), [Q12](OPEN-QUESTIONS.md#q12) (второй проект).
 
 ---
 
@@ -30,15 +31,16 @@
 
 **Зависит от:** W0.
 
-**Готово, когда:** таблицы есть, ключи уникальности выставлены (или задокументирован
-обходной путь), схема в репозитории совпадает с инстансом.
+**Готово, когда:** таблицы есть, схема в репозитории совпадает с инстансом,
+флаги заведены как `STATIC_DROPDOWN` (`true`/`false`), `sessions.draft` — `TEXT` с JSON.
+Уникальности от БД не ждём: её нет, см. ADR-0003.
 
 ---
 
 ## W2. Subflow-«функции»
 
 **Цель:** `fn-t`, `fn-parse-start`, `fn-sign-qr`, `fn-verify-qr`, `fn-verify-init-data`,
-`fn-fmt-time`, `fn-resolve-segment`, `fn-event-card`
+`fn-fmt-time`, `fn-resolve-segment`, `fn-event-card`, `fn-find-registration`
 ([ARCHITECTURE.md](ARCHITECTURE.md#subflowы-вместо-библиотеки)).
 
 **Зависит от:** W1.
@@ -47,7 +49,12 @@
 - `fn-parse-start` корректно разбирает `c…`-payload, где **`sig` содержит дефис**
   (последние 10 символов — подпись, не `split('-')`, см. [SECURITY.md](SECURITY.md#ловушка-парсинга));
 - отбивается payload длиннее 64 символов и с символами вне `A-Za-z0-9_-`;
-- `fn-sign-qr` использует `crypto` qadam, а не самописный HMAC;
+- `fn-sign-qr` использует `crypto` qadam (`sha256`, `outputEncoding = base64`),
+  а Code step только переводит base64 → base64url и режет до 10 символов;
+- `fn-verify-init-data` собран цепочкой из двух `hmac-signature`,
+  где ключ второго — hex-вывод первого ([SECURITY.md](SECURITY.md#валидация-initdata-stf-2));
+- `fn-find-registration` при нескольких строках на `(event_id, telegram_id)`
+  возвращает самую раннюю (ADR-0003);
 - `fn-verify-qr` и `fn-verify-init-data` сравнивают **constant-time**;
 - `fn-verify-init-data` проверён на реальном `initData` и отвергает подделанный `hash`;
 - `fn-fmt-time` отдаёт ташкентское время для UTC-входа (OWN-3).
@@ -218,6 +225,18 @@
 - сегмент `all_consent` содержит только `consent_marketing = true`;
 - сегмент `no_show` **недоступен, пока `now < ends_at`** (OWN-9), и отказ приходит
   с объяснением, а не молча.
+
+---
+
+## W12b. `dedup-sweep`
+
+**Цель:** уборка последствий отсутствия атомарности (ADR-0003): дубли в
+`registrations`, `event_staff`, `broadcast_targets` и накопившиеся ключи `upd:*` в `store`.
+
+**Зависит от:** W1, W5.
+
+**Готово, когда:** прогон по расписанию оставляет по одной — самой ранней — записи
+на ключевую пару и не трогает ничего сверх этого; удаление логируется.
 
 ---
 

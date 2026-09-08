@@ -63,11 +63,25 @@ Code step рядом только кодирует и сравнивает.
 
 ## Лимиты платформы
 
-Проверены по исходникам `qadam-flow`, `server/api/src/app/helper/system/system.ts`:
+Из исходников (`server/api/src/app/helper/system/system.ts`):
 
 - `FLOW_TIMEOUT_SECONDS = 600` — рассылка бьётся на чанки с курсором;
 - `TRIGGER_TIMEOUT_SECONDS = 60` — `checkin-api` обязан быть коротким;
 - `TRIGGER_HOOKS_TIMEOUT_SECONDS = 180`.
+
+Проверено прогоном на инстансе 2026-09-08 — не догадки, а факты:
+
+- **Песочница Code step:** чистый ECMAScript + полный `Intl`. Нет `node:crypto`,
+  `fetch`, `Buffer`, `btoa`, `TextEncoder`, `crypto.subtle`, npm-зависимостей, `process`.
+  `Intl` с `Asia/Tashkent` и локалью `uz-UZ` работает.
+- **Tables:** уникальных индексов нет, upsert'а нет, типы полей — только
+  `TEXT` / `NUMBER` / `DATE` / `STATIC_DROPDOWN` (boolean хранится как dropdown
+  `true`/`false`, JSON — как текст).
+- **Store:** нет ни put-if-absent, ни TTL.
+- **Атомарных примитивов нет вообще** — идемпотентность строится по
+  [ADR-0003](docs/adr/0003-idempotency-without-atomicity.md), а не на гарантиях БД.
+  Обещать exactly-once в этом проекте нельзя.
+- **Telegram:** один вебхук на бот-токен, поэтому бот у events отдельный.
 
 ## Доступ к инстансу (MCP)
 

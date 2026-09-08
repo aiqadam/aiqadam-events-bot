@@ -36,8 +36,12 @@ sig = base64url(raw).slice(0, 10)            // без padding
 ```
 
 - `QR_SIGNING_KEY` — **отдельный секрет**, не токен бота. Живёт в connection платформы.
-- HMAC считает **`crypto` qadam (`hmac-signature`)**, Code step только кодирует и режет.
-  Свою реализацию HMAC не пишем.
+- HMAC считает **`crypto` qadam (`hmac-signature`)**: `method = sha256`,
+  `outputEncoding = base64`. Code step получает готовый base64 и переводит его
+  в base64url чистыми строковыми операциями: `+`→`-`, `/`→`_`, отрезать `=`, взять 10.
+- Своей реализации HMAC быть не может даже при желании: в песочнице Code step нет
+  ни `node:crypto`, ни `crypto.subtle`, ни `Buffer`, ни npm
+  ([ARCHITECTURE.md](ARCHITECTURE.md#песочница-code-step--проверено-на-инстансе-2026-09-08)).
 - Сравнение — **constant-time** (посимвольный XOR-аккумулятор, без раннего выхода).
 - `userId` в `msg` — тот же `telegram_id` строкой, что и в БД.
 
@@ -66,6 +70,17 @@ valid = constant_time_equal(expected, initData.hash)
 
 Плюс проверка `auth_date`.
 
+**Как это собирается из `crypto` qadam'а** (ключ второго HMAC — двоичный результат первого):
+
+1. `hmac-signature`: `secretKey = "WebAppData"`, `secretKeyEncoding = utf-8`,
+   `method = sha256`, `text = <bot_token>`, `outputEncoding = **hex**`;
+2. `hmac-signature`: `secretKey = <hex из шага 1>`, `secretKeyEncoding = **hex**`,
+   `method = sha256`, `text = <data_check_string>`, `outputEncoding = hex`;
+3. Code step: constant-time сравнение результата с `initData.hash`.
+
+Именно ради шага 2 нужен `secretKeyEncoding` — он есть в qadam'е, так что цепочка
+собирается штатно, без единой строчки своей криптографии.
+
 **Практическое замечание про `auth_date`:** сканер контролёра открыт весь вечер,
 а `initData` выдаётся один раз при открытии Mini App и не обновляется сам.
 Слишком строгое окно (5–15 минут) уронит чекин в разгар входа.
@@ -90,7 +105,10 @@ event_staff WHERE event_id = <eventId запроса> AND telegram_id = <из in
 
 ## Инвайт-токены staff (OWN-14)
 
-- Токен — 16 случайных байт → **22 символа base64url** без padding.
+- Токен — **22 случайных символа** из `crypto / generate-password`
+  (`characterSet = alphanumeric`, `length = 22`). Это `A-Za-z0-9`, подмножество
+  алфавита deep link, ≈131 бит энтропии. Генератора случайных байт в Code step нет,
+  поэтому источник случайности — только этот qadam.
 - В БД лежит **только `sha256(token)`** (`staff_invites.token_hash`).
   Утечка таблицы не даёт работающих ссылок.
 - Одноразовость — `used_at`; TTL — `expires_at = created_at + 24ч`.
