@@ -9,8 +9,14 @@
 
 **Вход:** `{ eventId: string, userId: string }` (`userId` — `telegram_id` строкой)
 
-**Выход:** `{ sig, b64url, eventId, userId, msg, payload }`, где
+**Выход:** `{ sig, eventId, userId, msg, payload }`, где
 `msg = "c:" + eventId + ":" + userId`, `payload = "c" + eventId + "-" + userId + "-" + sig`.
+
+Полный дайджест наружу **не отдаётся**: в QR публикуются первые 10 символов,
+остальные 33 не нужны никому, а вывод шага попадает в лог каждого прогона
+([ADR-0005](../../docs/adr/0005-secrets-visible-in-run-logs.md)). Убрано по
+замечанию I второго ревью; проверено прогоном `7GNpQUi1Zvpe9ciQj7bpH` —
+в выходе только `sig`.
 
 **Падает** (а не возвращает `valid: false`) на `eventId` вне `[A-Za-z0-9_]{1,12}`
 или `userId` вне `[0-9]{1,16}`.

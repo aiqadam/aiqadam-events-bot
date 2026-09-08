@@ -21,8 +21,9 @@
 | `mapsUrl` | ссылка на Я.Карты, собранная из `lat`/`lon` |
 | `buttons`, `labels` | inline-кнопки и их подписи — **только если ключи подписей есть в `strings`** |
 | `registerDeepLink` | `https://t.me/<BOT_USERNAME>?start=e<eventId>` |
+| `status`, `ownerId`, `chapterId` | **чем вызывающий делает гейт** — карточка сама не авторизует |
 | `startsAtFmt`, `endsAtFmt`, `regDeadlineAtFmt` | ташкентское время (через `fn-fmt-time`) |
-| `startsAt`, `endsAt`, `regDeadlineAt`, `status`, `capacity`, `overbookPct`, `photoFileId` | сырые поля для логики вызывающего |
+| `startsAt`, `endsAt`, `regDeadlineAt`, `capacity`, `overbookPct`, `photoFileId` | сырые поля для логики вызывающего |
 | `missing` | ключи i18n, которых не нашлось |
 
 ## Шаги
@@ -48,15 +49,19 @@
 
 ## Ключи i18n
 
-Используются существующие ключи W3: `event.card.header`, `event.card.description`,
-`event.card.when`, `event.card.ends`, `event.card.where`, `event.card.deadline`,
-`event.card.map_link`.
-
-Дополнительно запрашиваются и **пока отсутствуют** в `strings`:
+Все десять запрашиваемых ключей **есть в `strings` во всех трёх языках** (W3 залил
+их 2026-09-08): `event.card.header`, `event.card.description`, `event.card.when`,
+`event.card.ends`, `event.card.where`, `event.card.deadline`, `event.card.map_link`,
 `event.card.btn_map`, `event.card.btn_register`, `event.card.not_found`.
-Пока их нет — `buttons` и `labels` пустые, а `text` при `found: false` показывает
-сырой ключ. Как только W3 добавит их в `i18n/*.json`, кнопки появятся сами,
-без правки флоу.
+
+Проверено прогонами `I9WYG1H88Xq2kTqtawg4u` (ru) и `aqYwbQZPH8Vjfmbw4NJtY` (uz):
+`missing: []`, `buttons` содержит две кнопки («Открыть на карте» и
+«Зарегистрироваться»), а при `found: false` в `text` уходит человеческая строка
+(`Kartochkani koʻrsatib boʻlmadi: bunday tadbir yoʻq.`), а не сырой ключ.
+Прежнее ограничение «функцию нельзя ставить в пользовательский путь» снято.
+
+Механика `has()` остаётся: если ключ однажды исчезнет из `strings`, кнопка
+не нарисуется вовсе — вместо кнопки с ключом вместо подписи.
 
 Ключи `event.card.seats_left`, `event.card.seats_unlimited`, `event.card.status`
 сознательно **не** используются: свободные места считаются с овербукингом по
@@ -88,10 +93,11 @@
   Карточка рисуется для ивента в **любом** статусе, включая `draft` и `cancelled`:
   `step_2` фильтрует только по `id`. А `events.id` — короткий slug (≤12 символов,
   `A-Za-z0-9_`), то есть угадываемый. Вызывающий, забывший проверить
-  `status = 'published'` (или `owner_id` для режима правки), покажет посторонним
-  чужой черновик. `status` и `owner_id` возвращаются наружу именно для этой проверки,
-  а не «на всякий случай».
-- **Пока в `strings` нет ключа `event.card.not_found`, эту функцию нельзя ставить
-  в пользовательский путь**: при `found: false` в `text` уедет сырой ключ, и его
-  увидит человек. Как разовый фолбэк это допустимо по [I18N.md](../../docs/I18N.md),
-  но показывать его участнику — нет.
+  `status = 'published'` (или `ownerId` для режима правки), покажет посторонним
+  чужой черновик.
+  **`status`, `ownerId` и `chapterId` действительно возвращаются наружу** —
+  проверено прогоном `I9WYG1H88Xq2kTqtawg4u`: `ownerId: "999000111"`.
+  На первом ревью этот абзац обещал `owner_id`, которого в выходе не было; поле
+  добавлено в `step_3` и `step_8` по замечанию A второго ревью. Обещать
+  вызывающему поле, по которому он построит гейт, и не отдавать его — хуже, чем
+  честно написать «проверяй сам».

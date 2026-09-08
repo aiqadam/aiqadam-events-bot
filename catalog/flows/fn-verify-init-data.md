@@ -49,13 +49,23 @@
   [ADR-0005](../../docs/adr/0005-secrets-visible-in-run-logs.md) и в
   [SECURITY.md](../../docs/SECURITY.md#логи-прогонов--тоже-секрет-adr-0005);
   ограничивается только доступом к проекту и к логам.
-- **Семантика аргументов qadam'а проверена отдельно** (`ap_run_action`, прогон
-  `SySnRsY42NKUDcjijmOE9`): `secretKey = "WebAppData"`, `text = "PROBE-W2"` дал
-  `5a2b099b…3e8b` — это HMAC(key=`WebAppData`, msg=`PROBE-W2`), и **не** обратная
-  ориентация (`4469d2c2…67cc`). То есть `secretKey` — ключ, `text` — сообщение.
-  Чего этим **не** доказано: MCP не отдаёт inputs PIECE-шагов, поэтому «в `text`
-  стоит именно токен» подтверждается только в UI или первым живым `initData` —
-  [Q16](../../docs/OPEN-QUESTIONS.md#q16).
+- **Семантика аргументов qadam'а проверена отдельно**: `ap_run_action` с
+  `secretKey = "WebAppData"`, `text = "PROBE-W2"`, `outputEncoding = hex` даёт
+  `5a2b099b41154ee663ad6753f999940b02ae5fba122a8592adef108769343e8b` — это
+  HMAC(key=`WebAppData`, msg=`PROBE-W2`), и **не** обратная ориентация
+  (`4469d2c2e3e24b893b41b726a09bb3d7b3b6391f85de813060a11a88207367cc`).
+  То есть `secretKey` — ключ, `text` — сообщение. Значение воспроизводится любым
+  внешним HMAC; id прогона не приводится, потому что `ap_run_action` не сохраняется
+  как flow run.
+- **Конфигурация шагов подтверждена read-only REST-экспортом**
+  ([ADR-0006](../../docs/adr/0006-rest-read-only-for-review.md), снимал ревьюер —
+  владельцу REST не разрешён): у `step_2` `secretKey: "WebAppData"`,
+  `text: "{{connections['TZTlXaCEO2hEvimUowbSA']}}"`, `secretKeyEncoding: "utf-8"`;
+  у `step_3` `secretKey: "{{step_2['output']}}"`, `secretKeyEncoding: "hex"`.
+  Значит токен подставлен именно в `text`, ориентация верна и hex-ключ второго шага
+  собран как задумано — это **факт, а не вывод из поведения**. Остаётся
+  непроверенным только `initData` от живого клиента Telegram
+  ([Q16](../../docs/OPEN-QUESTIONS.md#q16)).
 - **Цепочка двух HMAC собрана штатно, без своей криптографии.** Ключ второго шага —
   hex-вывод первого при `secretKeyEncoding = hex`; платформа трактует его как
   двоичный ключ. Сверено независимо: для `data_check_string`

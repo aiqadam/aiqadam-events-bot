@@ -31,7 +31,7 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход subflow'а | — |
 | step_1 | CODE «normalize keys» | проверка формы, сентинел `-` | `{{trigger['output'].data.eventId}}`, `...telegramId` |
-| step_2 | `@aiqadam/qadam-tables : tables-find-records` | `registrations` по двум `eq`, **без limit** | `table_id` = `PNuChoFG0tIBTND86yzDL`, поля `event_id` (`6mRpFdqphYL2PtfQwBFEr`), `telegram_id` (`kfw8Et1Msb0Qiki6GMs9b`) |
+| step_2 | `@aiqadam/qadam-tables : tables-find-records` | `registrations` по двум `eq`, `limit = null` (= без ограничения) | `table_id` = `PNuChoFG0tIBTND86yzDL`, поля `event_id` (`6mRpFdqphYL2PtfQwBFEr`), `telegram_id` (`kfw8Et1Msb0Qiki6GMs9b`) |
 | step_3 | CODE «pick earliest (ADR-0003)» | сортировка и выбор | `records` = `{{step_2['output']}}` |
 | step_4 | `@aiqadam/qadam-subflows : returnResponse` | ответ | `{{step_3['output']}}` |
 
@@ -66,6 +66,17 @@
   раннюю» переставало быть правдой ровно там, где дубли и опасны. Строк на пару
   `(event_id, telegram_id)` в норме одна, в патологии единицы, так что потолок
   не нужен.
+  **История этого поля стоит того, чтобы её знать.** На втором круге исправлений
+  лимит считался снятым: `ap_update_step` вызывался с набором `input` без ключа
+  `limit`. Оказалось, что этот вызов **сливает** переданное с существующим и ключи
+  не удаляет, — `limit: 50` остался в опубликованной версии и был обнаружен только
+  read-only REST-экспортом ([ADR-0006](../../docs/adr/0006-rest-read-only-for-review.md)),
+  потому что MCP inputs PIECE-шагов не отдаёт. Сейчас в поле стоит явный `null`,
+  и это **проверено поведением, а не конфигурацией**: 51 дубль на одну пару,
+  причём строка с самым ранним `registered_at` вставлена **последней**
+  (прогон `VXXUb31GSHEOZ8X4p138a`) → `duplicates: 51`, `recordId` = именно она,
+  `registration.source = "must_win"`. С лимитом 50 эта строка в выборку бы
+  не попала и инвариант ADR-0003 сломался бы молча.
 - `duplicates > 1` — сигнал для `dedup-sweep` (W12b), а не ошибка на месте: удалять
   строки при чтении опаснее, чем жить с дублем.
 - **Фильтр по `event_id` обязателен всегда.** Выборка по одному `telegram_id` — это

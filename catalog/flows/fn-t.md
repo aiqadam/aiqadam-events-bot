@@ -37,14 +37,14 @@
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход subflow'а | — |
 | step_1 | CODE «normalize keys» | список ключей, язык, строка для фильтра `in` | `{{trigger['output'].data.key}}`, `...keys`, `...lang` |
 | step_2 | `@aiqadam/qadam-tables : tables-find-records` | `strings` по `key in (...)`, `limit 200` | `table_id` = `qi6bBTL7plRGBgFUfli8w`, поле `key` (externalId `xpNgdNnrNy0iftelqDjeN`), `value` = `{{step_1['output'].queryList}}` |
-
-**Потолок `limit 200`** — это ~66 ключей на три языка за один вызов. Переполнение
-обрежет выборку **молча**, и лишние ключи уедут в `missing` (то есть на экран
-сырыми). Самый большой сегодняшний вызов — `fn-event-card` с 10 ключами (30 строк),
-запас шестикратный. Если вызов начнёт просить больше 60 ключей, потолок надо
-поднимать вместе с проверкой, что выборка не обрезалась.
 | step_3 | CODE «resolve + substitute» | язык → фолбэк → ключ; подстановка `{var}` | `records` = `{{step_2['output']}}`, `vars`/`varsByKey` из trigger |
 | step_4 | `@aiqadam/qadam-subflows : returnResponse` | ответ | `{{step_3['output']}}` |
+
+**Потолок `limit 200` у `step_2`** — это ~66 ключей на три языка за один вызов.
+Переполнение обрежет выборку **молча**, и лишние ключи уедут в `missing` (то есть
+на экран сырыми). Самый большой сегодняшний вызов — `fn-event-card` с 10 ключами
+(30 строк), запас шестикратный. Если вызов начнёт просить больше 60 ключей, потолок
+надо поднимать вместе с проверкой, что выборка не обрезалась.
 
 ## Зависимости
 
