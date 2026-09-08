@@ -21,7 +21,7 @@
 | 0.3 | Variables: `QR_SIGNING_KEY` (случайная строка ≥32 симв.), `BOT_USERNAME` | подпись QR и сборка deep link'ов |
 | 0.4 | Включить GitHub Pages (workflow из `miniapp/`) + домен `miniapp.events.aiqadam.org` в Cloudflare | хостинг сканера (Q3) |
 | 0.5 | Variable `MINIAPP_URL` + Mini App URL в BotFather | связать бота со сканером |
-| 0.6 | Завести проект `events-prod` | второе окружение (Q12); можно отложить до W15 |
+| 0.6 | Завести проект `events-prod` | второе окружение (Q12); **отложен до W15** решением 2026-09-08 |
 
 Пункты 0.1–0.3 блокируют **W4** и **W2**; 0.4–0.5 блокируют **W7**.
 Всё остальное стартует без них.
