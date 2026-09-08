@@ -78,9 +78,10 @@ Mini App (шаг 0.4) опубликован: `https://miniapp.events.aiqadam.or
 Попутно выяснен синтаксис ссылки на переменные и цена ошибки в нём —
 [ARCHITECTURE](ARCHITECTURE.md#переменные-проекта-в-шаблонах--проверено-на-инстансе-2026-09-08).
 
-W3 добавил в проект первый флоу — `i18n-sync` (`yIMvjNdxj27jv4fZF4fFp`, ENABLED,
-cron 04:00 Asia/Tashkent) — и наполнил таблицу `strings`: **577 строк**,
-193 `ru` + 192 `uz` + 192 `en`. Живое состояние —
+W3 добавил в проект флоу `i18n-sync` (`yIMvjNdxj27jv4fZF4fFp`, ENABLED,
+cron 04:00 Asia/Tashkent) и наполнил таблицу `strings` — по одной строке
+на каждую пару `(key, lang)` из `i18n/*.json` (на 2026-09-08 это
+203 `ru` + 202 `uz` + 202 `en`). Живое состояние —
 [catalog/flows/i18n-sync.md](../catalog/flows/i18n-sync.md). URL источника
 указывают на ветку `main`; до мержа PR пакета прогон успешно завершается,
 ничего не меняя. Попутно выяснены четыре факта про qadam'ы `http` и `tables` —
