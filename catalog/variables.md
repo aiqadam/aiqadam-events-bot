@@ -24,7 +24,7 @@
 |------|-------|--------------|
 | `QR_SIGNING_KEY` | да | длина 64, алфавит `A-Za-z0-9_-`; значение не выносится ни в каталог, ни в git |
 | `BOT_USERNAME` | да | `aiqadam_events_dev_bot`, **без** ведущего `@` |
-| `MINIAPP_URL` | нет | шаг 0.5, вместе с W7 |
+| `MINIAPP_URL` | да | `https://miniapp.events.aiqadam.org/` — шаг 0.5 закрыт 2026-09-08, тот же адрес стоит Mini App-ом у бота в BotFather |
 
 `BOT_USERNAME` хранится без `@`, поэтому deep link собирается как
 `https://t.me/{{variables['BOT_USERNAME']}}?start=...` — добавлять `@` в шаблоне нельзя.
