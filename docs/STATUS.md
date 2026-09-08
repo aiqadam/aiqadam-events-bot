@@ -51,9 +51,12 @@
 
 ## Состояние инстанса
 
-На 2026-09-08 в проекте нет flows; таблицы заведены в W1 — все 10 из
-[DATA-MODEL.md](DATA-MODEL.md), пустые, схема и идентификаторы в
-[catalog/tables/](../catalog/tables/README.md). Есть один connection —
+На 2026-09-08 в проекте **10 флоу** — девять subflow-«функций» `fn-*` (W2)
+и `i18n-sync` (W3). Таблицы заведены в W1 — все 10 из
+[DATA-MODEL.md](DATA-MODEL.md), схема и идентификаторы в
+[catalog/tables/](../catalog/tables/README.md); наполнена из них только
+`strings` (её ведёт `i18n-sync`), остальные пусты. Актуальные `rowCount`
+смотрите через `ap_list_tables`, а не по этому тексту. Есть один connection —
 `AI Qadam Events (dev)` к `@aiqadam/qadam-telegram-bot` (шаг 0.2) — и две
 Variables (0.3), проверенные пробным флоу: `QR_SIGNING_KEY` длиной 64 символа
 в алфавите base64url, `BOT_USERNAME` = `aiqadam_events_dev_bot` без `@`.

@@ -35,7 +35,7 @@ create_values  — массив записей под values.values шага 6 (
 updates        — [{ id, value, key, lang }] для шага 8
 delete_ids     — [recordId] для шага 10
 changed        — сумма трёх, 0 = таблица уже соответствует файлам
-report         — rows_before, rows_by_lang_before, coverage,
+report         — rows_before, keys_by_lang_before, coverage,
                  to_create/to_update/to_delete, skipped_langs,
                  duplicates_removed, foreign_rows_removed,
                  dropped_empty_values, bad_keys, missing_in_fallback, untranslated
@@ -82,7 +82,16 @@ Upsert'а и уникальных индексов в Tables нет, поэто�
 
 - ноль пригодных ключей — всегда, даже когда таблица пуста;
 - меньше половины того, что уже лежит в таблице по этому языку
-  (`size * 2 < rows_by_lang_before[lang]`).
+  (`size * 2 < keys_by_lang_before[lang]`).
+
+**Порог считает пары `(key, lang)`, а не записи** — это важно, и не сразу
+очевидно. Если бы в знаменатель попадали дубли, то при размножении записей
+больше чем вдвое (три перекрывающихся прогона; атомарности в проекте нет,
+ADR-0003) язык уходил бы в `skipped_langs` — **вместе с дедупом, который эти
+дубли и вычистил бы**. Состояние самозакреплялось бы, а сигнала о нём нет
+(см. [Q16](../../docs/OPEN-QUESTIONS.md#q16)). Предохранитель обязан измерять
+полноту словаря, а не состояние таблицы, поэтому `keys_by_lang_before`
+содержит число различных ключей.
 
 Сработавший порог виден в `skipped_langs` с числами. Это **растяжка,
 а не бизнес-правило**: сокращение словаря больше чем вдвое одним прогоном
@@ -149,7 +158,7 @@ PIECE-шага через MCP не прочитать, поэтому доказ
 - `skipped_langs: ["ru — HTTP 404", "uz — HTTP 404", "en — HTTP 404"]` — с кодом,
   а не с пустотой: попутно подтверждает, что нормализация обёрнутой формы вывода
   `http` работает;
-- `rows_before: 607`, `rows_by_lang_before: {ru: 203, uz: 202, en: 202}` —
+- `rows_before: 607`, `keys_by_lang_before: {ru: 203, uz: 202, en: 202}` —
   совпадает с файлами репозитория;
 - `changed: 0`, шаги 6/7/9 без итераций — таблица не тронута.
 
