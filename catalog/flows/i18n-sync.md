@@ -1,0 +1,117 @@
+# Flow: i18n-sync
+
+- **Статус**: ENABLED (опубликован 2026-09-08)
+- **Триггер**: cron `0 4 * * *`, таймзона `Asia/Tashkent` — раз в сутки в 04:00 ташкентского
+- **Назначение**: приводит таблицу `strings` к содержимому `i18n/{ru,uz,en}.json`
+  из ветки `main` — репозиторий источник правды, таблица рабочая копия (I18N-2)
+- **Flow ID (MCP)**: `yIMvjNdxj27jv4fZF4fFp`
+
+Ручной запуск — кнопкой «Test flow» в UI или `ap_test_flow`; отдельного вебхука
+намеренно нет, чтобы не открывать неаутентифицированную точку, пишущую в таблицу.
+
+## Шаги
+
+| Step | Piece / Action | Назначение | Ключевые inputs / refs |
+|------|----------------|-----------|------------------------|
+| trigger | @aiqadam/qadam-schedule : `cron_expression` | суточное расписание | `cronExpression = 0 4 * * *`, `timezone = Asia/Tashkent` |
+| step_1 «ru.json» | @aiqadam/qadam-http : `send_request` | GET `raw.githubusercontent.com/.../main/i18n/ru.json` | `failureMode = continue_all`, `timeout = 30` |
+| step_2 «uz.json» | @aiqadam/qadam-http : `send_request` | то же для `uz.json` | `failureMode = continue_all` |
+| step_3 «en.json» | @aiqadam/qadam-http : `send_request` | то же для `en.json` | `failureMode = continue_all` |
+| step_4 «strings как есть» | @aiqadam/qadam-tables : `tables-find-records` | читает таблицу **целиком**, без фильтров | `table_id = qi6bBTL7plRGBgFUfli8w`, `limit` не задан |
+| step_5 «диф» | CODE | чистая функция: считает разницу и отчёт | `{{step_1['output']}}`, `{{step_2['output']}}`, `{{step_3['output']}}`, `{{step_4['output']}}` + externalId трёх полей |
+| step_6 «создать новые» | @aiqadam/qadam-tables : `tables-create-records` | одним вызовом вставляет всё новое | `values.values = {{step_5['output'].create_values}}` |
+| step_7 «по изменённым» | LOOP_ON_ITEMS | обходит правки | `{{step_5['output'].updates}}` |
+| step_8 «обновить значение» | @aiqadam/qadam-tables : `tables-update-record` | правит только `value` | `record_id = {{step_7['output'].item.id}}`, `values.<value> = {{step_7['output'].item.value}}` |
+| step_9 «по лишним» | LOOP_ON_ITEMS | обходит удаления | `{{step_5['output'].delete_ids}}` |
+| step_10 «удалить строку» | @aiqadam/qadam-tables : `tables-delete-record` | удаляет по одной | `records_ids = ["{{step_9['output'].item}}"]` |
+
+`step_5` не делает ни сетевых вызовов, ни записей — правило Code step соблюдено:
+HTTP выполняют шаги 1–3, запись — шаги 6, 8, 10.
+
+### Что возвращает step_5
+
+```
+create_values  — массив записей под values.values шага 6 (ключи = externalId полей)
+updates        — [{ id, value, key, lang }] для шага 8
+delete_ids     — [recordId] для шага 10
+changed        — сумма трёх, 0 = таблица уже соответствует файлам
+report         — rows_before, coverage, to_create/to_update/to_delete,
+                 skipped_langs, duplicates_removed, foreign_rows_removed,
+                 dropped_empty_values, bad_keys, missing_in_fallback, untranslated
+```
+
+`report` — это и есть лог отсутствующих переводов, которого просит
+[I18N.md](../../docs/I18N.md): `untranslated` перечисляет ключи, которых нет
+в `uz`/`en`, `missing_in_fallback` — дефект, когда ключа нет в `ru`.
+
+## Зависимости
+
+- **Таблицы**: `strings` (`qi6bBTL7plRGBgFUfli8w`) — читает целиком, пишет, удаляет
+- **Переменные**: —
+- **Connections**: — (`raw.githubusercontent.com` публичный, авторизация `NONE`)
+
+## Заметки
+
+### Почему диф, а не upsert
+
+Upsert'а и уникальных индексов в Tables нет, поэтому «залить файлы» = «сравнить и
+доложить разницу». Следствия — [I18N.md](../../docs/I18N.md#почему-не-upsert-уточнено-в-w3):
+
+- повторный прогон даёт `changed: 0` и не плодит дублей;
+- дубли `(key, lang)` вычищаются, остаётся **самая ранняя** запись (ADR-0003);
+- строки с `lang` вне `ru`/`uz`/`en` и с пустым `key` удаляются как мусор:
+  файлы такое породить не могут.
+
+### Язык, который не скачался, не трогается вовсе
+
+Шаги 1–3 стоят с `failureMode = continue_all`, а `step_5` считает язык
+существующим только при HTTP 2xx **и** разобранном JSON-объекте. Иначе язык
+попадает в `skipped_langs`, и ни одной его строки не создаётся, не правится
+и не удаляется. Без этого один 404 на `uz.json` оставил бы бота без узбекских
+строк, а прогон отчитался бы успехом.
+
+### Пустое значение не доезжает до таблицы
+
+`value`, пустой или из одних пробелов, отбрасывается и попадает в
+`dropped_empty_values`. Если такая строка в таблице уже была — она **удаляется**,
+а не обнуляется: `fn-t` отличает «строки нет» от «строка пустая» только
+по отсутствию записи, и пустое значение сломало бы фолбэк в `ru`.
+
+### Форма вывода шага http зависит от исхода — проверено 2026-09-08
+
+| Исход | Форма `{{step_N['output']}}` |
+| --- | --- |
+| 2xx | **плоская**: `{ status, headers, body }` |
+| 4xx/5xx при `failureMode = continue_all` | **обёрнутая**: `{ response: { status, body }, request: {} }` |
+
+Ссылка `{{step_1['output'].status}}` поэтому работает только на успехе, а на
+ошибке молча даёт пустую строку. `step_5` получает **весь** вывод шага и
+нормализует обе формы сам. Первая сборка флоу споткнулась именно об это:
+шаблон `.status` отдал пустоту, и все три языка ушли в `skipped_langs` —
+прогон при этом был «успешным».
+
+### `tables-delete-record` на пустом массиве падает
+
+`records_ids: []` возвращает `404 ENTITY_NOT_FOUND`. Поэтому удаление сидит
+внутри `LOOP_ON_ITEMS`: пустой цикл — это ноль итераций, а не ошибка.
+`tables-create-records` с пустым `values.values`, наоборот, безобиден —
+возвращает `[]`. Проверено обоими вызовами через `ap_run_action`.
+
+### Ветка `main` и первый прогон
+
+URL зафиксированы на `main` (решение [I18N.md](../../docs/I18N.md#как-строки-попадают-в-флоу)).
+Пока PR пакета W3 не смержен, `main` отдаёт 404 — прогон **успешен** и ничего
+не меняет: все три языка уходят в `skipped_langs`. Проверено прогоном
+`jPeXwrPYylmqzUFFMOEpD`, таблица осталась нетронутой. Первый содержательный
+прогон по `main` случится после мержа; строки, уже лежащие в `strings`,
+залиты прогоном по ветке `w03-i18n`.
+
+### Ограничения, которые стоит знать
+
+- `step_4` читает таблицу целиком (сейчас 577 строк, `limit` не задан —
+  по документации пропа это «без ограничений»). Если ключей станет кардинально
+  больше, читать придётся страницами;
+- прогон на полной заливке 577 строк занял **5 секунд** — до
+  `FLOW_TIMEOUT_SECONDS = 600` запас большой, чанки не нужны;
+- удаление идёт по одной записи (~0.4 с на вызов), поэтому массовая чистка
+  сотен строк заметно медленнее заливки. На практике удаляются единицы.
