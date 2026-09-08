@@ -42,10 +42,15 @@ MCP её **не отдаёт**: `ap_read_step_code` только для CODE, `a
 `crypto`, либо фильтры `tables-find-records`.
 
 ```bash
-# ключ — из переменной окружения, не из репозитория и не литералом в команде
-curl -s -H "Authorization: Bearer $QADAM_API_KEY" \
+# ключ — из macOS Keychain, не из репозитория и не литералом в команде
+curl -s -H "Authorization: Bearer $(security find-generic-password \
+  -s aiqadam-events-bot:qadam-flow-api -a reviewer -w)" \
   "https://app.flow.aiqadam.org/api/v1/flows/<flowId>/template?projectId=<projectId>"
 ```
+
+Ключа нет в keychain — попросите его у владельца проекта и положите туда
+([как](../adr/0006-rest-read-only-for-review.md#где-лежит-ключ)). В репозитории его
+нет и не будет; в вывод и в историю команд он попадать не должен.
 
 - [ ] URL в HTTP-шагах ведут туда, куда заявлено (`main`, а не feature-ветка);
 - [ ] `cronExpression` и `timezone` триггера совпадают с каталогом;
