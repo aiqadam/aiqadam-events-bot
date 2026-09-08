@@ -18,8 +18,8 @@
 
 | # | Действие | Статус | Блокирует |
 |---|----------|--------|-----------|
-| 0.1 | Отдельный бот у BotFather | не начат | W2, W4 |
-| 0.2 | Connection `events-bot` | не начат | W2, W4 |
+| 0.1 | Отдельный бот у BotFather | **готов** 2026-09-08 | W2, W4 |
+| 0.2 | Connection `AI Qadam Events (dev)` | **готов** 2026-09-08 | W2, W4 |
 | 0.3 | Variables `QR_SIGNING_KEY`, `BOT_USERNAME` | не начат | W2 |
 | 0.4 | GitHub Pages для `miniapp/` | не начат | W7 |
 | 0.5 | `MINIAPP_URL` + Mini App URL в BotFather | не начат | W7 |
@@ -51,8 +51,9 @@
 
 ## Состояние инстанса
 
-На 2026-09-08 проект **пуст**: ни flows, ни таблиц, ни connections.
-Пробы разведки удалены. Живое состояние — [catalog/overview.md](../catalog/overview.md).
+На 2026-09-08 в проекте нет ни flows, ни таблиц. Есть один connection —
+`AI Qadam Events (dev)` к `@aiqadam/qadam-telegram-bot` (шаг 0.2).
+Живое состояние — [catalog/overview.md](../catalog/overview.md).
 
 ## Что сделано помимо пакетов
 
