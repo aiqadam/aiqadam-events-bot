@@ -131,7 +131,11 @@ event_staff WHERE event_id = <eventId запроса> AND telegram_id = <из in
 
 | Секрет | Где | Ротация |
 | --- | --- | --- |
-| Bot token | connection Qadam Flow | через BotFather; ломает `initData` до переоткрытия Mini App |
-| `QR_SIGNING_KEY` | connection Qadam Flow | инвалидирует все выданные QR — только с перевыпуском |
+| Bot token | **connection** `events-bot` (auth qadam'а Telegram Bot) | через BotFather; ломает `initData` до переоткрытия Mini App |
+| `QR_SIGNING_KEY` | **project Variable**, `{{variables['QR_SIGNING_KEY']}}` | инвалидирует все выданные QR — только с перевыпуском |
 
-В репозитории секретов нет и не будет: `.env` в `.gitignore`, конфигурация — в UI платформы.
+Разница не косметическая: connection — это auth конкретного qadam'а, а ключ подписи
+QR не принадлежит никакому qadam'у и нужен шагам `crypto`. Его место — Variables.
+
+В репозитории секретов нет и не будет: конфигурация задаётся в UI платформы,
+в git попадают только **имена** переменных ([catalog/variables.md](../catalog/variables.md)).

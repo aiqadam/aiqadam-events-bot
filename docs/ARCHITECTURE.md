@@ -122,7 +122,9 @@ Code step рядом только кодирует/сравнивает.
 
 ### Флоу-маршрутизаторы
 
-Оркестрация, версионируется как экспортированный JSON в `flows/`. Список и разбор — [FLOWS.md](FLOWS.md).
+Оркестрация. Строится через MCP, а в git версионируется как **агентский каталог**
+`catalog/flows/*.md` ([ADR-0004](adr/0004-catalog-instead-of-flow-export.md)).
+Целевой список и разбор — [FLOWS.md](FLOWS.md).
 
 Инвариант: **вебхук бота принадлежит ровно одному флоу** (`tg-router`), который дальше
 разводит апдейты по типам и по состоянию визарда. Два флоу на один `setWebhook` не живут.
@@ -147,6 +149,21 @@ Qadam Flow Tables — [DATA-MODEL.md](DATA-MODEL.md).
 (IDM-1…IDM-4) не может опираться на БД. Как мы с этим живём —
 [ADR-0003](adr/0003-idempotency-without-atomicity.md).
 
+### Вебхуки: проверенные факты
+
+```
+POST https://app.flow.aiqadam.org/api/v1/webhooks/<flowId>/sync
+```
+
+- суффикс **`/sync`** даёт синхронный ответ — это адрес `checkin-api`;
+- **preflight `OPTIONS` обрабатывает платформа сама** (204, `access-control-allow-origin: *`),
+  прогон флоу на него не тратится;
+- `webhook / return_response` задаёт `status`, произвольные `headers` и JSON-тело —
+  коды `401`/`403` для Mini App реализуются штатно;
+- у триггера `catch_webhook` есть встроенная авторизация (`none` / basic / header /
+  **HMAC Signature**) — мы её не используем, потому что проверяем `initData` сами,
+  но знать полезно.
+
 ### Mini App — исключение из «0 кода»
 
 Статическая страница: `showScanQrPopup()`, экран результата, один `fetch` в webhook-флоу
@@ -159,9 +176,9 @@ Qadam Flow Tables — [DATA-MODEL.md](DATA-MODEL.md).
 адрес `https://aiqadam.github.io/aiqadam-events-bot/` — он же прописывается
 в BotFather как Mini App URL. Деплой пушем в `main`, HTTPS из коробки.
 
-Отсюда вытекает: страница на одном origin, а `checkin-api` — на
-`app.flow.aiqadam.org`, то есть запрос **кросс-доменный**. Нужны CORS-заголовки
-на стороне вебхука Qadam Flow — проверить до сборки W7 ([Q11](OPEN-QUESTIONS.md#q11)).
+Кросс-доменный запрос со страницы в `checkin-api` **проверен боем 2026-09-08
+и работает** ([Q11](OPEN-QUESTIONS.md#q11)): preflight отвечает платформа,
+`Content-Type: application/json` проходит, подгонять запрос под «простой» не нужно.
 
 ### Окружения
 
@@ -182,5 +199,8 @@ Qadam Flow Tables — [DATA-MODEL.md](DATA-MODEL.md).
    Читается хуже, чем FSM в коде; компенсируем тем, что каждый шаг однотипен.
 3. **Нет юнит-тестов** в привычном виде. Проверяемость — на фикстурах прогонов
    и на чек-листах приёмки в [BACKLOG.md](BACKLOG.md).
-4. **Секреты** (bot token, HMAC-ключ подписи QR) живут в connections платформы,
-   а не в `.env` репозитория. Ротация — процедура в UI.
+4. **Секреты** живут в платформе, а не в `.env` репозитория: bot token — connection,
+   `QR_SIGNING_KEY` — project Variable. Ротация — процедура в UI.
+5. **Версионирование — через каталог, а не через выгрузку файлов.** Значит,
+   автоматического отката нет и синхронность каталога держится на дисциплине
+   (ADR-0004).

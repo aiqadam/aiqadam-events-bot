@@ -26,7 +26,20 @@ core-qadam'ы и Tables. Максимум, что допускается, — Co
 | [docs/I18N.md](docs/I18N.md) | ru/uz/en, внешние файлы строк |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Пакеты работ под агентов, с зависимостями |
 | [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) | Что надо проверить/решить до кода |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Порядок работ и волны для агентов |
+| [docs/STATUS.md](docs/STATUS.md) | Текущий статус проекта |
 | [docs/adr/](docs/adr/) | Архитектурные решения |
+| [catalog/](catalog/) | Агентский каталог — живое состояние flows и таблиц |
+
+## Модель работы
+
+Практика `qadam-flow-project-template` (BPM Hero): **только MCP + UI, без REST API**.
+
+```
+🤖 MCP: строим и меняем flows
+🖥️  UI: проект, connections, variables
+📁 git: catalog/*.md — источник правды, агент ведёт его по живому состоянию
+```
 
 ## Правила работы
 
