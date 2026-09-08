@@ -10,6 +10,12 @@
 - JSON (`sessions.draft`) — как `TEXT` со строкой JSON;
 - timestamp — `DATE`, ISO-8601 UTC.
 
+Схема заведена в проекте `events-dev` (W1). Живые идентификаторы таблиц и полей,
+dropdown-значения и рецепт пересборки — [catalog/tables/](../catalog/tables/README.md).
+Что платформа при этом **не** проверяет (dropdown не валидирует значения, `DATE`
+хранится как текст без приведения к UTC) —
+[ARCHITECTURE](ARCHITECTURE.md#tables-на-практике--проверено-на-инстансе-2026-09-08).
+
 Соглашения:
 
 - все даты — **ISO-8601 в UTC** (`2026-09-08T14:00:00Z`), показ в `Asia/Tashkent` (OWN-3);
