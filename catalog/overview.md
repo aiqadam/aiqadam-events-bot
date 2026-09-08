@@ -4,14 +4,26 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-08:** 10 таблиц (W1), flows пока нет, один connection
-(шаг 0.2). Сборка флоу начинается с W2.
+**Состояние на 2026-09-08:** 10 таблиц (W1), девять subflow-«функций» `fn-*` (W2),
+один connection (шаг 0.2). Флоу-маршрутизаторы (`tg-router`, `checkin-api`, …)
+ещё не собраны.
 
 ## Flows
 
+Как читать, два namespace'а id и проверенные факты про subflow'ы —
+[flows/README.md](flows/README.md).
+
 | Flow | Триггер | Назначение | Файл |
 |------|---------|-----------|------|
-| — | — | — | — |
+| `fn-t` | `subflows / callableFlow` | перевод по ключу i18n из `strings` (I18N-2) | [fn-t.md](flows/fn-t.md) |
+| `fn-parse-start` | `subflows / callableFlow` | разбор `start`-payload deep link'а (PAR-6) | [fn-parse-start.md](flows/fn-parse-start.md) |
+| `fn-sign-qr` | `subflows / callableFlow` | подпись QR участника, `crypto` qadam (PAR-6) | [fn-sign-qr.md](flows/fn-sign-qr.md) |
+| `fn-verify-qr` | `subflows / callableFlow` | constant-time проверка подписи QR | [fn-verify-qr.md](flows/fn-verify-qr.md) |
+| `fn-verify-init-data` | `subflows / callableFlow` | валидация Telegram `initData` (STF-2) | [fn-verify-init-data.md](flows/fn-verify-init-data.md) |
+| `fn-fmt-time` | `subflows / callableFlow` | UTC → `Asia/Tashkent` на языке пользователя (OWN-3) | [fn-fmt-time.md](flows/fn-fmt-time.md) |
+| `fn-resolve-segment` | `subflows / callableFlow` | получатели рассылки по сегменту (OWN-9) | [fn-resolve-segment.md](flows/fn-resolve-segment.md) |
+| `fn-event-card` | `subflows / callableFlow` | карточка ивента, venue и ссылка на карты (OWN-2) | [fn-event-card.md](flows/fn-event-card.md) |
+| `fn-find-registration` | `subflows / callableFlow` | чтение `registrations` с выбором самой ранней (ADR-0003) | [fn-find-registration.md](flows/fn-find-registration.md) |
 
 ## Таблицы
 
@@ -31,7 +43,8 @@
 | `sessions` | состояние визардов, `draft` — JSON строкой | `tL4fbi1GisDwA8UJ9zSod` | [sessions.md](tables/sessions.md) |
 | `strings` | рабочая копия i18n (I18N-2) | `qi6bBTL7plRGBgFUfli8w` | [strings.md](tables/strings.md) |
 
-Все таблицы пусты: пробные записи W1 удалены после проверок.
+Все таблицы, кроме `strings`, пусты: фикстуры W2 удалены после проверок.
+`strings` наполняет `i18n-sync` (пакет W3).
 
 ## Переменные
 
