@@ -62,8 +62,11 @@ Project id `vZXlkfz60dx6kX97yICx7`.
 ## Q3. Где хостится Mini App
 
 **Решено: GitHub Pages из этого репозитория.** Каталог `miniapp/`, адрес
-`https://aiqadam.github.io/aiqadam-events-bot/`, он же идёт в BotFather как Mini App URL.
-Деплой — пушем в `main`, HTTPS из коробки, отдельная инфраструктура не нужна.
+`https://miniapp.events.aiqadam.org/` — собственный домен вместо
+`aiqadam.github.io/aiqadam-events-bot/`, он же идёт в BotFather как Mini App URL.
+Деплой — пушем в `main` через GitHub Actions (`.github/workflows/pages.yml`;
+ветковый режим Pages не умеет отдавать подкаталог `miniapp/`), HTTPS из коробки,
+отдельная инфраструктура не нужна.
 
 Следствие: страница и `checkin-api` на разных origin → нужен CORS, см. [Q11](#q11).
 
@@ -245,6 +248,10 @@ POST    /api/v1/webhooks/<flowId>/sync   → 200  {"ok":true}
   так что коды `401`/`403` из [FLOWS.md](FLOWS.md#checkin-api--основной-путь-чекина-mini-app)
   реализуемы штатно;
 - подгонять запрос под «простой» не требуется: `Content-Type: application/json` проходит.
+
+Проверка шла с `Origin: https://aiqadam.github.io`, но платформа отвечает
+`access-control-allow-origin: *`, поэтому переезд страницы на собственный домен
+`miniapp.events.aiqadam.org` ([Q3](#q3)) на CORS не влияет — перепроверять не нужно.
 
 **Статус:** закрыт 2026-09-08.
 

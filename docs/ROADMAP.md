@@ -19,7 +19,7 @@
 | 0.1 | `/newbot` у BotFather — **отдельный бот** под ивенты | один вебхук на токен, существующий бот занят long-poll (Q4) |
 | 0.2 | Connection `events-bot` в UI проекта | auth для qadam'а Telegram Bot |
 | 0.3 | Variables: `QR_SIGNING_KEY` (случайная строка ≥32 симв.), `BOT_USERNAME` | подпись QR и сборка deep link'ов |
-| 0.4 | Включить GitHub Pages для репозитория (каталог `miniapp/`) | хостинг сканера (Q3) |
+| 0.4 | Включить GitHub Pages (workflow из `miniapp/`) + домен `miniapp.events.aiqadam.org` в Cloudflare | хостинг сканера (Q3) |
 | 0.5 | Variable `MINIAPP_URL` + Mini App URL в BotFather | связать бота со сканером |
 | 0.6 | Завести проект `events-prod` | второе окружение (Q12); можно отложить до W15 |
 

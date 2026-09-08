@@ -1,0 +1,41 @@
+# Публикация Mini App (каталог miniapp/) на GitHub Pages.
+#
+# Почему Actions, а не «Deploy from a branch»: ветковый режим Pages отдаёт только
+# корень репозитория или /docs, а /docs у нас — документация проекта. Публикация
+# корня выложила бы наружу документы вместо сканера, поэтому артефактом уходит
+# ровно miniapp/, и он становится корнем сайта — адрес совпадает с решением Q3.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'miniapp/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Параллельные деплои Pages конфликтуют; лишние прогоны отбрасываем,
+# текущий не отменяем, чтобы не оставить сайт в полудеплое.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: miniapp
+      - id: deployment
+        uses: actions/deploy-pages@v4
