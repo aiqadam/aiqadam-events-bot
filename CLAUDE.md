@@ -72,17 +72,19 @@ Code step рядом только кодирует и сравнивает.
 ## Доступ к инстансу (MCP)
 
 В репозитории зарегистрирован проектный MCP-сервер `qadam-flow`
-(`.mcp.json` → `https://app.flow.aiqadam.org/mcp`). Эндпоинт требует
-`Authorization: Bearer <token>`, поэтому токен подставляется из переменной окружения:
+(`.mcp.json` → `https://app.flow.aiqadam.org/mcp`).
 
-```bash
-export QADAM_FLOW_TOKEN=...   # токен проекта из UI Qadam Flow
-```
+**Авторизация — OAuth, статического токена нет.** Эндпоинт отвечает 401 с
+`WWW-Authenticate: Bearer resource_metadata=".../.well-known/oauth-protected-resource/mcp"`,
+клиент проходит стандартный OAuth-флоу MCP через браузер
+(`packages/server/api/src/app/mcp/oauth/mcp-oauth.controller.ts`).
 
-**Токен в репозиторий не коммитится** — репозиторий публичный. В `.mcp.json` лежит
-только подстановка `${QADAM_FLOW_TOKEN}`.
+Поэтому в `.mcp.json` **не должно быть** секции `headers` с `Authorization`:
+заданный вручную заголовок отключает OAuth-фолбэк, и подключение падает с 401.
+Секретов для MCP в репозитории не нужно вовсе.
 
-Проектный MCP-сервер требует одобрения при первом запуске сессии.
+Проектный MCP-сервер требует одобрения при первом запуске сессии
+(`/mcp` → `Authenticate`).
 
 ## Артефакты
 
