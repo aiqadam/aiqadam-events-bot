@@ -32,7 +32,7 @@
 | W0. Разведка инстанса | — | — | **готов** 2026-09-08 | — | [ARCHITECTURE](ARCHITECTURE.md#песочница-code-step--проверено-на-инстансе-2026-09-08) |
 | W1. Таблицы | 1 | W0 | **готов** 2026-09-08 | агент | [W01](work/W01-tables.md) |
 | W2. Subflow-функции | 2 | W1, 0.1–0.3 | **готов** 2026-09-08 | агент W2 | [W02](work/W02-subflows.md) |
-| W3. i18n | 2 | W1 | не начат | — | — |
+| W3. i18n | 2 | W1 | **готов** 2026-09-08 | агент W3 | [W03](work/W03-i18n.md) |
 | W4. `tg-router` + дедуп | 3 | W2, 0.1–0.2 | не начат | — | — |
 | W10. Инвайты staff | 3 | W2 | не начат | — | — |
 | W11. Визард ивента | 3 | W2, W3 | не начат | — | — |
@@ -51,9 +51,12 @@
 
 ## Состояние инстанса
 
-На 2026-09-08 в проекте нет flows; таблицы заведены в W1 — все 10 из
-[DATA-MODEL.md](DATA-MODEL.md), пустые, схема и идентификаторы в
-[catalog/tables/](../catalog/tables/README.md). Есть один connection —
+На 2026-09-08 в проекте **10 флоу** — девять subflow-«функций» `fn-*` (W2)
+и `i18n-sync` (W3). Таблицы заведены в W1 — все 10 из
+[DATA-MODEL.md](DATA-MODEL.md), схема и идентификаторы в
+[catalog/tables/](../catalog/tables/README.md); наполнена из них только
+`strings` (её ведёт `i18n-sync`), остальные пусты. Актуальные `rowCount`
+смотрите через `ap_list_tables`, а не по этому тексту. Есть один connection —
 `AI Qadam Events (dev)` к `@aiqadam/qadam-telegram-bot` (шаг 0.2) — и две
 Variables (0.3), проверенные пробным флоу: `QR_SIGNING_KEY` длиной 64 символа
 в алфавите base64url, `BOT_USERNAME` = `aiqadam_events_dev_bot` без `@`.
@@ -77,6 +80,16 @@ Mini App (шаг 0.4) опубликован: `https://miniapp.events.aiqadam.or
 
 Попутно выяснен синтаксис ссылки на переменные и цена ошибки в нём —
 [ARCHITECTURE](ARCHITECTURE.md#переменные-проекта-в-шаблонах--проверено-на-инстансе-2026-09-08).
+
+W3 добавил в проект флоу `i18n-sync` (`yIMvjNdxj27jv4fZF4fFp`, ENABLED,
+cron 04:00 Asia/Tashkent) и наполнил таблицу `strings` — по одной строке
+на каждую пару `(key, lang)` из `i18n/*.json` (на 2026-09-08 это
+203 `ru` + 202 `uz` + 202 `en`). Живое состояние —
+[catalog/flows/i18n-sync.md](../catalog/flows/i18n-sync.md). URL источника
+указывают на ветку `main`; до мержа PR пакета прогон успешно завершается,
+ничего не меняя. Попутно выяснены четыре факта про qadam'ы `http` и `tables` —
+[ARCHITECTURE](ARCHITECTURE.md#qadamы-http-и-tables-на-практике--проверено-на-инстансе-2026-09-08),
+из них дороже всех «форма вывода `http` зависит от исхода запроса».
 
 ## Что сделано помимо пакетов
 

@@ -4,14 +4,10 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-08:** 10 таблиц (W1), девять subflow-«функций» `fn-*` (W2)
-плюс `i18n-sync` (W3), один connection (шаг 0.2). Флоу-маршрутизаторы
-(`tg-router`, `checkin-api`, …) ещё не собраны.
-
-`i18n-sync` перечислен здесь, чтобы таблица не занижала реальность: флоу
-существует на инстансе (`yIMvjNdxj27jv4fZF4fFp`, ENABLED). Его карточку
-`catalog/flows/i18n-sync.md` заводит владелец W3 — правки в чужой пакет
-из W2 не вносились.
+**Состояние на 2026-09-08:** 10 таблиц (W1), **10 флоу** — девять
+subflow-«функций» `fn-*` (W2) плюс `i18n-sync` (W3), один connection (шаг 0.2).
+Флоу-маршрутизаторы (`tg-router`, `checkin-api`, …) ещё не собраны.
+Все десять флоу описаны файлами в [flows/](flows/).
 
 ## Flows
 
@@ -29,7 +25,10 @@
 | `fn-resolve-segment` | `subflows / callableFlow` | получатели рассылки по сегменту (OWN-9) | [fn-resolve-segment.md](flows/fn-resolve-segment.md) |
 | `fn-event-card` | `subflows / callableFlow` | карточка ивента, venue и ссылка на карты (OWN-2) | [fn-event-card.md](flows/fn-event-card.md) |
 | `fn-find-registration` | `subflows / callableFlow` | чтение `registrations` с выбором самой ранней (ADR-0003) | [fn-find-registration.md](flows/fn-find-registration.md) |
-| `i18n-sync` | `schedule` | заливка `i18n/*.json` в таблицу `strings` (W3) | *ведёт W3* |
+| `i18n-sync` | cron `0 4 * * *` (Asia/Tashkent) | заливает `i18n/*.json` из `main` в таблицу `strings` (W3) | [i18n-sync.md](flows/i18n-sync.md) |
+
+Строки `fn-*` ведёт пакет W2, строку `i18n-sync` — W3: так два владельца
+не правят одни и те же строки.
 
 ## Таблицы
 
@@ -49,8 +48,13 @@
 | `sessions` | состояние визардов, `draft` — JSON строкой | `tL4fbi1GisDwA8UJ9zSod` | [sessions.md](tables/sessions.md) |
 | `strings` | рабочая копия i18n (I18N-2) | `qi6bBTL7plRGBgFUfli8w` | [strings.md](tables/strings.md) |
 
-Все таблицы, кроме `strings`, пусты: фикстуры W2 удалены после проверок.
-`strings` наполняет `i18n-sync` (пакет W3).
+Данные в таблицах: `strings` наполняется флоу `i18n-sync` (W3) и содержит
+**по одной строке на каждую пару `(key, lang)` из `i18n/*.json`** — на
+2026-09-08 это 203 `ru` + 202 `uz` + 202 `en`. Точное число здесь сознательно
+не фиксируется: оно меняется с каждым добавленным ключом, а сверять его нужно
+не с каталогом, а с файлами репозитория — так делает и сам `i18n-sync`.
+Остальные девять таблиц пусты: фикстуры W1 и W2 удалены после проверок.
+Актуальные `rowCount` смотрите через `ap_list_tables`.
 
 ## Переменные
 
