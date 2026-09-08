@@ -8,8 +8,23 @@
 | Name | Назначение | Где задаётся |
 |------|-----------|--------------|
 | `QR_SIGNING_KEY` | ключ HMAC для подписи QR участника (PAR-6); **не** токен бота | UI: Settings → Variables |
+| — | *задан в `events-dev` 2026-09-08: 64 символа, алфавит `A-Za-z0-9_-`* | |
 | `MINIAPP_URL` | адрес Mini App-сканера на GitHub Pages | UI: Settings → Variables |
-| `BOT_USERNAME` | `@username` бота — для сборки deep link'ов | UI: Settings → Variables |
+| `BOT_USERNAME` | username бота **без `@`** — для сборки deep link'ов | UI: Settings → Variables |
 
 Ротация `QR_SIGNING_KEY` инвалидирует все выданные QR разом — только вместе
 с перевыпуском кодов, см. [SECURITY.md](../docs/SECURITY.md#секреты).
+
+## Состояние в `events-dev` (2026-09-08)
+
+Значения через MCP не читаются — проверено одноразовым флоу с CODE-шагом,
+который вернул только метаданные, не сами значения; флоу удалён.
+
+| Name | Задан | Что известно |
+|------|-------|--------------|
+| `QR_SIGNING_KEY` | да | длина 64, алфавит `A-Za-z0-9_-`; значение не выносится ни в каталог, ни в git |
+| `BOT_USERNAME` | да | `aiqadam_events_dev_bot`, **без** ведущего `@` |
+| `MINIAPP_URL` | нет | шаг 0.5, вместе с W7 |
+
+`BOT_USERNAME` хранится без `@`, поэтому deep link собирается как
+`https://t.me/{{variables['BOT_USERNAME']}}?start=...` — добавлять `@` в шаблоне нельзя.
