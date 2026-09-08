@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "qadam-flow": {
+      "type": "http",
+      "url": "https://app.flow.aiqadam.org/mcp",
+      "headers": {
+        "Authorization": "Bearer ${QADAM_FLOW_TOKEN}"
+      }
+    }
+  }
+}

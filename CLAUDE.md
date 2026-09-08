@@ -69,6 +69,21 @@ Code step рядом только кодирует и сравнивает.
 - `TRIGGER_TIMEOUT_SECONDS = 60` — `checkin-api` обязан быть коротким;
 - `TRIGGER_HOOKS_TIMEOUT_SECONDS = 180`.
 
+## Доступ к инстансу (MCP)
+
+В репозитории зарегистрирован проектный MCP-сервер `qadam-flow`
+(`.mcp.json` → `https://app.flow.aiqadam.org/mcp`). Эндпоинт требует
+`Authorization: Bearer <token>`, поэтому токен подставляется из переменной окружения:
+
+```bash
+export QADAM_FLOW_TOKEN=...   # токен проекта из UI Qadam Flow
+```
+
+**Токен в репозиторий не коммитится** — репозиторий публичный. В `.mcp.json` лежит
+только подстановка `${QADAM_FLOW_TOKEN}`.
+
+Проектный MCP-сервер требует одобрения при первом запуске сессии.
+
 ## Артефакты
 
 - `flows/*.json` — экспортированные флоу; `flows/fn/*.json` — subflow-функции.
