@@ -4,9 +4,14 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-08:** 10 таблиц (W1), девять subflow-«функций» `fn-*` (W2),
-один connection (шаг 0.2). Флоу-маршрутизаторы (`tg-router`, `checkin-api`, …)
-ещё не собраны.
+**Состояние на 2026-09-08:** 10 таблиц (W1), девять subflow-«функций» `fn-*` (W2)
+плюс `i18n-sync` (W3), один connection (шаг 0.2). Флоу-маршрутизаторы
+(`tg-router`, `checkin-api`, …) ещё не собраны.
+
+`i18n-sync` перечислен здесь, чтобы таблица не занижала реальность: флоу
+существует на инстансе (`yIMvjNdxj27jv4fZF4fFp`, ENABLED). Его карточку
+`catalog/flows/i18n-sync.md` заводит владелец W3 — правки в чужой пакет
+из W2 не вносились.
 
 ## Flows
 
@@ -24,6 +29,7 @@
 | `fn-resolve-segment` | `subflows / callableFlow` | получатели рассылки по сегменту (OWN-9) | [fn-resolve-segment.md](flows/fn-resolve-segment.md) |
 | `fn-event-card` | `subflows / callableFlow` | карточка ивента, venue и ссылка на карты (OWN-2) | [fn-event-card.md](flows/fn-event-card.md) |
 | `fn-find-registration` | `subflows / callableFlow` | чтение `registrations` с выбором самой ранней (ADR-0003) | [fn-find-registration.md](flows/fn-find-registration.md) |
+| `i18n-sync` | `schedule` | заливка `i18n/*.json` в таблицу `strings` (W3) | *ведёт W3* |
 
 ## Таблицы
 
