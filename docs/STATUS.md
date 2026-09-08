@@ -30,7 +30,7 @@
 | Пакет | Волна | Зависит от | Статус | Владелец | Журнал |
 |-------|-------|-----------|--------|----------|--------|
 | W0. Разведка инстанса | — | — | **готов** 2026-09-08 | — | [ARCHITECTURE](ARCHITECTURE.md#песочница-code-step--проверено-на-инстансе-2026-09-08) |
-| W1. Таблицы | 1 | W0 | **в работе** 2026-09-08 | агент | [W01](work/W01-tables.md) |
+| W1. Таблицы | 1 | W0 | **на проверке** 2026-09-08 | агент | [W01](work/W01-tables.md) |
 | W2. Subflow-функции | 2 | W1, 0.1–0.3 | не начат | — | — |
 | W3. i18n | 2 | W1 | не начат | — | — |
 | W4. `tg-router` + дедуп | 3 | W2, 0.1–0.2 | не начат | — | — |
@@ -51,7 +51,9 @@
 
 ## Состояние инстанса
 
-На 2026-09-08 в проекте нет ни flows, ни таблиц. Есть один connection —
+На 2026-09-08 в проекте нет flows; таблицы заведены в W1 — все 10 из
+[DATA-MODEL.md](DATA-MODEL.md), пустые, схема и идентификаторы в
+[catalog/tables/](../catalog/tables/README.md). Есть один connection —
 `AI Qadam Events (dev)` к `@aiqadam/qadam-telegram-bot` (шаг 0.2) — и две
 Variables (0.3), проверенные пробным флоу: `QR_SIGNING_KEY` длиной 64 символа
 в алфавите base64url, `BOT_USERNAME` = `aiqadam_events_dev_bot` без `@`.
@@ -70,7 +72,8 @@ Mini App (шаг 0.4) опубликован: `https://miniapp.events.aiqadam.or
   `{"type":"web_app","web_app":{"url":"https://miniapp.events.aiqadam.org/"}}`;
 - пробный флоу читает `{{variables['MINIAPP_URL']}}` = `https://miniapp.events.aiqadam.org/`,
   `BOT_USERNAME` = `aiqadam_events_dev_bot`, `QR_SIGNING_KEY` — 64 символа base64url.
-  Флоу удалён, в проекте снова 0 флоу и 0 таблиц.
+  Флоу удалён; на момент закрытия шага 0.5 в проекте было 0 флоу и 0 таблиц
+  (таблицы появились позже, в W1).
 
 Попутно выяснен синтаксис ссылки на переменные и цена ошибки в нём —
 [ARCHITECTURE](ARCHITECTURE.md#переменные-проекта-в-шаблонах--проверено-на-инстансе-2026-09-08).
