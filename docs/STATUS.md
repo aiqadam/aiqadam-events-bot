@@ -22,7 +22,7 @@
 | 0.2 | Connection `AI Qadam Events (dev)` | **готов** 2026-09-08 | W2, W4 |
 | 0.3 | Variables `QR_SIGNING_KEY`, `BOT_USERNAME` | **готов** 2026-09-08 | W2 |
 | 0.4 | GitHub Pages для `miniapp/` | **готов** 2026-09-08 | W7 |
-| 0.5 | `MINIAPP_URL` + Mini App URL в BotFather | не начат | W7 |
+| 0.5 | `MINIAPP_URL` + Mini App URL в BotFather | **готов** 2026-09-08 | W7 |
 | 0.6 | Проект `events-prod` | не начат | W15 |
 
 ## Пакеты работ
@@ -63,6 +63,17 @@ Mini App (шаг 0.4) опубликован: `https://miniapp.events.aiqadam.or
 Сам сканер собирается в W7. `Enforce HTTPS` в настройках Pages включён, но
 редирект с `http://` на момент проверки ещё не применился — GitHub раскатывает
 его с задержкой. На Mini App это не влияет: Telegram открывает адрес по HTTPS.
+
+Шаг 0.5 проверен через MCP, а не на слово:
+
+- `getChatMenuButton` у dev-бота отдаёт
+  `{"type":"web_app","web_app":{"url":"https://miniapp.events.aiqadam.org/"}}`;
+- пробный флоу читает `{{variables['MINIAPP_URL']}}` = `https://miniapp.events.aiqadam.org/`,
+  `BOT_USERNAME` = `aiqadam_events_dev_bot`, `QR_SIGNING_KEY` — 64 символа base64url.
+  Флоу удалён, в проекте снова 0 флоу и 0 таблиц.
+
+Попутно выяснен синтаксис ссылки на переменные и цена ошибки в нём —
+[ARCHITECTURE](ARCHITECTURE.md#переменные-проекта-в-шаблонах--проверено-на-инстансе-2026-09-08).
 
 ## Что сделано помимо пакетов
 
