@@ -173,8 +173,20 @@ POST https://app.flow.aiqadam.org/api/v1/webhooks/<flowId>/sync
 результат рисуется поверх сканера, попап не переоткрывается на каждого человека.
 
 **Хостинг: GitHub Pages из этого репозитория** (решено), каталог `miniapp/`,
-адрес `https://aiqadam.github.io/aiqadam-events-bot/` — он же прописывается
+адрес `https://miniapp.events.aiqadam.org/` — он же прописывается
 в BotFather как Mini App URL. Деплой пушем в `main`, HTTPS из коробки.
+
+Публикует **GitHub Actions** (`.github/workflows/pages.yml`), а не ветковый режим Pages:
+ветковый умеет отдавать только корень репозитория или `/docs`, а `/docs` занят
+документацией — публикация корня выложила бы документы вместо сканера. Артефактом
+уходит ровно `miniapp/`, он же становится корнем сайта, поэтому адрес совпадает
+с решением [Q3](OPEN-QUESTIONS.md#q3).
+
+Домен собственный: `miniapp.events.aiqadam.org` — `CNAME` на `aiqadam.github.io`
+в Cloudflare, запись **без проксирования** (серый значок). Сертификат выдаёт сам
+GitHub (Let's Encrypt), и на записи под прокси он не выдаётся; Universal SSL
+Cloudflare третий уровень (`*.events.aiqadam.org`) тоже не покрывает. Файл
+`miniapp/CNAME` уезжает в артефакт Pages — без него домен сбрасывается при деплое.
 
 Кросс-доменный запрос со страницы в `checkin-api` **проверен боем 2026-09-08
 и работает** ([Q11](OPEN-QUESTIONS.md#q11)): preflight отвечает платформа,
