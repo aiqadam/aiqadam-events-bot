@@ -185,8 +185,20 @@ POST https://app.flow.aiqadam.org/api/v1/webhooks/<flowId>/sync
 Домен собственный: `miniapp.events.aiqadam.org` — `CNAME` на `aiqadam.github.io`
 в Cloudflare, запись **без проксирования** (серый значок). Сертификат выдаёт сам
 GitHub (Let's Encrypt), и на записи под прокси он не выдаётся; Universal SSL
-Cloudflare третий уровень (`*.events.aiqadam.org`) тоже не покрывает. Файл
-`miniapp/CNAME` уезжает в артефакт Pages — без него домен сбрасывается при деплое.
+Cloudflare третий уровень (`*.events.aiqadam.org`) тоже не покрывает.
+
+Порядок настройки важен, проверено 2026-09-08:
+
+1. DNS-запись в Cloudflare;
+2. Pages включается с `build_type = workflow`;
+3. **сначала первый успешный деплой**, только потом домен — до сборки сайта
+   назначение домена отвечает `404 The certificate does not exist yet`;
+4. домен задаётся в настройках Pages (`Settings → Pages → Custom domain`).
+   Файла `miniapp/CNAME` в артефакте для этого **не достаточно** — деплой с ним
+   прошёл, а домен остался пустым. Файл всё равно лежит в `miniapp/`: он
+   удерживает настройку от сброса при последующих деплоях;
+5. сертификат выдаётся не мгновенно — минуты; до выдачи HTTPS падает на
+   проверке имени, и `Enforce HTTPS` включить нельзя.
 
 Кросс-доменный запрос со страницы в `checkin-api` **проверен боем 2026-09-08
 и работает** ([Q11](OPEN-QUESTIONS.md#q11)): preflight отвечает платформа,
