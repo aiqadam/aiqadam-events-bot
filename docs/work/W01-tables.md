@@ -197,6 +197,68 @@
      (`docs/STATUS.md`). Ждать W2 не стал: расхождение каталога с реальностью
      дешевле починить в тот момент, когда его заметили (2026-09-08)
 
+### Повторное ревью
+
+- **Ревьюер**: независимый агент (Claude Code, чистый контекст) · **Дата**: 2026-09-08
+  · **Вердикт**: замечаний нет
+
+Проверены исправления, а не журнал о них. Судьба прежних замечаний:
+
+1. **закрыто.** Раздел «Dropdown-значения» в `catalog/tables/README.md` сверен
+   с живым проектом: `ap_get_piece_props` (`tables-create-records`) по
+   `users` / `events` / `registrations` / `broadcasts` / `broadcast_targets` отдаёт
+   ровно те же восемь наборов и **в том же порядке**, что в каталоге —
+   `["true","false"]` у трёх флагов `users`, `draft/published/cancelled/finished`
+   у `events.status`, `registered/cancelled` у `registrations.status`,
+   `all_consent/registered/attended/no_show` и `draft/running/done/failed`
+   у `broadcasts`, `pending/sent/blocked/failed` у `broadcast_targets.state`;
+   пустой вариант `{"label":"","value":""}` платформа действительно добавляет сама.
+   Утверждение «других `STATIC_DROPDOWN` в схеме нет» верно: в `ap_list_tables`
+   ровно 8 полей этого типа на 10 таблиц. Рецепт стал самодостаточным и по форме:
+   схема `ap_create_table` ждёт `fields[].name` / `type` из enum
+   `TEXT|NUMBER|DATE|STATIC_DROPDOWN` и `options` массивом строк — то есть колонки
+   **Field** / **Type** файлов каталога и новый раздел ложатся в вызов без домыслов.
+   Тест «W15 в пустом проекте по одному `catalog/`» проходит.
+2. **закрыто.** Форма записи проверена вживую: `ap_run_action`
+   `tables-find-records` на `strings` (externalId `qi6bBTL7plRGBgFUfli8w`) вернул
+   массив **верхнего уровня**, запись — `{id, created, updated, cells}`, а
+   `cells[<внутренний fieldId>] = {fieldName, updated, created, value}`.
+   Значит и вложенность `.value`, и пример `{{step_1['output'][0].cells.<fieldId>.value}}`
+   в каталоге точны, включая индекс `[0]` без промежуточного `records`.
+   Пробная запись удалена, `ap_list_tables` — `rowCount: 0` у всех десяти.
+3. **закрыто в части противоречия.** `catalog/variables.md` и `docs/STATUS.md`
+   больше не расходятся: шаг 0.5 «готов», `MINIAPP_URL` помечен заданным, значение
+   совпадает с прочитанным в 0.5 (`https://miniapp.events.aiqadam.org/`).
+   Утечки нет: адрес публичный и уже лежит в git (`miniapp/CNAME`, ARCHITECTURE,
+   STATUS), секретом не является. Оговорка — ниже.
+
+Что перепроверено сверх исправлений (доверия прошлому ревью на слово не было):
+
+- `ap_list_tables` — 10 таблиц, `rowCount: 0` у всех, состав и типы полей
+  совпадают с DATA-MODEL.md (12/18/3/9/5/7/14/5/5/3 поля), лишних нет;
+- выборочно `users`, `broadcast_targets`, `registrations`, `broadcasts`, `events` —
+  **все** `externalId` и **все** внутренние field id в этих пяти файлах каталога
+  совпадают с инстансом посимвольно; externalId таблиц в `overview.md` тоже;
+- `ap_list_flows` — `{"flows":[],"count":0}`, схема таблиц с прошлого ревью
+  не менялась (ни одного нового или удалённого поля);
+- AppSec выборочно: `staff_invites` — только `token_hash`, поля с токеном нет;
+  `event_staff` — ровно `(event_id, telegram_id, revoked_at)`, глобального флага
+  staff/owner в схеме нет; `phone` только в `users` (DAT-2); `username` ни в одной
+  таблице не ключ. Секретов в `catalog/` нет.
+
+### Замечания повторного ревью
+
+1. **на будущее** — правило «значений Variables в каталоге не бывает» теперь
+   противоречит самому себе — `catalog/variables.md` (шапка «**Значения — НИКОГДА**»)
+   и `catalog/README.md` («Чего в каталоге не бывает: значений Variables») против
+   таблицы «Состояние в `events-dev`», где лежат уже два значения:
+   `BOT_USERNAME` (было до W1) и `MINIAPP_URL` (добавлено этим исправлением).
+   Оба — не секреты и оба нужны агенту, так что чинить надо не таблицу, а
+   формулировку правила: «значений **секретов**» вместо «значений Variables».
+   Пока текст абсолютный, следующий агент либо удалит полезные значения, либо
+   решит, что правило необязательное, и однажды впишет `QR_SIGNING_KEY`.
+   Сдачу W1 не блокирует: править при первом касании `catalog/README.md`.
+
 ## Хвосты и блокеры
 
 - **[Q15](../OPEN-QUESTIONS.md#q15)** — выборка по диапазону дат. Схему не меняли
