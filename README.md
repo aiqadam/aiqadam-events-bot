@@ -27,7 +27,8 @@ core-qadam'ы и Tables. Максимум, что допускается, — Co
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Пакеты работ под агентов, с зависимостями |
 | [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) | Что надо проверить/решить до кода |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Порядок работ и волны для агентов |
-| [docs/STATUS.md](docs/STATUS.md) | Текущий статус проекта |
+| [docs/STATUS.md](docs/STATUS.md) | Индекс работ: кто что взял, что готово |
+| [docs/work/](docs/work/) | Журналы пакетов работ |
 | [docs/adr/](docs/adr/) | Архитектурные решения |
 | [catalog/](catalog/) | Агентский каталог — живое состояние flows и таблиц |
 
