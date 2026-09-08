@@ -4,21 +4,31 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-08:** 10 таблиц (W1), один connection (шаг 0.2)
-и **10 флоу** — `i18n-sync` из этого пакета (W3) и девять subflow-«функций»
-`fn-*` из W2. Описан файлом в [flows/](flows/) пока только `i18n-sync`;
-подробности — в разделе [Flows](#flows) ниже.
+**Состояние на 2026-09-08:** 10 таблиц (W1), **10 флоу** — девять
+subflow-«функций» `fn-*` (W2) плюс `i18n-sync` (W3), один connection (шаг 0.2).
+Флоу-маршрутизаторы (`tg-router`, `checkin-api`, …) ещё не собраны.
+Все десять флоу описаны файлами в [flows/](flows/).
 
 ## Flows
 
+Как читать, два namespace'а id и проверенные факты про subflow'ы —
+[flows/README.md](flows/README.md).
+
 | Flow | Триггер | Назначение | Файл |
 |------|---------|-----------|------|
+| `fn-t` | `subflows / callableFlow` | перевод по ключу i18n из `strings` (I18N-2) | [fn-t.md](flows/fn-t.md) |
+| `fn-parse-start` | `subflows / callableFlow` | разбор `start`-payload deep link'а (PAR-6) | [fn-parse-start.md](flows/fn-parse-start.md) |
+| `fn-sign-qr` | `subflows / callableFlow` | подпись QR участника, `crypto` qadam (PAR-6) | [fn-sign-qr.md](flows/fn-sign-qr.md) |
+| `fn-verify-qr` | `subflows / callableFlow` | constant-time проверка подписи QR | [fn-verify-qr.md](flows/fn-verify-qr.md) |
+| `fn-verify-init-data` | `subflows / callableFlow` | валидация Telegram `initData` (STF-2) | [fn-verify-init-data.md](flows/fn-verify-init-data.md) |
+| `fn-fmt-time` | `subflows / callableFlow` | UTC → `Asia/Tashkent` на языке пользователя (OWN-3) | [fn-fmt-time.md](flows/fn-fmt-time.md) |
+| `fn-resolve-segment` | `subflows / callableFlow` | получатели рассылки по сегменту (OWN-9) | [fn-resolve-segment.md](flows/fn-resolve-segment.md) |
+| `fn-event-card` | `subflows / callableFlow` | карточка ивента, venue и ссылка на карты (OWN-2) | [fn-event-card.md](flows/fn-event-card.md) |
+| `fn-find-registration` | `subflows / callableFlow` | чтение `registrations` с выбором самой ранней (ADR-0003) | [fn-find-registration.md](flows/fn-find-registration.md) |
 | `i18n-sync` | cron `0 4 * * *` (Asia/Tashkent) | заливает `i18n/*.json` из `main` в таблицу `strings` (W3) | [i18n-sync.md](flows/i18n-sync.md) |
 
-Девять `fn-*` subflow'ов из W2 существуют в проекте, но их файлов каталога
-в `flows/` пока нет: PR пакета W2 ещё не влит. Они **будут описаны** в своих
-файлах, и строки этой таблицы ведёт W2 — чтобы два владельца не правили
-одни и те же строки.
+Строки `fn-*` ведёт пакет W2, строку `i18n-sync` — W3: так два владельца
+не правят одни и те же строки.
 
 ## Таблицы
 
@@ -43,8 +53,8 @@
 2026-09-08 это 203 `ru` + 202 `uz` + 202 `en`. Точное число здесь сознательно
 не фиксируется: оно меняется с каждым добавленным ключом, а сверять его нужно
 не с каталогом, а с файлами репозитория — так делает и сам `i18n-sync`.
-Остальные таблицы на закрытие W1 были пусты; актуальные `rowCount` смотрите
-через `ap_list_tables`.
+Остальные девять таблиц пусты: фикстуры W1 и W2 удалены после проверок.
+Актуальные `rowCount` смотрите через `ap_list_tables`.
 
 ## Переменные
 

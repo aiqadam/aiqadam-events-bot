@@ -183,11 +183,15 @@
   отдаёт **опубликованную** версию, а не draft: совпадение published с draft
   им не проверяется, и различающий прогон остаётся нужен. Два довода
   закрывают разное;
-- **на практике экспорт может оказаться недоступен даже ревьюеру**: в песочнице
-  агента-ревьюера четвёртого круга W3 исходящий `curl` был заблокирован,
-  и блок 1a выполнить не удалось. Тогда поля, которые видны только в экспорте
-  (`cronExpression`, `timezone`, `timeout`, `authType`, `filters`), остаются
-  на одном источнике, и это надо называть прямо, а не считать проверенным.
+- **на практике экспорт может оказаться недоступен даже ревьюеру** — но
+  не как правило, а как возможность: в W3 исходящий `curl` прошёл у ревьюера
+  пятого круга и у ревьюера W2, а у ревьюера четвёртого круга был заблокирован,
+  и блок 1a тогда выполнить не удалось. Пока он не выполнен, поля, видимые
+  только в экспорте (`cronExpression`, `timezone`, `timeout`, `authType`,
+  `filters`), держатся на одном источнике — это надо называть прямо,
+  а не считать проверенным. Отсюда и практический вывод: различающий прогон
+  владельцу нужен всё равно, потому что доступность экспорта средой
+  не гарантирована.
 
 **3. `callFlow` требует `externalId` флоу, которого MCP не показывает.**
 `ap_list_flows` отдаёт внутренний `id`, и он **не** подходит: шаг падает
@@ -236,16 +240,37 @@
 операция — отдельный флоу с триггером `callable-flow`, который вызывается через
 `call-flow` и отдаёт результат через `respond`.
 
+Контракты ниже — **фактические**, уточнены по итогам сборки (W2, 2026-09-08).
+Точные поля выхода и заметки по каждой функции — в
+[catalog/flows/](../catalog/flows/README.md); здесь только форма.
+
 | Subflow | Вход | Выход | Чем реализован |
 | --- | --- | --- | --- |
-| `fn-t` | `key`, `lang`, `vars` | строка | Tables `strings` + Code step (подстановка `{var}`) |
-| `fn-parse-start` | `start` payload | `{kind, eventId, userId, utm, token, sig}` | Code step (чистый парсинг) |
-| `fn-sign-qr` | `eventId`, `userId` | `sig` (10 симв.) | **crypto `hmac-signature`** + Code step (base64url + обрезка) |
-| `fn-verify-qr` | payload | `valid: bool` | `fn-sign-qr` + Code step (constant-time сравнение) |
-| `fn-verify-init-data` | `initData` | `{valid, telegramId, authDate}` | crypto `hmac-signature` ×2 + Code step (разбор и сортировка полей) |
-| `fn-resolve-segment` | `segment`, `eventId` | список `telegram_id` | Tables `find-records` + Code step (фильтры, вычитание `blocked_bot`) |
-| `fn-fmt-time` | ISO UTC, `lang` | строка в Asia/Tashkent | Code step (`Intl.DateTimeFormat`) |
-| `fn-event-card` | `eventId`, `lang` | текст + кнопки + venue-параметры | Tables + `fn-t` + `fn-fmt-time` |
+| `fn-t` | `key` и/или `keys[]`, `lang`, `vars`, `varsByKey` | `{text, texts, resolvedLang, missing, fellBack}` | Tables `strings` + Code step (подстановка `{var}`) |
+| `fn-parse-start` | `start` payload | `{valid, kind, error, eventId, userId, utm, token, sig}` | Code step (чистый парсинг) |
+| `fn-sign-qr` | `eventId`, `userId` | `{sig, msg, payload}` | **crypto `hmac-signature`** + Code step (base64url + обрезка) |
+| `fn-verify-qr` | `eventId`, `userId`, `sig` | `{valid, error}` | `fn-sign-qr` + Code step (constant-time сравнение) |
+| `fn-verify-init-data` | `initData`, `maxAgeSeconds?` | `{valid, hashValid, fresh, reason, telegramId, user, authDate, ageSeconds}` | crypto `hmac-signature` ×2 + Code step (разбор и сортировка полей) |
+| `fn-resolve-segment` | `segment`, `eventId` | `{allowed, reason, count, recipients[], opensAt}` | Tables `find-records` + Code step (фильтры, вычитание `blocked_bot`) |
+| `fn-fmt-time` | ISO UTC, `lang`, `format?` | `{text, date, time, datetime, valid}` | Code step (`Intl.DateTimeFormat`) |
+| `fn-event-card` | `eventId`, `lang` | текст + кнопки + venue-параметры + сырые поля ивента | Tables + `fn-t` + `fn-fmt-time` |
+| `fn-find-registration` | `eventId`, `telegramId` | `{found, recordId, registration, duplicates, statuses}` | Tables `find-records` + Code step (выбор самой ранней строки, ADR-0003) |
+
+Три контракта уточнены против первоначального замысла, и причины стоит знать:
+
+- **`fn-verify-qr` принимает разобранные части, а не сырой payload.** Разбор — дело
+  `fn-parse-start`, и в [FLOWS.md](FLOWS.md#checkin-api--основной-путь-чекина-mini-app)
+  `checkin-api` вызывает обе функции подряд. Парсинг чистый и дешёвый, проверка
+  подписи требует секрета — смешивать их в одной функции значит считать HMAC
+  на любом мусоре из QR-сканера.
+- **`fn-t` принимает список ключей и отдаёт объект, а не строку.** Карточке ивента
+  нужно 7–10 ключей за раз, и вызов на каждый ключ — это 7–10 вложенных `callFlow`
+  (по ~2,5 с каждый, см. ниже). `varsByKey` появился потому, что в реальном наборе
+  строк (W3) `{when}` встречается в трёх разных ключах с разным значением.
+- **`fn-find-registration` в первоначальной таблице отсутствовал**, хотя в
+  [BACKLOG](BACKLOG.md#w2-subflow-функции) он есть с самого начала: он и есть
+  «чтение `registrations` только через него» из
+  [DATA-MODEL](DATA-MODEL.md#идемпотентность).
 
 Правило: **Code step — только чистая функция.** Никаких сетевых вызовов и записей в БД
 внутри Code step: HTTP делает `http`/`telegram-bot` qadam, запись — `tables`.
@@ -253,6 +278,38 @@
 
 Второе правило: **криптографию не пишем руками.** HMAC берём из `crypto` qadam'а,
 Code step рядом только кодирует/сравнивает.
+
+#### Subflow'ы на практике — проверено на инстансе 2026-09-08 (W2)
+
+Сборка девяти `fn-*` и три круга ревью дали тринадцать фактов.
+**Первые три идут впереди, потому что каждый уже стоил дорого:** два первых —
+переписывания ссылок во **всех** собранных флоу, третий — молча оставшегося
+`limit: 50`, который два круга ревью считался снятым. Подробности и как это
+выглядит в шагах — [catalog/flows/README.md](../catalog/flows/README.md).
+
+| Что | Результат |
+| --- | --- |
+| Где лежит вход subflow'а | ⚠️ **в `trigger['output'].data`, не в корне.** `callFlow` передаёт `{ data: <payload>, callbackUrl: … }` |
+| Что отдаёт `callFlow` вызывающему | `{ status: 'success', data: <тело respond> }` — поле читается как `{{step_N['output'].data.field}}` |
+| `ap_update_step` и ключи `input` | ⚠️ **сливает** переданное с существующим и **удалять ключи не умеет.** Передача полного набора без ключа его не убирает; максимум — обнулить значение (`null`). Из-за этого в `fn-find-registration` полтора круга ревью жил `limit: 50`, который считался снятым |
+| Callee не published / DISABLED | его нет в dropdown'е `flow` у `callFlow`: листья публикуются раньше вызывающих |
+| Окружение вложенного subflow при тесте вызывающего | ⚠️ **PRODUCTION**, даже если вызывающий гоняется в TESTING: ошибка видна только по ссылке на его собственный run |
+| Накладные расходы одного `callFlow` | ≈2,5 с. У `fn-event-card` сумма шагов ≈2,8 с при полном времени 13,4 с |
+| `ap_validate_flow` про `{{variables['NAME']}}` | ⚠️ ложное «references … which does not exist in the flow»; и **опечатку в имени он не поймает** — та даёт пустую строку и тоже «валидна» |
+| `ap_test_step` на шаге в середине цепочки | не всегда переигрывает предшественников: их выводы приходят `{}` |
+| Inputs PIECE-шагов через MCP | ❌ **не отдаются** (`ap_read_step_code` — только CODE, `ap_get_run` — только outputs). Владельцу остаётся UI; ревьюеру разрешён read-only REST — [ADR-0006](adr/0006-rest-read-only-for-review.md) |
+| Прогоны `ap_run_action` | ❌ **не сохраняются как flow run**: `ap_get_run` на их id отвечает «Flow run not found». Одиночное действие доказывается **контрольным значением**, а не ссылкой на прогон |
+| Что доказывает прогон про конфигурацию | ⚠️ правка `input` **новую версию не создаёт**, а id версии в логе прогона не хранится. Про опубликованную конфигурацию доказателен только прогон **после блокировки версии**; всё, что внутри жизни draft'а, доказывает лишь «тогда работало» — это и есть механика, скрывшая `limit: 50` два круга |
+| `lastUpdatedDate` шага и сам экспорт | ⚠️ **не доказывают неизменность.** Открытие флоу в UI пересохраняет шаги: меняются `lastUpdatedDate` и `propertySettings` при неизменных `settings.input` и коде. Экспорт отдаёт текущие записи шагов, а не снимок опубликованной версии, поэтому дифф двух экспортов даёт ложные расхождения: сравнивать надо конфигурацию, а не файлы |
+| Большой вывод шага в логе | вместо значения подставляется файл (`{fileId, size, url}`, тип `FLOW_RUN_LOG_SLICE`, ссылка с подписанным токеном). Следующий шаг при этом получает данные целиком — проверено на выборке из 51 строки (71 КБ) |
+
+Первый пункт — самая дорогая ловушка из всех найденных: `ap_test_flow` с плоскими
+`triggerTestData` проходит зелёным, а реальный вызов через `callFlow` получает
+`undefined`. Тест «на плоских данных» не доказывает ничего.
+
+Практический вывод про накладные расходы: **в синхронный вебхук
+(`TRIGGER_TIMEOUT_SECONDS = 60`) не закладывать больше трёх уровней `callFlow`**,
+а `fn-event-card` (у неё своих два) в синхронный путь не включать вовсе.
 
 ### Флоу-маршрутизаторы
 
