@@ -34,10 +34,10 @@
 
 | Name | Флоу | Шаг |
 |------|------|-----|
-| `QR_SIGNING_KEY` | [fn-sign-qr](flows/fn-sign-qr.md) | `step_2`, `secretKey` у `crypto / hmac-signature` |
+| `QR_SIGNING_KEY` | [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md) | `fn-sign-qr / step_2` (`qrSigningKey` в CODE-шаге, `node:crypto`, W16); `fn-verify-qr / step_2` — с 2026-09-09 (W16) напрямую, раньше косвенно через `callFlow → fn-sign-qr` |
 | `BOT_USERNAME` | [fn-event-card](flows/fn-event-card.md) | `step_3`, сборка `registerDeepLink` |
 | `MINIAPP_URL` | [registration](flows/registration.md) | кнопка `web_app`, ведущая на `ticket.html` (W5, ADR-0007) |
-| `BOT_TOKEN` | [fn-verify-init-data](flows/fn-verify-init-data.md) | `step_2`, `text` у `crypto / hmac-signature` (заменил `{{connections['TZTlXaCEO2hEvimUowbSA']}}`, W8, [ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) |
+| `BOT_TOKEN` | [fn-verify-init-data](flows/fn-verify-init-data.md) | `step_2`, `botToken` в CODE-шаге (`node:crypto`, W16; заменил `crypto / hmac-signature` × 2, которые до W8 читали `{{connections['TZTlXaCEO2hEvimUowbSA']}}`, [ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md), [ADR-0010](../docs/adr/0010-unsandboxed-code-step-for-crypto.md)) |
 
 `ap_validate_flow` помечает такие шаги как `"references {{variables...}} which does
 not exist in the flow"` — это **ложное срабатывание**, флоу работает. Но проверять
