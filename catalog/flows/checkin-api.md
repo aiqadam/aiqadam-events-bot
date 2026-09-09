@@ -16,17 +16,25 @@
 `payload` это QR участника (`c<eventId>-<userId>-<sig>`), `eventId` — ивент,
 на который открыт сканер.
 
-**Ответ:**
+**Ответ:** каждый исход несёт `text` — **уже локализованный** текст для экрана
+(язык контролёра из `users.lang`, для `401` — `ru`, т.к. пользователь не определён).
+Сканер (W7) показывает `text` как есть и не держит собственного словаря исходов (Q19):
 
 | Ситуация | HTTP | Тело |
 |---|---|---|
-| `initData` невалиден/просрочен (STF-2) | `401` | `{ status: "invalid_init_data", reason }` |
-| `initData` валиден, но нет строки в `event_staff` на этот `eventId` (STF-2) | `403` | `{ status: "forbidden" }` |
-| `payload.eventId ≠ eventId` запроса | `200` | `{ status: "wrong_event", name }` |
-| подпись QR не сошлась / `payload` не разобран как `c...` | `200` | `{ status: "invalid", name }` |
-| нет строки в `registrations` или каноническая `status = cancelled` | `200` | `{ status: "not_registered", name }` |
-| `checked_in_at` уже стоял (IDM-2, **не перезаписывается**) | `200` | `{ status: "already", name, checkedInAt, checkedInAtTashkent }` |
-| успех | `200` | `{ status: "ok", name }` |
+| `initData` невалиден/просрочен (STF-2) | `401` | `{ status: "invalid_init_data", reason, text }` |
+| `initData` валиден, но нет строки в `event_staff` на этот `eventId` (STF-2) | `403` | `{ status: "forbidden", text }` |
+| `payload.eventId ≠ eventId` запроса | `200` | `{ status: "wrong_event", name, text }` |
+| подпись QR не сошлась / `payload` не разобран как `c...` | `200` | `{ status: "invalid", name, text }` |
+| нет строки в `registrations` или каноническая `status = cancelled` | `200` | `{ status: "not_registered", name, text }` |
+| `checked_in_at` уже стоял (IDM-2, **не перезаписывается**) | `200` | `{ status: "already", name, checkedInAt, checkedInAtTashkent, text }` |
+| успех | `200` | `{ status: "ok", name, text }` |
+
+`text` собирается через `fn-t` из таблицы `strings` по ключам
+`checkin.ok`/`checkin.already`/`checkin.wrong_event`/`checkin.invalid`/
+`checkin.not_registered`/`checkin.forbidden`/`checkin.unauthorized`
+(I18N-2, ключ `checkin.name_unknown` — подпись имени, если `first/last` пусты).
+`checkin.ok` подставляет `{name}`, `checkin.already` — `{time}` (из `checkedInAtTashkent`).
 
 `name` — `first_name + last_name` участника из `users` (`telegram_id` берётся
 из **разобранного QR**, не из `initData`; это участник, которого сканируют,
@@ -39,42 +47,54 @@
 
 ## Шаги
 
-> Снято `ap_flow_structure` + `ap_read_step_code` после публикации.
+> Снято `ap_flow_structure` + `ap_read_step_code` после публикации (W7).
 
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | вход сканера | — |
 | step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`, сентинел `-`) | `{{trigger['output'].body}}` |
 | step_2 | `callFlow → fn-verify-init-data` | HMAC токена бота + свежесть | `{{step_1['output'].initData}}`, `maxAgeSeconds: 86400` |
-| step_3 | CODE «combine auth» | `initDataValid`, `staffTelegramId` (сентинел `-`, если невалиден) | `{{step_2['output'].data}}` |
+| step_3 | CODE «combine auth» | `initDataValid`, `staffTelegramId` (сентинел `-`, если невалиден), `reason` | `{{step_2['output'].data}}` |
 | step_4 | ROUTER «initData valid?» | `valid` (branch 0) / `Otherwise` (branch 1 → `401`) | `{{step_3['output'].initDataValid}}` |
-| step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data`, статус `401` | `{{step_3['output'].reason}}` |
+| step_30 (branch 1) | `callFlow → fn-t` | `checkin.unauthorized`, `lang: ru` (пользователь не определён) | `{{step_4...}}` |
+| step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data` (+`text`), статус `401` | `{{step_30['output'].data.text}}` |
 | step_5 (branch 0) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра, revoked_at not_exists)` | `table_id = CyW6KjJ2BdwQEph2KEqTt` |
-| step_6 | CODE «decide isStaff» | `isStaff = records.length > 0` | `{{step_5['output']}}` |
+| step_28 | `tables-find-records users` | строка контролёра → язык | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
+| step_6 | CODE «decide isStaff» | `isStaff = records.length > 0`, `staffLang` (фолбэк `ru`) | `{{step_5['output']}}`, `{{step_28['output']}}` |
 | step_7 | ROUTER «isStaff?» | `isStaff` (branch 0) / `Otherwise` (branch 1 → `403`) | `{{step_6['output'].isStaff}}` |
-| step_26/27 (branch 1) | CODE + `return_response` | тело `forbidden`, статус `403` | — |
+| step_29 (branch 1) | `callFlow → fn-t` | `checkin.forbidden`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
+| step_26/27 (branch 1) | CODE + `return_response` | тело `forbidden` (+`text`), статус `403` | `{{step_29['output'].data.text}}` |
 | step_8 (branch 0) | `callFlow → fn-parse-start` | разбор `payload` (`kind` ожидается `c`) | `{{step_1['output'].payload}}` |
 | step_9 | `callFlow → fn-verify-qr` | подпись QR | `eventId/userId/sig` из `step_8` |
 | step_10 | `callFlow → fn-find-registration` | регистрация участника (`eventId` запроса, `userId` из QR) | `{{step_1['output'].eventId}}`, `{{step_8['output'].data.userId}}` |
-| step_11 | CODE «decide checkin outcome» | приоритет: `invalid` (плохой парсинг) → `wrong_event` → `invalid` (подпись) → `not_registered` → `already` → `ok` | `parse/verify/reg` из step_8/9/10, `requestEventId` из step_1 |
+| step_11 | CODE «decide checkin outcome» | приоритет: `invalid` → `wrong_event` → `invalid` → `not_registered` → `already` → `ok` | `parse/verify/reg` из step_8/9/10, `requestEventId` из step_1 |
 | step_12 | `tables-find-records users` | имя участника по `telegram_id` из QR | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_13 | CODE «build participant name» | `first_name + last_name` | `{{step_12['output']}}` |
 | step_14 | ROUTER «outcome?» | `ok` (0) / `already` (1) / `Otherwise` (2) | `{{step_11['output'].outcome}}` |
+| step_31 (branch `ok`) | `callFlow → fn-t` | `keys: [checkin.ok, checkin.name_unknown]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
 | step_16→step_15 (branch `ok`) | CODE «stamp now» + `tables-update-record` | `checked_in_at = now`, `checked_in_by = staffTelegramId`, **только по `recordId`, который step_11 отдал именно для `outcome = ok`** | `table_id = PNuChoFG0tIBTND86yzDL` |
-| step_17/18 | CODE + `return_response` | тело `ok`, статус `200` | — |
+| step_17/18 (branch `ok`) | CODE + `return_response` | тело `ok` (+`text` с `{name}`), статус `200` | `{{step_31['output'].data}}`, `{{step_13['output'].name}}` |
 | step_19 (branch `already`) | `callFlow → fn-fmt-time` | `checkedInAt` → `Asia/Tashkent`, `format: time` | `{{step_11['output'].checkedInAt}}` |
-| step_20/21 | CODE + `return_response` | тело `already` (+ `checkedInAtTashkent`), статус `200` | — |
-| step_22/23 (branch `Otherwise`) | CODE + `return_response` | тело `wrong_event`/`invalid`/`not_registered`, статус `200` | `{{step_11['output'].outcome}}` |
+| step_32 (branch `already`) | `callFlow → fn-t` | `keys: [checkin.already]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
+| step_20/21 (branch `already`) | CODE + `return_response` | тело `already` (+`text` с `{time}` = `checkedInAtTashkent`), статус `200` | `{{step_32['output'].data}}`, `{{step_19['output'].data}}` |
+| step_33 (branch `Otherwise`) | `callFlow → fn-t` | `keys: [checkin.wrong_event, checkin.invalid, checkin.not_registered]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
+| step_22/23 (branch `Otherwise`) | CODE + `return_response` | тело `wrong_event`/`invalid`/`not_registered` (+`text` по `outcome`), статус `200` | `{{step_33['output'].data}}`, `{{step_11['output'].outcome}}` |
 
 ## Зависимости
 
-- **Subflow'ы**: `fn-verify-init-data`, `fn-parse-start`, `fn-verify-qr`, `fn-find-registration`, `fn-fmt-time`
-- **Таблицы**: `event_staff` (чтение), `registrations` (чтение через `fn-find-registration` + прямая запись `checked_in_at`/`checked_in_by`), `users` (чтение, только имя)
-- **Переменные**: — (косвенно `QR_SIGNING_KEY` через `fn-verify-qr` → `fn-sign-qr`)
-- **Connections**: — (токен бота читается внутри `fn-verify-init-data`)
+- **Subflow'ы**: `fn-verify-init-data`, `fn-parse-start`, `fn-verify-qr`, `fn-find-registration`, `fn-fmt-time`, `fn-t`
+- **Таблицы**: `event_staff` (чтение), `users` (чтение: язык контролёра + имя участника), `registrations` (чтение через `fn-find-registration` + прямая запись `checked_in_at`/`checked_in_by`)
+- **Переменные**: — (косвенно `QR_SIGNING_KEY` через `fn-verify-qr` → `fn-sign-qr`; `BOT_TOKEN` внутри `fn-verify-init-data`)
+- **Connections**: — (токен бота читается внутри `fn-verify-init-data` из Variable)
 
 ## Заметки
 
+- **Локализация текста исхода — на сервере (Q19, W7).** Язык — `users.lang`
+  контролёра: `step_28`/`step_6` резолвят его по `staffTelegramId` до маршрутизации
+  исходов. Каждая терминальная ветка `step_14`/`step_7`/`step_4` тянет нужный ключ
+  через `fn-t`; `step_17`/`step_20`/`step_22` вставляют `{name}`/`{time}` в шаблон.
+  `401` не может знать язык (пользователь не проверен) — фиксированный `ru`.
+  Страница сканера словарь исходов **не держит** — показывает серверный `text`.
 - **IDM-2 обеспечивается на уровне решения, а не CAS-примитива.** `outcome = 'already'`
   вычисляется в step_11 **до** записи — `tables-update-record` (step_15) выполняется
   только в ветке `outcome = 'ok'`, которая по построению уже означает
@@ -110,52 +130,34 @@
   бизнес-исход разбора QR при уже подтверждённом контролёре, поэтому он **всегда**
   `200` с кодом в теле (тот же приём, что в `my-qr-api`) — сканеру (W7) не нужно
   разбирать HTTP-статус для этих пяти случаев, только для двух верхних.
-- **Имя участника ищется отдельно и всегда**, а не как побочный эффект
-  `fn-find-registration` (которая имени не отдаёт). Источник `telegram_id` для
-  этого поиска — `step_11.userId`, который есть даже когда регистрации нет
-  (`not_registered`) или `eventId` не совпал (`wrong_event`), но пуст (сентинел
-  `-`), если `payload` не разобрался вовсе (`fn-parse-start` вернул `valid: false`) —
-  тогда `name` пустая строка, что и ожидаемо: показывать код без реального юзера.
-- **Проверено сквозным прогоном с настоящей криптографией** на опубликованной
-  версии (не только `ap_test_flow` на моках): `initData` контролёра посчитан
-  через временный флоу с двумя `crypto : hmac-signature` (та же цепочка, что
-  в `fn-verify-init-data`) на реальном токене бота; `payload` QR получен прогоном
-  самого `fn-sign-qr` на реальном `QR_SIGNING_KEY`. Все шесть исходов
-  подтверждены прогонами на фикстурах (`event_staff`/`registrations`/`users`,
-  удалены после проверки):
-  - `401 invalid_init_data` (`reason: "expired"`) — прогон `Hmh3thz8kPez8C2Rho16B`;
-  - `200 ok` (запись `checked_in_at`, имя в ответе) — прогон `Q3un8aA2ic7fKmLBkdXgb`;
-  - `200 already` (повторный скан того же QR, `checkedInAt` **не изменился**,
-    `checkedInAtTashkent: "13:46"`) — прогон `HOkVgF0a7aWKVFwnskeXX`;
-  - `200 wrong_event` (QR другого ивента) — прогон `GeuSptw1FS5UuxLmroxUl`;
-  - `200 not_registered` (валидный QR, регистрации нет) — прогон `fcciunzxxxPXYNpFtU6za`;
-  - `200 invalid` (подделанный последний символ подписи) — прогон `q2xkvWcllQfTZfO0BRgrm`;
-  - `403 forbidden` (валидный `initData`, но не контролёр этого `event_id`) —
-    прогон `tdnOZr9VUKcO4IVocZrJj`. Это и есть обязательный тест приёмки STF-2
-    из BACKLOG.md: «зайти в Mini App обычным участником и попробовать отметить
-    другого» — отказ подтверждён.
-  По замечанию первого круга ревью — предыдущий `403`-прогон не отличал
-  правильный фильтр `(event_id, telegram_id, revoked_at)` от гипотетически
-  сломанного без `event_id` (контролёр был вообще нигде не staff). Добавлены
-  два различающих прогона:
-  - контролёр — **реальный staff другого ивента** (`meetup02`, `revoked_at`
-    пуст), пробует отметиться на `meetup01` → `403`, `step_5` вернул `[]`
-    (прогон `i2JxVaRX8sxDdFZhrpQDl`);
-  - контролёр с **отозванными правами** (`event_staff.revoked_at` заполнен)
-    на `meetup01` → `403`, `step_5` вернул `[]` (прогон `5W4kOSw6gYudgEhbP8yxq`).
-  Оба подтверждают, что фильтр `step_5` — это действительно единый
-  `(event_id AND telegram_id AND revoked_at not_exists)`, а не постфильтр
-  в коде: обе фикстуры физически существовали в таблице на момент прогона
-  и физически не попали в выборку.
-  Временный вспомогательный флоу для расчёта `initData` (`tmp-w8-testdata`)
-  удалён после проверки; все прогоны выше сняты **после** `ap_lock_and_publish`
-  ([README, п.11](README.md)), поэтому доказательны для опубликованной версии.
-- **Живой `initData` от настоящего клиента Telegram не проверен** —
-  [Q16](../../docs/OPEN-QUESTIONS.md#q16) остаётся открытым для этого пакета:
-  нужен человек (открыть Mini App у `@aiqadam_events_dev_bot`, скопировать
-  `Telegram.WebApp.initData`) или сквозной прогон W7. Всё остальное в HMAC-цепочке
-  (ориентация аргументов, конфигурация шагов) закрыто ещё в W2 read-only
-  REST-экспортом.
-- **Время исполнения** во всех прогонах выше — 4–22 с в `TESTING`-окружении
-  (сумма пяти-шести последовательных `callFlow`), с запасом укладывается в
-  `TRIGGER_TIMEOUT_SECONDS = 60`.
+- **Проверено сквозным прогоном с настоящей криптографией в W8** на опубликованной
+  версии до правки W7 (шесть исходов STF-4 + `401`/`403`, различающие прогоны
+  STF-2 по `event_id` и `revoked_at`) — детали ниже в старых записях W8.
+- **W7 (2026-09-09) — повторный сквозной прогон локализованного `text`.**
+  `initData` посчитан временным флоу с двумя `crypto : hmac-signature` на реальном
+  `variables['BOT_TOKEN']` (приём W8), подписи QR — `callFlow → fn-sign-qr` на
+  реальном `QR_SIGNING_KEY`; фикстуры (`users`, `event_staff`, `registrations`)
+  созданы и удалены после проверки; временный флоу `tmp-w7-testdata` удалён.
+  Прогоны на **опубликованной** версии, напрямую `curl` (Origin =
+  `https://miniapp.events.aiqadam.org`, `access-control-allow-origin: *` на ответе,
+  `OPTIONS` → `204` с нужными заголовками):
+  - контролёр `ru` (lang из `users`), 1-й скан участника `meetup01` →
+    `200 {"status":"ok","name":"Aziz Test","text":"Aziz Test — отмечен"}` (записан
+    `checked_in_at`);
+  - повторный скан того же QR → `200 {"status":"already", "checkedInAtTashkent":"18:01",
+    "text":"Уже отмечен в 18:01"}` — `checked_in_at` не изменился (IDM-2);
+  - QR другого ивента → `200 {"status":"wrong_event","text":"Другой ивент"}`;
+  - QR несуществующего участника → `200 {"status":"not_registered","text":"Нет регистрации"}`;
+  - подделанный последний символ подписи → `200 {"status":"invalid","text":"Код не распознан"}`;
+  - тот же «уже отмечен», но контролёр `en` (другая staff-строка, `users.lang=en`) →
+    `200 {"status":"already","text":"Already checked in at 18:01"}` — язык исхода
+    действительно контролёра, время исходное;
+  - участник вместо контролёра → `403 {"status":"forbidden","text":"Нет прав на чекин этого ивента"}`;
+  - мусорный `initData` → `401 {"status":"invalid_init_data","reason":"malformed",
+    "text":"Данные Mini App устарели — переоткройте приложение"}`.
+- **Живой `initData` от настоящего клиента Telegram** закрыт в [Q16](../../docs/OPEN-QUESTIONS.md#q16)
+  (реальный баг с `{{connections[...]}}`, токен переведён в `variables['BOT_TOKEN']`).
+- **Время исполнения** в прогонах — 4–9 с в `TESTING`-окружении (сумма
+  последовательных `callFlow`), с запасом укладывается в
+  `TRIGGER_TIMEOUT_SECONDS = 60`. Публичный прогон через `/sync` в e2e W7 —
+  те же единицы секунд.

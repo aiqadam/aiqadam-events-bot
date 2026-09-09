@@ -17,57 +17,71 @@
 | Ситуация | Тело ответа |
 | --- | --- |
 | Успех | `{ ok: true, payload: "c<eventId>-<userId>-<sig>" }` |
-| `initData` невалиден/просрочен или `eventId` не проходит форму | `{ ok: false, error: "invalid_init_data", reason }` |
-| Нет активной регистрации на этот `eventId` у этого `telegram_id` | `{ ok: false, error: "not_registered" }` |
+| `initData` невалиден/просрочен или `eventId` не проходит форму | `{ ok: false, error: "invalid_init_data", reason, text }` |
+| Нет активной регистрации на этот `eventId` у этого `telegram_id` | `{ ok: false, error: "not_registered", text }` |
+
+`text` — **уже локализованный** текст ошибки для экрана (язык участника из
+`users.lang`; для `invalid_init_data` — `ru`, т.к. пользователь не проверен).
+Ключи `checkin.not_registered` / `checkin.unauthorized` из таблицы `strings`
+через `fn-t` (общие с `checkin-api` — семантика совпадает; Q19). `ticket.html`
+показывает серверный `text`, свой словарь для этих исходов не держит.
 
 `telegram_id` берётся **только** из проверенного `initData` (аналог STF-2) — тело
 запроса не может задать чужой `telegram_id`, только `eventId`.
 
 ## Шаги
 
+> Снято `ap_flow_structure` + `ap_read_step_code` после публикации (W7).
+
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | вход Mini App | — |
 | step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`, как у `fn-sign-qr`) | `{{trigger['output'].body}}` |
 | step_2 | `@aiqadam/qadam-subflows : callFlow` → `fn-verify-init-data` | HMAC токена бота + свежесть | `{{step_1['output'].initData}}` |
-| step_3 | CODE «combine validity» | `valid = eventIdValid && initDataValid` | `{{step_2['output'].data}}`, `{{step_1['output'].eventIdValid}}` |
-| step_4 | ROUTER «валидны?» | `valid` (branchIndex 0) / `Otherwise` (branchIndex 1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
-| step_5 | `callFlow` → `fn-find-registration` | регистрация участника на `eventId` | `eventId`, `telegramId` из step_1/step_3 |
+| step_3 | CODE «combine validity» | `valid`, `telegramId`, `reason` | `{{step_2['output'].data}}`, `{{step_1['output'].eventIdValid}}` |
+| step_4 | ROUTER «initData+eventId валидны?» | `valid` (branchIndex 0) / `Otherwise` (branchIndex 1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
+| step_18 (branch 1) | `callFlow → fn-t` | `checkin.unauthorized`, `lang: ru` | — |
+| step_13/14 (branch 1) | CODE + `return_response` | `{ ok:false, error:"invalid_init_data", reason, text }`, статус `200` | `{{step_18['output'].data.text}}`, `{{step_3['output'].reason}}` |
+| step_5 (branch 0) | `callFlow` → `fn-find-registration` | регистрация участника на `eventId` | `eventId`, `telegramId` из step_1/step_3 |
 | step_6 | CODE «decide outcome» | `ok` только если `registration.registered` | `{{step_5['output'].data}}` |
 | step_7 | ROUTER «outcome?» | `ok` (branchIndex 0) / `Otherwise` (branchIndex 1 → `not_registered`) | `{{step_6['output'].outcome}}` |
-| step_8 | `callFlow` → `fn-sign-qr` | подпись `payload` | `eventId`, `userId = telegramId` |
-| step_9 | CODE «build success body» | `{ ok: true, payload }` | `{{step_8['output'].data}}` |
-| step_10/12/14 | `@aiqadam/qadam-webhook : return_response` | JSON-ответ, `status: 200` всегда | `{{step_N['output']}}` соответствующего билдера |
+| step_8 (branch `ok`) | `callFlow` → `fn-sign-qr` | подпись `payload` | `eventId`, `userId = telegramId` |
+| step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_8['output'].data}}` |
+| step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык (только в этой ветке, ок-путь `users` не читает) | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
+| step_16 (branch `not_registered`) | CODE «resolve user lang» | `lang` (фолбэк `ru`) | `{{step_15['output']}}` |
+| step_17 (branch `not_registered`) | `callFlow → fn-t` | `checkin.not_registered`, `lang: {{step_16['output'].lang}}` | — |
+| step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_17['output'].data}}` |
 
 ## Зависимости
 
-- **Subflow'ы**: `fn-verify-init-data`, `fn-find-registration`, `fn-sign-qr`
-- **Таблицы**: — (только через subflow'ы) · **Переменные**: — · **Connections**: —
-  (токен бота читается внутри `fn-verify-init-data`)
+- **Subflow'ы**: `fn-verify-init-data`, `fn-find-registration`, `fn-sign-qr`, `fn-t`
+- **Таблицы**: `users` (чтение языка, опционально) — только через qadam'а; остальное через subflow'ы
+- **Переменные**: — · **Connections**: — (токен бота читается внутри `fn-verify-init-data` из Variable)
 
 ## Заметки
 
 - **Всегда `HTTP 200`, ошибка — в теле.** Страница сама разбирает `ok`/`error`,
   а не HTTP-статус — проще для `fetch()` без обвязки на 4xx/5xx.
+- **Локализация ошибок — на сервере (Q19, W7).** `step_15`/`step_16` резолвят
+  `users.lang` по `telegram_id` из проверенного `initData` (для `not_registered` —
+  у участника может не быть регистрации на этот ивент, но язык известен из его
+  строки `users`; строки нет — фолбэк `ru`). `invalid_init_data` всегда `ru`:
+  пользователь не проверен, как в `401` у `checkin-api`.
+- **Чтение `users` — только в ветке `not_registered`.** По замечанию ревью W7 №2
+  резолв языка перенесён внутрь этой ветки: успешный `ok`-путь (самый частый —
+  каждое открытие тикета) строку пользователя **не читает**, и её полные данные
+  (`phone`, `consent_*`) не попадают в логи прогонов на успешных запросах (Q17).
 - **Не проверяет статус ивента** (`published`/`cancelled`/`finished`) — это
   сознательно: показ уже выданного QR не должен зависеть от того, что случилось
   с ивентом после регистрации. Актуальность на входе проверяет `checkin-api` (STF-2),
   а не эта выдача.
-- **Роутеры собраны через `ap_add_step` + `ap_add_branch`.** У свежесозданного
-  ROUTER'а платформа сама заводит служебную нулевую ветку («Branch 1») до первого
-  `ap_add_branch` — её пришлось удалить `ap_delete_branch`, иначе она перехватывала
-  branchIndex 0 у нужного условия. Проверено `ap_flow_structure` после каждого шага.
-- **Проверено сквозным прогоном с настоящей криптографией**, не только `ap_test_flow`
-  на моках: `initData` для тестового пользователя (`555000111`) посчитан через
-  временный флоу с двумя `crypto : hmac-signature` (та же цепочка, что в
-  `fn-verify-init-data`) на **реальном** `QR_SIGNING_KEY`/токене бота, вручную
-  собранная строка `initData` подана в `my-qr-api` — прошла `hashValid: true`.
-  Три ветки подтверждены прогонами: `ok` (реальная регистрация в фикстуре,
-  `payload` совпал с `fn-sign-qr`), `not_registered` (тот же `initData`, другой
-  `eventId`), `invalid_init_data` (`initData: "garbage"`). Временный флоу и все
-  фикстуры (`registrations`) удалены после проверки.
-- **Публичный HTTP-эндпоинт проверен напрямую `curl`**, не только через
-  `ap_test_flow`: POST с `initData: "garbage"` вернул `{"ok":false,"error":
-  "invalid_init_data","reason":"malformed"}`, `HTTP 200`. Отдельно проверен CORS
-  preflight (`OPTIONS` с `Origin: https://miniapp.events.aiqadam.org`) — `204`,
-  `access-control-allow-origin: *` — платформа отвечает сама (Q11).
+- **Проверено сквозным прогоном с настоящей криптографией в W5/W8.** В W7
+  (2026-09-09) повторно прогнаны **все ветки** на опубликованной версии напрямую
+  `curl` (Origin `https://miniapp.events.aiqadam.org`, `access-control-allow-origin: *`
+  в ответе): `ok` (зарегистрированный участник, `payload` совпал с `fn-sign-qr`),
+  `not_registered` с языком `ru` (`"Нет регистрации"`), `not_registered` с языком
+  `en` у другого пользователя (`users.lang = en`, `"Not registered"` — язык берётся
+  из `users`, не из `language_code` Telegram), `invalid_init_data` (`"Данные Mini App
+  устарели — переоткройте приложение"`). `initData` посчитан временным флоу с двумя
+  `crypto : hmac-signature` на реальном `variables['BOT_TOKEN']`; фикстуры удалены
+  после проверки, временный флоу удалён.

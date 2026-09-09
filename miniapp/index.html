@@ -3,25 +3,201 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Qadam Events — сканер</title>
+  <title>AI Qadam Events</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="i18n.js"></script>
   <style>
-    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
-    main { max-width: 28rem; margin: 0 auto; }
-    code { background: #f0f0f0; padding: 0 .25em; border-radius: 3px; }
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0;
+      font: 16px/1.5 system-ui, sans-serif;
+      background: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #111111);
+    }
+    main { max-width: 30rem; margin: 0 auto; padding: 1.25rem; text-align: center; }
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 1.5rem; }
+    #result { display: none; border-radius: 14px; padding: 1.5rem 1rem; margin: 0 0 1.5rem; }
+    #result.show { display: block; }
+    #result .text { font-size: 1.35rem; font-weight: 600; }
+    #result .sub { margin-top: 0.5rem; font-size: 0.95rem; }
+    #result.ok { background: #d7f2da; color: #0a4d15; }
+    #result.already { background: #fff0c2; color: #5c4a00; }
+    #result.wrong_event, #result.not_registered,
+    #result.invalid, #result.forbidden, #result.invalid_init_data {
+      background: #f9dcd8; color: #7a1206;
+    }
+    #status {
+      margin: 0 0 1rem;
+      color: var(--tg-theme-hint-color, #777777);
+      min-height: 1.5em;
+    }
+    button {
+      font: inherit;
+      padding: 0.7rem 1.4rem;
+      border: 0;
+      border-radius: 10px;
+      background: var(--tg-theme-button-color, #2aabee);
+      color: var(--tg-theme-button-text-color, #ffffff);
+      display: none;
+    }
+    button.show { display: inline-block; }
   </style>
 </head>
 <body>
   <main>
-    <h1>Сканер ещё не собран</h1>
-    <p>
-      Страница-заглушка: GitHub Pages включён (шаг 0.4 волны 0), адрес закреплён
-      и годится для <code>MINIAPP_URL</code> и BotFather (шаг 0.5).
-    </p>
-    <p>
-      Сам сканер — пакет работ <strong>W7</strong>, см.
-      <a href="https://github.com/aiqadam/aiqadam-events-bot/blob/main/docs/BACKLOG.md">BACKLOG.md</a>.
-    </p>
+    <h1 id="title"></h1>
+    <div id="result" role="status">
+      <div class="text" id="resultText"></div>
+      <div class="sub" id="resultSub"></div>
+    </div>
+    <p id="status"></p>
+    <button id="rescan"></button>
   </main>
+  <script>
+    (function () {
+      'use strict';
+      // Q14: events-dev, адрес фиксирован, см. docs/OPEN-QUESTIONS.md#q14.
+      var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/CUKqiby1PoHiQiiCQy24V/sync';
+      var RESULT_MS = 1600;
+
+      var tg = window.Telegram && window.Telegram.WebApp;
+      var dict = {};
+      var titleEl = document.getElementById('title');
+      var resultEl = document.getElementById('result');
+      var resultTextEl = document.getElementById('resultText');
+      var resultSubEl = document.getElementById('resultSub');
+      var statusEl = document.getElementById('status');
+      var rescanBtn = document.getElementById('rescan');
+
+      var eventId = '';
+      var stopped = false;
+      var inFlight = false;
+      var lastPayload = '';
+      var lastAt = 0;
+
+      function t(key) {
+        return dict[key] || key;
+      }
+
+      function closePopup() {
+        if (tg && tg.closeScanQrPopup) {
+          try { tg.closeScanQrPopup(); } catch (e) {}
+        }
+      }
+
+      function setStatus(key) { statusEl.textContent = t(key); }
+
+      function hideResult() { resultEl.className = ''; resultSubEl.textContent = ''; }
+
+      function showResult(cssClass, text, subKey) {
+        resultEl.className = 'show ' + cssClass;
+        resultTextEl.textContent = text;
+        resultSubEl.textContent = subKey ? t(subKey) : '';
+      }
+
+      function offerRescan() {
+        stopped = false;
+        rescanBtn.textContent = t('scan.rescan');
+        rescanBtn.className = 'show';
+      }
+
+      function stopAll(cssClass, text, subKey) {
+        stopped = true;
+        hideResult();
+        showResult(cssClass, text, subKey);
+        closePopup();
+      }
+
+      function openScanner() {
+        if (stopped) return;
+        if (!tg || !tg.showScanQrPopup) {
+          stopAll('forbidden', t('scan.unsupported'));
+          return;
+        }
+        hideResult();
+        setStatus('scan.hint');
+        try {
+          tg.showScanQrPopup({}, function () {
+            var args = Array.prototype.slice.call(arguments);
+            var err = args.length === 2 && typeof args[0] === 'string' ? args[0] : null;
+            var result = args.length === 2 ? args[1] : args[0];
+            if (err || !result) return;
+            var text = typeof result === 'string' ? result : (result.text || result.data || '');
+            onScanned(text);
+          });
+        } catch (e) {
+          stopAll('forbidden', t('scan.unsupported'));
+        }
+      }
+
+      function onScanned(text) {
+        if (!text || stopped || inFlight) return;
+        var now = Date.now();
+        if (text === lastPayload && now - lastAt < 1400) return;
+        lastPayload = text;
+        lastAt = now;
+        inFlight = true;
+        closePopup();
+        setStatus('scan.checking');
+        fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData, eventId: eventId, payload: text })
+        })
+          .then(function (r) {
+            return r.json().then(function (d) {
+              return { http: r.status, body: d };
+            });
+          })
+          .then(function (res) {
+            var d = res.body;
+            inFlight = false;
+            if (!d || typeof d !== 'object' || typeof d.text !== 'string') {
+              stopAll('forbidden', t('scan.error_server'));
+              offerRescan();
+              return;
+            }
+            var st = d.status || '';
+            if (st === 'invalid_init_data') {
+              stopAll('invalid_init_data', d.text, 'scan.reopen_app');
+            } else if (st === 'forbidden') {
+              stopAll('forbidden', d.text);
+            } else {
+              showResult(st || 'already', d.text);
+              setTimeout(function () {
+                if (!stopped) openScanner();
+              }, RESULT_MS);
+            }
+          })
+          .catch(function () {
+            inFlight = false;
+            stopAll('forbidden', t('scan.network_error'));
+            offerRescan();
+          });
+      }
+
+      MiniAppI18n.load(function (err, d) {
+        dict = d;
+        document.title = t('scan.title');
+        titleEl.textContent = t('scan.title');
+        if (err) { stopAll('forbidden', t('scan.network_error')); return; }
+        if (!tg || !tg.initData) { stopAll('forbidden', t('scan.not_in_telegram')); return; }
+        eventId = new URLSearchParams(window.location.search).get('event_id') || '';
+        if (!eventId) { stopAll('forbidden', t('scan.no_event')); return; }
+        tg.ready();
+        tg.expand();
+        if (tg.onEvent) {
+          tg.onEvent('scanQrPopupClosed', function () {
+            if (!stopped && !inFlight) { setStatus('scan.hint'); offerRescan(); }
+          });
+        }
+        rescanBtn.addEventListener('click', function () {
+          rescanBtn.className = '';
+          openScanner();
+        });
+        openScanner();
+      });
+    })();
+  </script>
 </body>
 </html>
