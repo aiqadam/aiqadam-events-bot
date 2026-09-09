@@ -1,6 +1,6 @@
 # W8. `checkin-api`
 
-- **Статус**: заблокирован (см. «Хвосты и блокеры»)
+- **Статус**: на проверке
 - **Владелец**: агент W8
 - **Волна**: 4
 - **Зависит от**: W2, W5
@@ -18,13 +18,16 @@ webhook, вызываемый Mini App-сканером, проверяет `ini
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
 | flow `checkin-api` (новый) | `CUKqiby1PoHiQiiCQy24V`, 27 шагов, webhook sync | [catalog/flows/checkin-api.md](../../catalog/flows/checkin-api.md) |
+| правка flow `fn-verify-init-data` | `step_2.text` → `{{variables['BOT_TOKEN']}}` | [catalog/flows/fn-verify-init-data.md](../../catalog/flows/fn-verify-init-data.md) |
+| Variable `BOT_TOKEN` (новая) | дубликат токена бота для HMAC | [catalog/variables.md](../../catalog/variables.md) |
+| ADR-0008 | `{{connections[...]}}` как данные не даёт байт-в-байт токен — токен для HMAC живёт в Variable | [docs/adr/0008-bot-token-as-variable-not-connection-template.md](../adr/0008-bot-token-as-variable-not-connection-template.md) |
 
 ## Чек-лист готовности
 
 > Из [BACKLOG.md](../BACKLOG.md#w8-checkin-api).
 
 - [x] `initData` валидируется по HMAC токена бота, `telegram_id` берётся **только** оттуда (STF-2)
-- [ ] прогон на `initData` от живого клиента Telegram (переехал из W2, [Q16](../OPEN-QUESTIONS.md#q16)) — **не выполнено, требует человека**
+- [x] прогон на `initData` от живого клиента Telegram (переехал из W2, [Q16](../OPEN-QUESTIONS.md#q16)) — выполнено, нашло и исправило реальный баг (см. «Как проверено»)
 - [x] проверяется членство в `event_staff` **именно этого** `event_id` — участник получает `403`, а не возможность отметить соседа
 - [x] повторный скан не меняет `checked_in_at` и показывает исходное время (IDM-2)
 - [x] чужой QR даёт `wrong_event`, отменённая/отсутствующая регистрация — `not_registered`
@@ -50,6 +53,30 @@ webhook, вызываемый Mini App-сканером, проверяет `ini
 - `403 forbidden` — **обязательный тест приёмки**: валидный `initData`, но не
   контролёр этого `event_id` → прогон `tdnOZr9VUKcO4IVocZrJj`
 
+**Прогон на живом `initData` (Q16).** Владелец бота открыл Mini App в Telegram
+дважды и передал `initData`: первый раз через `copy()` в консоли, второй —
+прямым `fetch()` из самого Mini App на временный webhook-приёмник
+(`tmp-w8-initdata-capture`, удалён после проверки) — оба способа исключают
+ручное искажение строки. Оба раза `fn-verify-init-data` вернула `hashValid: false`
+(прогоны `nE6egWsTWPu4iMtAQnkcZ`, `gYTRMjPixJUWwJGiQkpnH`), в том числе на
+**боевом** вызове самого `checkin-api` (`Xs2d24lqPNqaSb0ohaDjS` →
+`tlUVYMNIT4M5x3lffPPtN`) — не тестовый артефакт.
+
+Проверено и исключено: бот в connection — тот самый (`GET /getMe` → `username:
+"aiqadam_events_dev_bot"`); алгоритм сверен построчно с
+`core.telegram.org/bots/webapps` (все поля кроме `hash`, включая `signature`);
+перебраны все комбинации полей/экранирования — ни одна не даёт нужный хэш.
+Решающая проверка: владелец бота посчитал `HMAC("WebAppData", bot_token)`
+**локально**, с реальным токеном из BotFather (`/mybots` → API Token, без
+ротации) — значение не совпало с тем, что давал шаг через
+`{{connections['TZTlXaCEO2hEvimUowbSA']}}`.
+
+Правка: `fn-verify-init-data / step_2.text` → `{{variables['BOT_TOKEN']}}`
+(новая Variable, токен продублирован туда через UI). Тот же самый `initData`,
+на котором раньше было `hashValid: false`, дал `hashValid: true` тем же
+прогоном (`zVsliGe9MlO6cfXpjcwbT`), без других изменений в цепочке. Подробности —
+[ADR-0008](../adr/0008-bot-token-as-variable-not-connection-template.md).
+
 ## Журнал
 
 - **2026-09-09** — пакет взят в работу.
@@ -74,6 +101,18 @@ webhook, вызываемый Mini App-сканером, проверяет `ini
   и все фикстуры удалены сразу после последнего прогона.
 - **2026-09-09** — публикация → шесть сквозных прогонов (все исходы STF-4) →
   `403`-тест приёмки STF-2 → фикстуры и временный флоу удалены → каталог обновлён.
+- **2026-09-09** — владелец бота (человек) передал живой `initData` дважды
+  (см. «Как проверено») — `fn-verify-init-data` вернула `hashValid: false` оба
+  раза, включая боевой вызов `checkin-api`. Проверены и исключены: неверный бот
+  в connection (`getMe` подтвердил), ошибка алгоритма (сверено с документацией
+  Telegram построчно), варианты сборки `data_check_string` (перебор комбинаций
+  полей). Решающий тест — HMAC от реального токена, посчитанный владельцем бота
+  локально, не совпал со значением через `{{connections[...]}}`. Токен продублирован
+  в Variable `BOT_TOKEN`, `fn-verify-init-data` переключён на неё — тот же
+  `initData` прошёл (`hashValid: true`). Задокументировано
+  [ADR-0008](../adr/0008-bot-token-as-variable-not-connection-template.md);
+  исправление затрагивает все вызывающие `fn-verify-init-data`, не только W8.
+- **2026-09-09** — все пункты чек-листа выполнены, пакет переведён `на проверке`.
 
 ## Ревью
 
@@ -81,13 +120,4 @@ webhook, вызываемый Mini App-сканером, проверяет `ini
 
 ## Хвосты и блокеры
 
-- [Q16](../OPEN-QUESTIONS.md#q16): прогон на живом `initData` от настоящего
-  клиента Telegram **не выполнен** — агент не может получить его без человека
-  или без сквозного прогона W7 (сканер ещё не собран). Всё остальное в HMAC-цепочке
-  (ориентация аргументов, конфигурация шагов, отказы на просроченном/поддельном
-  `initData`) закрыто ещё в W2 read-only REST-экспортом и подтверждено здесь синтетическими,
-  но криптографически настоящими прогонами. Статус пакета — `заблокирован`, а не
-  `готов`, именно из-за этого единственного пункта: либо человек делает пятиминутный
-  тест сейчас (открыть Mini App у `@aiqadam_events_dev_bot`, скопировать
-  `Telegram.WebApp.initData`, прогнать через `fn-verify-init-data`), либо пункт
-  закрывается сам собой первым сквозным прогоном W7.
+- нет.
