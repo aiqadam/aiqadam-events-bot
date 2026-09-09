@@ -28,27 +28,44 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход subflow'а | — |
 | step_1 | CODE «parse initData» | разбор query string, `data_check_string` | `{{trigger['output'].data.initData}}` |
-| step_2 | `@aiqadam/qadam-crypto : hmac-signature` | `secret_key = HMAC("WebAppData", bot token)` | `secretKey` = `WebAppData`, `secretKeyEncoding` = `utf-8`, `method` = `sha256`, `text` = `{{connections['TZTlXaCEO2hEvimUowbSA']}}`, `outputEncoding` = **`hex`** |
+| step_2 | `@aiqadam/qadam-crypto : hmac-signature` | `secret_key = HMAC("WebAppData", bot token)` | `secretKey` = `WebAppData`, `secretKeyEncoding` = `utf-8`, `method` = `sha256`, `text` = `{{variables['BOT_TOKEN']}}` (**с 2026-09-09, W8** — было `{{connections['TZTlXaCEO2hEvimUowbSA']}}`, см. заметки), `outputEncoding` = **`hex`** |
 | step_3 | `@aiqadam/qadam-crypto : hmac-signature` | `expected = HMAC(secret_key, data_check_string)` | `secretKey` = `{{step_2['output']}}`, `secretKeyEncoding` = **`hex`**, `text` = `{{step_1['output'].dataCheckString}}`, `outputEncoding` = `hex` |
 | step_4 | CODE «constant-time compare + auth_date» | сравнение и свежесть | `expected` = `{{step_3['output']}}`, `maxAgeSeconds` = `{{trigger['output'].data.maxAgeSeconds}}` |
 | step_5 | `@aiqadam/qadam-subflows : returnResponse` | ответ | `{{step_4['output']}}` |
 
 ## Зависимости
 
-- **Таблицы**: — · **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — **как значение, а не как auth шага**
+- **Таблицы**: — · **Переменные**: `BOT_TOKEN` (с 2026-09-09, W8)
+- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — **больше не используется
+  этим флоу**; токен здесь читается из Variable (см. заметки, [ADR-0008](../../docs/adr/0008-bot-token-as-variable-not-connection-template.md))
 
 ## Заметки
 
-- **Токен бота читается из connection шаблоном `{{connections['<externalId>']}}`
-  и подставляется в `text`, а не в `auth`.** Проверено: `crypto` qadam'у auth не нужен,
-  а токен нужен как данные. Секрет не попадает в репозиторий — но **это не значит,
+- **Токен бота с 2026-09-09 читается из `{{variables['BOT_TOKEN']}}`, не из
+  `{{connections['<externalId>']}}`.** До этой правки `text` шага `step_2`
+  ссылался на connection, и это считалось рабочим (W2 подтвердил механику
+  цепочки на синтетических пробниках) — **до тех пор, пока W8 не прогнал
+  настоящий `initData` от живого Telegram-клиента**: `hashValid: false`,
+  хотя алгоритм и токен по отдельности были верны (`getMe` через ту же
+  connection подтвердил правильный бот). Решающая проверка — HMAC от **реального**
+  токена, посчитанный владельцем бота **локально** (не через MCP — секрет платформа
+  не отдаёт), не совпал со значением, которое давал шаблон `{{connections[...]}}`.
+  После переключения `text` на `{{variables['BOT_TOKEN']}}` тот же самый `initData`
+  дал `hashValid: true` тем же прогоном, без других изменений. Значит
+  `{{connections['<id>']}}`, использованный как обычные данные (не как `auth`
+  PIECE-шага), не гарантированно даёт тот же байт-в-байт секрет, что использует
+  внутренняя авторизация того же connection для настоящих API-вызовов. Подробности,
+  что перепробовано и как исключены другие причины (алфавит `data_check_string`,
+  порядок аргументов HMAC, экранирование `photo_url`) —
+  [ADR-0008](../../docs/adr/0008-bot-token-as-variable-not-connection-template.md).
+- Секрет не попадает в репозиторий ни в одном варианте — но **это не значит,
   что он защищён**: и токен (входы шага 2), и производный от него ключ (вывод шага 2)
   лежат открытым текстом в логе каждого прогона, а кто читает логи — подделывает
   `initData` для любого `telegram_id`. Цена названа в
   [ADR-0005](../../docs/adr/0005-secrets-visible-in-run-logs.md) и в
   [SECURITY.md](../../docs/SECURITY.md#логи-прогонов--тоже-секрет-adr-0005);
-  ограничивается только доступом к проекту и к логам.
+  ограничивается только доступом к проекту и к логам — риск одинаков для
+  connection и Variable.
 - **Семантика аргументов qadam'а проверена отдельно**: `ap_run_action` с
   `secretKey = "WebAppData"`, `text = "PROBE-W2"`, `outputEncoding = hex` даёт
   `5a2b099b41154ee663ad6753f999940b02ae5fba122a8592adef108769343e8b` — это
@@ -63,9 +80,16 @@
   `text: "{{connections['TZTlXaCEO2hEvimUowbSA']}}"`, `secretKeyEncoding: "utf-8"`;
   у `step_3` `secretKey: "{{step_2['output']}}"`, `secretKeyEncoding: "hex"`.
   Значит токен подставлен именно в `text`, ориентация верна и hex-ключ второго шага
-  собран как задумано — это **факт, а не вывод из поведения**. Остаётся
-  непроверенным только `initData` от живого клиента Telegram
-  ([Q16](../../docs/OPEN-QUESTIONS.md#q16)).
+  собран как задумано — это **факт, а не вывод из поведения**. На момент W2 это
+  считалось достаточным; W8 показал, что факта о конфигурации мало, если сам
+  источник данных (`connections` vs `variables`) может резолвиться по-разному —
+  см. запись про `BOT_TOKEN` выше.
+- **[Q16](../../docs/OPEN-QUESTIONS.md#q16) закрыт W8, 2026-09-09**: два независимых
+  захвата `initData` от живого клиента Telegram дали `hashValid: true` после
+  переключения на `{{variables['BOT_TOKEN']}}` — прогон `zVsliGe9MlO6cfXpjcwbT`.
+  До этой правки те же данные давали `hashValid: false` (прогон `tlUVYMNIT4M5x3lffPPtN`,
+  через боевой вызов `checkin-api` — `Xs2d24lqPNqaSb0ohaDjS`) — не «не хватало
+  прогона», а реальный баг конфигурации, который этот прогон и нашёл.
 - **Цепочка двух HMAC собрана штатно, без своей криптографии.** Ключ второго шага —
   hex-вывод первого при `secretKeyEncoding = hex`; платформа трактует его как
   двоичный ключ. Сверено независимо: для `data_check_string`
