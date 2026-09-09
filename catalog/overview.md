@@ -23,7 +23,7 @@ subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4),
 |------|---------|-----------|------|
 | `fn-t` | `subflows / callableFlow` | перевод по ключу i18n из `strings` (I18N-2) | [fn-t.md](flows/fn-t.md) |
 | `fn-parse-start` | `subflows / callableFlow` | разбор `start`-payload deep link'а (PAR-6) | [fn-parse-start.md](flows/fn-parse-start.md) |
-| `fn-sign-qr` | `subflows / callableFlow` | подпись QR участника, `crypto` qadam (PAR-6) | [fn-sign-qr.md](flows/fn-sign-qr.md) |
+| `fn-sign-qr` | `subflows / callableFlow` | подпись QR участника, `node:crypto` в CODE step (PAR-6, с 2026-09-09 ADR-0010) | [fn-sign-qr.md](flows/fn-sign-qr.md) |
 | `fn-verify-qr` | `subflows / callableFlow` | constant-time проверка подписи QR | [fn-verify-qr.md](flows/fn-verify-qr.md) |
 | `fn-verify-init-data` | `subflows / callableFlow` | валидация Telegram `initData` (STF-2) | [fn-verify-init-data.md](flows/fn-verify-init-data.md) |
 | `fn-fmt-time` | `subflows / callableFlow` | UTC → `Asia/Tashkent` на языке пользователя (OWN-3) | [fn-fmt-time.md](flows/fn-fmt-time.md) |

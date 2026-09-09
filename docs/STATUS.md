@@ -45,7 +45,7 @@
 | W13. Списки и экспорт | 5 | W5 | не начат | — | — |
 | W14. Рассылки | 5 | W13, W3 | не начат | — | требует [Q13](OPEN-QUESTIONS.md#q13) |
 | W12b. `dedup-sweep` | 5 | W1, W5 | не начат | — | — |
-| W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | не начат | — | — |
+| W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W15. Приёмка | 6 | все | не начат | — | — |
 
 Критический путь: `0.1–0.3 → W1 → W2 → W4 → W5 → W8 → W7 → W15`.
@@ -175,6 +175,25 @@ Bot API — `checkin-api` отклонял бы **всех** контролёр�
 независимо воспроизвёл оба сценария заново, включая позитивный контроль
 (владелец его не делал), — вердикт «замечаний нет». Пакету поставлен статус
 `готов`.
+
+W16 реализовал разрешённое [ADR-0010](adr/0010-unsandboxed-code-step-for-crypto.md)
+исключение: в `fn-verify-init-data` и `fn-sign-qr` два `@aiqadam/qadam-crypto :
+hmac-signature` слиты в один CODE-шаг через `node:crypto` — производный ключ
+Telegram и полный HMAC-дайджест QR перестали быть *выводом* какого-либо шага
+(частичное закрытие [ADR-0005](adr/0005-secrets-visible-in-run-logs.md)); в
+`fn-verify-qr` вызов `fn-sign-qr` как subflow заменён инлайн-подписью — снят
+вложенный flow-run на каждый скан QR (латентность). Регресс исключён побайтовой
+сверкой HMAC (Python + старая цепочка через `ap_run_action`) и повторением трёх
+различающих прогонов STF-2 на `checkin-api` (не-стафф, стафф чужого ивента,
+отозванный стафф — все три `403`, плюс позитивный контроль) на опубликованных
+версиях. Латентность `checkin-api` перемерена методом [Q22](OPEN-QUESTIONS.md#q22):
+«пауза» ≈17,9 с против ≈19,9 с в эталоне до правки. Независимое ревью —
+`ap_flow_structure`/`ap_read_step_code` по живому проекту, независимый пересчёт
+HMAC в Python, собственные повторные прогоны — дало вердикт «замечаний нет» с
+первого круга. Живое состояние —
+[catalog/flows/fn-verify-init-data.md](../catalog/flows/fn-verify-init-data.md),
+[catalog/flows/fn-sign-qr.md](../catalog/flows/fn-sign-qr.md),
+[catalog/flows/fn-verify-qr.md](../catalog/flows/fn-verify-qr.md).
 
 ## Что сделано помимо пакетов
 

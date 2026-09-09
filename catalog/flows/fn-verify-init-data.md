@@ -28,10 +28,19 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход subflow'а | — |
 | step_1 | CODE «parse initData» | разбор query string, `data_check_string` | `{{trigger['output'].data.initData}}` |
-| step_2 | `@aiqadam/qadam-crypto : hmac-signature` | `secret_key = HMAC("WebAppData", bot token)` | `secretKey` = `WebAppData`, `secretKeyEncoding` = `utf-8`, `method` = `sha256`, `text` = `{{variables['BOT_TOKEN']}}` (**с 2026-09-09, W8** — было `{{connections['TZTlXaCEO2hEvimUowbSA']}}`, см. заметки), `outputEncoding` = **`hex`** |
-| step_3 | `@aiqadam/qadam-crypto : hmac-signature` | `expected = HMAC(secret_key, data_check_string)` | `secretKey` = `{{step_2['output']}}`, `secretKeyEncoding` = **`hex`**, `text` = `{{step_1['output'].dataCheckString}}`, `outputEncoding` = `hex` |
-| step_4 | CODE «constant-time compare + auth_date» | сравнение и свежесть | `expected` = `{{step_3['output']}}`, `maxAgeSeconds` = `{{trigger['output'].data.maxAgeSeconds}}` |
+| step_2 | CODE «expected = HMAC chain (node:crypto, ADR-0010)» | `secretKey = HMAC("WebAppData", botToken)`, `expected = HMAC(secretKey, dataCheckString)` — оба HMAC в одном шаге через `node:crypto` | `botToken` = `{{variables['BOT_TOKEN']}}`, `dataCheckString` = `{{step_1['output'].dataCheckString}}`; возвращает голую hex-строку |
+| step_4 | CODE «constant-time compare + auth_date» | сравнение и свежесть | `expected` = `{{step_2['output']}}`, `maxAgeSeconds` = `{{trigger['output'].data.maxAgeSeconds}}` |
 | step_5 | `@aiqadam/qadam-subflows : returnResponse` | ответ | `{{step_4['output']}}` |
+
+**С 2026-09-09 (W16, [ADR-0010](../../docs/adr/0010-unsandboxed-code-step-for-crypto.md)):**
+старые `step_2`+`step_3` (два `@aiqadam/qadam-crypto : hmac-signature`) слиты в
+один CODE-шаг через `node:crypto` — производный ключ Telegram (`secretKey`)
+перестал быть *выводом* какого-либо шага (был виден в логе каждого прогона,
+[ADR-0005](../../docs/adr/0005-secrets-visible-in-run-logs.md)). **Работает только
+при `AP_EXECUTION_MODE=UNSANDBOXED`** на инстансе — настройка обратима
+(см. ADR-0010 «Следствия»); при откате шаг начнёт падать на `require('node:crypto')`.
+`BOT_TOKEN` по-прежнему попадает в шаг как *вход* и виден в логе — это вне
+скоупа W16 (см. ADR-0010 «Что это не чинит»).
 
 ## Зависимости
 
@@ -41,6 +50,20 @@
 
 ## Заметки
 
+- **W16, 2026-09-09**: `step_2`+`step_3` (`hmac-signature` × 2) слиты в один CODE-шаг
+  (`node:crypto`, ADR-0010). Регресс исключён: independent-сверка на синтетических
+  `botToken`/`dataCheckString` (`TESTBOTTOKEN123`/`test_check_string`) дала
+  побайтово тот же hex и через новый шаг (`8341a3611aac803cb98382563ca09a33b65760275ec0585d842d59665d616778`,
+  прогон `DBSFFaaDcC1lFwRjRPB8t`), и через старую пару `ap_run_action` (`hmac-signature`
+  дважды, ориентация `secretKey`/`text` не менялась). На **опубликованной** версии
+  прогон с реальным `BOT_TOKEN` дал `valid: true` для свежего корректно подписанного
+  `initData` (прогон `NIiEQ7Enj2m9hUZtJDCOM`) и сохранил старое поведение
+  `hashValid: true, reason: 'expired', telegramId: ''` для просроченного, но
+  корректно подписанного `initData` (прогон `WWpq7XY4JesyR7q46SKsc`) — STF-2 не
+  ослаблен. Три различающих прогона STF-2 на `checkin-api` (не-стафф, стафф чужого
+  ивента, отозванный стафф — все дали `403`, плюс позитивный контроль настоящего
+  стаффа `demo` дал `isStaff: true`) повторены после публикации без регресса —
+  подробности в [W16](../../docs/work/W16-hmac-inline-code-step.md).
 - **Токен бота с 2026-09-09 читается из `{{variables['BOT_TOKEN']}}`, не из
   `{{connections['<externalId>']}}`.** До этой правки `text` шага `step_2`
   ссылался на connection, и это считалось рабочим (W2 подтвердил механику

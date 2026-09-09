@@ -84,7 +84,8 @@
 
 - **Subflow'ы**: `fn-verify-init-data`, `fn-parse-start`, `fn-verify-qr`, `fn-find-registration`, `fn-fmt-time`, `fn-t`
 - **Таблицы**: `event_staff` (чтение), `users` (чтение: язык контролёра + имя участника), `registrations` (чтение через `fn-find-registration` + прямая запись `checked_in_at`/`checked_in_by`)
-- **Переменные**: — (косвенно `QR_SIGNING_KEY` через `fn-verify-qr` → `fn-sign-qr`; `BOT_TOKEN` внутри `fn-verify-init-data`)
+- **Переменные**: — (косвенно `QR_SIGNING_KEY` внутри `fn-verify-qr` — с 2026-09-09,
+  W16, напрямую, не через `fn-sign-qr`; `BOT_TOKEN` внутри `fn-verify-init-data`)
 - **Connections**: — (токен бота читается внутри `fn-verify-init-data` из Variable)
 
 ## Заметки
@@ -161,3 +162,17 @@
   последовательных `callFlow`), с запасом укладывается в
   `TRIGGER_TIMEOUT_SECONDS = 60`. Публичный прогон через `/sync` в e2e W7 —
   те же единицы секунд.
+- **W16 (2026-09-09) — HMAC внутри `fn-verify-init-data`/`fn-sign-qr` слиты в
+  CODE-шаги через `node:crypto`, `fn-verify-qr` перестал вызывать `fn-sign-qr`
+  как subflow** ([ADR-0010](../../docs/adr/0010-unsandboxed-code-step-for-crypto.md)) —
+  сам `checkin-api` не менялся, но три различающих прогона STF-2 повторены на
+  новой версии: не-стафф (403), стафф чужого ивента `tmp-w16-otherevt` (403),
+  отозванный стафф `demo` (403), плюс позитивный контроль настоящего стаффа
+  `demo` (`isStaff: true`, прошёл дальше 403) — регресса нет. Фикстуры временные,
+  удалены сразу после проверки. Латентность одного скана (тёплый прогон,
+  тот же метод, что в [Q22](../../docs/OPEN-QUESTIONS.md#q22)): сумма шагов
+  ≈4,9 с, полная длительность 22,8 с, «пауза» ≈17,9 с (прогон
+  `cCXetqX6VPVmPpe3s1p5G`) — против ≈19,9 с в эталоне до W16
+  (`EFIxi7F09xHzQEmQRKsl0`); эффект в ожидаемую сторону, но на одном прогоне
+  не заявляется как точная экономия. Подробности —
+  [W16](../../docs/work/W16-hmac-inline-code-step.md).
