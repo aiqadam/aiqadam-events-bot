@@ -8,10 +8,11 @@
 subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4),
 `registration` и `my-qr-api` (оба W5), `checkin-api` (W8), один connection
 (шаг 0.2). Остальные флоу (`event-wizard`, `checkin-deeplink`, `staff-invite`/
-`staff-accept`, …) ещё не собраны. Есть также вторая статическая страница
-Mini App — `miniapp/ticket.html` (W5, [ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md)) —
-рядом с заглушкой сканера (`miniapp/index.html`, W7 ещё не начат, будет вызывать
-`checkin-api`). Все четырнадцать флоу описаны файлами в [flows/](flows/).
+`staff-accept`, …) ещё не собраны. Статические страницы Mini App собраны в W7:
+сканер `miniapp/index.html` (`showScanQrPopup`, STF-1, бьёт в `checkin-api`)
+и выдача QR `miniapp/ticket.html` (W5, [ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md));
+обе тянут собственные надписи с того же GitHub Pages из `i18n/<lang>.json` (Q19).
+Все четырнадцать флоу описаны файлами в [flows/](flows/).
 
 ## Flows
 

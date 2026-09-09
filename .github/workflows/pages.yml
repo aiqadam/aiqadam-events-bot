@@ -4,6 +4,10 @@
 # корень репозитория или /docs, а /docs у нас — документация проекта. Публикация
 # корня выложила бы наружу документы вместо сканера, поэтому артефактом уходит
 # ровно miniapp/, и он становится корнем сайта — адрес совпадает с решением Q3.
+#
+# i18n/*.json копируются в артефакт рядом со страницами (Q19): страницы сканера
+# и выдачи QR тянут собственные надписи словарём с того же GitHub Pages — без
+# CORS и без второго источника правды. Источник правды строк — i18n/ в репозитории.
 name: pages
 
 on:
@@ -11,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'miniapp/**'
+      - 'i18n/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -34,8 +39,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Assemble site (miniapp + i18n)
+        run: |
+          mkdir -p _site/i18n
+          cp -R miniapp/. _site/
+          cp -R i18n/. _site/i18n/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: miniapp
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

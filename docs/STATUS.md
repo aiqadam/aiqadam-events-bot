@@ -41,7 +41,7 @@
 | W8. `checkin-api` | 4 | W2, W5 | **готов** 2026-09-09 | агент W8 | [W08](work/W08-checkin-api.md) |
 | W9. Fallback deep link | 4 | W8 | не начат | — | — |
 | W12. Lifecycle и напоминания | 4 | W11 | не начат | — | — |
-| W7. Mini App — сканер | 5 | W8, 0.4–0.5 | в работе | агент W7 | [W07](work/W07-miniapp-scanner.md) |
+| W7. Mini App — сканер | 5 | W8, 0.4–0.5 | **готов** 2026-09-09 | агент W7 | [W07](work/W07-miniapp-scanner.md) |
 | W13. Списки и экспорт | 5 | W5 | не начат | — | — |
 | W14. Рассылки | 5 | W13, W3 | не начат | — | требует [Q13](OPEN-QUESTIONS.md#q13) |
 | W12b. `dedup-sweep` | 5 | W1, W5 | не начат | — | — |
