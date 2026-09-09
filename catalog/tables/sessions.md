@@ -9,7 +9,7 @@
 | Field | Type | externalId | field id | Назначение |
 |-------|------|-----------|----------|-----------|
 | telegram_id | TEXT | `74TuBqW5EdFq2VZo7Da81` | `RtikPovQ4yekuyyx95n0q` | одна активная сессия на человека |
-| scenario | TEXT | `uNx8kOWIpa6ZZguE9hfuf` | `vlKI7py7SBTcCKEmokSwB` | `event_create` / `event_edit` / `broadcast` |
+| scenario | TEXT | `uNx8kOWIpa6ZZguE9hfuf` | `vlKI7py7SBTcCKEmokSwB` | `event_create` / `event_edit` / `broadcast` / `registration` (W5) |
 | step | TEXT | `XbSpXk0XD4Ixf4dt9zsnJ` | `p1HQ0Rww4Yyw1gkn7ZF9y` | текущий шаг визарда |
 | draft | TEXT | `x29VFvZnmmaMm5E2T0Iap` | `67Nx2qs4APWZ22tcv0tS0` | **JSON строкой** — своего типа нет |
 | updated_at | DATE | `6Waw1f9cqNQ7j30QBG0XA` | `26R7kSdsQbjjWF8mLsHN7` | сессии старше 24ч протухли |

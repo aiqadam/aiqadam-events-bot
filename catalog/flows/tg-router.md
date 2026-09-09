@@ -42,12 +42,18 @@
 | step_11 (ветка 1) | `@aiqadam/qadam-tables : tables-create-records` | заводит строку `users` | `values.values[0]` |
 | step_12 | `@aiqadam/qadam-tables : tables-find-records` | активная сессия визарда | `table_id = tL4fbi1GisDwA8UJ9zSod`, фильтр `telegram_id eq` |
 | step_13 | CODE «классификация апдейта» | вычисляет `kind` и собирает выходной контракт | `{{step_1['output']}}`, `{{step_8['output']}}`, `{{step_12['output']}}` |
-| step_14 | ROUTER «делегирование обработчику» | пока единственная (fallback) ветка — обработчиков ещё нет | `{{step_13['output'].kind}}` |
-| step_16 (fallback) | CODE «намерение без обработчика» | след в логе: апдейт классифицирован, но не обработан | `{{step_13['output']}}` |
+| step_14 | ROUTER «делегирование обработчику» | ветка 0 = `start_payload`, ветка 1 = продолжение `registration`, fallback = ещё не подключено | `{{step_13['output'].kind}}`, `{{step_13['output'].session.scenario}}` |
+| step_15 (ветка 0) | `callFlow → fn-parse-start` | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` |
+| step_17 (ветка 0) | ROUTER «по kind разобранной ссылки» | ветка 0 = `kind = 'e'` → `registration`, fallback = `c`/`s`/пусто (W10/W11, ещё не подключены) | `{{step_15['output'].data.kind}}` |
+| step_18 (ветка 0 → 0) | `callFlow → registration` (`action: start`) | делегирование в W5, `waitForResponse: false` (fire-and-forget — тяжёлая цепочка внутри `registration`, роутеру её результат не нужен) | `eventId`/`utm` из `{{step_15['output'].data}}`, `telegramId/chatId/lang` из `{{step_13['output']}}` |
+| step_19 (ветка 0 → fallback) | CODE «start-payload разобран, обработчика для kind ещё нет» | след в логе для `c`/`s`/невалидных payload'ов | `{{step_15['output'].data.kind}}`, `.valid` |
+| step_20 (ветка 1) | `callFlow → registration` (`action: continue`) | продолжение визарда — вызывается, когда `session.scenario = 'registration'` (клик по кнопке согласия, контакт, пропуск), `waitForResponse: false` | `kind`/`callbackData`/`contactPhone`/… + `sessionStep`/`sessionDraft`/`sessionRecordId` из `{{step_13['output'].session}}` |
+| step_16 (fallback) | CODE «намерение без обработчика» | след в логе: апдейт классифицирован, но не обработан (`checkin-deeplink`/`staff-accept` — W10/W11) | `{{step_13['output']}}` |
 
 ## Зависимости
 
 - **Таблицы**: `users` (`z5PX9B8mTQC9Q6Dfuj5dM`), `sessions` (`tL4fbi1GisDwA8UJ9zSod`, только чтение)
+- **Subflow'ы**: `fn-parse-start` (`9H027DdckYSgu7Yp1LQRS`), `registration` (`RId6eBcN8T4oo8pkkWB7b`, W5)
 - **Переменные**: —
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 - **Store**: ключи `upd:<update_id>`, scope `COLLECTION`, без TTL — чистит `dedup-sweep` (W12b, ADR-0003)
@@ -73,15 +79,18 @@
 - **Активная сессия — самая свежая по `updated_at`, не протухшая (`< 24ч`)**,
   остальные строки на `(telegram_id)` — дубли или хвосты; `session.duplicates`
   наружу отдаётся для `dedup-sweep`, отдельного чтения не блокирует.
-- **`fn-parse-start` в этот пакет НЕ включён** — см. «Хвосты и блокеры» в
-  [журнале пакета](../../docs/work/W04-tg-router.md) и
-  [ARCHITECTURE](../../docs/ARCHITECTURE.md#callflow-с-данными-через-mcp-не-настраивается-проверено-на-инстансе-2026-09-09):
-  `flowProps` (payload, передаваемый вызываемому subflow) не удаётся записать
-  через MCP ни одним из проверенных способов, хотя выбор самого флоу по
-  `externalId` проходит. Роутер классифицирует `/start` с payload как
-  `start_payload` и отдаёт `startPayload` сырой строкой — разбор `kind`/`eventId`/
-  `sig` остаётся будущему пакету, который заодно повторно проверит `callFlow`.
-- **Обработчиков (`registration`, `checkin-deeplink`, `staff-accept`) в проекте
-  ещё нет** (W5, W10, W11 не начаты) — ветка `step_14` единственная и всегда
-  фолбэк. Следующий пакет добавляет `ap_add_branch` на `step_14` по мере готовности
-  обработчиков; менять `tg-router` при этом не обязательно.
+- **`fn-parse-start` и `registration` подключены пакетом W5** (2026-09-09). Блокер
+  Q20 («`flowProps` не записать через MCP»), из-за которого W4 оставил `tg-router`
+  с одной fallback-веткой, оказался не платформенным: причина — форма `input.flow`
+  при резолве `ap_get_piece_props` (нужен объект с `exampleData`, а не строка) —
+  подробно в [ARCHITECTURE](../../docs/ARCHITECTURE.md#subflowы-на-практике--проверено-на-инстансе-2026-09-08-w2),
+  блок «Опровергнуто», и в [OPEN-QUESTIONS Q20](../../docs/OPEN-QUESTIONS.md#q20).
+- **`checkin-deeplink` и `staff-accept` (W10/W11) всё ещё не подключены** — payload'ы
+  `kind = c`/`s` разбираются `fn-parse-start`, но проваливаются в fallback-ветку
+  `step_19` без действия. Следующий пакет добавляет ветку на `step_17` тем же
+  приёмом, что и `registration` здесь, не трогая остальной `tg-router`.
+- **`waitForResponse: false` на обоих вызовах `registration`** (`step_18`, `step_20`) —
+  сознательно: `registration` — тяжёлая цепочка вложенных `callFlow` (~15–30 с,
+  как и `fn-event-card` в одиночку), и `tg-router`, синхронно ожидающий вебхук
+  бота, не обязан ждать её завершения. Цена — `tg-router` не узнает, упал ли
+  `registration` (только из его собственных логов прогонов).
