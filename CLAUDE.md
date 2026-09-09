@@ -21,7 +21,12 @@ Events Bot для AI Qadam. Несущий стек — [Qadam Flow](https://git
 - одна статическая страница Mini App (единственное исключение, см. ADR-0001).
 
 Криптографию руками не пишем: HMAC — `crypto` qadam (`hmac-signature`),
-Code step рядом только кодирует и сравнивает.
+Code step рядом только кодирует и сравнивает. **Исключение** (с 2026-09-09,
+[ADR-0010](docs/adr/0010-unsandboxed-code-step-for-crypto.md)): в `fn-verify-init-data`
+и `fn-sign-qr` HMAC разрешено считать внутри Code step через builtin `node:crypto` —
+это узкое решение владельца проекта ради устранения секрета в логах прогонов
+(ADR-0005), а не общее снятие запрета. Новых мест для «своей крипты» это не
+открывает; npm-пакеты по-прежнему не разрешены без отдельного решения.
 
 ## Порядок чтения
 
@@ -71,9 +76,17 @@ Code step рядом только кодирует и сравнивает.
 
 Проверено прогоном на инстансе 2026-09-08 — не догадки, а факты:
 
-- **Песочница Code step:** чистый ECMAScript + полный `Intl`. Нет `node:crypto`,
-  `fetch`, `Buffer`, `btoa`, `TextEncoder`, `crypto.subtle`, npm-зависимостей, `process`.
-  `Intl` с `Asia/Tashkent` и локалью `uz-UZ` работает.
+- **Песочница Code step (факт от 2026-09-08, устарел для `pro-data-tech-qa`):** чистый
+  ECMAScript + полный `Intl`. Нет `node:crypto`, `fetch`, `Buffer`, `btoa`, `TextEncoder`,
+  `crypto.subtle`, npm-зависимостей, `process`. `Intl` с `Asia/Tashkent` и локалью
+  `uz-UZ` работает.
+  **Обновление 2026-09-09** (тикет инфры `T-0161`, `AP_EXECUTION_MODE=UNSANDBOXED`):
+  на этом же инстансе `node:crypto`, `Buffer`, `TextEncoder`, `crypto.subtle`, `process`,
+  `require` — все определены и работают (HMAC-SHA256 посчитан прогоном за 6 мс).
+  npm-пакеты технически разрешены (`ALLOW_NPM_PACKAGES_IN_CODE_STEP`), но ни один не
+  проверен и не согласован — не использовать без отдельного решения. Это настройка
+  инстанса, не проекта: обратима, привязка задокументирована в
+  [ADR-0010](docs/adr/0010-unsandboxed-code-step-for-crypto.md).
 - **Tables:** уникальных индексов нет, upsert'а нет, типы полей — только
   `TEXT` / `NUMBER` / `DATE` / `STATIC_DROPDOWN` (boolean хранится как dropdown
   `true`/`false`, JSON — как текст).
