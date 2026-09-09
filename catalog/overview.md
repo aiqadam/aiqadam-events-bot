@@ -4,14 +4,14 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-09:** 10 таблиц (W1), **13 флоу** — девять
+**Состояние на 2026-09-09:** 10 таблиц (W1), **14 флоу** — девять
 subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4),
-`registration` и `my-qr-api` (оба W5), один connection (шаг 0.2). Остальные
-флоу-маршрутизаторы (`checkin-api`, `event-wizard`, …) ещё не собраны. Есть
-также вторая статическая страница Mini App — `miniapp/ticket.html` (W5,
-[ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md)) — рядом с заглушкой
-сканера (`miniapp/index.html`, W7 ещё не начат). Все тринадцать флоу описаны
-файлами в [flows/](flows/).
+`registration` и `my-qr-api` (оба W5), `checkin-api` (W8), один connection
+(шаг 0.2). Остальные флоу (`event-wizard`, `checkin-deeplink`, `staff-invite`/
+`staff-accept`, …) ещё не собраны. Есть также вторая статическая страница
+Mini App — `miniapp/ticket.html` (W5, [ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md)) —
+рядом с заглушкой сканера (`miniapp/index.html`, W7 ещё не начат, будет вызывать
+`checkin-api`). Все четырнадцать флоу описаны файлами в [flows/](flows/).
 
 ## Flows
 
@@ -33,6 +33,7 @@ subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4),
 | `tg-router` | `@aiqadam/qadam-telegram-bot / new_telegram_message` | единственный вход бота: дедуп `update_id` (IDM-4), апсерт `users`, классификация апдейта, делегирование в `registration` (W4, доработан W5) | [tg-router.md](flows/tg-router.md) |
 | `registration` | `subflows / callableFlow` | регистрация участника: места/овербукинг, согласия PAR-1/PAR-2, QR (W5) | [registration.md](flows/registration.md) |
 | `my-qr-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | выдаёт участнику подписанный `payload` QR для `miniapp/ticket.html` (W5, ADR-0007) | [my-qr-api.md](flows/my-qr-api.md) |
+| `checkin-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | основной путь чекина: `initData` контролёра, членство в `event_staff` этого `event_id` (STF-2), подпись QR, запись `checked_in_at` (IDM-2) (W8) | [checkin-api.md](flows/checkin-api.md) |
 
 Строки `fn-*` ведёт пакет W2, строку `i18n-sync` — W3: так два владельца
 не правят одни и те же строки.

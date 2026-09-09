@@ -38,7 +38,7 @@
 | W11. Визард ивента | 3 | W2, W3 | не начат | — | — |
 | W5. Регистрация | 4 | W4 | **готов** 2026-09-09 | агент W5 | [W05](work/W05-registration.md) |
 | W6. Списки и отмена | 4 | W5 | не начат | — | — |
-| W8. `checkin-api` | 4 | W2, W5 | в работе | агент W8 | [W08](work/W08-checkin-api.md) |
+| W8. `checkin-api` | 4 | W2, W5 | заблокирован (Q16) | агент W8 | [W08](work/W08-checkin-api.md) |
 | W9. Fallback deep link | 4 | W8 | не начат | — | — |
 | W12. Lifecycle и напоминания | 4 | W11 | не начат | — | — |
 | W7. Mini App — сканер | 5 | W8, 0.4–0.5 | не начат | — | — |
@@ -145,6 +145,19 @@ QR **изображением** через Telegram не заработала н
 [catalog/flows/registration.md](../catalog/flows/registration.md),
 [catalog/flows/tg-router.md](../catalog/flows/tg-router.md),
 [catalog/flows/my-qr-api.md](../catalog/flows/my-qr-api.md).
+
+W8 добавил в проект флоу `checkin-api` (`CUKqiby1PoHiQiiCQy24V`, ENABLED, 27
+шагов, webhook sync) — основной путь чекина: `initData` контролёра проверяется
+`fn-verify-init-data`, членство в `event_staff` **именно этого** `event_id`
+(STF-2), подпись QR (`fn-parse-start` + `fn-verify-qr`), состояние регистрации
+(`fn-find-registration`), запись `checked_in_at` только при первом чекине
+(IDM-2). Все шесть исходов STF-4 плюс оба уровня отказа (`401`/`403`) подтверждены
+сквозными прогонами с настоящей криптографией на опубликованной версии —
+подробности и id прогонов в [catalog/flows/checkin-api.md](../catalog/flows/checkin-api.md)
+и [W08](work/W08-checkin-api.md). Пакет **заблокирован**, не `готов`: единственный
+непройденный пункт чек-листа — прогон на `initData` от **живого** клиента
+Telegram ([Q16](OPEN-QUESTIONS.md#q16)), для которого нужен человек или
+сквозной прогон W7 (сканер, ещё не собран).
 
 ## Что сделано помимо пакетов
 
