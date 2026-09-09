@@ -36,7 +36,7 @@
 | W4. `tg-router` + дедуп | 3 | W2, 0.1–0.2 | **готов** 2026-09-09 | агент W4 | [W04](work/W04-tg-router.md) |
 | W10. Инвайты staff | 3 | W2 | не начат | — | — |
 | W11. Визард ивента | 3 | W2, W3 | не начат | — | — |
-| W5. Регистрация | 4 | W4 | в работе | агент W5 | [W05](work/W05-registration.md) |
+| W5. Регистрация | 4 | W4 | заблокирован | агент W5 | [W05](work/W05-registration.md) |
 | W6. Списки и отмена | 4 | W5 | не начат | — | — |
 | W8. `checkin-api` | 4 | W2, W5 | не начат | — | — |
 | W9. Fallback deep link | 4 | W8 | не начат | — | — |
@@ -100,12 +100,35 @@ cron 04:00 Asia/Tashkent) и наполнил таблицу `strings` — по 
 
 W4 добавил в проект флоу `tg-router` (`Y1dNon2V2EhjWM0aYwdQi`, ENABLED,
 триггер `@aiqadam/qadam-telegram-bot` — единственный вебхук бота): дедуп по
-`update_id` (IDM-4), апсерт `users`, классификация апдейта. Обработчиков
-(`registration`, `checkin-deeplink`, `staff-accept`) в проекте ещё нет,
-поэтому роутер делегирования пока в одну fallback-ветку. Живое состояние —
-[catalog/flows/tg-router.md](../catalog/flows/tg-router.md). Пакет нашёл
-блокер для W5/W10/W11 — [Q20](OPEN-QUESTIONS.md#q20): `callFlow` с данными
-не настраивается через MCP, только пустые вызовы без payload.
+`update_id` (IDM-4), апсерт `users`, классификация апдейта. На момент закрытия
+W4 обработчиков (`registration`, `checkin-deeplink`, `staff-accept`) в проекте
+не было, роутер делегировал в одну fallback-ветку; W5 подключил `registration`
+(см. ниже). Живое состояние — [catalog/flows/tg-router.md](../catalog/flows/tg-router.md).
+Пакет нашёл блокер для W5/W10/W11 — [Q20](OPEN-QUESTIONS.md#q20): `callFlow`
+с данными не настраивался через MCP, только пустые вызовы без payload —
+**закрыт перед началом W5** (см. ниже), причина была не в платформе.
+
+W5 добавил в проект флоу `registration` (`vfVfIngczCKA2DpUgcevP`, ENABLED,
+`externalId RId6eBcN8T4oo8pkkWB7b`, 77 шагов) и подключил его к `tg-router`
+(две новые ветки на `step_14`: разбор `/start`-payload через `fn-parse-start`
+и продолжение визарда по `session.scenario = 'registration'`). Состояние
+диалога (карточка → согласие на данные → регистрация → согласие на рассылку →
+телефон → QR) хранится в существующей таблице `sessions`
+(`scenario = 'registration'`), между отдельными webhook-апдейтами —
+своей памяти у флоу нет (ADR-0003). Переоткрытие Q20 перед стартом пакета
+показало, что блокер был не платформенным — причина в форме `input.flow`
+при резолве `ap_get_piece_props` (нужен объект с `exampleData`, а не строка);
+подробности в [ARCHITECTURE](ARCHITECTURE.md#subflowы-на-практике--проверено-на-инстансе-2026-09-08-w2).
+Полный чек-лист BACKLOG.md пройден и подтверждён прогонами (self-test в
+Telegram владельца, сквозной прогон через `tg-router` в PRODUCTION), кроме
+**одного пункта**: доставка QR-**изображения** участнику падает во всех
+проверенных формах (`send_media` не резолвит FILE-проп со ссылкой на файл
+предыдущего шага, а Telegram не может скачать файл по URL, отданному
+`qrcode`-qadam'ом инстанса) — новый блокер [Q21](OPEN-QUESTIONS.md#q21).
+Подпись, генерация QR и вся остальная логика регистрации работают; пакету
+поставлен статус `заблокирован`, а не `готов`, именно из-за этого одного пункта.
+Живое состояние — [catalog/flows/registration.md](../catalog/flows/registration.md),
+[catalog/flows/tg-router.md](../catalog/flows/tg-router.md).
 
 ## Что сделано помимо пакетов
 
@@ -115,14 +138,19 @@ W4 добавил в проект флоу `tg-router` (`Y1dNon2V2EhjWM0aYwdQi`,
   ADR-0003 (идемпотентность без атомарных примитивов), ADR-0004 (агентский каталог),
   ADR-0005 (секреты в логах прогонов — цена, а не дефект), ADR-0006 (REST на чтение
   ревьюеру там, где MCP слеп).
-- **Открытые вопросы.** Из 20 закрыты 14. Открыты: [Q13](OPEN-QUESTIONS.md#q13)
+- **Открытые вопросы.** Из 21 закрыты 15. Открыты: [Q13](OPEN-QUESTIONS.md#q13)
   (25 msg/s, блокер W14), [Q14](OPEN-QUESTIONS.md#q14) (адресация dev/prod в сканере,
   блокер W7), [Q16](OPEN-QUESTIONS.md#q16) (**живой `initData` — нужен человек**,
   блокер приёмки STF-2 в W8), [Q17](OPEN-QUESTIONS.md#q17) (ПД в логах: у `tables`
   нет проекции колонок — принятый риск), [Q18](OPEN-QUESTIONS.md#q18) (как узнаём,
   что фоновый флоу не сделал работу — до W14), [Q19](OPEN-QUESTIONS.md#q19)
-  (локализация Mini App — до W7), [Q20](OPEN-QUESTIONS.md#q20) (**`callFlow`
-  с данными не настраивается через MCP** — блокер W5, W10, W11, найдено в W4).
+  (локализация Mini App — до W7), [Q21](OPEN-QUESTIONS.md#q21) (**доставка файлов
+  участнику через MCP не работает** — блокер W5, найдено в W5). [Q20](OPEN-QUESTIONS.md#q20)
+  (`callFlow` с данными не настраивался через MCP — блокер W5, W10, W11) закрыт
+  2026-09-09: дело было не в платформе, а в форме `input.flow` при резолве
+  `ap_get_piece_props` (нужен объект с `exampleData`, не строка); настоящее
+  подполе — `flowProps.payload`. W5, W10, W11 разблокированы для передачи данных
+  в subflow'ы; W5 упёрся в отдельный, новый блокер Q21 (доставка файлов).
 - **MCP.** Проектный сервер `qadam-flow` подключён по OAuth.
 - **Практики.** Принята модель `qadam-flow-project-template`: MCP + UI, плюс
   read-only REST ревьюеру (ADR-0006). Правила, выведенные из пяти кругов ревью W3

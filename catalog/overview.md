@@ -4,10 +4,11 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-09:** 10 таблиц (W1), **11 флоу** — девять
-subflow-«функций» `fn-*` (W2), `i18n-sync` (W3) и `tg-router` (W4), один
-connection (шаг 0.2). Остальные флоу-маршрутизаторы (`checkin-api`, …) ещё
-не собраны. Все одиннадцать флоу описаны файлами в [flows/](flows/).
+**Состояние на 2026-09-09:** 10 таблиц (W1), **12 флоу** — девять
+subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4) и
+`registration` (W5), один connection (шаг 0.2). Остальные флоу-маршрутизаторы
+(`checkin-api`, `event-wizard`, …) ещё не собраны. Все двенадцать флоу описаны
+файлами в [flows/](flows/).
 
 ## Flows
 
@@ -26,7 +27,8 @@ connection (шаг 0.2). Остальные флоу-маршрутизатор�
 | `fn-event-card` | `subflows / callableFlow` | карточка ивента, venue и ссылка на карты (OWN-2) | [fn-event-card.md](flows/fn-event-card.md) |
 | `fn-find-registration` | `subflows / callableFlow` | чтение `registrations` с выбором самой ранней (ADR-0003) | [fn-find-registration.md](flows/fn-find-registration.md) |
 | `i18n-sync` | cron `0 4 * * *` (Asia/Tashkent) | заливает `i18n/*.json` из `main` в таблицу `strings` (W3) | [i18n-sync.md](flows/i18n-sync.md) |
-| `tg-router` | `@aiqadam/qadam-telegram-bot / new_telegram_message` | единственный вход бота: дедуп `update_id` (IDM-4), апсерт `users`, классификация апдейта (W4) | [tg-router.md](flows/tg-router.md) |
+| `tg-router` | `@aiqadam/qadam-telegram-bot / new_telegram_message` | единственный вход бота: дедуп `update_id` (IDM-4), апсерт `users`, классификация апдейта, делегирование в `registration` (W4, доработан W5) | [tg-router.md](flows/tg-router.md) |
+| `registration` | `subflows / callableFlow` | регистрация участника: места/овербукинг, согласия PAR-1/PAR-2, QR (W5) | [registration.md](flows/registration.md) |
 
 Строки `fn-*` ведёт пакет W2, строку `i18n-sync` — W3: так два владельца
 не правят одни и те же строки.
