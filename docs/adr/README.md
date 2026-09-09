@@ -11,3 +11,7 @@
 | [0003](0003-idempotency-without-atomicity.md) | Идемпотентность без атомарных примитивов | Принято |
 | [0004](0004-catalog-instead-of-flow-export.md) | Агентский каталог вместо экспорта флоу | Принято |
 | [0005](0005-secrets-visible-in-run-logs.md) | Секреты и ПД видны в логах прогонов — цена ADR-0001 | Принято |
+| [0006](0006-rest-read-only-for-review.md) | REST только на чтение, только ревьюеру | Принято |
+| [0007](0007-qr-rendered-in-miniapp.md) | QR участника рендерится в Mini App, файлом не отправляется | Принято |
+| [0008](0008-bot-token-as-variable-not-connection-template.md) | Токен бота для HMAC — из Variable, не из `{{connections[...]}}` | Принято |
+| [0009](0009-hot-path-latency-budget-and-order.md) | Латентность горячего пути: бюджеты и порядок ускорения | Принято |
