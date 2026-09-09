@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Qadam Events — мой QR</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="vendor/qrcode.min.js"></script>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
+    main { max-width: 24rem; margin: 0 auto; text-align: center; }
+    #qr { display: flex; justify-content: center; margin: 1.5rem 0; min-height: 200px; }
+    #status { color: #666; }
+    #status.error { color: #b00020; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Ваш QR для входа</h1>
+    <div id="qr"></div>
+    <p id="status">Загрузка…</p>
+  </main>
+  <script>
+    (function () {
+      // ADR-0007: QR не отправляется файлом через Telegram — рендерится здесь,
+      // в браузере, из payload'а, который отдаёт my-qr-api после проверки initData.
+      var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/I5nd8ggKH4wkQLaww9Dkl/sync';
+
+      var tg = window.Telegram && window.Telegram.WebApp;
+      var statusEl = document.getElementById('status');
+      var qrEl = document.getElementById('qr');
+
+      function showError(text) {
+        statusEl.textContent = text;
+        statusEl.className = 'error';
+      }
+
+      if (tg) {
+        tg.ready();
+        tg.expand();
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      var eventId = params.get('event_id') || '';
+      var initData = tg && tg.initData ? tg.initData : '';
+
+      if (!initData) {
+        showError('Откройте эту страницу через кнопку в боте, не напрямую в браузере.');
+      } else if (!eventId) {
+        showError('Не указан ивент. Откройте страницу заново из сообщения бота.');
+      } else {
+        fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: initData, eventId: eventId }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.ok && data.payload) {
+              new QRCode(qrEl, {
+                text: data.payload,
+                width: 220,
+                height: 220,
+              });
+              statusEl.textContent = 'Покажите этот QR на входе.';
+            } else if (data && data.error === 'not_registered') {
+              showError('Регистрация на этот ивент не найдена.');
+            } else if (data && data.error === 'invalid_init_data') {
+              showError('Сессия устарела — переоткройте Mini App из бота.');
+            } else {
+              showError('Не получилось загрузить QR. Попробуйте ещё раз.');
+            }
+          })
+          .catch(function () {
+            showError('Не получилось загрузить QR. Проверьте соединение и попробуйте ещё раз.');
+          });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # W5. Регистрация участника
 
-- **Статус**: заблокирован
+- **Статус**: на проверке
 - **Владелец**: агент W5
 - **Волна**: 4
 - **Зависит от**: W4
@@ -19,6 +19,9 @@
 |----------|----------|---------|
 | flow `registration` | `vfVfIngczCKA2DpUgcevP` (externalId `RId6eBcN8T4oo8pkkWB7b`), 77 шагов | [catalog/flows/registration.md](../../catalog/flows/registration.md) |
 | правка flow `tg-router` | `Y1dNon2V2EhjWM0aYwdQi` — две новые ветки на `step_14` | [catalog/flows/tg-router.md](../../catalog/flows/tg-router.md) |
+| flow `my-qr-api` (новый) | `I5nd8ggKH4wkQLaww9Dkl`, sync webhook | [catalog/flows/my-qr-api.md](../../catalog/flows/my-qr-api.md) |
+| страница `miniapp/ticket.html` (новая) | + `miniapp/vendor/qrcode.min.js` (MIT, davidshimjs/qrcodejs) | — (Mini App, не флоу) |
+| ADR-0007 | QR рендерится в Mini App, не файлом | [docs/adr/0007-qr-rendered-in-miniapp.md](../adr/0007-qr-rendered-in-miniapp.md) |
 
 ## Чек-лист готовности
 
@@ -30,13 +33,13 @@
 - [x] `utm` из `?start=e<id>-<utm>` доезжает в `registrations.source` (OWN-6)
 - [x] повторный переход по ссылке не плодит строк и не шлёт второе подтверждение (IDM-1)
 - [x] участнику уходит `sendVenue` + ссылка на Я.Карты из `lat`/`lon` (OWN-2)
-- [x] QR **подписан и сходится с `fn-verify-qr`** — но [ ] **картинка QR не доезжает до участника** (см. «Хвосты и блокеры»)
-- [x] `catalog/` совпадает с живым проектом (`catalog/flows/registration.md`, `tg-router.md` обновлены)
+- [x] QR **подписан и выдаётся участнику** — не картинкой через Telegram (заблокировано
+      Q21), а рендером в Mini App из подписанного `payload` ([ADR-0007](../adr/0007-qr-rendered-in-miniapp.md));
+      сходится с `fn-verify-qr` (round-trip подтверждён)
+- [x] `catalog/` совпадает с живым проектом (`registration.md`, `tg-router.md`, новый `my-qr-api.md`, `overview.md`, `variables.md`)
 
-Семь пунктов из восьми закрыты полностью. Последний закрыт наполовину:
-подпись и генерация QR работают и проверены отдельно от доставки картинки —
-см. Q21. Именно поэтому статус пакета `заблокирован`, а не `готов`: закрывать
-пакет с известной дырой в чек-листе как «готов» нельзя (docs/work/README.md).
+Все восемь пунктов чек-листа закрыты. Пакет доведён до статуса `на проверке` —
+готовности «готов» не хватает только независимого ревью (docs/work/README.md).
 
 ## Как проверено
 
@@ -63,7 +66,8 @@ Telegram владельца (`telegram_id 322876545`), не «протестир
 - **IDM-1, повторный вход (`existing`)** — второй `start` для уже
   зарегистрированного `(event_id, telegram_id)`: `fn-find-registration`
   вернул `anyRegistered: true`, вторая строка `registrations` **не создана**,
-  второе согласие **не запрошено** — отправлены `reg.already` и попытка QR.
+  второе согласие **не запрошено** — отправлены `reg.already` и приглашение
+  в Mini App за QR.
 - **`no_seats` (овербукинг, OWN-15)** — фикстура: `capacity = 2`,
   `overbook_pct = 40` → лимит `ceil(2×1.4) = 3`; при трёх существующих
   `registered`-строках четвёртый `start` получил `outcome: declined`,
@@ -89,6 +93,28 @@ Telegram владельца (`telegram_id 322876545`), не «протестир
   после каждой проверки — на момент закрытия записи журнала `events`,
   `registrations`, `sessions` пусты; в `users` остаётся реальная строка
   владельца с полями согласия/телефона, выставленными тестами (это не мусор).
+- **Приглашение в Mini App (после перехода на ADR-0007)** — обе ветки
+  перепроверены заново реальными прогонами `ap_test_flow` (не переиспользован
+  старый вывод): `existing` (фикстура `events`+`registrations`,
+  прогон `0hgykduZtb9TYbEjF10vA`) и финализация `phone_answer`/`phone_skip`
+  (фикстура `sessions.step = await_phone`, прогон `zpE27qfInOChMDwwbV8KR`).
+  В обоих случаях реальный ответ Telegram Bot API (не наш собственный лог, а
+  эхо от `api.telegram.org`) показывает `reply_markup.inline_keyboard[0][0]`
+  с `web_app.url = "https://miniapp.events.aiqadam.org/ticket.html?event_id=e2etest1"` —
+  подстановка `{{variables['MINIAPP_URL']}}` подтверждена прогоном, а не
+  доверием к `ap_validate_flow` (который для переменных всегда лжёт false
+  positive'ом, см. `catalog/variables.md`). Все фикстуры удалены после проверки.
+- **`my-qr-api` проверен с настоящей криптографией**, не моками: временный
+  флоу посчитал HMAC-цепочку `fn-verify-init-data` (`WebAppData` → токен бота
+  → `data_check_string`) на реальных секретах, собранный `initData` дал
+  `hashValid: true` в `my-qr-api`. Проверены все три ветки (`ok`/`not_registered`/
+  `invalid_init_data`) и — отдельно — сам публичный HTTP-эндпоинт голым `curl`
+  (не через MCP): `POST /api/v1/webhooks/I5nd8ggKH4wkQLaww9Dkl/sync` с мусорным
+  `initData` вернул `{"ok":false,"error":"invalid_init_data","reason":"malformed"}`,
+  `HTTP 200`; `OPTIONS`-preflight с `Origin: https://miniapp.events.aiqadam.org`
+  вернул `204` и `access-control-allow-origin: *` (Q11 подтверждён и для этого
+  эндпоинта, не только в общем виде). Временный флоу-калькулятор HMAC и все
+  фикстуры (`registrations`) удалены после проверки.
 
 ## Журнал
 
@@ -138,6 +164,27 @@ Telegram владельца (`telegram_id 322876545`), не «протестир
   ради тестируемости (фиктивный `callback_query_id` в `ap_test_flow` всегда
   даёт `"query is too old..."`), но и как осознанное решение для прода:
   неотвеченный (просроченный) callback не должен ронять остальную бизнес-логику.
+- **Q21 переоткрыт перед тем, как звать пользователя за решением — и решён
+  архитектурно, не обходом.** Прежде чем предлагать внешний object storage
+  (S3/R2, вариант, который рассматривался), проверил на изолированной паре
+  тестовых флоу: платформенный `http`-qadam с `body_type: raw` на деле шлёт
+  `JSON.stringify` строки, а не сырые байты; FILE-проп (`fieldType: file`) не
+  резолвит base64/data-URI ни у `send_media`, ни у `http`-qadam'а — та же
+  стена, что и в оригинальной находке Q21, только уже без Telegram и без
+  внешнего сервиса вовсе. Значит смена стораджа не решает проблему — решение
+  [ADR-0007](../adr/0007-qr-rendered-in-miniapp.md): QR не отправляется файлом
+  никуда, а рендерится клиентским JS в `miniapp/ticket.html` из подписанного
+  `payload`, который отдаёт новый флоу `my-qr-api`. Удалены ставшие ненужными
+  шаги генерации картинки (`text_to_qrcode`) из обеих веток `registration` —
+  подпись (`fn-sign-qr`) осталась, она нужна для `payload` и для fallback-ссылки.
+- **Новые ключи i18n (`reg.qr.open_miniapp`, `reg.qr.button`) добавлены в
+  `i18n/*.json`, но таблица `strings` их ещё не содержит** — `i18n-sync`
+  синхронизируется по cron из `main`, а эта ветка (`w5-registration`) в `main`
+  ещё не смержена. До прогона `i18n-sync` **после мержа** `fn-t` возвращает сам
+  ключ вместо перевода (документированное поведение фолбэка, не баг) — это
+  видно и в прогонах ниже (`"text":"reg.qr.open_miniapp"`). Тот же
+  пост-мерж-ритуал, что уже был у W3 (`i18n-sync`) — обязательный шаг после
+  мержа этого PR, не отдельная задача.
 
 ## Ревью
 
@@ -145,19 +192,22 @@ Telegram владельца (`telegram_id 322876545`), не «протестир
 
 ## Хвосты и блокеры
 
-- **[Q21](../OPEN-QUESTIONS.md#q21): доставка QR-изображения участнику не
-  работает.** Подпись, `payload` (`c<eventId>-<userId>-<sig>`) и генерация
-  QR-картинки (`@aiqadam/qadam-qrcode`) работают и проверены (round-trip
-  через `fn-verify-qr` даёт `valid: true`). Отправка готовой картинки в
-  Telegram падает во всех проверенных формах — см. журнал выше и
-  ARCHITECTURE.md. Шаги доставки (`step_18`, `step_75` в `registration`)
-  помечены `continueOnFailure: true`, поэтому падение не рушит остальной
-  диалог: участник получает текстовое сообщение-подпись (`reg.qr.caption`),
-  но без самого изображения. Снятие блокера требует либо доступа в UI
-  (переконфигурировать FILE-проп руками), либо проверки сетевой доступности
-  `app.flow.aiqadam.org` извне — оба пункта не выполнимы силами агента через
-  MCP, см. варианты в Q21.
+- **Q21 закрыт для W5**, решением [ADR-0007](../adr/0007-qr-rendered-in-miniapp.md) —
+  подробности выше. Сама находка (FILE-пропы не резолвятся через MCP ни на
+  одном qadam'е) остаётся открытым платформенным пределом в
+  [OPEN-QUESTIONS.md#q21](../OPEN-QUESTIONS.md#q21) — актуальна для W7/W12,
+  если им когда-нибудь понадобится передать файл через MCP-собранный шаг.
+- **Обязательный шаг после мержа этой ветки**: прогнать `i18n-sync` (или
+  дождаться cron 04:00 Asia/Tashkent), иначе `reg.qr.open_miniapp`/`reg.qr.button`
+  показываются участнику как сырые ключи, а не перевод — см. журнал.
 - **`checkin-deeplink` (`kind: c`) и `staff-accept` (`kind: s`) всё ещё не
   подключены к `tg-router`** — это ожидаемо, зона ответственности W10/W11,
   не регрессия этого пакета; `fn-parse-start` их уже распознаёт и корректно
   оставляет в fallback-логе.
+- **`miniapp/ticket.html` не проверен вживую в Telegram-клиенте** (только
+  логика `my-qr-api`, которую он вызывает, проверена настоящей криптографией) —
+  открытие Mini App через реальный `web_app`-кнопку и рендер QR в браузере
+  требует живого клиента Telegram, тот же класс ограничения, что и
+  [Q16](../OPEN-QUESTIONS.md#q16) (`initData` от живого клиента). Ревьюеру
+  стоит открыть кнопку из тестового сообщения самому, если есть доступ к
+  dev-боту.

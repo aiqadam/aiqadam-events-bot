@@ -56,8 +56,8 @@
 `deadline_passed`, `fn-t`, `send_text_message`. Регистрация **не создаётся**.
 
 **`existing`** (step_13…step_18, IDM-1 — повторный вход по ссылке): `fn-sign-qr` →
-`qrcode` → `reg.already` (`{title}`) → `send_text_message` → best-effort `send_media`
-с QR (см. «Известный блокер» ниже). Второе согласие не спрашивается.
+`reg.already` (`{title}`) → `send_text_message` → приглашение в Mini App за QR
+(см. «Выдача QR» ниже). Второе согласие не спрашивается.
 
 **`new`** (step_19…step_32): `fn-event-card` → `send_text_message` (карточка,
 `format: None`) → ROUTER «есть venue?» (`step_21`, `EXISTS` по `card.venue`):
@@ -96,47 +96,41 @@ IDM-1) → `tables-create-records`/`tables-update-record registrations`
 ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` пишет
 `users.phone`, шлёт `reg.phone.saved`; fallback шлёт `reg.phone.skipped`. Обе ветки
 убирают reply-клавиатуру (`reply_markup.remove_keyboard`). Затем общая финализация:
-`fn-sign-qr` → `qrcode` → `reg.qr.caption` → best-effort `send_media` → удаление
+`fn-sign-qr` → приглашение в Mini App за QR (см. «Выдача QR» ниже) → удаление
 строки `sessions` (визард завершён).
 
 ## Зависимости
 
 - **Subflow'ы**: `fn-find-registration`, `fn-event-card`, `fn-fmt-time`, `fn-t`, `fn-sign-qr`, `fn-parse-start` (вызывается из `tg-router`, не отсюда)
 - **Таблицы**: `events` (чтение), `registrations` (чтение и запись), `users` (запись согласий/телефона), `sessions` (чтение и запись состояния визарда)
-- **Переменные**: — (косвенно `BOT_USERNAME`, `QR_SIGNING_KEY` — внутри вызываемых subflow'ов)
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`send_media`/`answer_callback_query`/`custom_api_call`
+- **Переменные**: `MINIAPP_URL` (кнопка Mini App); косвенно `BOT_USERNAME`, `QR_SIGNING_KEY` — внутри вызываемых subflow'ов
+- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`answer_callback_query`/`custom_api_call`
 
-## Известный блокер — доставка QR-изображения не работает через MCP
+## Выдача QR — через Mini App, не файлом (ADR-0007)
 
-**Подпись и генерация QR работают и проверены** (`fn-sign-qr` → `@aiqadam/qadam-qrcode`
-`text_to_qrcode`), но **шаг отправки картинки участнику падает всегда** —
-`send_media`: `"No media defined. Provide either a file or an id."`. Оба финальных
-шага (`step_18`, `step_75`) помечены `continueOnFailure: true`, поэтому падение не
-рушит остальной диалог — только сама фотография не доезжает.
+Первая версия пакета пыталась сгенерировать картинку `@aiqadam/qadam-qrcode` и
+отправить её `send_media`/`custom_api_call` — не заработало ни в одной форме
+(FILE-пропы не резолвятся через MCP ни на одном qadam'е, ни с одним получателем,
+см. [Q21](../../docs/OPEN-QUESTIONS.md#q21)). Решение —
+[ADR-0007](../../docs/adr/0007-qr-rendered-in-miniapp.md): QR не отправляется
+файлом вовсе, шаги `text_to_qrcode`/`send_media` из обеих веток (`existing`,
+`phone_answer`-финализация) удалены.
 
-Проверено на изолированной паре тестовых флоу (см. журнал пакета, docs/work/W05):
+Вместо этого оба финальных шага (`step_18` в `existing`, `step_75` в финализации
+`phone_answer`) шлют `send_text_message` с `reply_markup.inline_keyboard` —
+одна кнопка типа `web_app`, ведущая на
+`{{variables['MINIAPP_URL']}}ticket.html?event_id=<eventId>`. `eventId` берётся
+из собственного вывода `fn-sign-qr` того же шага (`step_13`/`step_72`), не
+требует отдельного чтения. Страница `miniapp/ticket.html` при открытии берёт
+`Telegram.WebApp.initData`, зовёт синхронный вебхук `my-qr-api`
+([catalog/flows/my-qr-api.md](my-qr-api.md)) и рисует QR клиентским JS
+(`miniapp/vendor/qrcode.min.js`, MIT, davidshimjs/qrcodejs) из полученного
+`payload` — без единого байта файла, летящего через сам `registration`.
 
-1. `send_media.media.photo` (FILE-проп) со значением-URL (строка, `{url, filename}`,
-   `{type:'url', value:...}`) — во всех формах **тот же браузер ошибок**: FILE-проп
-   либо роняет значение целиком (`"No media defined"`), либо (в `custom_api_call`
-   `form_data` с `fieldType: file`) трактует переданную строку как **сырые байты
-   файла** (`_valueLength` совпадает с длиной URL-строки, а не с размером PNG) —
-   значит подстановка URL «прошлого шага» в FILE-проп через голый JSON не резолвится
-   так, как это делает файловый пикер в UI.
-2. `custom_api_call` (`/sendPhoto`, `/sendDocument`) с URL от `qrcode`-qadam'а
-   (`https://app.flow.aiqadam.org/api/v1/files/...`) — Telegram отвечает
-   `"Bad Request: failed to get HTTP URL content"` **и на фото, и на документ**:
-   Telegram не может сам скачать этот URL (не проблема content-type конкретно
-   для фото — падает одинаково оба метода).
-
-**Открытый вопрос**: не может ли причина быть глубже — недоступность
-`app.flow.aiqadam.org` для внешних серверов (не только Telegram) с публичного
-интернета в принципе. Достоверно не проверено (агент не может воспроизвести запрос
-с серверов Telegram) — см. [Q21](../../docs/OPEN-QUESTIONS.md#q21).
-
-**Что работает уже сейчас** (без картинки): подпись, `payload` для QR (`c<eventId>-<userId>-<sig>`),
-текст-подпись (`reg.qr.caption`). Участник получит текстовое сообщение с подписью, но
-без самого изображения — сканировать будет нечего, пока блокер не снят.
+Тексты кнопки и приглашения — новые ключи i18n `reg.qr.button`/`reg.qr.open_miniapp`
+(добавлены этим пакетом в `i18n/*.json`; до прогона `i18n-sync` **после мержа**
+`fn-t` вернёт сам ключ вместо перевода — это ожидаемо, не баг флоу, см. журнал
+пакета).
 
 ## Заметки
 
@@ -168,3 +162,9 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
   (капасити `ceil(2×1.4)=3` при трёх `registered`-строках). Сквозной прогон через
   `tg-router` (`/start emeetup01-...` → классификация → `callFlow registration`)
   подтверждён на живом `PRODUCTION`-прогоне флоу (id `0jD6a3OFxEmP6DQlgRQ8A`).
+- **Приглашение в Mini App перепроверено отдельно, после перехода на ADR-0007**:
+  `existing`-ветка (изолированная фикстура `events`+`registrations`) и
+  `phone_answer`-финализация (фикстура `sessions.step = await_phone`) — оба
+  реальных ответа Telegram Bot API показывают корректный `reply_markup.inline_keyboard`
+  с `web_app.url = "https://miniapp.events.aiqadam.org/ticket.html?event_id=<eventId>"`.
+  Все тестовые фикстуры удалены после проверки.

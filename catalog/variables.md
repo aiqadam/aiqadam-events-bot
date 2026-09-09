@@ -34,7 +34,7 @@
 |------|------|-----|
 | `QR_SIGNING_KEY` | [fn-sign-qr](flows/fn-sign-qr.md) | `step_2`, `secretKey` у `crypto / hmac-signature` |
 | `BOT_USERNAME` | [fn-event-card](flows/fn-event-card.md) | `step_3`, сборка `registerDeepLink` |
-| `MINIAPP_URL` | пока никто | адрес нужен W7 |
+| `MINIAPP_URL` | [registration](flows/registration.md) | кнопка `web_app`, ведущая на `ticket.html` (W5, ADR-0007) |
 
 `ap_validate_flow` помечает такие шаги как `"references {{variables...}} which does
 not exist in the flow"` — это **ложное срабатывание**, флоу работает. Но проверять
