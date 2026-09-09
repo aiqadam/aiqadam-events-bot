@@ -45,7 +45,7 @@
 | W13. Списки и экспорт | 5 | W5 | не начат | — | — |
 | W14. Рассылки | 5 | W13, W3 | не начат | — | требует [Q13](OPEN-QUESTIONS.md#q13) |
 | W12b. `dedup-sweep` | 5 | W1, W5 | не начат | — | — |
-| W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | не начат | — | — |
+| W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | в работе | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W15. Приёмка | 6 | все | не начат | — | — |
 
 Критический путь: `0.1–0.3 → W1 → W2 → W4 → W5 → W8 → W7 → W15`.
