@@ -70,6 +70,13 @@ Variables (0.3), проверенные пробным флоу: `QR_SIGNING_KEY
 действительно смотрят на `main` — до мержа тот же прогон давал три 404.
 В `untranslated` ожидаемо только `_selftest.fallback` (ключ намеренно есть лишь в `ru`).
 
+**Пост-мерж прогон `i18n-sync` после PR #15 выполнен** (обязательный шаг из
+журнала W5): прогон `ob8yF6oae9hPJgpmUmKO3`, 6,7 с, `SUCCEEDED`. Добавлены
+`reg.qr.button`/`reg.qr.open_miniapp` на все три языка (`changed: 9` — 6
+новых строк, 3 старые `reg.qr.caption`-подобные удалены как замена), coverage
+204/203/203 при `rows_before: 607`. Участники теперь получают перевод, а не
+сырые ключи.
+
 Mini App (шаг 0.4) опубликован: `https://miniapp.events.aiqadam.org/` отдаёт
 страницу-заглушку по HTTPS, деплой — workflow `pages.yml` из каталога `miniapp/`.
 Сам сканер собирается в W7. `Enforce HTTPS` в настройках Pages включён, но
