@@ -162,6 +162,19 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
   (капасити `ceil(2×1.4)=3` при трёх `registered`-строках). Сквозной прогон через
   `tg-router` (`/start emeetup01-...` → классификация → `callFlow registration`)
   подтверждён на живом `PRODUCTION`-прогоне флоу (id `0jD6a3OFxEmP6DQlgRQ8A`).
+- **W17 (2026-09-11) — все синхронные `callFlow` переведены на
+  `executionMode: "inline"`** ([qadam-flow#363](https://github.com/aiqadam/qadam-flow/issues/363),
+  раскатано на инстансе): `step_4`, `step_10`, `step_11`, `step_13`, `step_14`,
+  `step_16`, `step_17`, `step_19` (`fn-event-card`, сам получил inline своих
+  вложенных вызовов — см. `fn-event-card.md`), `step_23`, `step_31`, `step_38`,
+  `step_43`, `step_46`, `step_49`, `step_57`, `step_59`, `step_62`, `step_68`,
+  `step_70`, `step_72`, `step_73`, `step_74` — 22 шага во всех ветках визарда.
+  **Не тронут** `tg-router → registration` (`waitForResponse: false`,
+  fire-and-forget) — inline не применим к вызову, результат которого никто не
+  ждёт. После публикации прогон `fGqdXXeslOT5TAtbW53TR` (TESTING, `/start`,
+  новая регистрация, ветка `new`) дал 17,1 с против эталона 34,2 с
+  (`JYWkDu2jBXX9BDd3kHna3`, ADR-0009) — почти двукратное ускорение, «пауза»
+  упала с ≈26,4 с до ≈0,2 с. Подробности — [W17](../../docs/work/W17-inline-callflow.md).
 - **Приглашение в Mini App перепроверено отдельно, после перехода на ADR-0007**:
   `existing`-ветка (изолированная фикстура `events`+`registrations`) и
   `phone_answer`-финализация (фикстура `sessions.step = await_phone`) — оба
