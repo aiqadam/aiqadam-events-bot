@@ -162,6 +162,19 @@
   последовательных `callFlow`), с запасом укладывается в
   `TRIGGER_TIMEOUT_SECONDS = 60`. Публичный прогон через `/sync` в e2e W7 —
   те же единицы секунд.
+- **W17 (2026-09-11) — все десять `callFlow`-шагов переведены на
+  `executionMode: "inline"`** ([qadam-flow#363](https://github.com/aiqadam/qadam-flow/issues/363),
+  раскатано на инстансе): `step_2` (`fn-verify-init-data`), `step_8`
+  (`fn-parse-start`), `step_9` (`fn-verify-qr`), `step_10` (`fn-find-registration`),
+  `step_19` (`fn-fmt-time`), `step_29`/`step_30`/`step_31`/`step_32`/`step_33`
+  (все ветки `fn-t`) — вся цепочка из пяти последовательных хопов, которую
+  T-0161 (увеличение воркеров) не ускорил (см. [Q22](../../docs/OPEN-QUESTIONS.md#q22)).
+  Опубликовано, `ap_validate_flow` чист. **After-прогон на реальном скане**
+  (прогон `Dv6ccs06vqwdHeXBH6bVE`, контролёр `binali_beelab` через Mini
+  App-сканер, участник `return_void_0`): 10,0 с полная длительность, ≈9,95 с
+  сумма шагов, пауза ≈0,05 с — против 22,8 с после W16 (пауза ≈17,9 с) и
+  23,3 с исходного эталона. Числа записаны в Q22/ADR-0009.
+  Подробности — [W17](../../docs/work/W17-inline-callflow.md).
 - **W16 (2026-09-09) — HMAC внутри `fn-verify-init-data`/`fn-sign-qr` слиты в
   CODE-шаги через `node:crypto`, `fn-verify-qr` перестал вызывать `fn-sign-qr`
   как subflow** ([ADR-0010](../../docs/adr/0010-unsandboxed-code-step-for-crypto.md)) —
