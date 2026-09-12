@@ -1,5 +1,14 @@
 # Flow: my-qr-api
 
+> **W24 (2026-09-13): локализация снята, только русский.**
+> [ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md). Чтения
+> таблицы `strings` удалены, тексты пришли во вход CODE-шагов, которые их
+> формируют — эталон [`ru-texts`](../snippets/ru-texts.md). Форма ответа этих
+> шагов не изменилась ни на байт, поэтому шаги отправки не трогались.
+> Ушли `step_8` и `step_26` (чтения `strings`), а также `step_15`/`step_16` (чтение и разбор языка пользователя — выбирать больше не из чего); флоу **26 → 22 шага**.
+> Ниже по тексту упоминания `strings`, `i18n-resolve` и «перевода» относятся к
+> состоянию **до** этой даты и сохранены как история.
+
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook / catch_webhook`, `authType: none`. Синхронный ответ —
   вызывается по `POST /api/v1/webhooks/I5nd8ggKH4wkQLaww9Dkl/sync` (суффикс `/sync`).
@@ -43,8 +52,7 @@
 | step_21 | CODE «verify initData» | constant-time сравнение + свежесть | `expected` = `{{step_20['output']}}`, `maxAgeSeconds: 86400` |
 | step_3 | CODE «combine validity» | `valid`, `telegramId`, `reason` | `{{step_21['output']}}`, `{{step_1['output'].eventIdValid}}` |
 | step_4 | ROUTER «initData+eventId валидны?» | `valid` (0) / `Otherwise` (1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
-| step_26 (branch 1) | `tables-find-records strings` | `key in (checkin.unauthorized)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
-| step_27 (branch 1) | CODE «resolve i18n unauthorized (эталон)» | `lang: ru` (пользователь не проверен) | `{{step_26['output']}}` · эталон [`i18n-resolve`](../snippets/i18n-resolve.md) |
+| step_27 (branch 1) | CODE «текст unauthorized (ru)» | `checkin.unauthorized` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_13/14 (branch 1) | CODE + `return_response` | `{ ok:false, error:"invalid_init_data", reason, text }`, статус `200` | `{{step_27['output']}}`, `{{step_3['output'].reason}}` |
 | step_2 (branch 0) | CODE «normalize registration keys» | сентинел `-` вместо пустого фильтра | `{{step_1['output'].eventId}}`, `{{step_3['output'].telegramId}}` |
 | step_22 | `tables-find-records registrations` | два `eq`, **без `limit`** | `table_id = PNuChoFG0tIBTND86yzDL` |
@@ -54,16 +62,14 @@
 | step_5 (branch `ok`) | CODE «canonical msg (эталон)» | `'c:' + eventId + ':' + userId`, **падает** на мусорном входе | `{{step_1['output'].eventId}}`, `{{step_3['output'].telegramId}}` · эталон [`hmac-qr`](../snippets/hmac-qr.md) |
 | step_24 (branch `ok`) | CODE «sign QR (эталон)» | HMAC → base64url → первые 10, сборка `payload` | `{{variables['QR_SIGNING_KEY']}}` |
 | step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_24['output']}}` |
-| step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык; **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
-| step_16 (branch `not_registered`) | CODE «resolve user lang» | `lang` (фолбэк `ru`) | `{{step_15['output']}}` |
-| step_8 (branch `not_registered`) | `tables-find-records strings` | `key in (checkin.not_registered)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
-| step_25 (branch `not_registered`) | CODE «resolve i18n not_registered (эталон)» | язык участника | `{{step_8['output']}}`, `{{step_16['output'].lang}}` |
+| step_25 (branch `not_registered`) | CODE «текст not_registered (ru)» | `checkin.not_registered` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_25['output']}}` |
 ## Зависимости
 
 - **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md))
-- **Таблицы**: `registrations` (чтение), `users` (чтение языка, только в ветке `not_registered`),
-  `strings` (чтение: по одному запросу на каждую ветку ошибки; ок-путь `strings` не читает)
+- **Таблицы**: `registrations` (чтение) — и всё. С W24 флоу **не читает ни `users`,
+  ни `strings`**: чтение языка участника (`step_15`/`step_16`) и оба чтения `strings`
+  удалены, тексты лежат во входах `step_25`/`step_27`
 - **Переменные**: `BOT_TOKEN` (`step_20`), `QR_SIGNING_KEY` (`step_24`) — обе в длинной форме
 - **Connections**: —
 
@@ -109,15 +115,17 @@
 
 - **Всегда `HTTP 200`, ошибка — в теле.** Страница сама разбирает `ok`/`error`,
   а не HTTP-статус — проще для `fetch()` без обвязки на 4xx/5xx.
-- **Локализация ошибок — на сервере (Q19, W7).** `step_15`/`step_16` резолвят
-  `users.lang` по `telegram_id` из проверенного `initData` (для `not_registered` —
-  у участника может не быть регистрации на этот ивент, но язык известен из его
-  строки `users`; строки нет — фолбэк `ru`). `invalid_init_data` всегда `ru`:
-  пользователь не проверен, как в `401` у `checkin-api`.
-- **Чтение `users` — только в ветке `not_registered`.** По замечанию ревью W7 №2
-  резолв языка перенесён внутрь этой ветки: успешный `ok`-путь (самый частый —
-  каждое открытие тикета) строку пользователя **не читает**, и её полные данные
-  (`phone`, `consent_*`) не попадают в логи прогонов на успешных запросах (Q17).
+- **Текст ошибок собирается на сервере (Q19, W7), и он всегда русский.**
+  С W24 ([ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md))
+  строки лежат во входах `step_25`/`step_27` (эталон
+  [`ru-texts`](../snippets/ru-texts.md)), выбора языка нет.
+- **Чтения `users` в этом флоу больше нет вовсе.** Раньше `step_15`/`step_16`
+  резолвили `users.lang` по `telegram_id` из проверенного `initData`, и по
+  замечанию ревью W7 №2 это было убрано с `ok`-пути внутрь ветки
+  `not_registered` — чтобы полные данные пользователя (`phone`, `consent_*`)
+  не попадали в логи успешных запросов (Q17). W24 снял оба шага целиком:
+  язык один, резолвить нечего. Побочно это **полностью** закрывает тот же
+  риск Q17 для этого флоу — строка `users` не читается ни на одном пути.
 - **Не проверяет статус ивента** (`published`/`cancelled`/`finished`) — это
   сознательно: показ уже выданного QR не должен зависеть от того, что случилось
   с ивентом после регистрации. Актуальность на входе проверяет `checkin-api` (STF-2),

@@ -53,6 +53,7 @@
 | W21. Перевод флоу на end-to-end ([ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) | 5 | W20, W17, W16 | **готов** 2026-09-13 | агент W21 | [W21](work/W21-end-to-end-flows.md) |
 | W22. Дешёвая латентность + уборка `fn-*` ([Q28](OPEN-QUESTIONS.md#q28)) | 5 | W21, W20, W17 | **готов** 2026-09-13 | агент W22 | [W22](work/W22-latency-and-cleanup.md) |
 | W23. Слияние CODE-цепочек и остатки латентности | 5 | W22 | не начат | — | — |
+| W24. Русский-онли до платформенного i18n ([ADR-0014](adr/0014-russian-only-until-platform-i18n.md), qadam-flow#420) | 5 | W22 | **готов** 2026-09-13 | агент W24 | [W24](work/W24-russian-only.md) |
 | W15. Приёмка | 6 | все | не начат | — | — |
 
 Критический путь: `0.1–0.3 → W1 → W2 → W4 → W5 → W8 → W7 → W15`.

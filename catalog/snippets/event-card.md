@@ -11,7 +11,9 @@
 
 ## Как встраивается
 
-Пять шагов: extract → fmt (батч) → чтение `strings` → resolve i18n → assemble.
+Четыре шага: extract → fmt (батч) → тексты ([`ru-texts`](ru-texts.md)) → assemble.
+До W24 между fmt и текстами стояло пятое — чтение `strings`; удалено вместе с
+локализацией ([ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md)).
 Первый и последний приведены полностью — по выдержке побайтовая сверка
 невозможна (правило 1 [README](README.md)).
 
