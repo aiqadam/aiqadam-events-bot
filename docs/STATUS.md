@@ -49,7 +49,7 @@
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **в работе** 2026-09-11 | агент W17 | [W17](work/W17-inline-callflow.md) |
 | W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | не начат | — | — |
 | W19. Ревизия после обновления образа Qadam Flow ([Q26](OPEN-QUESTIONS.md#q26)) | 5 | W8 | **в работе** 2026-09-12 | агент W19 | [W19](work/W19-platform-primitives-revision.md) |
-| W20. Пересмотр ADR-0003 на атомарных примитивах ([Q27](OPEN-QUESTIONS.md#q27)) | 5 | W19, W4, W5, W8 | не начат | — | — |
+| W20. Пересмотр ADR-0003 на атомарных примитивах ([Q27](OPEN-QUESTIONS.md#q27), [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md)) | 5 | W19, W4, W5, W8 | **в работе** 2026-09-12 | агент W20 | [W20](work/W20-idempotency-on-atomic-primitives.md) |
 | W15. Приёмка | 6 | все | не начат | — | — |
 
 Критический путь: `0.1–0.3 → W1 → W2 → W4 → W5 → W8 → W7 → W15`.
