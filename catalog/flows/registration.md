@@ -118,7 +118,8 @@ ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `s
   см. «Хвосты» в [W22](../../docs/work/W22-latency-and-cleanup.md))
 - **Переменные**: `MINIAPP_URL` (кнопка Mini App), `BOT_USERNAME` (`step_96`, deep link карточки),
   `QR_SIGNING_KEY` (`step_13`, `step_72`) — все в длинной форме `{{variables['NAME']}}`
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`answer_callback_query`/`custom_api_call`
+- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`answer_callback_query`.
+  `custom_api_call` в этом флоу **не осталось ни одного**: единственный (`sendVenue`) удалён в W22 (ADR-0013)
 
 ## Выдача QR — через Mini App, не файлом (ADR-0007)
 
@@ -143,7 +144,7 @@ ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `s
 
 Тексты кнопки и приглашения — новые ключи i18n `reg.qr.button`/`reg.qr.open_miniapp`
 (добавлены этим пакетом в `i18n/*.json`; до прогона `i18n-sync` **после мержа**
-`fn-t` вернёт сам ключ вместо перевода — это ожидаемо, не баг флоу, см. журнал
+разрешение i18n вернёт сам ключ вместо перевода — это ожидаемо, не баг флоу, см. журнал
 пакета).
 
 ## Заметки

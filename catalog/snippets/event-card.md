@@ -70,28 +70,46 @@ export const code = async (inputs) => {
   const registerDeepLink = bot === '' ? '' : 'https://t.me/' + bot + '?start=e' + eventId;
 
   return {
-    found: true, eventOk: true, eventId: eventId, lang: lang,
+    found: true,
+    eventOk: true,
+    eventId: eventId,
+    lang: lang,
     recordId: ev.__recordId,
-    title: ev.title || '', description: ev.description || '', address: ev.address || '',
-    photoFileId: ev.photo_file_id || '', status: ev.status || '',
-    ownerId: ev.owner_id || '', chapterId: ev.chapter_id || '',
-    startsAt: ev.starts_at || '', endsAt: ev.ends_at || '', regDeadlineAt: ev.reg_deadline_at || '',
-    lat: hasGeo ? String(lat) : '', lon: hasGeo ? String(lon) : '', hasGeo: hasGeo,
-    mapsUrl: mapsUrl, registerDeepLink: registerDeepLink,
-    capacity: ev.capacity || '', overbookPct: ev.overbook_pct || ''
+    title: ev.title || '',
+    description: ev.description || '',
+    address: ev.address || '',
+    photoFileId: ev.photo_file_id || '',
+    status: ev.status || '',
+    ownerId: ev.owner_id || '',
+    chapterId: ev.chapter_id || '',
+    startsAt: ev.starts_at || '',
+    endsAt: ev.ends_at || '',
+    regDeadlineAt: ev.reg_deadline_at || '',
+    lat: hasGeo ? String(lat) : '',
+    lon: hasGeo ? String(lon) : '',
+    hasGeo: hasGeo,
+    mapsUrl: mapsUrl,
+    registerDeepLink: registerDeepLink,
+    capacity: ev.capacity || '',
+    overbookPct: ev.overbook_pct || ''
   };
 };
 ```
 
-> **Внимание:** в файле выше `return` при `found: true` записан компактно, в одну
-> строку на группу полей. В `registration/step_96` он
-> развёрнут по одному полю на строку. Это **расхождение формата записи эталона**,
-> а не кода: при сверке `diff` сравнивайте с текстом ниже (живого `fn-event-card` больше нет), он
-> остаётся источником. Привести файл к побайтовому виду — задача следующей правки.
+> **Приведено к побайтовому виду 2026-09-13 (W22, по замечанию ревью).** До этого
+> `return` при `found: true` был записан в файле компактно (по строке на группу
+> полей), а в живом шаге — по полю на строку, и файл честно отсылал за эталоном
+> к `fn-event-card/step_3`. После удаления этого флоу отсылка стала указывать
+> в пустоту, и блок 2a по `event-card` перестал проходить против чего-либо.
+> Теперь текст выше **дословно равен** `registration/step_96` — сверять `diff`
+> надо с ним.
 
 ### assemble — сборка карточки
 
-Полный текст — ниже (флоу `fn-event-card` удалён в W22). **Вариант с конвертом**
+Полный текст — ниже (флоу `fn-event-card` удалён в W22).
+**Не сверено побайтово с живым шагом:** единственная живая копия
+(`registration/step_19`) — «конверт», см. абзац ниже. Собственного
+не-конвертного носителя у этого варианта в проекте нет. **Вариант с конвертом**
 (`registration/step_19`) отличается ровно одним: тело вынесено в `const build = () => {…}`,
 а шаг возвращает `{ status: 'success', data: build() }` — потому что ROUTER
 «есть venue?» и шаг отправки ниже читают `.data.venue` и `.data.text`, а шаги

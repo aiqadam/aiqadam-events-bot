@@ -18,7 +18,6 @@
 | `registration` | `step_99` | ключи карточки, **из общего чтения `step_21`** | 2026-09-13 |
 | `registration` | `step_14` | `reg.already`, конверт | 2026-09-12 |
 | `registration` | `step_17` | QR invite (existing), конверт | 2026-09-12 |
-| `registration` | `step_31` | согласие на ПД, конверт | 2026-09-12 |
 | `registration` | `step_43` | `reg.done` + рассылка, конверт | 2026-09-12 |
 | `registration` | `step_49` | `reg.consent_pdn.declined`, конверт | 2026-09-12 |
 | `registration` | `step_57` | `…saved_yes`, конверт | 2026-09-12 |
