@@ -48,6 +48,7 @@
 | W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **в работе** 2026-09-11 | агент W17 | [W17](work/W17-inline-callflow.md) |
 | W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | не начат | — | — |
+| W19. Ревизия после обновления образа Qadam Flow ([Q26](OPEN-QUESTIONS.md#q26)) | 5 | W18, W8 | не начат | — | — |
 | W15. Приёмка | 6 | все | не начат | — | — |
 
 Критический путь: `0.1–0.3 → W1 → W2 → W4 → W5 → W8 → W7 → W15`.
@@ -223,7 +224,12 @@ HMAC в Python, собственные повторные прогоны — д�
   для W7/W12, если понадобится передать файл через MCP-собранный шаг),
   [Q22](OPEN-QUESTIONS.md#q22) (куда уходят секунды между шагами прогона; почему
   PRODUCTION медленнее TESTING — блокер ускорения, [ADR-0009](adr/0009-hot-path-latency-budget-and-order.md)),
-  [Q23](OPEN-QUESTIONS.md#q23) (есть ли параллельное исполнение веток — [ADR-0009](adr/0009-hot-path-latency-budget-and-order.md)).
+  [Q23](OPEN-QUESTIONS.md#q23) (есть ли параллельное исполнение веток — [ADR-0009](adr/0009-hot-path-latency-budget-and-order.md)),
+  [Q25](OPEN-QUESTIONS.md#q25) (два fail-open дефекта платформы — блокер приёмки W15,
+  пакет [W18](BACKLOG.md#w18-страховка-от-fail-open-дефектов-платформы-382-392)),
+  [Q26](OPEN-QUESTIONS.md#q26) (обновление образа `sha-95079f6`→`sha-6445a8e`:
+  что из девяти апстрим-коммитов применимо к проекту — пакет
+  [W19](BACKLOG.md#w19-ревизия-после-обновления-образа-qadam-flow)).
   [Q20](OPEN-QUESTIONS.md#q20) (`callFlow` с данными не настраивался через MCP —
   блокер W5, W10, W11) закрыт 2026-09-09: дело было не в платформе, а в форме
   `input.flow` при резолве `ap_get_piece_props` (нужен объект с `exampleData`, не
