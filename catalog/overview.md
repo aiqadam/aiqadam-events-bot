@@ -4,15 +4,19 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-09:** 10 таблиц (W1), **14 флоу** — девять
-subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4),
-`registration` и `my-qr-api` (оба W5), `checkin-api` (W8), один connection
-(шаг 0.2). Остальные флоу (`event-wizard`, `checkin-deeplink`, `staff-invite`/
-`staff-accept`, …) ещё не собраны. Статические страницы Mini App собраны в W7:
-сканер `miniapp/index.html` (`showScanQrPopup`, STF-1, бьёт в `checkin-api`)
-и выдача QR `miniapp/ticket.html` (W5, [ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md));
+**Состояние на 2026-09-13:** 10 таблиц (W1), **5 флоу**, один connection (шаг 0.2).
+
+Девять subflow-«функций» `fn-*` **удалены в W22**: после [W21](../docs/work/W21-end-to-end-flows.md)
+их не вызывал никто, а [ADR-0012](../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)
+запретил их как практику. Канон переиспользуемой логики теперь живёт **только**
+в [snippets/](snippets/) — включая `resolve-segment`, который не был встроен
+никуда и был бы потерян вместе с флоу.
+
+Остальные флоу (`event-wizard`, `checkin-deeplink`, `staff-invite`/`staff-accept`,
+рассылки) ещё не собраны. Статические страницы Mini App собраны в W7: сканер
+`miniapp/index.html` (`showScanQrPopup`, STF-1, бьёт в `checkin-api`) и выдача QR
+`miniapp/ticket.html` (W5, [ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md));
 обе тянут собственные надписи с того же GitHub Pages из `i18n/<lang>.json` (Q19).
-Все четырнадцать флоу описаны файлами в [flows/](flows/).
 
 ## Flows
 
@@ -21,23 +25,14 @@ subflow-«функций» `fn-*` (W2), `i18n-sync` (W3), `tg-router` (W4),
 
 | Flow | Триггер | Назначение | Файл |
 |------|---------|-----------|------|
-| `fn-t` | `subflows / callableFlow` | перевод по ключу i18n из `strings` (I18N-2) | [fn-t.md](flows/fn-t.md) |
-| `fn-parse-start` | `subflows / callableFlow` | разбор `start`-payload deep link'а (PAR-6) | [fn-parse-start.md](flows/fn-parse-start.md) |
-| `fn-sign-qr` | `subflows / callableFlow` | подпись QR участника, `node:crypto` в CODE step (PAR-6, с 2026-09-09 ADR-0010) | [fn-sign-qr.md](flows/fn-sign-qr.md) |
-| `fn-verify-qr` | `subflows / callableFlow` | constant-time проверка подписи QR | [fn-verify-qr.md](flows/fn-verify-qr.md) |
-| `fn-verify-init-data` | `subflows / callableFlow` | валидация Telegram `initData` (STF-2) | [fn-verify-init-data.md](flows/fn-verify-init-data.md) |
-| `fn-fmt-time` | `subflows / callableFlow` | UTC → `Asia/Tashkent` на языке пользователя (OWN-3) | [fn-fmt-time.md](flows/fn-fmt-time.md) |
-| `fn-resolve-segment` | `subflows / callableFlow` | получатели рассылки по сегменту (OWN-9) | [fn-resolve-segment.md](flows/fn-resolve-segment.md) |
-| `fn-event-card` | `subflows / callableFlow` | карточка ивента, venue и ссылка на карты (OWN-2) | [fn-event-card.md](flows/fn-event-card.md) |
-| `fn-find-registration` | `subflows / callableFlow` | чтение `registrations` с выбором самой ранней (ADR-0003) | [fn-find-registration.md](flows/fn-find-registration.md) |
-| `i18n-sync` | cron `0 4 * * *` (Asia/Tashkent) | заливает `i18n/*.json` из `main` в таблицу `strings` (W3) | [i18n-sync.md](flows/i18n-sync.md) |
-| `tg-router` | `@aiqadam/qadam-telegram-bot / new_telegram_message` | единственный вход бота: дедуп `update_id` (IDM-4), апсерт `users`, классификация апдейта, делегирование в `registration` (W4, доработан W5) | [tg-router.md](flows/tg-router.md) |
-| `registration` | `subflows / callableFlow` | регистрация участника: места/овербукинг, согласия PAR-1/PAR-2, QR (W5) | [registration.md](flows/registration.md) |
-| `my-qr-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | выдаёт участнику подписанный `payload` QR для `miniapp/ticket.html` (W5, ADR-0007) | [my-qr-api.md](flows/my-qr-api.md) |
-| `checkin-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | основной путь чекина: `initData` контролёра, членство в `event_staff` этого `event_id` (STF-2), подпись QR, запись `checked_in_at` (IDM-2) (W8) | [checkin-api.md](flows/checkin-api.md) |
+| `tg-router` | `@aiqadam/qadam-telegram-bot / new_telegram_message` | единственный вход бота: дедуп `update_id` (IDM-4), апсерт `users` **только при изменениях** (W22), классификация апдейта, делегирование в `registration` | [tg-router.md](flows/tg-router.md) |
+| `registration` | `subflows / callableFlow` | регистрация участника: места/овербукинг, согласия PAR-1/PAR-2, QR | [registration.md](flows/registration.md) |
+| `checkin-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | чекин: `initData` контролёра, членство в `event_staff` этого `event_id` (STF-2), подпись QR, запись `checked_in_at` (IDM-2) | [checkin-api.md](flows/checkin-api.md) |
+| `my-qr-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | подписанный `payload` QR для `miniapp/ticket.html` (ADR-0007) | [my-qr-api.md](flows/my-qr-api.md) |
+| `i18n-sync` | cron `0 4 * * *` (Asia/Tashkent) | заливает `i18n/*.json` из `main` в таблицу `strings` | [i18n-sync.md](flows/i18n-sync.md) |
 
-Строки `fn-*` ведёт пакет W2, строку `i18n-sync` — W3: так два владельца
-не правят одни и те же строки.
+**Вызовов между флоу ровно один**: `tg-router` → `registration` (`callFlow`,
+`executionMode: inline`). Больше `callFlow` в проекте нет.
 
 ## Таблицы
 

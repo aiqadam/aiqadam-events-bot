@@ -6,7 +6,6 @@
 
 | Флоу | Шаг | Сверено |
 |---|---|---|
-| `fn-verify-init-data` (`YEGaCp6uwKEtI2p4W9FIL`) | `step_2` | эталон-источник |
 | `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_35` | 2026-09-12 |
 | `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_20` | 2026-09-12 |
 

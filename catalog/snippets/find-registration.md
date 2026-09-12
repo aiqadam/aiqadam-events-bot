@@ -7,14 +7,15 @@
 
 | Флоу | Шаги (нормализация → чтение → выбор) | Сверено |
 |---|---|---|
-| `fn-find-registration` (`OkjryrJdcdZQNAWYamZgr`) | `step_1` → `step_2` → `step_3` | эталон-источник |
-| `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_40` → `step_41` → `step_42` | 2026-09-12 |
-| `checkin-api` | — → `step_19` → `step_29` (перечитывание после CAS, W20) | 2026-09-12 |
-| `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_2` → `step_22` → `step_23` | 2026-09-12 |
-| `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_77` → `step_78` → `step_79` (ветка `start`) | 2026-09-12 |
-| `registration` | `step_4` → `step_80` → `step_81` (ветка `pdn_yes`) | 2026-09-12 |
+| `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_40` → `step_41` → `step_42` | 2026-09-13 |
+| `checkin-api` | — → `step_19` → `step_29` (перечитывание после CAS, W20) | 2026-09-13 |
+| `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_2` → `step_22` → `step_23` | 2026-09-13 |
+| `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_77` → `step_22` → `step_79` (ветка `start`, **широкое чтение**) | 2026-09-13 |
+| `registration` | `step_4` → `step_80` → `step_81` (ветка `pdn_yes`) | 2026-09-13 |
 
-Все одиннадцать шагов сверены ревьюером W21 механически — расхождений нет.
+Все копии обновлены в W22 одним и тем же текстом (шаг 3 получил отбор по
+паре `(event_id, telegram_id)` прямо в коде). Механическая побайтовая сверка
+живых копий с этим файлом — блок 2a чек-листа ревьюера.
 
 ## Как встраивается
 
@@ -22,8 +23,11 @@
 
 1. **CODE «normalize registration keys»** — валидирует форму и подставляет
    сентинел `-` вместо пустых значений;
-2. **`tables-find-records registrations`** — два `eq`, `table_id = PNuChoFG0tIBTND86yzDL`,
-   поля `event_id` (`6mRpFdqphYL2PtfQwBFEr`) и `telegram_id` (`kfw8Et1Msb0Qiki6GMs9b`);
+2. **`tables-find-records registrations`** — `table_id = PNuChoFG0tIBTND86yzDL`.
+   Обычно два `eq` по `event_id` и `telegram_id`. **Исключение — `registration/step_22`
+   (ветка `start`):** там фильтр только по `event_id`, потому что то же чтение
+   используется вторым потребителем (подсчёт занятости для овербукинга, W22).
+   Отбор по `telegram_id` в этом случае делает шаг 3;
 3. **CODE «pick earliest registration»** — сортировка и выбор канонической строки.
 
 ### Шаг 1 — normalize
@@ -81,7 +85,18 @@ export const code = async (inputs) => {
     return out;
   };
 
-  const rows = list.map(flat);
+  // Отбор по паре (event_id, telegram_id) повторяется здесь, а не только в
+  // фильтре чтения. Две причины: одно широкое чтение кормит несколько
+  // потребителей (W22, латентность), и это страховка от fail-open платформы
+  // (#382) — если фильтр чтения перестанет применяться, чужие строки отсеются
+  // тут, а не утекут в ответ.
+  const wantEventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId);
+  const wantTelegramId = String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId);
+  const rows = list.map(flat).filter((r) =>
+    (wantEventId === '' || String(r.event_id || '') === wantEventId) &&
+    (wantTelegramId === '' || String(r.telegram_id || '') === wantTelegramId)
+  );
+  if (rows.length === 0) return empty;
 
   const sortKey = (r) => {
     const t = r.registered_at || r.__created || '';
