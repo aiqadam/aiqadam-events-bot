@@ -12,6 +12,8 @@
 | `checkin-api` | `step_43` | `checkin.wrong_event`, `checkin.invalid`, `checkin.not_registered` | 2026-09-12 |
 | `checkin-api` | `step_44` | `checkin.forbidden` | 2026-09-12 |
 | `checkin-api` | `step_46` | `checkin.unauthorized` (`lang: ru`) | 2026-09-12 |
+| `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_25` | `checkin.not_registered` | 2026-09-12 |
+| `my-qr-api` | `step_27` | `checkin.unauthorized` (`lang: ru`) | 2026-09-12 |
 
 ## Как встраивается
 
