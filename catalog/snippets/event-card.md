@@ -106,15 +106,19 @@ export const code = async (inputs) => {
 
 ### assemble — сборка карточки
 
-Полный текст — ниже (флоу `fn-event-card` удалён в W22).
-**Не сверено побайтово с живым шагом:** единственная живая копия
-(`registration/step_19`) — «конверт», см. абзац ниже. Собственного
-не-конвертного носителя у этого варианта в проекте нет. **Вариант с конвертом**
-(`registration/step_19`) отличается ровно одним: тело вынесено в `const build = () => {…}`,
-а шаг возвращает `{ status: 'success', data: build() }` — потому что ROUTER
-«есть venue?» и шаг отправки ниже читают `.data.venue` и `.data.text`, а шаги
-`@aiqadam/qadam-telegram-bot` не редактируются
-([#411](https://github.com/aiqadam/qadam-flow/issues/411)).
+**Текст приведён 2026-09-13 по замечанию 1 ревью W21.** До этого здесь стояло
+«Полный текст — ниже», а ниже не было ничего: изначально файл отсылал за
+эталоном к `fn-event-card/step_8`, W22 удалил флоу и переписал фразу, но текст
+не перенёс. Единственная живая копия (`registration/step_19`) была не сверяема
+ни с чем — ровно тот тихий дрейф, ради которого заведён блок 2a.
+
+Ниже — **вариант с конвертом**, потому что другого носителя в проекте нет:
+тело вынесено в `const build = () => {…}`, а шаг возвращает
+`{ status: 'success', data: build() }`. Так сделано потому, что шаг отправки
+ниже читает `.data.text`, а шаги `@aiqadam/qadam-telegram-bot` не редактируются
+([#411](https://github.com/aiqadam/qadam-flow/issues/411)). Плоский вариант
+получается снятием обёртки — если он где-то понадобится, он и станет вторым
+блоком этого файла.
 
 **Ключи i18n карточки (10):** `event.card.header`, `.description`, `.when`,
 `.ends`, `.where`, `.deadline`, `.map_link`, `.btn_map`, `.btn_register`,
@@ -123,6 +127,107 @@ export const code = async (inputs) => {
 **`varsByKey` обязателен:** `event.card.when`, `.ends` и `.deadline` используют
 **одно и то же** имя `{when}` с разным значением. Общими `vars` их не различить —
 это не стиль, это единственный способ не показать в трёх строках одно время.
+
+**Мёртвое поле, оставлено намеренно:** `venue`/`hasGeo` вычисляются, хотя
+`sendVenue` удалён в W22 ([ADR-0013](../../docs/adr/0013-fewer-messages-on-start.md)).
+Убирать их — значит трогать эталон ради нуля секунд; вернуть пин дешевле, пока
+поле считается. Замечено ревью W21 (замечание 6).
+
+```js
+export const code = async (inputs) => {
+  const ev = inputs.event && typeof inputs.event === 'object' ? inputs.event : {};
+  const raw = inputs.i18n;
+  const box = raw && typeof raw === 'object' ? (raw.data && typeof raw.data === 'object' ? raw.data : raw) : {};
+  const texts = box && typeof box.texts === 'object' && box.texts !== null ? box.texts : {};
+  const missing = Array.isArray(box.missing) ? box.missing.map((k) => String(k)) : [];
+
+  // Ключ, которого нет в strings, fn-t отдаёт сырым. Ставить такой на кнопку нельзя,
+  // поэтому has() отличает "перевод есть" от "видно ключ".
+  const has = (k) => typeof texts[k] === 'string' && missing.indexOf(k) < 0;
+  const t = (k) => typeof texts[k] === 'string' ? texts[k] : k;
+
+  const lang = String(ev.lang || 'ru');
+  const found = ev.found === true || ev.found === 'true';
+
+  const build = () => {
+    if (!found) {
+      return {
+        found: false, lang: lang, eventId: String(ev.eventId || ''),
+        text: t('event.card.not_found'), lines: [], buttons: [], labels: {},
+        venue: null, mapsUrl: '', photoFileId: '', registerDeepLink: '',
+        status: '', ownerId: '', chapterId: '',
+        startsAt: '', endsAt: '', regDeadlineAt: '', startsAtFmt: '', endsAtFmt: '', regDeadlineAtFmt: '',
+        capacity: '', overbookPct: '', parseMode: '', missing: missing
+      };
+    }
+
+    // Строки UI берутся только из fn-t (I18N-2). Здесь склеиваются готовые переводы
+    // (в них уже подставлены title/description/address/время) — литералов текста нет.
+    const lines = [];
+    const add = (key, condition) => { if (condition && has(key)) lines.push(t(key)); };
+
+    add('event.card.header', String(ev.title || '') !== '');
+    add('event.card.description', String(ev.description || '') !== '');
+    add('event.card.when', String(ev.startsAt || '') !== '');
+    add('event.card.ends', String(ev.endsAt || '') !== '');
+    add('event.card.where', String(ev.address || '') !== '');
+    add('event.card.deadline', String(ev.regDeadlineAt || '') !== '');
+    add('event.card.map_link', String(ev.mapsUrl || '') !== '');
+
+    const labels = {};
+    if (has('event.card.btn_map')) labels.map = t('event.card.btn_map');
+    if (has('event.card.btn_register')) labels.register = t('event.card.btn_register');
+
+    const buttons = [];
+    if (labels.map !== undefined && String(ev.mapsUrl || '') !== '') {
+      buttons.push([{ text: labels.map, url: String(ev.mapsUrl) }]);
+    }
+    if (labels.register !== undefined && String(ev.registerDeepLink || '') !== '') {
+      buttons.push([{ text: labels.register, url: String(ev.registerDeepLink) }]);
+    }
+
+    const venue = (ev.hasGeo === true || ev.hasGeo === 'true')
+      ? { latitude: String(ev.lat || ''), longitude: String(ev.lon || ''), title: String(ev.title || ''), address: String(ev.address || '') }
+      : null;
+
+    return {
+      found: true,
+      lang: lang,
+      eventId: String(ev.eventId || ''),
+      // Текст содержит ввод owner'а (title/description/address) — шлётся без parse_mode,
+      // иначе разметка в названии сломает сообщение или подделает его вид.
+      parseMode: '',
+      text: lines.join('\n\n'),
+      lines: lines,
+      buttons: buttons,
+      labels: labels,
+      venue: venue,
+      mapsUrl: String(ev.mapsUrl || ''),
+      photoFileId: String(ev.photoFileId || ''),
+      registerDeepLink: String(ev.registerDeepLink || ''),
+      // status + ownerId — то, чем вызывающий делает гейт (карточка сама не авторизует)
+      status: String(ev.status || ''),
+      ownerId: String(ev.ownerId || ''),
+      chapterId: String(ev.chapterId || ''),
+      startsAt: String(ev.startsAt || ''),
+      endsAt: String(ev.endsAt || ''),
+      regDeadlineAt: String(ev.regDeadlineAt || ''),
+      startsAtFmt: String(inputs.startsFmt === undefined || inputs.startsFmt === null ? '' : inputs.startsFmt),
+      endsAtFmt: String(inputs.endsFmt === undefined || inputs.endsFmt === null ? '' : inputs.endsFmt),
+      regDeadlineAtFmt: String(inputs.deadlineFmt === undefined || inputs.deadlineFmt === null ? '' : inputs.deadlineFmt),
+      capacity: String(ev.capacity || ''),
+      overbookPct: String(ev.overbookPct || ''),
+      missing: missing
+    };
+  };
+
+  // Форма ответа fn-event-card повторяется один в один: шаги отправки и ROUTER
+  // «есть venue?» ниже ссылаются на {{<шаг>['output'].data...}}, а шаги
+  // @aiqadam/qadam-telegram-bot не редактируются (qadam-flow#411).
+  return { status: 'success', data: build() };
+};
+```
+
 
 ## Что нельзя трогать
 
