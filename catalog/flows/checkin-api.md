@@ -72,7 +72,7 @@
 | step_46 (branch 1) | CODE «текст 401 (ru)» | `checkin.unauthorized` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data` (+`text`), статус `401` | `{{step_46['output'].text}}` |
 | step_5 (branch 0) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра, revoked_at not_exists)` | `table_id = CyW6KjJ2BdwQEph2KEqTt` |
-| step_6 | CODE «decide isStaff (постфильтр STF-2, W18)» | **постфильтр прав**: среди выдачи должна быть строка с `event_id` запроса + `telegram_id` контролёра + пустым `revoked_at`; без валидных ключей — отказ (fail-closed). Диагностика `rowsRead`/`rowsMatched`. `staffLang` — константа `'ru'`, чтение `users` ради языка удалено в W24 | `{{step_5['output']}}`, `{{step_1['output'].eventId}}`, `{{step_1['output'].eventIdValid}}`, `{{step_3['output'].staffTelegramId}}`, `{{step_3['output'].initDataValid}}` |
+| step_6 | CODE «decide isStaff (постфильтр STF-2, W18)» | **постфильтр прав**: среди выдачи должна быть строка с `event_id` запроса + `telegram_id` контролёра + пустым `revoked_at`. Ключи проверяются **на форму** (`^[A-Za-z0-9_]{1,12}$` / `^[0-9]{1,16}$`), поэтому пустое значение и сентинел `-` правами не становятся (fail-closed). Диагностика `rowsRead`/`rowsMatched`/`keysOk`. `staffLang` — константа `'ru'`, чтение `users` ради языка удалено в W24 | `{{step_5['output']}}`, `{{step_1['output'].eventId}}`, `{{step_1['output'].eventIdValid}}`, `{{step_3['output'].staffTelegramId}}`, `{{step_3['output'].initDataValid}}` |
 | step_7 | ROUTER «isStaff?» | `isStaff` (branch 0) / `Otherwise` (branch 1 → `403`) | `{{step_6['output'].isStaff}}` |
 | step_44 (branch 1) | CODE «текст 403 (ru)» | `checkin.forbidden` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_26/27 (branch 1) | CODE + `return_response` | тело `forbidden` (+`text`), статус `403` | `{{step_44['output'].text}}` |
@@ -402,3 +402,52 @@ staff `othr09`, `700000773` staff `demo` с заполненным `revoked_at`)
 удалённого в W24 чтения `users`. `ap_update_step` входы **сливает**, а не
 заменяет, поэтому убрать ключ через MCP нечем. На исполнение не влияет — шаг
 его не читает.
+
+### Правка по ревью W18 (второй круг, 2026-09-13)
+
+Ревью нашло, что fail-closed отсекал **пустой** ключ, но не **сентинел**.
+`step_3` отдаёт `staffTelegramId = String(data.telegramId || '-')` — значит
+`-` возможен и при `initDataValid: true`, если проверенный Telegram'ом
+`initData` не содержит `user.id`. Строка `event_staff` с `telegram_id = '-'`
+тогда совпадала бы, и — в отличие от сценария #382 — **фильтр чтения отдавал бы
+её сам**: обход не требовал никакого дефекта платформы, только строки-сентинела
+в таблице.
+
+Закрыто проверкой ключей на форму вместо проверки на непустоту:
+`SLUG = /^[A-Za-z0-9_]{1,12}$/` для `event_id`, `USER = /^[0-9]{1,16}$/` для
+`telegram_id`. Это строже перечисления частных случаев — закрывает и пустое, и
+`-`, и любой будущий сентинел вне этих алфавитов. Наружу добавлен `keysOk`.
+
+**Доказано прогоном, а не рассуждением** (`INqiGWE9ryivvoZEkfPdZ`, фикстура
+`event_staff` с `telegram_id = '-'`, `initData` с `user` без `id`, подписан
+настоящим `BOT_TOKEN`): `step_36` → `valid: true`, `step_3` → `staffTelegramId:
+'-'` при `initDataValid: true`, **`step_5` вернул строку с `-`**, `step_6` →
+`keysOk: false`, `rowsMatched: 0` → `403`. До правки этот вход дал бы права.
+
+Вся регрессия повторена на опубликованной версии после правки.
+
+| Сценарий | Прогон | Итог |
+|---|---|---|
+| контролёр `demo` — позитивный контроль | `3uQwhelDcLQOTSaXtHRRK` | `200 already` |
+| контролёр чужого ивента | `ciycrrLMv4VTApsGHhOSP` | `403` |
+| отозванный контролёр | `Skswbo0sjbM8bYsX1Q8eK` | `403` |
+| не контролёр вовсе | `Qy0HtNEn22T5xgoohxcfW` | `403` |
+| битый `hash` | `HZ3OLdOtq5Fd4CTrSMJHU` | `401 bad_hash` |
+| сентинел `-` (user без `id`) | `INqiGWE9ryivvoZEkfPdZ` | `403`, `keysOk: false` |
+
+Дифференцирующий fail-open прогон тоже переделан на исправленном коде — вход
+`step_6` временно подменён на **все шесть** строк `event_staff`, включая
+строку-сентинел:
+
+| Сценарий (fail-open, `rowsRead: 6`) | Прогон | Итог |
+|---|---|---|
+| не контролёр вовсе | `H0o1rONA0crgWUHZrYVoN` | `403` |
+| контролёр чужого ивента | `xj8ch04xWoavmLiWcpT8A` | `403` |
+| отозванный контролёр | `0qmnIt7zmqec7MmIQuI0v` | `403` |
+| сентинел `-` (user без `id`) | `II0NFtJYzINyBgNUL8OBR` | `403` |
+| настоящий контролёр `demo` | `8zQRwXbpx08JLI0n0nNAA` | `200 already` |
+
+Вход возвращён на `{{step_5['output']}}`, флоу опубликован, смоук после
+восстановления: контролёр → `200`, не-контролёр → `403`. Фикстуры удалены,
+`event_staff` снова 2 исходные строки, `registrations` не менялась —
+`checked_in_at` всё тот же `2026-09-12T22:41:53.313Z`.
