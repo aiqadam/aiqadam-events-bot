@@ -30,11 +30,10 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов бота (единственный потребитель на токен). **Доставка — long-polling, не вебхук** (проверено 2026-09-12, см. заметку ниже) | `update_types = [message, callback_query]` |
 | step_1 | CODE «normalize update» | достаёт `message`/`callback_query`/`contact`, парсит `/command payload`, язык из `language_code` | `{{trigger['output']}}` |
-| step_2 | `@aiqadam/qadam-store : get` | читает `upd:<update_id>` | `key = {{step_1['output'].dedupKey}}`, `defaultValue = __absent__`, scope `COLLECTION` |
-| step_3 | CODE «gate: свежий апдейт?» | решает `proceed` по `ok`/`seen`/`isBot`/`isPrivate` | `{{step_2['output']}}`, `{{step_1['output']}}` |
+| step_2 | `@aiqadam/qadam-store : put_if_absent` | **атомарный захват** `upd:<update_id>` (IDM-4, [ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md)) | `key = {{step_1['output'].dedupKey}}`, `value = {{step_1['output'].now}}`, scope `COLLECTION`, `ttl_seconds = 86400` |
+| step_3 | CODE «gate: свежий апдейт?» | решает `proceed` по `ok`/`seen`/`isBot`/`isPrivate`; `seen` = `stored === false` | `{{step_2['output']}}`, `{{step_1['output']}}` |
 | step_4 | ROUTER «обрабатываем только свежий апдейт» | ветка 0 = `proceed`, fallback = «Otherwise» | `{{step_3['output'].proceed}}` |
 | step_5 (ветка Otherwise) | CODE «апдейт пропущен — почему» | след в логе: `duplicate` / `bad_update` / `from_bot` / `non_private_chat` | `{{step_3['output'].reason}}` |
-| step_6 (ветка 0) | `@aiqadam/qadam-store : put` | пишет `upd:<update_id>` **до** любых побочных эффектов | `key`, `value = {{step_1['output'].now}}` |
 | step_7 | `@aiqadam/qadam-tables : tables-find-records` | `users` по `telegram_id` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM`, фильтр `eq` |
 | step_8 | CODE «выбрать каноническую строку users» | детерминированный выбор при дублях (ADR-0003), решает язык (не перетирает выбор пользователя) | `{{step_7['output']}}` |
 | step_9 | ROUTER «users: обновить или завести» | ветка 0 = `exists`, ветка 1 = иначе | `{{step_8['output'].exists}}` |
@@ -43,7 +42,7 @@
 | step_12 | `@aiqadam/qadam-tables : tables-find-records` | активная сессия визарда | `table_id = tL4fbi1GisDwA8UJ9zSod`, фильтр `telegram_id eq` |
 | step_13 | CODE «классификация апдейта» | вычисляет `kind` и собирает выходной контракт | `{{step_1['output']}}`, `{{step_8['output']}}`, `{{step_12['output']}}` |
 | step_14 | ROUTER «делегирование обработчику» | ветка 0 = `start_payload`, ветка 1 = продолжение `registration`, fallback = ещё не подключено | `{{step_13['output'].kind}}`, `{{step_13['output'].session.scenario}}` |
-| step_15 (ветка 0) | `callFlow → fn-parse-start` | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` |
+| step_15 (ветка 0) | `callFlow → fn-parse-start` (`executionMode: inline`) | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` |
 | step_17 (ветка 0) | ROUTER «по kind разобранной ссылки» | ветка 0 = `kind = 'e'` → `registration`, fallback = `c`/`s`/пусто (W10/W11, ещё не подключены) | `{{step_15['output'].data.kind}}` |
 | step_18 (ветка 0 → 0) | `callFlow → registration` (`action: start`) | делегирование в W5, `waitForResponse: false` (fire-and-forget — тяжёлая цепочка внутри `registration`, роутеру её результат не нужен) | `eventId`/`utm` из `{{step_15['output'].data}}`, `telegramId/chatId/lang` из `{{step_13['output']}}` |
 | step_19 (ветка 0 → fallback) | CODE «start-payload разобран, обработчика для kind ещё нет» | след в логе для `c`/`s`/невалидных payload'ов | `{{step_15['output'].data.kind}}`, `.valid` |
@@ -56,7 +55,7 @@
 - **Subflow'ы**: `fn-parse-start` (`9H027DdckYSgu7Yp1LQRS`), `registration` (`RId6eBcN8T4oo8pkkWB7b`, W5)
 - **Переменные**: —
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
-- **Store**: ключи `upd:<update_id>`, scope `COLLECTION`, без TTL — чистит `dedup-sweep` (W12b, ADR-0003)
+- **Store**: ключи `upd:<update_id>`, scope `COLLECTION`, **TTL 24 ч** — фоновая уборка (`dedup-sweep`, W12b) больше не нужна ([ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md))
 
 ## Заметки
 
@@ -95,11 +94,21 @@
   Практические следствия: публичного ingress у бота нет (аутентифицировать
   вебхук нечем и незачем), а интервал опроса добавляет неизмеренную задержку
   на пути «пользователь написал → бот ответил».
-- **`store put` идёт раньше апсерта `users`**, а не после: если апдейт дошёл до step_6,
-  повтор того же `update_id` обязан быть отбит на следующей доставке независимо от
-  того, что случится дальше в этом прогоне (упадёт ли `users`-шаг). Порядок «put
-  до побочных эффектов» — это и есть механизм IDM-4 (ADR-0003, «обработчики пишутся
-  так, чтобы повтор был безвреден»).
+- **Дедуп IDM-4 — атомарный захват, а не «прочитать и записать»** (W20,
+  [ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md)).
+  Было три шага: `store get` → CODE-гейт → `store put` в ветке 0, и между
+  чтением и записью существовало окно. Стало два: `put_if_absent` сам сообщает,
+  этот ли прогон занял ключ (`stored: true`) или ключ уже был
+  (`stored: false` + `value` = когда заняли впервые). Захват по-прежнему идёт
+  **до** любых побочных эффектов — теперь даже раньше, чем проверки
+  `isBot`/`isPrivate`, что только усиливает правило.
+  Различающий тест: прогоны `s5GJKUXZ13SZeYboS2Bf8` (свежий `update_id` →
+  `proceed`) и `GJ6yy0oS0rWOvWjmvnfAi` (тот же `update_id` → `duplicate`,
+  `firstSeenAt` = время первого, ноль побочных эффектов, 0,8 с против 2,6 с).
+  **TTL 24 ч** выбран под ретенцию самого Telegram: апдейты старше суток он
+  не переспрашивает, значит ключ дольше держать незачем.
+  Правило ADR-0003 «обработчики пишутся так, чтобы повтор был безвреден»
+  остаётся основным — примитив его усиливает, а не заменяет.
 - **Гейт step_3 отбивает четыре причины одним полем `reason`**: `bad_update`
   (нет `update_id` или `from.id`), `duplicate`, `from_bot`, `non_private_chat`.
   Порядок проверки: испорченный апдейт раньше дубля, дубль раньше бота/группы —

@@ -37,19 +37,19 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | вход Mini App | — |
 | step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`, как у `fn-sign-qr`) | `{{trigger['output'].body}}` |
-| step_2 | `@aiqadam/qadam-subflows : callFlow` → `fn-verify-init-data` | HMAC токена бота + свежесть | `{{step_1['output'].initData}}` |
+| step_2 | `@aiqadam/qadam-subflows : callFlow` → `fn-verify-init-data` (`inline`) | HMAC токена бота + свежесть | `{{step_1['output'].initData}}` |
 | step_3 | CODE «combine validity» | `valid`, `telegramId`, `reason` | `{{step_2['output'].data}}`, `{{step_1['output'].eventIdValid}}` |
 | step_4 | ROUTER «initData+eventId валидны?» | `valid` (branchIndex 0) / `Otherwise` (branchIndex 1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
-| step_18 (branch 1) | `callFlow → fn-t` | `checkin.unauthorized`, `lang: ru` | — |
+| step_18 (branch 1) | `callFlow → fn-t` (`inline`) | `checkin.unauthorized`, `lang: ru` | — |
 | step_13/14 (branch 1) | CODE + `return_response` | `{ ok:false, error:"invalid_init_data", reason, text }`, статус `200` | `{{step_18['output'].data.text}}`, `{{step_3['output'].reason}}` |
-| step_5 (branch 0) | `callFlow` → `fn-find-registration` | регистрация участника на `eventId` | `eventId`, `telegramId` из step_1/step_3 |
+| step_5 (branch 0) | `callFlow` → `fn-find-registration` (`inline`) | регистрация участника на `eventId` | `eventId`, `telegramId` из step_1/step_3 |
 | step_6 | CODE «decide outcome» | `ok` только если `registration.registered` | `{{step_5['output'].data}}` |
 | step_7 | ROUTER «outcome?» | `ok` (branchIndex 0) / `Otherwise` (branchIndex 1 → `not_registered`) | `{{step_6['output'].outcome}}` |
-| step_8 (branch `ok`) | `callFlow` → `fn-sign-qr` | подпись `payload` | `eventId`, `userId = telegramId` |
+| step_8 (branch `ok`) | `callFlow` → `fn-sign-qr` (`inline`) | подпись `payload` | `eventId`, `userId = telegramId` |
 | step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_8['output'].data}}` |
 | step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык (только в этой ветке, ок-путь `users` не читает); **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_16 (branch `not_registered`) | CODE «resolve user lang» | `lang` (фолбэк `ru`) | `{{step_15['output']}}` |
-| step_17 (branch `not_registered`) | `callFlow → fn-t` | `checkin.not_registered`, `lang: {{step_16['output'].lang}}` | — |
+| step_17 (branch `not_registered`) | `callFlow → fn-t` (`inline`) | `checkin.not_registered`, `lang: {{step_16['output'].lang}}` | — |
 | step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_17['output'].data}}` |
 
 ## Зависимости
@@ -59,6 +59,11 @@
 - **Переменные**: — · **Connections**: — (токен бота читается внутри `fn-verify-init-data` из Variable)
 
 ## Заметки
+
+- **Все `callFlow`-шаги — `executionMode: inline`** (W20, 2026-09-12). W17
+  перевёл на inline `checkin-api`, `registration` и `fn-event-card`, но
+  `my-qr-api` тогда не тронул. Проверено прогоном `IkrsFXyLwEoE9m4wvUwX0`
+  (ветка `invalid_init_data`, 4,7 с).
 
 - **Всегда `HTTP 200`, ошибка — в теле.** Страница сама разбирает `ok`/`error`,
   а не HTTP-статус — проще для `fetch()` без обвязки на 4xx/5xx.
