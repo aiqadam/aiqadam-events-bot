@@ -8,6 +8,8 @@
 |---|---|---|---|
 | `fn-fmt-time` (`5Hctxr9SnbhxGxow0Xgxu`) | `step_1` | одиночный + батч | эталон-источник |
 | `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_47` | одиночный, `format: time` | 2026-09-12 |
+| `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_38` | одиночный, дедлайн отказа | 2026-09-12 |
+| `registration` | `step_97` | батч: starts/ends/deadline карточки | 2026-09-12 |
 
 ## Код
 

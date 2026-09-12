@@ -14,6 +14,20 @@
 | `checkin-api` | `step_46` | `checkin.unauthorized` (`lang: ru`) | 2026-09-12 |
 | `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_25` | `checkin.not_registered` | 2026-09-12 |
 | `my-qr-api` | `step_27` | `checkin.unauthorized` (`lang: ru`) | 2026-09-12 |
+| `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_11` | отказ (ключ из `step_9`), конверт | 2026-09-12 |
+| `registration` | `step_14` | `reg.already`, конверт | 2026-09-12 |
+| `registration` | `step_17` | QR invite (existing), конверт | 2026-09-12 |
+| `registration` | `step_23` | `reg.venue.hint`, конверт | 2026-09-12 |
+| `registration` | `step_31` | согласие на ПД, конверт | 2026-09-12 |
+| `registration` | `step_43` | `reg.done` + рассылка, конверт | 2026-09-12 |
+| `registration` | `step_49` | `reg.consent_pdn.declined`, конверт | 2026-09-12 |
+| `registration` | `step_57` | `…saved_yes`, конверт | 2026-09-12 |
+| `registration` | `step_59` | `…saved_no`, конверт | 2026-09-12 |
+| `registration` | `step_62` | `reg.phone.ask` + share, конверт | 2026-09-12 |
+| `registration` | `step_68` | `reg.phone.saved`, конверт | 2026-09-12 |
+| `registration` | `step_70` | `reg.phone.skipped`, конверт | 2026-09-12 |
+| `registration` | `step_74` | QR invite (finalize), конверт | 2026-09-12 |
+| `registration` | `step_99` | карточка ивента, **без конверта** | 2026-09-12 |
 
 ## Как встраивается
 
@@ -150,3 +164,27 @@ export const code = async (inputs) => {
 Тихо. Расхождение копии даёт неправильный **текст**, а не отказ, и ни один
 прогон этого не заметит. Единственная защита — побайтовая сверка копий
 (правило 1 в [README](README.md)) и проверка, что список выше полон.
+
+## Вариант с конвертом (`registration`)
+
+Шаги `@aiqadam/qadam-telegram-bot` **не редактируются**
+([qadam-flow#411](https://github.com/aiqadam/qadam-flow/issues/411)), а их ссылки
+написаны на `{{<шаг>['output'].data.text}}` — форму ответа `callFlow`. Поэтому в
+`registration` копии возвращают не сам объект, а конверт:
+
+```js
+  // Форма ответа fn-t повторяется один в один: шаги @aiqadam/qadam-telegram-bot
+  // ниже не редактируются (qadam-flow#411), а их ссылки написаны на
+  // {{<шаг>['output'].data...}}. Конверт уйдёт, когда апстрим починит #411.
+  return { status: 'success', data: out };
+```
+
+Всё остальное тело — побайтово тот же эталон; отличается **только** последний
+`return`. Отсюда два следствия:
+
+1. **Замена обязана встать под именем удалённого шага.** Платформа выдаёт
+   свободное имя с наименьшим номером, поэтому порядок такой: сначала добавить
+   вспомогательный шаг чтения `strings` (он съедает «старое» свободное имя),
+   потом удалить `callFlow`, потом добавить CODE — он получит освободившееся имя.
+2. **Это костыль, а не решение.** Когда #411 починят, конверт снимается,
+   а ссылки в шагах отправки правятся на `['output'].text`.

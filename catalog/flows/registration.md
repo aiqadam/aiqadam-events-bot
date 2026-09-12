@@ -101,9 +101,12 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
 
 ## Зависимости
 
-- **Subflow'ы**: `fn-find-registration`, `fn-event-card`, `fn-fmt-time`, `fn-t`, `fn-sign-qr`, `fn-parse-start` (вызывается из `tg-router`, не отсюда)
-- **Таблицы**: `events` (чтение), `registrations` (чтение и запись), `users` (запись согласий/телефона), `sessions` (чтение и запись состояния визарда)
-- **Переменные**: `MINIAPP_URL` (кнопка Mini App); косвенно `BOT_USERNAME`, `QR_SIGNING_KEY` — внутри вызываемых subflow'ов
+- **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) —
+  девятнадцать `callFlow` заменены встроенными шагами по эталонам [`catalog/snippets/`](../snippets/)
+- **Таблицы**: `events` (чтение), `registrations` (чтение и запись), `users` (запись согласий/телефона),
+  `sessions` (чтение и запись состояния визарда), `strings` (чтение: по запросу на каждое место перевода)
+- **Переменные**: `MINIAPP_URL` (кнопка Mini App), `BOT_USERNAME` (`step_96`, deep link карточки),
+  `QR_SIGNING_KEY` (`step_13`, `step_72`) — все в длинной форме `{{variables['NAME']}}`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`answer_callback_query`/`custom_api_call`
 
 ## Выдача QR — через Mini App, не файлом (ADR-0007)
@@ -133,6 +136,59 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
 пакета).
 
 ## Заметки
+
+- **W21 (2026-09-12) — девятнадцать `callFlow` убраны, subflow'ов не осталось.**
+  77 → 100 шагов. Заменено: два `fn-find-registration` (`start` и `pdn_yes`),
+  два `fn-sign-qr` (`existing` и `finalize`), два `fn-fmt-time` (дедлайн отказа и
+  батч карточки), одиннадцать `fn-t` и `fn-event-card`.
+  - **Карточка ивента не читает `events` повторно.** `fn-event-card` делал свой
+    запрос; встроенная версия (`step_96`) берёт строку из уже прочитанного
+    `step_5`. Минус один запрос на каждой регистрации.
+  - **Чтений `strings` тринадцать, по одному на место перевода.** Свести их в одно
+    здесь нельзя: места разнесены по шести веткам ROUTER'а `step_2`, и общий
+    запрос пришлось бы ставить до ветвления — то есть выполнять на каждом входе
+    ради ветки, которая в этом прогоне не исполнится.
+- **Конверт `{status, data}` у встроенных шагов — вынужденный костыль
+  ([#411](https://github.com/aiqadam/qadam-flow/issues/411)).** Шаги
+  `@aiqadam/qadam-telegram-bot` не редактируются (проверено 2026-09-12:
+  `ap_update_step` по `step_12` отвечает `qadam_metadata_not_found`), а их ссылки
+  написаны на `{{<шаг>['output'].data.text}}`. Поэтому каждая замена обязана
+  1) встать **под именем удалённого шага** и 2) повторить форму ответа `callFlow`.
+  Платформа выдаёт свободное имя с наименьшим номером — отсюда порядок операций:
+  добавить чтение `strings` → удалить `callFlow` → добавить CODE.
+  Когда #411 починят, конверт снимается, а ссылки правятся на `['output'].text`.
+- **Дефект, найденный прогоном: реактивация отменённой регистрации падала.**
+  `step_41` писал в `cancelled_at` значение, которое `tables-update-record`
+  больше не принимает: `Invalid date for field "cancelled_at"` (прогон
+  `nk7ET4kibX4N2YWUqJqtX`). Шаг пересоздан без `cancelled_at`.
+  **Цена решения названа прямо:** у реактивированной строки `cancelled_at`
+  остаётся от прошлой отмены. Очистить его штатно нечем — пустая строка теперь
+  отвергается валидатором дат, а «оставить пустым» у пропа `values` означает
+  «не менять». Потребители обязаны смотреть на `status`, а не на `cancelled_at`;
+  см. [Q30](../../docs/OPEN-QUESTIONS.md#q30).
+  Этот дефект был **замаскирован** [Q29](../../docs/OPEN-QUESTIONS.md#q29):
+  пока `step_38` получал пустой вход, ветка реактивации не исполнялась вовсе.
+- **Как проверялось перед публикацией (W21).** Полный проход визарда на живом
+  боте (dev), все сообщения дошли. Регистрация участника временно переведена в
+  `cancelled`, чтобы поднять ветку `new`, и восстановлена самим флоу.
+
+  | Ветка | Прогон | Результат | Время |
+  |---|---|---|---|
+  | `existing` | `uE2pnEBzKglCe6FNtUddk` | `reg.already` + приглашение в Mini App | 4,9 с |
+  | `new` | `uAT9OxBNwIeJM7G70qTz7` | карточка + venue + сессия + согласие на ПД | 8,4 с |
+  | `pdn_yes` | `xMpWPMRnyoslhD1mssDWx` | регистрация реактивирована, `reg.done`, вопрос о рассылке | 6,4 с |
+  | `mkt_no` | `pdwSpdrGh6i5lZD9Dc6Ab` | `saved_no` + вопрос о телефоне | 4,2 с |
+  | `phone_skip` | `Dzl5lD3a9U82399pCHhGs` | `skipped` + подпись QR + приглашение + сессия удалена | 4,1 с |
+
+  - **Подпись сошлась с двумя другими флоу.** `registration/step_72` выдал
+    `aIxmwbnzb_` — то же, что `my-qr-api/step_24` и что принял `checkin-api/step_38`.
+    Три независимые встроенные копии HMAC, одно значение.
+  - **`step_33`/`step_52` (ack callback) падали во всех прогонах** —
+    `callback_query_id` синтетический, Telegram его не знает. У шагов стоит
+    `continueOnFailure`, обработка шла дальше; в бою id настоящий.
+  - **Не прогнаны:** ветка `declined` (`step_11`/`step_38`), `pdn_no` (`step_49`),
+    `mkt_yes` (`step_57`) и `phone_contact` (`step_68`). Каждая — близнец
+    прогнанной ветки по устройству, но это рассуждение, а не проверка.
 
 - **Второй вызов `fn-t` в трёх ветках заменён CODE-шагом** (12.09.2026, W20,
   [Q28](../../docs/OPEN-QUESTIONS.md#q28)): `step_16` (existing), `step_73`
