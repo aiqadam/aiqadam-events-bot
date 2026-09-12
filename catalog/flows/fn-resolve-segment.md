@@ -36,8 +36,8 @@
 | step_1 | CODE «normalize segment» | допустимость сегмента, сентинел `-` | `{{trigger['output'].data.segment}}`, `...eventId` |
 | step_2 | `@aiqadam/qadam-tables : tables-find-records` | `events` по `id`, `limit 5` — нужен `ends_at` | `table_id` = `kVLg1FSfDBtsP32FGPk3P`, поле `id` (`V1uVUJxRiBTNRsnsjXXUY`) |
 | step_3 | `@aiqadam/qadam-tables : tables-find-records` | `registrations` по `event_id`, **без limit** | `table_id` = `PNuChoFG0tIBTND86yzDL`, поле `event_id` (`6mRpFdqphYL2PtfQwBFEr`) |
-| step_4 | `@aiqadam/qadam-tables : tables-find-records` | `users` с `blocked_bot eq true` — только те, кого надо вычесть | `table_id` = `z5PX9B8mTQC9Q6Dfuj5dM`, поле `blocked_bot` (`iXD5CZ4WHR29OWcNYDjAv`) |
-| step_7 | `@aiqadam/qadam-tables : tables-find-records` | `users` с `consent_marketing eq true` — для `all_consent` | то же, поле `consent_marketing` (`okGBtVrZ2FNPs7ETslHlr`) |
+| step_4 | `@aiqadam/qadam-tables : tables-find-records` | `users` с `blocked_bot eq true` — только те, кого надо вычесть; **проекция колонок**: `telegram_id`, `blocked_bot` | `table_id` = `z5PX9B8mTQC9Q6Dfuj5dM`, поле `blocked_bot` (`iXD5CZ4WHR29OWcNYDjAv`) |
+| step_7 | `@aiqadam/qadam-tables : tables-find-records` | `users` с `consent_marketing eq true` — для `all_consent`; **проекция колонок**: `telegram_id`, `consent_marketing` | то же, поле `consent_marketing` (`okGBtVrZ2FNPs7ETslHlr`) |
 | step_5 | CODE «build recipient list» | отбор, дедуп, вычитание блокировок, гейт `no_show` | выходы шагов 1–4 и 7 |
 | step_6 | `@aiqadam/qadam-subflows : returnResponse` | ответ | `{{step_5['output']}}` |
 
@@ -51,6 +51,15 @@
 
 ## Заметки
 
+- **Поле фильтра обязано оставаться в проекции колонок** (W19, 2026-09-12).
+  `step_5` перепроверяет `blocked_bot === 'true'` и `consent_marketing === 'true'`
+  в коде — это второй рубеж, а не дублирование. Убрать эти колонки из `columns`
+  у `step_4`/`step_7` значит опустошить список блокировок: `blockedKnown` станет
+  `0`, и заблокировавшие бот попадут в рассылку (**fail-open**, OWN-12 наизнанку),
+  причём флоу останется валидным, а прогон зелёным. Различающий тест —
+  прогон `CaKM3oq8B12to0T92XUcM` с временно заблокированным `8255904812`:
+  `blockedKnown: 1`, `blockedExcluded: 1`, получатель только один. Прогон
+  `DMIDoaiH4zHYIsYPTpZhZ` (никто не заблокирован) этого **не** различает.
 - **`no_show` закрыт до `ends_at`** (OWN-9) и отдаёт `reason: 'too_early'` + `opensAt`,
   чтобы owner увидел причину и дату, а не молчаливый пустой список. Проверено на
   фикстурах: будущий ивент → `too_early`, закончившийся → список.

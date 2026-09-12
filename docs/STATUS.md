@@ -44,11 +44,13 @@
 | W7. Mini App — сканер | 5 | W8, 0.4–0.5 | **готов** 2026-09-09 | агент W7 | [W07](work/W07-miniapp-scanner.md) |
 | W13. Списки и экспорт | 5 | W5 | не начат | — | — |
 | W14. Рассылки | 5 | W13, W3 | не начат | — | требует [Q13](OPEN-QUESTIONS.md#q13) |
-| W12b. `dedup-sweep` | 5 | W1, W5 | не начат | — | — |
+| W12b. `dedup-sweep` (сужен: уборка дублей строк; ключи `upd:*` закрыты TTL в W20) | 5 | W1, W5 | не начат | — | — |
 | W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
-| W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **в работе** 2026-09-11 | агент W17 | [W17](work/W17-inline-callflow.md) |
+| W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **на проверке** 2026-09-12 | агент W17 | [W17](work/W17-inline-callflow.md) |
 | W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | не начат | — | — |
-| W19. Ревизия после обновления образа Qadam Flow ([Q26](OPEN-QUESTIONS.md#q26)) | 5 | W18, W8 | не начат | — | — |
+| W19. Ревизия после обновления образа Qadam Flow ([Q26](OPEN-QUESTIONS.md#q26)) | 5 | W8 | **на проверке** 2026-09-12 | агент W19 | [W19](work/W19-platform-primitives-revision.md) |
+| W20. Пересмотр ADR-0003 на атомарных примитивах ([Q27](OPEN-QUESTIONS.md#q27), [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md)) | 5 | W19, W4, W5, W8 | **на проверке** 2026-09-12 | агент W20 | [W20](work/W20-idempotency-on-atomic-primitives.md) |
+| W21. Перевод флоу на end-to-end ([ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) | 5 | W20, W17, W16 | **на проверке** 2026-09-12 | агент W21 | [W21](work/W21-end-to-end-flows.md) |
 | W15. Приёмка | 6 | все | не начат | — | — |
 
 Критический путь: `0.1–0.3 → W1 → W2 → W4 → W5 → W8 → W7 → W15`.

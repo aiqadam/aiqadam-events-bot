@@ -36,29 +36,75 @@
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | вход Mini App | — |
-| step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`, как у `fn-sign-qr`) | `{{trigger['output'].body}}` |
-| step_2 | `@aiqadam/qadam-subflows : callFlow` → `fn-verify-init-data` | HMAC токена бота + свежесть | `{{step_1['output'].initData}}` |
-| step_3 | CODE «combine validity» | `valid`, `telegramId`, `reason` | `{{step_2['output'].data}}`, `{{step_1['output'].eventIdValid}}` |
-| step_4 | ROUTER «initData+eventId валидны?» | `valid` (branchIndex 0) / `Otherwise` (branchIndex 1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
-| step_18 (branch 1) | `callFlow → fn-t` | `checkin.unauthorized`, `lang: ru` | — |
-| step_13/14 (branch 1) | CODE + `return_response` | `{ ok:false, error:"invalid_init_data", reason, text }`, статус `200` | `{{step_18['output'].data.text}}`, `{{step_3['output'].reason}}` |
-| step_5 (branch 0) | `callFlow` → `fn-find-registration` | регистрация участника на `eventId` | `eventId`, `telegramId` из step_1/step_3 |
-| step_6 | CODE «decide outcome» | `ok` только если `registration.registered` | `{{step_5['output'].data}}` |
-| step_7 | ROUTER «outcome?» | `ok` (branchIndex 0) / `Otherwise` (branchIndex 1 → `not_registered`) | `{{step_6['output'].outcome}}` |
-| step_8 (branch `ok`) | `callFlow` → `fn-sign-qr` | подпись `payload` | `eventId`, `userId = telegramId` |
-| step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_8['output'].data}}` |
-| step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык (только в этой ветке, ок-путь `users` не читает) | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
+| step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`) | `{{trigger['output'].body}}` |
+| step_19 | CODE «parse initData» | разбор `initData`, `data_check_string` | `{{step_1['output'].initData}}` |
+| step_20 | CODE «hmac initData (эталон)» | HMAC-цепочка Telegram, `node:crypto` | `{{variables['BOT_TOKEN']}}` · эталон [`hmac-init-data`](../snippets/hmac-init-data.md) |
+| step_21 | CODE «verify initData» | constant-time сравнение + свежесть | `expected` = `{{step_20['output']}}`, `maxAgeSeconds: 86400` |
+| step_3 | CODE «combine validity» | `valid`, `telegramId`, `reason` | `{{step_21['output']}}`, `{{step_1['output'].eventIdValid}}` |
+| step_4 | ROUTER «initData+eventId валидны?» | `valid` (0) / `Otherwise` (1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
+| step_26 (branch 1) | `tables-find-records strings` | `key in (checkin.unauthorized)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
+| step_27 (branch 1) | CODE «resolve i18n unauthorized (эталон)» | `lang: ru` (пользователь не проверен) | `{{step_26['output']}}` · эталон [`i18n-resolve`](../snippets/i18n-resolve.md) |
+| step_13/14 (branch 1) | CODE + `return_response` | `{ ok:false, error:"invalid_init_data", reason, text }`, статус `200` | `{{step_27['output']}}`, `{{step_3['output'].reason}}` |
+| step_2 (branch 0) | CODE «normalize registration keys» | сентинел `-` вместо пустого фильтра | `{{step_1['output'].eventId}}`, `{{step_3['output'].telegramId}}` |
+| step_22 | `tables-find-records registrations` | два `eq`, **без `limit`** | `table_id = PNuChoFG0tIBTND86yzDL` |
+| step_23 | CODE «pick earliest registration (ADR-0003)» | каноническая строка | `{{step_22['output']}}` |
+| step_6 | CODE «decide outcome» | `ok` только если `registered` | `{{step_23['output']}}` |
+| step_7 | ROUTER «outcome?» | `ok` (0) / `Otherwise` (1 → `not_registered`) | `{{step_6['output'].outcome}}` |
+| step_5 (branch `ok`) | CODE «canonical msg (эталон)» | `'c:' + eventId + ':' + userId`, **падает** на мусорном входе | `{{step_1['output'].eventId}}`, `{{step_3['output'].telegramId}}` · эталон [`hmac-qr`](../snippets/hmac-qr.md) |
+| step_24 (branch `ok`) | CODE «sign QR (эталон)» | HMAC → base64url → первые 10, сборка `payload` | `{{variables['QR_SIGNING_KEY']}}` |
+| step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_24['output']}}` |
+| step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык; **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_16 (branch `not_registered`) | CODE «resolve user lang» | `lang` (фолбэк `ru`) | `{{step_15['output']}}` |
-| step_17 (branch `not_registered`) | `callFlow → fn-t` | `checkin.not_registered`, `lang: {{step_16['output'].lang}}` | — |
-| step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_17['output'].data}}` |
-
+| step_8 (branch `not_registered`) | `tables-find-records strings` | `key in (checkin.not_registered)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
+| step_25 (branch `not_registered`) | CODE «resolve i18n not_registered (эталон)» | язык участника | `{{step_8['output']}}`, `{{step_16['output'].lang}}` |
+| step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_25['output']}}` |
 ## Зависимости
 
-- **Subflow'ы**: `fn-verify-init-data`, `fn-find-registration`, `fn-sign-qr`, `fn-t`
-- **Таблицы**: `users` (чтение языка, опционально) — только через qadam'а; остальное через subflow'ы
-- **Переменные**: — · **Connections**: — (токен бота читается внутри `fn-verify-init-data` из Variable)
+- **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md))
+- **Таблицы**: `registrations` (чтение), `users` (чтение языка, только в ветке `not_registered`),
+  `strings` (чтение: по одному запросу на каждую ветку ошибки; ок-путь `strings` не читает)
+- **Переменные**: `BOT_TOKEN` (`step_20`), `QR_SIGNING_KEY` (`step_24`) — обе в длинной форме
+- **Connections**: —
 
 ## Заметки
+
+- **W21 (2026-09-12) — пять `callFlow` убраны, subflow'ов не осталось.** 19 → 26 шагов.
+  `fn-verify-init-data` → `step_19`/`step_20`/`step_21`, `fn-find-registration` →
+  `step_2`/`step_22`/`step_23`, `fn-sign-qr` → `step_5`/`step_24`, два вызова `fn-t` →
+  по чтению `strings` плюс CODE-шагу разрешения в каждой ветке ошибки.
+  - **Здесь чтения `strings` разнесены по веткам намеренно, в отличие от
+    `checkin-api`.** Там общее чтение до ветвления выгодно: все ветки после
+    аутентификации нуждаются в строках. Здесь строки нужны **только** веткам
+    ошибок, а `ok` — горячий путь — не читает `strings` вовсе. Общее чтение до
+    `step_4` добавило бы запрос именно туда, где его быть не должно.
+- **Сквозная совместимость подписи проверена и сошлась (обязательный пункт W21).**
+  `my-qr-api/step_24` выдал `aIxmwbnzb_` для `(demo, 322876545)` — ровно ту
+  подпись, которую независимо посчитала и приняла встроенная проверка
+  `checkin-api/step_38`. Две независимые копии HMAC, разнесённые по разным флоу,
+  сошлись на одном значении. Прогоны `JMAC4mcduVJjKONyTQC2g` и
+  `G05GjI12dsGeWssBAwAAt`.
+- **Как проверялось перед публикацией (W21).** Тем же приёмом, что и `checkin-api`:
+  `initData` синтезировать нельзя ([Q16](../../docs/OPEN-QUESTIONS.md#q16)), поэтому
+  ветки за `step_4` прогонялись при временно замкнутом сравнении в черновике
+  (`step_21.expected` ← `{{step_19['output'].hash}}`). Замыкание снято до публикации,
+  возврат подтверждён различающим прогоном `YlnVABOpteQfT6klKeBFi`: тот же вход,
+  что проходил при замыкании, дал `bad_hash`.
+
+  | Исход | Прогон | Ответ | Время |
+  |---|---|---|---|
+  | `invalid_init_data` | `dAahWRGwDhy9YKkoqf9RG` | `ok:false`, `malformed` | 1,8 с |
+  | `ok` | `JMAC4mcduVJjKONyTQC2g` | `payload: cdemo-322876545-aIxmwbnzb_` | 1,7 с |
+  | `not_registered` | `vSRdG9HZ7IMlpuIyQCMH4` | `ok:false`, «Нет регистрации» | 2,8 с |
+
+  Ingress после публикации проверен `curl`'ом — `{"ok":false,"error":"invalid_init_data"}`.
+
+- ~~**Все `callFlow`-шаги — `executionMode: inline`** (W20, 2026-09-12).~~
+  **Неактуально с W21: `callFlow`-шагов не осталось.** Запись сохранена, потому
+  что на ней стоит замер, от которого считается выигрыш.
+  Исходный текст: W17
+  перевёл на inline `checkin-api`, `registration` и `fn-event-card`, но
+  `my-qr-api` тогда не тронул. Проверено прогоном `IkrsFXyLwEoE9m4wvUwX0`
+  (ветка `invalid_init_data`, 4,7 с).
 
 - **Всегда `HTTP 200`, ошибка — в теле.** Страница сама разбирает `ok`/`error`,
   а не HTTP-статус — проще для `fetch()` без обвязки на 4xx/5xx.
