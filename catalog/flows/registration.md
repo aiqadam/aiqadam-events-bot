@@ -19,7 +19,7 @@
 | Поле | Когда заполнено | Смысл |
 |------|-----------------|-------|
 | `action` | всегда | `start` (первый вход по deep link) \| `continue` (продолжение визарда) |
-| `eventId`, `utm` | `action = start` | из `fn-parse-start` (kind `e`) |
+| `eventId`, `utm` | `action = start` | из разбора deep link в `tg-router/step_15` (эталон [`parse-start`](../snippets/parse-start.md), kind `e`) |
 | `kind` | `action = continue` | `callback` \| `contact` \| `text`/`command`/др. — как классифицировал `tg-router` |
 | `callbackData`, `callbackQueryId` | `kind = callback` | `reg:pdn:yes|no`, `reg:mkt:yes|no` |
 | `contactPhone`, `contactIsOwn` | `kind = contact` | из `request_contact`; чужой контакт (`contactIsOwn=false`) не сохраняется |
@@ -43,14 +43,13 @@
 
 ## Ветка `start`
 
-> Снято `ap_flow_structure` 2026-09-12 после W21/W19-фикса. 100 шагов, `callFlow` — ноль.
+> Снято `ap_flow_structure` 2026-09-13 после W22. **92 шага**, `callFlow` — ноль.
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| step_77 → step_78 → step_79 | CODE + `tables-find-records registrations` + CODE | есть ли уже регистрация (IDM-1) · эталон [`find-registration`](../snippets/find-registration.md) |
+| step_77 → step_22 → step_79 | CODE + `tables-find-records registrations` + CODE | **одно** чтение всех регистраций ивента (`event_id eq`) кормит двух потребителей: `step_79` отбирает свою строку (эталон [`find-registration`](../snippets/find-registration.md), отбор по `telegram_id` — в коде), `step_7` считает занятость. До W22 это были два отдельных чтения (`step_78` и `step_6`, −0,41 с) |
 | step_5 | `tables-find-records events` | ивент по `id`, `limit 1` |
-| step_6 | `tables-find-records registrations` | `status = registered` по событию, `limit 500` — овербукинг |
-| step_7 | CODE «решение» | `declined` / `existing` / `new` (OWN-15, IDM-1) |
+| step_7 | CODE «решение» | `declined` / `existing` / `new` (OWN-15, IDM-1); занятость считается здесь по `status = registered`, а не фильтром запроса |
 | step_8 | ROUTER по `outcome` | три ветки |
 
 **`declined`** (step_9 → step_38 → step_82 → step_11 → step_12): `reason` → ключ i18n;
@@ -63,13 +62,23 @@
 `reg.already` через чтение `strings` + разрешение, отправка, затем батч ключей
 приглашения в Mini App и кнопка QR. Второе согласие не спрашивается.
 
-**`new`** (step_96 → step_97 → step_98 → step_99 → step_19 → step_20 → …):
+**`new`** (step_96 → step_97 → step_21 → step_99 → step_19 → step_20 → …):
 карточка ивента собирается **внутри флоу** ([`event-card`](../snippets/event-card.md)),
 `step_96` берёт строку ивента из уже прочитанного `step_5` — отдельного запроса
-к `events` больше нет. Дальше ROUTER «есть venue?» (`step_21` по `.data.venue`):
-`sendVenue` через `custom_api_call` + `step_84`/`step_23`/`step_24` (подсказка
-про карту). Затем upsert `sessions` (`step_26`/`step_27`/`step_28`/`step_29`/`step_30`)
-и вопрос согласия на ПД (`step_85` → `step_31` → `step_32`).
+к `events` больше нет. `step_21` — **одно** чтение `strings` на всю ветку: десять
+ключей карточки плюс три ключа согласия на ПД; его разбирают и `step_99` (карточка),
+и `step_31` (согласие). До W22 это были два чтения (`step_98` и `step_85`, −0,46 с).
+Затем `step_20` отправляет карточку, upsert `sessions`
+(`step_26`/`step_27`/`step_28`/`step_29`/`step_30`) и `step_32` задаёт вопрос
+о согласии.
+
+**Ветка шлёт два сообщения, а не четыре** ([ADR-0013](../../docs/adr/0013-fewer-messages-on-start.md),
+правит OWN-2). Удалены `step_21`-ROUTER «есть venue?», `sendVenue` (`step_22`),
+чтение `strings` для `reg.venue.hint` (`step_84`), его разрешение (`step_23`) и
+отправка ссылки на карты (`step_24`). Адрес и ссылка остались в тексте карточки
+(`event.card.where`, `event.card.map_link`). Экономия — 1,45 с отправок плюс
+0,53 с чтения. Имя `step_21` переиспользовано платформой под новое чтение
+`strings` — это **другой шаг**, не переименованный ROUTER.
 
 ## Ветка `pdn_yes`
 
@@ -104,7 +113,9 @@ ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `s
 - **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) —
   девятнадцать `callFlow` заменены встроенными шагами по эталонам [`catalog/snippets/`](../snippets/)
 - **Таблицы**: `events` (чтение), `registrations` (чтение и запись), `users` (запись согласий/телефона),
-  `sessions` (чтение и запись состояния визарда), `strings` (чтение: по запросу на каждое место перевода)
+  `sessions` (чтение и запись состояния визарда), `strings` (чтение: **одно на ветку**
+  в ветке `start` после W22; в остальных ветках пока по чтению на каждое место перевода —
+  см. «Хвосты» в [W22](../../docs/work/W22-latency-and-cleanup.md))
 - **Переменные**: `MINIAPP_URL` (кнопка Mini App), `BOT_USERNAME` (`step_96`, deep link карточки),
   `QR_SIGNING_KEY` (`step_13`, `step_72`) — все в длинной форме `{{variables['NAME']}}`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`answer_callback_query`/`custom_api_call`

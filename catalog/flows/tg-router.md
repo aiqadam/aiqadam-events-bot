@@ -4,7 +4,8 @@
 - **Триггер**: `@aiqadam/qadam-telegram-bot / new_telegram_message` (`update_types: message, callback_query`),
   connection `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 - **Назначение**: единственная точка входа бота — дедуп по `update_id` (IDM-4),
-  апсерт `users`, классификация апдейта, делегирование обработчику.
+  апсерт `users` (**запись только при изменениях**, W22), классификация апдейта,
+  делегирование обработчику.
 - **Flow ID (MCP)**: `Y1dNon2V2EhjWM0aYwdQi` · **externalId**: — (не subflow, `callFlow` его не вызывает)
 
 ## Контракт
@@ -34,11 +35,12 @@
 | step_3 | CODE «gate: свежий апдейт?» | решает `proceed` по `ok`/`seen`/`isBot`/`isPrivate`; `seen` = `stored === false` | `{{step_2['output']}}`, `{{step_1['output']}}` |
 | step_4 | ROUTER «обрабатываем только свежий апдейт» | ветка 0 = `proceed`, fallback = «Otherwise» | `{{step_3['output'].proceed}}` |
 | step_5 (ветка Otherwise) | CODE «апдейт пропущен — почему» | след в логе: `duplicate` / `bad_update` / `from_bot` / `non_private_chat` | `{{step_3['output'].reason}}` |
-| step_7 | `@aiqadam/qadam-tables : tables-find-records` | `users` по `telegram_id` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM`, фильтр `eq` |
-| step_8 | CODE «выбрать каноническую строку users» | детерминированный выбор при дублях (ADR-0003), решает язык (не перетирает выбор пользователя) | `{{step_7['output']}}` |
-| step_9 | ROUTER «users: обновить или завести» | ветка 0 = `exists`, ветка 1 = иначе | `{{step_8['output'].exists}}` |
+| step_6 | `@aiqadam/qadam-tables : tables-find-records` | `users` по `telegram_id` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM`, фильтр `eq`, проекция из 10 колонок |
+| step_8 | CODE «выбрать каноническую строку users + нужна ли запись» | детерминированный выбор при дублях (ADR-0003), решает язык (не перетирает выбор пользователя), перепроверяет `telegram_id` в коде (страховка от fail-open #382), считает `needsUpdate` | `{{step_6['output']}}`, `{{step_1['output']}}` |
+| step_9 | ROUTER «users: обновить или завести» | ветка 0 = `exists` **и** `needsUpdate`; ветка 1 = `exists` (менять нечего); fallback = завести | `{{step_8['output'].exists}}`, `{{step_8['output'].needsUpdate}}` |
 | step_10 (ветка 0) | `@aiqadam/qadam-tables : tables-update-record` | обновляет имя/username/lang, **снимает `blocked_bot`** | `record_id = {{step_8['output'].recordId}}` |
-| step_11 (ветка 1) | `@aiqadam/qadam-tables : tables-create-records` | заводит строку `users` | `values.values[0]` |
+| step_7 (ветка 1) | CODE «запись в users пропущена» | ничего не делает — ветка существует, чтобы не писать | `{{step_8['output'].recordId}}` |
+| step_11 (fallback) | `@aiqadam/qadam-tables : tables-create-records` | заводит строку `users` | `values.values[0]` |
 | step_12 | `@aiqadam/qadam-tables : tables-find-records` | активная сессия визарда | `table_id = tL4fbi1GisDwA8UJ9zSod`, фильтр `telegram_id eq` |
 | step_13 | CODE «классификация апдейта» | вычисляет `kind` и собирает выходной контракт | `{{step_1['output']}}`, `{{step_8['output']}}`, `{{step_12['output']}}` |
 | step_14 | ROUTER «делегирование обработчику» | ветка 0 = `start_payload`, ветка 1 = продолжение `registration`, fallback = ещё не подключено | `{{step_13['output'].kind}}`, `{{step_13['output'].session.scenario}}` |
@@ -117,13 +119,24 @@
   при этом валиден и работает; отказ только на запись. Лечится пересозданием
   шага — новый получает то же имя, ссылки вниз по флоу не ломаются (так сделан
   `step_7`). Перепривязать версию правкой не удаётся даже явным `qadamName`.
-- **`step_7` отдаёт только пять колонок `users`** (`created_at`, `lang`,
-  `consent_pdn`, `consent_marketing`, `phone`) — ровно то, что потребляет
-  `step_8` ([Q17](../../docs/OPEN-QUESTIONS.md#q17)). Имена, `username`,
-  `telegram_id`, `blocked_bot` и обе consent-даты в лог прогона больше не
-  попадают. Проверено сквозным прогоном `BywBIqJvv6bjW06R6qYBC`.
-  **`step_10` при этом по-прежнему логирует строку целиком** — у
-  `tables-update-record` проекции колонок нет.
+- **Проекция `users` расширена в W22 с пяти колонок до десяти** (`telegram_id`,
+  `first_name`, `last_name`, `username`, `phone`, `lang`, `consent_pdn`,
+  `consent_marketing`, `blocked_bot`, `created_at`). Это **осознанный размен**
+  ([Q17](../../docs/OPEN-QUESTIONS.md#q17)): чтобы решить, надо ли писать, шаг
+  обязан сравнить хранимые значения с пришедшими — иначе сравнивать нечего.
+  Имена и `username` вернулись в лог прогона `step_6`.
+  Обратная сторона размена: в **типичном** случае (ничего не изменилось) `step_10`
+  теперь не выполняется вовсе, а он логировал строку целиком и без проекции —
+  так что суммарно ПД в логах стало меньше, а не больше. Строка целиком уезжает
+  в лог только когда что-то действительно поменялось.
+- **Запись в `users` пропускается, когда сравнивать нечего** (W22, −0,56 с на
+  каждом шаге визарда). Поля `last_seen` у таблицы нет, поэтому пропуск ничего
+  не теряет. Доказано тремя различающими прогонами в TESTING:
+  `rVKYNeuRrYBwPNIvMFNgL` (нет строки → завели), `5cxzKm1Q1FRxdw380UScy`
+  (то же самое → `needsUpdate: false`, ветка пропуска, записи нет),
+  `UiJARuiA4j2XSU9zuYrK6` (**изменился `username`** → `needsUpdate: true`,
+  запись произошла, в строке новое значение). Третий прогон и есть тот, ради
+  которого пропуск нельзя принимать на веру.
 - **Апдейты приходят long-polling'ом, а не вебхуком** — проверено на живом
   инстансе 2026-09-12 (W19, [Q26](../../docs/OPEN-QUESTIONS.md#q26)):
   `POST /api/v1/webhooks/Y1dNon2V2EhjWM0aYwdQi` отвечает `409 «This flow receives
