@@ -1,5 +1,13 @@
 # Архитектура: всё на Qadam Flow
 
+> **Актуальность (2026-09-13, W22).** Ниже subflow-«функции» `fn-*` местами
+> описаны как существующие. **Их больше нет** — [ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)
+> отменил их как практику, W21 убрал вызовы, W22 удалил флоу. Проверенные
+> факты про subflow'ы сохранены и остаются верными: они относятся к
+> единственному оставшемуся вызову `tg-router` → `registration` и к сборке
+> `events-prod` с нуля. Живое состояние — [catalog/overview.md](../catalog/overview.md).
+
+
 Несущий стек — [Qadam Flow](https://github.com/aiqadam/qadam-flow), форк Activepieces
 (MIT-ядро, enterprise-код вырезан). Инстанс: <https://app.flow.aiqadam.org>.
 
@@ -475,7 +483,11 @@ Qadam Flow Tables — [DATA-MODEL.md](DATA-MODEL.md), живая схема с �
 **Проверено 2026-09-08, и ответ неудобный:** уникальных индексов в Tables нет.
 Три записи с одинаковым ключом вставились подряд без единой жалобы. Типы полей —
 только `TEXT`, `NUMBER`, `DATE`, `STATIC_DROPDOWN`; ни boolean, ни JSON.
-Действия qadam'а: create / update / get / find / delete / clear — **upsert'а нет**.
+Действия qadam'а: create / update / get / find / delete / clear / download —
+и **`tables-upsert-records`**, замеченный W22 (2026-09-13; когда появился —
+неизвестно, раньше здесь стояло «upsert'а нет»). Уникальности он не даёт:
+ключ матчится на стороне qadam'а, а не БД, поэтому другой путь записи всё равно
+вставит дубль. ADR-0003 в силе. В проекте не используется и прогоном не проверен.
 У `store put` нет ни режима «только если ключа нет», ни TTL.
 
 Значит, **атомарного примитива на платформе нет вообще**, и идемпотентность

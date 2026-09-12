@@ -8,9 +8,7 @@
 
 | Флоу | Шаг | Роль | Сверено |
 |---|---|---|---|
-| `fn-verify-qr` (`Zl4ShjrJBl8NNyKJ8ASLa`) | `step_2` | проверка | эталон-источник |
 | `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_38` | проверка | 2026-09-12, побайтово |
-| `fn-sign-qr` (`VBkXevctQRgh3em0v2ndA`) | `step_1`+`step_2` | **подпись** | эталон-источник варианта подписи |
 | `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_5`+`step_24` | **подпись** | 2026-09-12, побайтово |
 | `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_94`+`step_13` | **подпись**, конверт | 2026-09-12 |
 | `registration` | `step_95`+`step_72` | **подпись**, конверт | 2026-09-12 |
