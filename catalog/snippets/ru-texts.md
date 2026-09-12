@@ -1,0 +1,133 @@
+# Эталон: тексты сообщений (русский-онли)
+
+**Инвариант:** I18N-2 в редакции [ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md).
+Сырой ключ на экране вместо пустоты; в шагах отправки литералов нет.
+
+**Заменил** [`i18n-resolve`](i18n-resolve.md) во всех живых флоу 2026-09-13.
+Тот файл **не удалён**: он нужен при воскрешении i18n
+([qadam-flow#420](https://github.com/aiqadam/qadam-flow/issues/420), v2.0.0).
+
+## Чем отличается от `i18n-resolve`
+
+Ровно одним: строки берутся не из прочитанных записей таблицы `strings`
+(вход `records`), а **из входа самого шага** (вход `texts`). Форма ответа
+не изменилась ни на байт, поэтому ни один потребитель не переписывался.
+
+```
+i18n-resolve:  tables-find-records strings  →  CODE(records, keys)  →  {texts,...}
+ru-texts:                                      CODE(texts,   keys)  →  {texts,...}
+```
+
+Из горячего пути это убрало 16 PIECE-шагов чтения `strings` плюс два чтения
+языка пользователя в `my-qr-api`.
+
+**Встраивают** (сверено 2026-09-13):
+
+| Флоу | Шаги | Вариант |
+|---|---|---|
+| `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_9`, `step_10`, `step_31`, `step_43`, `step_44`, `step_46` | плоский |
+| `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`) | `step_25`, `step_27` | плоский |
+| `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_99` | плоский |
+| `registration` | `step_11`, `step_14`, `step_17`, `step_31`, `step_43`, `step_49`, `step_57`, `step_59`, `step_62`, `step_68`, `step_70`, `step_74` | конверт |
+
+Конвертный вариант отличается только хвостом:
+`return out;` → `return { status: 'success', data: out };`
+(шаги `@aiqadam/qadam-telegram-bot` читают `.data...` и не редактируются, #411).
+
+## Вход шага
+
+| Проп | Что | Обязателен |
+|---|---|---|
+| `texts` | `{ключ: строка}` — **русский текст**, из `i18n/ru.json` | да |
+| `keys` | какие ключи резолвить и в каком порядке; `text` = первый | нет: пусто → все ключи из `texts` |
+| `vars` | общие подстановки `{name}`, `{title}`, … | нет |
+| `varsByKey` | подстановки, перекрывающие общие для конкретного ключа | нет |
+
+`varsByKey` обязателен там, где **одно и то же** имя значит разное: в карточке
+ивента `{when}` есть и у `event.card.when`, и у `.ends`, и у `.deadline`.
+
+**`keys` можно оставить динамическим.** В `registration/step_11` он вычисляется
+из причины отказа; поэтому во вход положено надмножество — все пять причин.
+
+## Два источника правды на текст, и это названо в ADR
+
+Строка живёт и в `i18n/ru.json`, и во входе шага. **Расхождение не ловится
+ничем** — ни прогоном, ни сверкой. Правка формулировки — это правка обоих мест.
+Это осознанная цена ADR-0014, а не недосмотр; в отличие от дрейфа криптографии,
+который ломает скан громко.
+
+## Код
+
+```js
+export const code = async (inputs) => {
+  // Русский-онли до платформенного i18n — ADR-0014,
+  // qadam-flow#420 (milestone v2.0.0).
+  // Тексты приходят ВО ВХОДЕ шага (`texts`), а не читаются из таблицы `strings`:
+  // каждое чтение стоило отдельного PIECE-шага на каждое сообщение, а язык
+  // теперь один и выбирать не из чего.
+  // ИСТОЧНИК ТЕКСТА — i18n/ru.json в репозитории. Правка формулировки — это
+  // правка ru.json И входа этого шага; иначе они разъедутся молча.
+  // При воскрешении i18n `texts` заменяется обратно на чтение strings +
+  // эталон i18n-resolve, а форма ответа остаётся ровно этой.
+  const obj = (v) => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  const src = obj(inputs.texts);
+  const keys = Array.isArray(inputs.keys) && inputs.keys.length > 0
+    ? inputs.keys.map((k) => String(k))
+    : Object.keys(src);
+
+  const vars = obj(inputs.vars);
+  const varsByKey = obj(inputs.varsByKey);
+
+  // Подстановки для конкретного ключа перекрывают общие: одно и то же имя ({when})
+  // в разных ключах карточки ивента означает разное время.
+  const substFor = (key, tpl) => {
+    const local = obj(varsByKey[key]);
+    return String(tpl).replace(/\{([A-Za-z0-9_.]+)\}/g, (m, name) => {
+      const v = local[name] !== undefined && local[name] !== null ? local[name] : vars[name];
+      // Неизвестная подстановка остаётся видной, а не стирается в пустоту.
+      if (v === undefined || v === null) return m;
+      return String(v);
+    });
+  };
+
+  const texts = {};
+  const resolvedLang = {};
+  const missing = [];
+
+  keys.forEach((k) => {
+    const raw = src[k];
+    if (typeof raw !== 'string' || raw === '') {
+      // Сырой ключ на экране заметен, пустой экран — нет (I18N.md).
+      texts[k] = k;
+      resolvedLang[k] = '';
+      missing.push(k);
+      return;
+    }
+    texts[k] = substFor(k, raw);
+    resolvedLang[k] = 'ru';
+  });
+
+  const firstKey = keys.length > 0 ? keys[0] : '';
+
+  const out = {
+    lang: 'ru',
+    text: firstKey === '' ? '' : texts[firstKey],
+    texts: texts,
+    resolvedLang: resolvedLang,
+    missing: missing,
+    // Фолбэка между языками больше нет — язык один. Поле сохранено: его читают
+    // потребители, и оно вернётся при воскрешении i18n.
+    fellBack: [],
+    keys: keys
+  };
+
+  return out;
+};
+```
+
+## Как ловится дрейф
+
+`missing` в выводе шага — непустой массив означает, что ключ запрошен, но во
+входе его нет, и пользователь увидел сырой ключ. Это **единственный** сигнал,
+и он виден только в логе прогона. Проверено на живом прогоне
+`gRb6JCmnoB1BH5N4meuc4`: `missing: []`, текст «Уже отмечен в 03:05».

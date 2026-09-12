@@ -1,5 +1,14 @@
 # Flow: checkin-api
 
+> **W24 (2026-09-13): локализация снята, только русский.**
+> [ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md). Чтения
+> таблицы `strings` удалены, тексты пришли во вход CODE-шагов, которые их
+> формируют — эталон [`ru-texts`](../snippets/ru-texts.md). Форма ответа этих
+> шагов не изменилась ни на байт, поэтому шаги отправки не трогались.
+> Ушли `step_8` и `step_45` (чтения `strings`); флоу **46 → 44 шага**.
+> Ниже по тексту упоминания `strings`, `i18n-resolve` и «перевода» относятся к
+> состоянию **до** этой даты и сохранены как история.
+
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook / catch_webhook`, `authType: none`. Синхронный ответ —
   вызывается по `POST /api/v1/webhooks/CUKqiby1PoHiQiiCQy24V/sync` (суффикс `/sync`).
