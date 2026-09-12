@@ -28,22 +28,35 @@
 | `QR_SIGNING_KEY` | да | длина 64, алфавит `A-Za-z0-9_-`; значение не выносится ни в каталог, ни в git |
 | `BOT_USERNAME` | да | `aiqadam_events_dev_bot`, **без** ведущего `@` |
 | `MINIAPP_URL` | да | `https://miniapp.events.aiqadam.org/` — шаг 0.5 закрыт 2026-09-08, тот же адрес стоит Mini App-ом у бота в BotFather |
-| `BOT_TOKEN` | да, добавлен 2026-09-09 (W8) | значение не выносится ни в каталог, ни в git; проверено **поведением**, не конфигом — прогон на настоящем `initData` дал `hashValid: true` только после переключения `fn-verify-init-data / step_2` на эту переменную ([ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) |
+| `BOT_TOKEN` | да, добавлен 2026-09-09 (W8) | значение не выносится ни в каталог, ни в git; проверено **поведением**, не конфигом — прогон на настоящем `initData` дал `hashValid: true` только после переключения HMAC-шага на эту переменную (тогда — `fn-verify-init-data / step_2`, флоу удалён в W22) ([ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) |
 
-## Кто их читает (W2)
+## Кто их читает (сверено 2026-09-13, W22)
+
+Список снят с живого проекта: шаги, которые `ap_validate_flow` помечает как
+`references {{variables...}}` — это и есть полный перечень потребителей.
+Флоу `fn-*` удалены в W22, поэтому прежние строки этой таблицы указывали
+на несуществующее.
 
 | Name | Флоу | Шаг |
 |------|------|-----|
-| `QR_SIGNING_KEY` | [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md) | `fn-sign-qr / step_2` (`qrSigningKey` в CODE-шаге, `node:crypto`, W16); `fn-verify-qr / step_2` — с 2026-09-09 (W16) напрямую, раньше косвенно через `callFlow → fn-sign-qr` |
-| `BOT_USERNAME` | [fn-event-card](flows/fn-event-card.md) | `step_3`, сборка `registerDeepLink` |
-| `MINIAPP_URL` | [registration](flows/registration.md) | кнопка `web_app`, ведущая на `ticket.html` (W5, ADR-0007) |
-| `BOT_TOKEN` | [fn-verify-init-data](flows/fn-verify-init-data.md) | `step_2`, `botToken` в CODE-шаге (`node:crypto`, W16; заменил `crypto / hmac-signature` × 2, которые до W8 читали `{{connections['TZTlXaCEO2hEvimUowbSA']}}`, [ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md), [ADR-0010](../docs/adr/0010-unsandboxed-code-step-for-crypto.md)) |
+| `QR_SIGNING_KEY` | [checkin-api](flows/checkin-api.md) | `step_38` — проверка подписи QR (эталон [`hmac-qr`](snippets/hmac-qr.md)) |
+| `QR_SIGNING_KEY` | [my-qr-api](flows/my-qr-api.md) | `step_24` — подпись QR |
+| `QR_SIGNING_KEY` | [registration](flows/registration.md) | `step_13` (ветка `existing`), `step_72` (финализация) — подпись QR |
+| `BOT_TOKEN` | [checkin-api](flows/checkin-api.md) | `step_35` — HMAC `initData` (эталон [`hmac-init-data`](snippets/hmac-init-data.md)) |
+| `BOT_TOKEN` | [my-qr-api](flows/my-qr-api.md) | `step_20` — HMAC `initData` |
+| `BOT_USERNAME` | [registration](flows/registration.md) | `step_96` — сборка `registerDeepLink` в карточке ивента |
+| `MINIAPP_URL` | [registration](flows/registration.md) | `step_18`, `step_75` — кнопка `web_app` на `ticket.html` (W5, ADR-0007) |
+
+`BOT_TOKEN` в `registration` **не читается**: этот флоу вызывается из `tg-router`,
+а не из Mini App, и `initData` не проверяет.
 
 `ap_validate_flow` помечает такие шаги как `"references {{variables...}} which does
 not exist in the flow"` — это **ложное срабатывание**, флоу работает. Но проверять
 подстановку всё равно надо не валидатором, а прогоном: опечатка в имени даёт пустую
-строку и тоже проходит валидацию. Как это сверялось для `QR_SIGNING_KEY` —
-[fn-sign-qr.md](flows/fn-sign-qr.md#заметки).
+строку и тоже проходит валидацию. Как это сверялось для `QR_SIGNING_KEY`:
+подпись ставится в одном флоу, а проверяется в другом, поэтому пустой или
+разъехавшийся ключ ломает скан **громко** — это и есть проверка
+([ADR-0012](../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)).
 
 `BOT_USERNAME` хранится без `@`, поэтому deep link собирается как
 `https://t.me/{{variables['BOT_USERNAME']}}?start=...` — добавлять `@` в шаблоне нельзя.

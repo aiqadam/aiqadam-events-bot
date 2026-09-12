@@ -23,7 +23,8 @@
 `text` — **уже локализованный** текст ошибки для экрана (язык участника из
 `users.lang`; для `invalid_init_data` — `ru`, т.к. пользователь не проверен).
 Ключи `checkin.not_registered` / `checkin.unauthorized` из таблицы `strings`
-через `fn-t` (общие с `checkin-api` — семантика совпадает; Q19). `ticket.html`
+разрешаются CODE-шагом по эталону [`i18n-resolve`](../snippets/i18n-resolve.md)
+(ключи общие с `checkin-api` — семантика совпадает; Q19). `ticket.html`
 показывает серверный `text`, свой словарь для этих исходов не держит.
 
 `telegram_id` берётся **только** из проверенного `initData` (аналог STF-2) — тело
