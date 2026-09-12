@@ -47,7 +47,7 @@
 | step_7 | ROUTER «outcome?» | `ok` (branchIndex 0) / `Otherwise` (branchIndex 1 → `not_registered`) | `{{step_6['output'].outcome}}` |
 | step_8 (branch `ok`) | `callFlow` → `fn-sign-qr` | подпись `payload` | `eventId`, `userId = telegramId` |
 | step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_8['output'].data}}` |
-| step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык (только в этой ветке, ок-путь `users` не читает) | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
+| step_15 (branch `not_registered`) | `tables-find-records users` | строка участника → язык (только в этой ветке, ок-путь `users` не читает); **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_16 (branch `not_registered`) | CODE «resolve user lang» | `lang` (фолбэк `ru`) | `{{step_15['output']}}` |
 | step_17 (branch `not_registered`) | `callFlow → fn-t` | `checkin.not_registered`, `lang: {{step_16['output'].lang}}` | — |
 | step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_17['output'].data}}` |

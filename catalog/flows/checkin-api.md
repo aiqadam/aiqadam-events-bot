@@ -59,7 +59,7 @@
 | step_30 (branch 1) | `callFlow → fn-t` | `checkin.unauthorized`, `lang: ru` (пользователь не определён) | `{{step_4...}}` |
 | step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data` (+`text`), статус `401` | `{{step_30['output'].data.text}}` |
 | step_5 (branch 0) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра, revoked_at not_exists)` | `table_id = CyW6KjJ2BdwQEph2KEqTt` |
-| step_28 | `tables-find-records users` | строка контролёра → язык | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
+| step_28 | `tables-find-records users` | строка контролёра → язык; **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_6 | CODE «decide isStaff» | `isStaff = records.length > 0`, `staffLang` (фолбэк `ru`) | `{{step_5['output']}}`, `{{step_28['output']}}` |
 | step_7 | ROUTER «isStaff?» | `isStaff` (branch 0) / `Otherwise` (branch 1 → `403`) | `{{step_6['output'].isStaff}}` |
 | step_29 (branch 1) | `callFlow → fn-t` | `checkin.forbidden`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
@@ -68,7 +68,7 @@
 | step_9 | `callFlow → fn-verify-qr` | подпись QR | `eventId/userId/sig` из `step_8` |
 | step_10 | `callFlow → fn-find-registration` | регистрация участника (`eventId` запроса, `userId` из QR) | `{{step_1['output'].eventId}}`, `{{step_8['output'].data.userId}}` |
 | step_11 | CODE «decide checkin outcome» | приоритет: `invalid` → `wrong_event` → `invalid` → `not_registered` → `already` → `ok` | `parse/verify/reg` из step_8/9/10, `requestEventId` из step_1 |
-| step_12 | `tables-find-records users` | имя участника по `telegram_id` из QR | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
+| step_12 | `tables-find-records users` | имя участника по `telegram_id` из QR; **проекция колонок**: `first_name`, `last_name` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_13 | CODE «build participant name» | `first_name + last_name` | `{{step_12['output']}}` |
 | step_14 | ROUTER «outcome?» | `ok` (0) / `already` (1) / `Otherwise` (2) | `{{step_11['output'].outcome}}` |
 | step_31 (branch `ok`) | `callFlow → fn-t` | `keys: [checkin.ok, checkin.name_unknown]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
