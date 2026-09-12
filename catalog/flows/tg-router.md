@@ -28,7 +28,7 @@
 
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | вебхук бота (единственный на токен) | `update_types = [message, callback_query]` |
+| trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов бота (единственный потребитель на токен). **Доставка — long-polling, не вебхук** (проверено 2026-09-12, см. заметку ниже) | `update_types = [message, callback_query]` |
 | step_1 | CODE «normalize update» | достаёт `message`/`callback_query`/`contact`, парсит `/command payload`, язык из `language_code` | `{{trigger['output']}}` |
 | step_2 | `@aiqadam/qadam-store : get` | читает `upd:<update_id>` | `key = {{step_1['output'].dedupKey}}`, `defaultValue = __absent__`, scope `COLLECTION` |
 | step_3 | CODE «gate: свежий апдейт?» | решает `proceed` по `ok`/`seen`/`isBot`/`isPrivate` | `{{step_2['output']}}`, `{{step_1['output']}}` |
@@ -60,6 +60,15 @@
 
 ## Заметки
 
+- **Апдейты приходят long-polling'ом, а не вебхуком** — проверено на живом
+  инстансе 2026-09-12 (W19, [Q26](../../docs/OPEN-QUESTIONS.md#q26)):
+  `POST /api/v1/webhooks/Y1dNon2V2EhjWM0aYwdQi` отвечает `409 «This flow receives
+  events by polling»`, а `getWebhookInfo` у dev-бота отдаёт `url: ""`. Это следствие
+  обновления образа платформы ([qadam-flow#393](https://github.com/aiqadam/qadam-flow/pull/393)),
+  а не наша настройка: у триггера нет пропа, которым это переключается.
+  Практические следствия: публичного ingress у бота нет (аутентифицировать
+  вебхук нечем и незачем), а интервал опроса добавляет неизмеренную задержку
+  на пути «пользователь написал → бот ответил».
 - **`store put` идёт раньше апсерта `users`**, а не после: если апдейт дошёл до step_6,
   повтор того же `update_id` обязан быть отбит на следующей доставке независимо от
   того, что случится дальше в этом прогоне (упадёт ли `users`-шаг). Порядок «put

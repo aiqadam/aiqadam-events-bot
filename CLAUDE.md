@@ -94,7 +94,12 @@ Code step рядом только кодирует и сравнивает. **И
 - **Атомарных примитивов нет вообще** — идемпотентность строится по
   [ADR-0003](docs/adr/0003-idempotency-without-atomicity.md), а не на гарантиях БД.
   Обещать exactly-once в этом проекте нельзя.
-- **Telegram:** один вебхук на бот-токен, поэтому бот у events отдельный.
+- **Telegram:** доставка апдейтов — **long-polling, не вебхук** (проверено 2026-09-12,
+  W19: `getWebhookInfo` отдаёт `url: ""`, а POST на `/api/v1/webhooks/<tg-router>`
+  отвечает `409 «receives events by polling»`). Эксклюзивность на бот-токен
+  сохраняется — у `getUpdates` она такая же, как у вебхука, — поэтому бот у events
+  по-прежнему **отдельный**. Флоу с триггером `@aiqadam/qadam-webhook`
+  (`checkin-api`, `my-qr-api`) это не затронуло: их ingress работает.
 
 ## Доступ к инстансу (MCP)
 
