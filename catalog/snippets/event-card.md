@@ -13,8 +13,91 @@
 ## Как встраивается
 
 Пять шагов: extract → fmt (батч) → чтение `strings` → resolve i18n → assemble.
-Полный текст extract и assemble — `ap_read_step_code` по `fn-event-card` /
-`step_3` и `step_8`.
+Первый и последний приведены полностью — по выдержке побайтовая сверка
+невозможна (правило 1 [README](README.md)).
+
+### extract — выделение полей ивента
+
+```js
+export const code = async (inputs) => {
+  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);
+  const flat = (rec) => {
+    const out = { __recordId: String(rec && rec.id ? rec.id : '') };
+    const cells = (rec && rec.cells) || {};
+    Object.keys(cells).forEach((fid) => {
+      const c = cells[fid];
+      if (c && typeof c === 'object' && typeof c.fieldName === 'string') {
+        out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);
+      }
+    });
+    return out;
+  };
+
+  const eventOk = inputs.eventOk === true || inputs.eventOk === 'true';
+  const eventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId);
+  const lang = String(inputs.lang === undefined || inputs.lang === null ? '' : inputs.lang) || 'ru';
+
+  const rows = arr(inputs.records).map(flat).filter((e) => (e.id || '') === eventId);
+  const ev = rows[0];
+
+  const blank = {
+    found: false, eventOk: eventOk, eventId: eventId, lang: lang,
+    recordId: '', title: '', description: '', address: '', photoFileId: '', status: '',
+    // ownerId нужен вызывающему для гейта по владельцу (W6/W11): карточка сама
+    // никого не авторизует, но обязана дать чем проверить.
+    ownerId: '', chapterId: '',
+    startsAt: '', endsAt: '', regDeadlineAt: '', lat: '', lon: '', hasGeo: false,
+    mapsUrl: '', registerDeepLink: '', capacity: '', overbookPct: ''
+  };
+  if (!eventOk || !ev) return blank;
+
+  // Числа из Tables приходят строками, пустое значение — это '' , а не 0.
+  const num = (v) => {
+    const s = String(v === undefined || v === null ? '' : v).trim();
+    if (s === '') return NaN;
+    const n = Number(s);
+    return isFinite(n) ? n : NaN;
+  };
+  const lat = num(ev.lat);
+  const lon = num(ev.lon);
+  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+
+  // OWN-2: ссылка на Я.Карты не хранится, а собирается из lat/lon
+  const mapsUrl = hasGeo
+    ? 'https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat
+    : '';
+
+  const bot = String(inputs.botUsername === undefined || inputs.botUsername === null ? '' : inputs.botUsername).trim();
+  const registerDeepLink = bot === '' ? '' : 'https://t.me/' + bot + '?start=e' + eventId;
+
+  return {
+    found: true, eventOk: true, eventId: eventId, lang: lang,
+    recordId: ev.__recordId,
+    title: ev.title || '', description: ev.description || '', address: ev.address || '',
+    photoFileId: ev.photo_file_id || '', status: ev.status || '',
+    ownerId: ev.owner_id || '', chapterId: ev.chapter_id || '',
+    startsAt: ev.starts_at || '', endsAt: ev.ends_at || '', regDeadlineAt: ev.reg_deadline_at || '',
+    lat: hasGeo ? String(lat) : '', lon: hasGeo ? String(lon) : '', hasGeo: hasGeo,
+    mapsUrl: mapsUrl, registerDeepLink: registerDeepLink,
+    capacity: ev.capacity || '', overbookPct: ev.overbook_pct || ''
+  };
+};
+```
+
+> **Внимание:** в файле выше `return` при `found: true` записан компактно, в одну
+> строку на группу полей. В `fn-event-card/step_3` и в `registration/step_96` он
+> развёрнут по одному полю на строку. Это **расхождение формата записи эталона**,
+> а не кода: при сверке `diff` сравнивайте с живым `fn-event-card/step_3`, он
+> остаётся источником. Привести файл к побайтовому виду — задача следующей правки.
+
+### assemble — сборка карточки
+
+Полный текст — `fn-event-card/step_8`. **Вариант с конвертом**
+(`registration/step_19`) отличается ровно одним: тело вынесено в `const build = () => {…}`,
+а шаг возвращает `{ status: 'success', data: build() }` — потому что ROUTER
+«есть venue?» и шаг отправки ниже читают `.data.venue` и `.data.text`, а шаги
+`@aiqadam/qadam-telegram-bot` не редактируются
+([#411](https://github.com/aiqadam/qadam-flow/issues/411)).
 
 **Ключи i18n карточки (10):** `event.card.header`, `.description`, `.when`,
 `.ends`, `.where`, `.deadline`, `.map_link`, `.btn_map`, `.btn_register`,

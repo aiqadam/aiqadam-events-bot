@@ -239,9 +239,10 @@ ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `s
   вложенных вызовов — см. `fn-event-card.md`), `step_23`, `step_31`, `step_38`,
   `step_43`, `step_46`, `step_49`, `step_57`, `step_59`, `step_62`, `step_68`,
   `step_70`, `step_72`, `step_73`, `step_74` — 22 шага во всех ветках визарда.
-  **Не тронут** `tg-router → registration` (`waitForResponse: false`,
-  fire-and-forget) — inline не применим к вызову, результат которого никто не
-  ждёт. После публикации прогон `fGqdXXeslOT5TAtbW53TR` (TESTING, `/start`,
+  **Поправка 2026-09-12 (повторное ревью):** здесь стояло «не тронут
+  `tg-router → registration` — inline не применим к вызову, результат которого
+  никто не ждёт». В живом флоу у `tg-router/step_18` и `step_20` стоит
+  **`inline`**; утверждение устарело и было неверным на момент чтения. После публикации прогон `fGqdXXeslOT5TAtbW53TR` (TESTING, `/start`,
   новая регистрация, ветка `new`) дал 17,1 с против эталона 34,2 с
   (`JYWkDu2jBXX9BDd3kHna3`, ADR-0009) — почти двукратное ускорение, «пауза»
   упала с ≈26,4 с до ≈0,2 с. Подробности — [W17](../../docs/work/W17-inline-callflow.md).
