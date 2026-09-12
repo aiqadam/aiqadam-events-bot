@@ -42,7 +42,7 @@
 | step_12 | `@aiqadam/qadam-tables : tables-find-records` | активная сессия визарда | `table_id = tL4fbi1GisDwA8UJ9zSod`, фильтр `telegram_id eq` |
 | step_13 | CODE «классификация апдейта» | вычисляет `kind` и собирает выходной контракт | `{{step_1['output']}}`, `{{step_8['output']}}`, `{{step_12['output']}}` |
 | step_14 | ROUTER «делегирование обработчику» | ветка 0 = `start_payload`, ветка 1 = продолжение `registration`, fallback = ещё не подключено | `{{step_13['output'].kind}}`, `{{step_13['output'].session.scenario}}` |
-| step_15 (ветка 0) | `callFlow → fn-parse-start` (`executionMode: inline`) | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` |
+| step_15 (ветка 0) | CODE «разобрать start-payload (эталон, конверт)» | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` · эталон [`parse-start`](../snippets/parse-start.md) |
 | step_17 (ветка 0) | ROUTER «по kind разобранной ссылки» | ветка 0 = `kind = 'e'` → `registration`, fallback = `c`/`s`/пусто (W10/W11, ещё не подключены) | `{{step_15['output'].data.kind}}` |
 | step_18 (ветка 0 → 0) | `callFlow → registration` (`action: start`, **`executionMode: inline`** с 12.09.2026) | делегирование в W5, `waitForResponse: false` | `eventId`/`utm` из `{{step_15['output'].data}}`, `telegramId/chatId/lang` из `{{step_13['output']}}` |
 | step_19 (ветка 0 → fallback) | CODE «start-payload разобран, обработчика для kind ещё нет» | след в логе для `c`/`s`/невалидных payload'ов | `{{step_15['output'].data.kind}}`, `.valid` |
@@ -52,12 +52,34 @@
 ## Зависимости
 
 - **Таблицы**: `users` (`z5PX9B8mTQC9Q6Dfuj5dM`), `sessions` (`tL4fbi1GisDwA8UJ9zSod`, только чтение)
-- **Subflow'ы**: `fn-parse-start` (`9H027DdckYSgu7Yp1LQRS`), `registration` (`RId6eBcN8T4oo8pkkWB7b`, W5)
+- **Subflow'ы**: только `registration` (`RId6eBcN8T4oo8pkkWB7b`, W5) — это **делегирование обработчику**,
+  а не subflow-функция: по [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)
+  роутер маршрутизирует, а обработчик делает всё у себя. `fn-parse-start` встроен (W21).
 - **Переменные**: —
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 - **Store**: ключи `upd:<update_id>`, scope `COLLECTION`, **TTL 24 ч** — фоновая уборка (`dedup-sweep`, W12b) больше не нужна ([ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md))
 
 ## Заметки
+
+- **W21 (2026-09-12) — `fn-parse-start` встроен, subflow-функций не осталось.**
+  Вызовы `registration` (`step_18`, `step_20`) **сохранены намеренно**: по ADR-0012
+  роутер ловит, куда послать, и посылает — это делегирование обработчику, а не
+  вызов функции. Убирать его значило бы втащить весь визард в роутер.
+- **Замена встала под тем же именем `step_15` и вернула конверт `{status, data}`.**
+  На неё ссылаются ROUTER `step_17` и вызов `step_18` через
+  `{{step_15['output'].data...}}`; ROUTER-условия и входы PIECE-шагов через MCP
+  не читаются, поэтому единственный безопасный путь — не менять ни имя, ни форму.
+  **Цена:** платформа выдаёт свободное имя с наименьшим номером, а в этом флоу
+  после W19 пустовало `step_6`. Пришлось завести временный шаг-держатель на
+  `step_6`, удалить `step_15`, добавить замену (она получила `step_15`) и снести
+  держатель. Костыль описан честно: он существует, пока не починен
+  [#411](https://github.com/aiqadam/qadam-flow/issues/411).
+- **Проверено сквозным прогоном до публикации** (`sG75LRxGXZiCiz5AnIYV0`):
+  `/start edemo-w21router` → разбор `kind: e`, `eventId: demo`, `utm: w21router`
+  → ветка `e` → `registration` отработал (6,2 с), сообщения доставлены.
+  **IDM-4 подтверждён** (`Bd763A0isAYmygSjZQmuV`): тот же `update_id` второй раз
+  дал `stored: false`, `reason: duplicate`, ветка обработки не исполнялась —
+  прогон занял 0,6 с вместо 8,5 с.
 
 - **Оба вызова `registration` — `inline`** (с 12.09.2026, решение владельца,
   W20). W17 держал их на `queue`, считая, что inline заставит роутер ждать

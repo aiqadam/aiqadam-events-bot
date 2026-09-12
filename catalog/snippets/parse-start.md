@@ -10,7 +10,8 @@
 | Флоу | Шаг | Сверено |
 |---|---|---|
 | `fn-parse-start` (`KmUrHSoKEPDo02J8mKAn6`) | `step_1` | эталон-источник |
-| `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_2` | 2026-09-12 |
+| `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_2` | 2026-09-12, побайтово |
+| `tg-router` (`Y1dNon2V2EhjWM0aYwdQi`) | `step_15` | 2026-09-12, **в конверте** |
 
 ## Код
 
