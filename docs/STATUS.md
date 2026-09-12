@@ -49,8 +49,8 @@
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **на проверке** 2026-09-12 | агент W17 | [W17](work/W17-inline-callflow.md) |
 | W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | не начат | — | — |
 | W19. Ревизия после обновления образа Qadam Flow ([Q26](OPEN-QUESTIONS.md#q26)) | 5 | W8 | **на проверке** 2026-09-12 | агент W19 | [W19](work/W19-platform-primitives-revision.md) |
-| W20. Пересмотр ADR-0003 на атомарных примитивах ([Q27](OPEN-QUESTIONS.md#q27), [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md)) | 5 | W19, W4, W5, W8 | **на проверке** 2026-09-12 | агент W20 | [W20](work/W20-idempotency-on-atomic-primitives.md) |
-| W21. Перевод флоу на end-to-end ([ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) | 5 | W20, W17, W16 | **на проверке** 2026-09-12 | агент W21 | [W21](work/W21-end-to-end-flows.md) |
+| W20. Пересмотр ADR-0003 на атомарных примитивах ([Q27](OPEN-QUESTIONS.md#q27), [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md)) | 5 | W19, W4, W5, W8 | **готов** 2026-09-13 | агент W20 | [W20](work/W20-idempotency-on-atomic-primitives.md) |
+| W21. Перевод флоу на end-to-end ([ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) | 5 | W20, W17, W16 | **готов** 2026-09-13 | агент W21 | [W21](work/W21-end-to-end-flows.md) |
 | W22. Дешёвая латентность + уборка `fn-*` ([Q28](OPEN-QUESTIONS.md#q28)) | 5 | W21, W20, W17 | **готов** 2026-09-13 | агент W22 | [W22](work/W22-latency-and-cleanup.md) |
 | W23. Слияние CODE-цепочек и остатки латентности | 5 | W22 | не начат | — | — |
 | W15. Приёмка | 6 | все | не начат | — | — |

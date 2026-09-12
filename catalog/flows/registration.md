@@ -37,6 +37,12 @@
 | `phone_contact` / `phone_skip` (объединены в `phone_answer`) | `sessionStep = await_phone` | телефон или его пропуск |
 | `noop` (fallback ветка) | несовпадение `sessionStep`/`callbackData` (протухшая/чужая сессия) | ничего не делает |
 
+**`step_1` и `step_3` — единственные шаги вне веток.** `step_1` описан выше
+(нормализация входа и вычисление `stage`); `step_3` — CODE-заглушка в
+fallback-ветке `Otherwise` роутера `step_2`: она ничего не делает и существует
+затем, чтобы протухшая или чужая сессия давала явный «ничего не произошло»,
+а не пустую ветку. Раньше в каталоге они не были описаны — замечено ревью W21.
+
 `phone_skip` — **любой** апдейт в `await_phone`, кроме `contact` с `contactIsOwn = true`
 (включая произвольный текст или команду) — тем же принципом, что и «любой ответ» на
 согласие на рассылку: пропуск не требует отдельной кнопки/ключа i18n.
@@ -254,7 +260,8 @@ ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `s
   `executionMode: "inline"`** ([qadam-flow#363](https://github.com/aiqadam/qadam-flow/issues/363),
   раскатано на инстансе): `step_4`, `step_10`, `step_11`, `step_13`, `step_14`,
   `step_16`, `step_17`, `step_19` (`fn-event-card`, сам получил inline своих
-  вложенных вызовов — см. `fn-event-card.md`), `step_23`, `step_31`, `step_38`,
+  вложенных вызовов; файл `fn-event-card.md` удалён в W22 вместе с флоу, эталон —
+  [`catalog/snippets/event-card.md`](../snippets/event-card.md)), `step_23`, `step_31`, `step_38`,
   `step_43`, `step_46`, `step_49`, `step_57`, `step_59`, `step_62`, `step_68`,
   `step_70`, `step_72`, `step_73`, `step_74` — 22 шага во всех ветках визарда.
   **Поправка 2026-09-12 (повторное ревью):** здесь стояло «не тронут
