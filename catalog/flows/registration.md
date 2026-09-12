@@ -43,61 +43,61 @@
 
 ## Ветка `start`
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| step_4 | `callFlow → fn-find-registration` | есть ли уже регистрация (IDM-1) | `eventId`, `telegramId` |
-| step_5 | `tables-find-records events` | ивент по `id`, `limit 1` | `table_id` = `kVLg1FSfDBtsP32FGPk3P` |
-| step_6 | `tables-find-records registrations` | `status = registered` по событию, `limit 500` — для овербукинга | `table_id` = `PNuChoFG0tIBTND86yzDL` |
-| step_7 | CODE «решение: declined / existing / new» | `status`/`reg_deadline_at`/овербукинг (OWN-15, `ceil(capacity×(1+overbook_pct/100))`, дефолт 40) vs IDM-1 | — |
-| step_8 | ROUTER по `outcome` | `declined` / `existing` / `new` (fallback) | `{{step_7['output'].outcome}}` |
+> Снято `ap_flow_structure` 2026-09-12 после W21/W19-фикса. 100 шагов, `callFlow` — ноль.
 
-**`declined`** (step_9…step_12): `reason` → ключ i18n (`reg.not_published` / `event_cancelled` /
-`event_finished` / `deadline_passed` / `no_seats`), `fn-fmt-time` для `{when}` в
-`deadline_passed`, `fn-t`, `send_text_message`. Регистрация **не создаётся**.
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| step_77 → step_78 → step_79 | CODE + `tables-find-records registrations` + CODE | есть ли уже регистрация (IDM-1) · эталон [`find-registration`](../snippets/find-registration.md) |
+| step_5 | `tables-find-records events` | ивент по `id`, `limit 1` |
+| step_6 | `tables-find-records registrations` | `status = registered` по событию, `limit 500` — овербукинг |
+| step_7 | CODE «решение» | `declined` / `existing` / `new` (OWN-15, IDM-1) |
+| step_8 | ROUTER по `outcome` | три ветки |
 
-**`existing`** (step_13…step_18, IDM-1 — повторный вход по ссылке): `fn-sign-qr` →
-`reg.already` (`{title}`) → `send_text_message` → приглашение в Mini App за QR
-(см. «Выдача QR» ниже). Второе согласие не спрашивается.
+**`declined`** (step_9 → step_38 → step_82 → step_11 → step_12): `reason` → ключ i18n;
+`step_38` — CODE-формат дедлайна ([`fmt-time`](../snippets/fmt-time.md)); `step_82` —
+чтение `strings` по пяти ключам отказа; `step_11` — CODE-разрешение **в конверте**
+([`i18n-resolve`](../snippets/i18n-resolve.md)); `step_12` — отправка. Регистрация **не создаётся**.
 
-**`new`** (step_19…step_32): `fn-event-card` → `send_text_message` (карточка,
-`format: None`) → ROUTER «есть venue?» (`step_21`, `EXISTS` по `card.venue`):
-при наличии — `sendVenue` через `custom_api_call` (у `@aiqadam/qadam-telegram-bot`
-нет отдельного action'а — гейт из ARCHITECTURE.md, п. «Qadam'ы http и tables»)
-и сообщение со ссылкой на Я.Карты (`reg.venue.hint` + `mapsUrl`); без venue — no-op.
-Дальше — upsert `sessions` (find-then-write: `step_26` ищет строку по `telegram_id`,
-`step_28` обновляет или заводит) со `scenario = registration`, `step = await_pdn`,
-`draft = {eventId, utm}` — и вопрос согласия на обработку данных с inline-кнопками
-`reg:pdn:yes` / `reg:pdn:no`.
+**`existing`** (step_94 → step_13 → step_10 → step_14 → step_15 → step_83 → step_17 → step_16 → step_18):
+подпись QR двумя CODE-шагами ([`hmac-qr`](../snippets/hmac-qr.md), `step_13` **в конверте**),
+`reg.already` через чтение `strings` + разрешение, отправка, затем батч ключей
+приглашения в Mini App и кнопка QR. Второе согласие не спрашивается.
+
+**`new`** (step_96 → step_97 → step_98 → step_99 → step_19 → step_20 → …):
+карточка ивента собирается **внутри флоу** ([`event-card`](../snippets/event-card.md)),
+`step_96` берёт строку ивента из уже прочитанного `step_5` — отдельного запроса
+к `events` больше нет. Дальше ROUTER «есть venue?» (`step_21` по `.data.venue`):
+`sendVenue` через `custom_api_call` + `step_84`/`step_23`/`step_24` (подсказка
+про карту). Затем upsert `sessions` (`step_26`/`step_27`/`step_28`/`step_29`/`step_30`)
+и вопрос согласия на ПД (`step_85` → `step_31` → `step_32`).
 
 ## Ветка `pdn_yes`
 
-`answer_callback_query` (ack, `continueOnFailure` — просроченный `callback_query_id`
-не должен ронять остальную обработку) → `users.consent_pdn = true` (+`_at`) →
-повторный `fn-find-registration` (реактивировать `cancelled`-строку или завести новую,
-IDM-1) → `tables-create-records`/`tables-update-record registrations`
-(`status = registered`, `source = utm`, `registered_at`) → `reg.done` (`{title}`) →
-`sessions.step = await_marketing` → вопрос о рассылке (`reg:mkt:yes`/`no`).
+`step_33` (ack, `continueOnFailure`) → `step_34` (`users`, **проекция: только
+`telegram_id`**) → `step_35` → `step_36` (`consent_pdn = true`) → `step_37`
+(`events`) → `step_4`/`step_80`/`step_81` (поиск регистрации) → `step_39` →
+ROUTER `step_40`: `step_41` реактивирует либо `step_42` заводит → `step_86`/`step_43`
+(батч `reg.done` + рассылка) → `step_44` → `step_45` (`sessions.step = await_marketing`)
+→ `step_46` → `step_47`.
 
 ## Ветка `pdn_no`
 
-`answer_callback_query` → `reg.consent_pdn.declined` → `tables-delete-record sessions`
-(`continueOnFailure`). Регистрация не создаётся (PAR-1).
+`step_48` (ack) → `step_87` → `step_49` → `step_50` → `step_51` (удалить сессию).
+Регистрация не создаётся (PAR-1).
 
 ## Ветка `mkt_answer`
 
-`answer_callback_query` → ROUTER `yes`/`no` (fallback): `yes` пишет
-`users.consent_marketing = true` (+`_at`) и `reg.consent_marketing.saved_yes`; `no` —
-только `reg.consent_marketing.saved_no`, **никакой записи** (непроставленный флаг —
-тоже «нет согласия», users.md). После обеих веток — `sessions.step = await_phone`,
-вопрос о телефоне с `reply_markup.keyboard` (`request_contact: true`).
+`step_52` (ack) → ROUTER `step_53`: `yes` — `step_54` (`users`, **проекция**) →
+`step_55` → `step_56` (`consent_marketing = true`) → `step_88`/`step_57` → `step_58`;
+`no` — `step_89`/`step_59` → `step_60`, **никакой записи**. После обеих —
+`step_61` (`await_phone`), `step_90`/`step_62`, `step_63`.
 
 ## Ветка `phone_answer`
 
-ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` пишет
-`users.phone`, шлёт `reg.phone.saved`; fallback шлёт `reg.phone.skipped`. Обе ветки
-убирают reply-клавиатуру (`reply_markup.remove_keyboard`). Затем общая финализация:
-`fn-sign-qr` → приглашение в Mini App за QR (см. «Выдача QR» ниже) → удаление
-строки `sessions` (визард завершён).
+ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `step_66` →
+`step_67` (`phone`) → `step_91`/`step_68` → `step_69`; fallback — `step_92`/`step_70`
+→ `step_71`. Затем финализация: `step_95`/`step_72` (подпись QR, **в конверте**) →
+`step_93`/`step_74`/`step_73` → `step_75` → `step_76` (удалить сессию).
 
 ## Зависимости
 
@@ -166,7 +166,7 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
   отвергается валидатором дат, а «оставить пустым» у пропа `values` означает
   «не менять». Потребители обязаны смотреть на `status`, а не на `cancelled_at`;
   см. [Q30](../../docs/OPEN-QUESTIONS.md#q30).
-  Этот дефект был **замаскирован** [Q29](../../docs/OPEN-QUESTIONS.md#q29):
+  Этот дефект был **замаскирован** [Q29 (снят в W21)](../../docs/OPEN-QUESTIONS.md#q29):
   пока `step_38` получал пустой вход, ветка реактивации не исполнялась вовсе.
 - **Как проверялось перед публикацией (W21).** Полный проход визарда на живом
   боте (dev), все сообщения дошли. Регистрация участника временно переведена в
@@ -199,11 +199,10 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
   Экономия ~2 с на ветку: вызов subflow стоит 1,2–1,9 с даже inline, CODE-шаг —
   0,1 с. **Правя эти шаги, сохраняйте форму ответа**, иначе сломается шаг
   отправки, а не сам перевод.
-- ⚠️ **`step_38` получает пустой вход** — реактивация не работает, каждое
-  прохождение `pdn_yes` создаёт новую строку `registrations` вместо поиска
+-   прохождение `pdn_yes` создаёт новую строку `registrations` вместо поиска
   существующей. Нарушение IDM-1, подтверждено боевым прогоном
   `wOV2cCyvBUZ4eN8NQuoIy`. Подробности и последствия —
-  [Q29](../../docs/OPEN-QUESTIONS.md#q29). **Не чинилось в W20.**
+  [Q29 (снят в W21)](../../docs/OPEN-QUESTIONS.md#q29). **Не чинилось в W20.**
 
 - **`answer_callback_query` везде `continueOnFailure: true`.** В прогонах через
   `ap_test_flow`/`ap_test_step` с фиктивным `callback_query_id` ack всегда падает
@@ -252,3 +251,13 @@ ROUTER `contact` (при `contactIsOwn`) / fallback (пропуск): `contact` 
   реальных ответа Telegram Bot API показывают корректный `reply_markup.inline_keyboard`
   с `web_app.url = "https://miniapp.events.aiqadam.org/ticket.html?event_id=<eventId>"`.
   Все тестовые фикстуры удалены после проверки.
+
+- **2026-09-12 (по ревью W21/W19) — исправлено в каталоге и во флоу:**
+  - раздел шагов переписан по живой структуре: раньше он описывал `callFlow`,
+    которых в проекте нет, и не упоминал 22 шага из 100;
+  - **три чтения `users` без проекции колонок** (`step_34`, `step_54`, `step_65`)
+    сужены до одной колонки `telegram_id`. Их потребителям нужен только
+    `rows[0].id`, а в лог прогона уезжала строка целиком — включая `phone`.
+    Это наследство W5, не замеченное аудитом W19 («все шесть» на деле было девять);
+  - [Q29](../../docs/OPEN-QUESTIONS.md#q29) снят: вход поиска регистрации в ветке
+    `pdn_yes` больше не приходит из `callFlow` и не бывает пустым.

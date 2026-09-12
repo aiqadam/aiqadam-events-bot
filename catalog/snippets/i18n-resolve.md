@@ -28,6 +28,7 @@
 | `registration` | `step_70` | `reg.phone.skipped`, конверт | 2026-09-12 |
 | `registration` | `step_74` | QR invite (finalize), конверт | 2026-09-12 |
 | `registration` | `step_99` | карточка ивента, **без конверта** | 2026-09-12 |
+| `checkin-api` | `step_31` | `checkin.already` при проигрыше CAS (W20) | 2026-09-12 |
 
 ## Как встраивается
 

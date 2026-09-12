@@ -10,6 +10,7 @@
 | `checkin-api` (`CUKqiby1PoHiQiiCQy24V`) | `step_47` | одиночный, `format: time` | 2026-09-12 |
 | `registration` (`vfVfIngczCKA2DpUgcevP`) | `step_38` | одиночный, дедлайн отказа | 2026-09-12 |
 | `registration` | `step_97` | батч: starts/ends/deadline карточки | 2026-09-12 |
+| `checkin-api` | `step_30` | одиночный, время победителя гонки (W20) | 2026-09-12 |
 
 ## Код
 

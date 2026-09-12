@@ -44,7 +44,7 @@
 | W7. Mini App — сканер | 5 | W8, 0.4–0.5 | **готов** 2026-09-09 | агент W7 | [W07](work/W07-miniapp-scanner.md) |
 | W13. Списки и экспорт | 5 | W5 | не начат | — | — |
 | W14. Рассылки | 5 | W13, W3 | не начат | — | требует [Q13](OPEN-QUESTIONS.md#q13) |
-| W12b. `dedup-sweep` | 5 | W1, W5 | не начат | — | — |
+| W12b. `dedup-sweep` (сужен: уборка дублей строк; ключи `upd:*` закрыты TTL в W20) | 5 | W1, W5 | не начат | — | — |
 | W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **на проверке** 2026-09-12 | агент W17 | [W17](work/W17-inline-callflow.md) |
 | W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | не начат | — | — |
