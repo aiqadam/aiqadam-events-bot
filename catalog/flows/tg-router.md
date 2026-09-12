@@ -44,9 +44,9 @@
 | step_14 | ROUTER «делегирование обработчику» | ветка 0 = `start_payload`, ветка 1 = продолжение `registration`, fallback = ещё не подключено | `{{step_13['output'].kind}}`, `{{step_13['output'].session.scenario}}` |
 | step_15 (ветка 0) | `callFlow → fn-parse-start` (`executionMode: inline`) | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` |
 | step_17 (ветка 0) | ROUTER «по kind разобранной ссылки» | ветка 0 = `kind = 'e'` → `registration`, fallback = `c`/`s`/пусто (W10/W11, ещё не подключены) | `{{step_15['output'].data.kind}}` |
-| step_18 (ветка 0 → 0) | `callFlow → registration` (`action: start`) | делегирование в W5, `waitForResponse: false` (fire-and-forget — тяжёлая цепочка внутри `registration`, роутеру её результат не нужен) | `eventId`/`utm` из `{{step_15['output'].data}}`, `telegramId/chatId/lang` из `{{step_13['output']}}` |
+| step_18 (ветка 0 → 0) | `callFlow → registration` (`action: start`, **`executionMode: inline`** с 12.09.2026) | делегирование в W5, `waitForResponse: false` | `eventId`/`utm` из `{{step_15['output'].data}}`, `telegramId/chatId/lang` из `{{step_13['output']}}` |
 | step_19 (ветка 0 → fallback) | CODE «start-payload разобран, обработчика для kind ещё нет» | след в логе для `c`/`s`/невалидных payload'ов | `{{step_15['output'].data.kind}}`, `.valid` |
-| step_20 (ветка 1) | `callFlow → registration` (`action: continue`) | продолжение визарда — вызывается, когда `session.scenario = 'registration'` (клик по кнопке согласия, контакт, пропуск), `waitForResponse: false` | `kind`/`callbackData`/`contactPhone`/… + `sessionStep`/`sessionDraft`/`sessionRecordId` из `{{step_13['output'].session}}` |
+| step_20 (ветка 1) | `callFlow → registration` (`action: continue`, **`executionMode: inline`** с 12.09.2026) | продолжение визарда — вызывается, когда `session.scenario = 'registration'`, `waitForResponse: false` | `kind`/`callbackData`/`contactPhone`/… + `sessionStep`/`sessionDraft`/`sessionRecordId` из `{{step_13['output'].session}}` |
 | step_16 (fallback) | CODE «намерение без обработчика» | след в логе: апдейт классифицирован, но не обработан (`checkin-deeplink`/`staff-accept` — W10/W11) | `{{step_13['output']}}` |
 
 ## Зависимости
@@ -58,6 +58,16 @@
 - **Store**: ключи `upd:<update_id>`, scope `COLLECTION`, **TTL 24 ч** — фоновая уборка (`dedup-sweep`, W12b) больше не нужна ([ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md))
 
 ## Заметки
+
+- **Оба вызова `registration` — `inline`** (с 12.09.2026, решение владельца,
+  W20). W17 держал их на `queue`, считая, что inline заставит роутер ждать
+  цепочку регистрации. Ждать действительно заставил: прогон роутера вырос с
+  3,8 с до 12–15 с. Но сквозное время не изменилось (≈16 с в обоих режимах,
+  разброс замеров шире разницы), а ~2 с диспетчеризации исчезли, то есть
+  первое сообщение пользователю приходит раньше.
+  **Цена:** прогон роутера занимает воркер дольше, и падение `registration`
+  теперь роняет прогон роутера. Под нагрузкой не проверено — перепроверить
+  до W15.
 
 - **`step_18` пересобран заново** (2026-09-12, W19) и опубликован. Правка одного
   `displayName` вызвала перевалидацию против новой версии
