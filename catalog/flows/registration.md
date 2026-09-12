@@ -67,22 +67,24 @@ fallback-ветке `Otherwise` роутера `step_2`: она ничего н�
 | step_7 | CODE «решение» | `declined` / `existing` / `new` (OWN-15, IDM-1); занятость считается здесь по `status = registered`, а не фильтром запроса |
 | step_8 | ROUTER по `outcome` | три ветки |
 
-**`declined`** (step_9 → step_38 → step_82 → step_11 → step_12): `reason` → ключ i18n;
-`step_38` — CODE-формат дедлайна ([`fmt-time`](../snippets/fmt-time.md)); `step_82` —
-чтение `strings` по пяти ключам отказа; `step_11` — CODE-разрешение **в конверте**
-([`i18n-resolve`](../snippets/i18n-resolve.md)); `step_12` — отправка. Регистрация **не создаётся**.
+**`declined`** (step_9 → step_38 → step_11 → step_12): `reason` → ключ i18n;
+`step_38` — CODE-формат дедлайна ([`fmt-time`](../snippets/fmt-time.md));
+`step_11` — тексты **в конверте** ([`ru-texts`](../snippets/ru-texts.md)), во входе
+все пять причин отказа, потому что ключ вычисляется динамически в `step_9`;
+`step_12` — отправка. Регистрация **не создаётся**.
 
-**`existing`** (step_94 → step_13 → step_10 → step_14 → step_15 → step_83 → step_17 → step_16 → step_18):
+**`existing`** (step_94 → step_13 → step_14 → step_15 → step_17 → step_16 → step_18):
 подпись QR двумя CODE-шагами ([`hmac-qr`](../snippets/hmac-qr.md), `step_13` **в конверте**),
-`reg.already` через чтение `strings` + разрешение, отправка, затем батч ключей
-приглашения в Mini App и кнопка QR. Второе согласие не спрашивается.
+`reg.already` — текст из входа `step_14` ([`ru-texts`](../snippets/ru-texts.md)),
+отправка, затем батч ключей приглашения в Mini App (`step_17`) и кнопка QR
+(`step_16`). Второе согласие не спрашивается.
 
-**`new`** (step_96 → step_97 → step_21 → step_99 → step_19 → step_20 → …):
+**`new`** (step_96 → step_97 → step_99 → step_19 → step_20 → …):
 карточка ивента собирается **внутри флоу** ([`event-card`](../snippets/event-card.md)),
 `step_96` берёт строку ивента из уже прочитанного `step_5` — отдельного запроса
-к `events` больше нет. `step_21` — **одно** чтение `strings` на всю ветку: десять
-ключей карточки плюс три ключа согласия на ПД; его разбирают и `step_99` (карточка),
-и `step_31` (согласие). До W22 это были два чтения (`step_98` и `step_85`, −0,46 с).
+к `events` больше нет. Тексты карточки и вопроса о согласии лежат во входах
+`step_99` и `step_31` (эталон [`ru-texts`](../snippets/ru-texts.md)).
+До W24 здесь было чтение `strings` (`step_21`), а до W22 — два чтения.
 Затем `step_20` отправляет карточку, upsert `sessions`
 (`step_26`/`step_27`/`step_28`/`step_29`/`step_30`) и `step_32` задаёт вопрос
 о согласии.
@@ -92,45 +94,46 @@ fallback-ветке `Otherwise` роутера `step_2`: она ничего н�
 чтение `strings` для `reg.venue.hint` (`step_84`), его разрешение (`step_23`) и
 отправка ссылки на карты (`step_24`). Адрес и ссылка остались в тексте карточки
 (`event.card.where`, `event.card.map_link`). Экономия — 1,45 с отправок плюс
-0,53 с чтения. Имя `step_21` переиспользовано платформой под новое чтение
-`strings` — это **другой шаг**, не переименованный ROUTER.
+0,53 с чтения. **Имя `step_21` дважды меняло смысл:** сначала это был ROUTER
+«есть venue?», в W22 платформа переиспользовала имя под чтение `strings`, а в
+W24 и оно удалено. В журналах W21 и раньше `step_21` означает ROUTER — при
+чтении старых записей это ловушка.
 
 ## Ветка `pdn_yes`
 
 `step_33` (ack, `continueOnFailure`) → `step_34` (`users`, **проекция: только
 `telegram_id`**) → `step_35` → `step_36` (`consent_pdn = true`) → `step_37`
 (`events`) → `step_4`/`step_80`/`step_81` (поиск регистрации) → `step_39` →
-ROUTER `step_40`: `step_41` реактивирует либо `step_42` заводит → `step_86`/`step_43`
+ROUTER `step_40`: `step_41` реактивирует либо `step_42` заводит → `step_43`
 (батч `reg.done` + рассылка) → `step_44` → `step_45` (`sessions.step = await_marketing`)
 → `step_46` → `step_47`.
 
 ## Ветка `pdn_no`
 
-`step_48` (ack) → `step_87` → `step_49` → `step_50` → `step_51` (удалить сессию).
+`step_48` (ack) → `step_49` → `step_50` → `step_51` (удалить сессию).
 Регистрация не создаётся (PAR-1).
 
 ## Ветка `mkt_answer`
 
 `step_52` (ack) → ROUTER `step_53`: `yes` — `step_54` (`users`, **проекция**) →
-`step_55` → `step_56` (`consent_marketing = true`) → `step_88`/`step_57` → `step_58`;
-`no` — `step_89`/`step_59` → `step_60`, **никакой записи**. После обеих —
-`step_61` (`await_phone`), `step_90`/`step_62`, `step_63`.
+`step_55` → `step_56` (`consent_marketing = true`) → `step_57` → `step_58`;
+`no` — `step_59` → `step_60`, **никакой записи**. После обеих —
+`step_61` (`await_phone`), `step_62`, `step_63`.
 
 ## Ветка `phone_answer`
 
 ROUTER `step_64`: `contact` — `step_65` (`users`, **проекция**) → `step_66` →
-`step_67` (`phone`) → `step_91`/`step_68` → `step_69`; fallback — `step_92`/`step_70`
+`step_67` (`phone`) → `step_68` → `step_69`; fallback — `step_70`
 → `step_71`. Затем финализация: `step_95`/`step_72` (подпись QR, **в конверте**) →
-`step_93`/`step_74`/`step_73` → `step_75` → `step_76` (удалить сессию).
+`step_74`/`step_73` → `step_75` → `step_76` (удалить сессию).
 
 ## Зависимости
 
 - **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) —
   девятнадцать `callFlow` заменены встроенными шагами по эталонам [`catalog/snippets/`](../snippets/)
-- **Таблицы**: `events` (чтение), `registrations` (чтение и запись), `users` (запись согласий/телефона),
-  `sessions` (чтение и запись состояния визарда), `strings` (чтение: **одно на ветку**
-  в ветке `start` после W22; в остальных ветках пока по чтению на каждое место перевода —
-  см. «Хвосты» в [W22](../../docs/work/W22-latency-and-cleanup.md))
+- **Таблицы**: `events` (чтение), `registrations` (чтение и запись), `users` (чтение id + запись
+  согласий/телефона), `sessions` (чтение и запись состояния визарда).
+  **`strings` не читается вовсе** с W24 — тексты во входах CODE-шагов
 - **Переменные**: `MINIAPP_URL` (кнопка Mini App), `BOT_USERNAME` (`step_96`, deep link карточки),
   `QR_SIGNING_KEY` (`step_13`, `step_72`) — все в длинной форме `{{variables['NAME']}}`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — все `send_text_message`/`answer_callback_query`.

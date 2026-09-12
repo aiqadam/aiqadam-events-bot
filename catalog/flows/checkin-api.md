@@ -5,7 +5,9 @@
 > таблицы `strings` удалены, тексты пришли во вход CODE-шагов, которые их
 > формируют — эталон [`ru-texts`](../snippets/ru-texts.md). Форма ответа этих
 > шагов не изменилась ни на байт, поэтому шаги отправки не трогались.
-> Ушли `step_8` и `step_45` (чтения `strings`); флоу **46 → 44 шага**.
+> Ушли `step_8` и `step_45` (чтения `strings`), а также `step_28` (чтение
+> `users` ради языка контролёра — удалено по замечанию ревью W24, в
+> `my-qr-api` эквивалент был снят сразу). Флоу **46 → 43 шага**.
 > Ниже по тексту упоминания `strings`, `i18n-resolve` и «перевода» относятся к
 > состоянию **до** этой даты и сохранены как история.
 
@@ -67,15 +69,12 @@
 | step_36 | CODE «verify initData» | constant-time сравнение + свежесть | `expected` = `{{step_35['output']}}`, `maxAgeSeconds: 86400` |
 | step_3 | CODE «combine auth» | `initDataValid`, `staffTelegramId` (сентинел `-`), `reason` | `{{step_36['output']}}` |
 | step_4 | ROUTER «initData valid?» | `valid` (branch 0) / `Otherwise` (branch 1 → `401`) | `{{step_3['output'].initDataValid}}` |
-| step_45 (branch 1) | `tables-find-records strings` | `key in (checkin.unauthorized)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
-| step_46 (branch 1) | CODE «resolve i18n unauthorized (эталон)» | язык → фолбэк → ключ; `lang: ru` (пользователь не определён) | `{{step_45['output']}}` · эталон [`i18n-resolve`](../snippets/i18n-resolve.md) |
+| step_46 (branch 1) | CODE «текст 401 (ru)» | `checkin.unauthorized` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data` (+`text`), статус `401` | `{{step_46['output'].text}}` |
 | step_5 (branch 0) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра, revoked_at not_exists)` | `table_id = CyW6KjJ2BdwQEph2KEqTt` |
-| step_28 | `tables-find-records users` | строка контролёра → язык; **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
-| step_6 | CODE «decide isStaff» | `isStaff = records.length > 0`, `staffLang` (фолбэк `ru`) | `{{step_5['output']}}`, `{{step_28['output']}}` |
-| step_8 | `tables-find-records strings` | **одно** чтение на все ветки ниже: `key in (…7 ключей…)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
+| step_6 | CODE «decide isStaff» | `isStaff = records.length > 0`; `staffLang` теперь константа `'ru'` — чтение `users` ради языка удалено в W24 | `{{step_5['output']}}` |
 | step_7 | ROUTER «isStaff?» | `isStaff` (branch 0) / `Otherwise` (branch 1 → `403`) | `{{step_6['output'].isStaff}}` |
-| step_44 (branch 1) | CODE «resolve i18n forbidden (эталон)» | `checkin.forbidden`, `lang: staffLang` | `{{step_8['output']}}` |
+| step_44 (branch 1) | CODE «текст 403 (ru)» | `checkin.forbidden` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_26/27 (branch 1) | CODE + `return_response` | тело `forbidden` (+`text`), статус `403` | `{{step_44['output'].text}}` |
 | step_2 (branch 0) | CODE «parse QR payload (эталон)» | разбор `payload` (`kind` ожидается `c`) | `{{step_1['output'].payload}}` · эталон [`parse-start`](../snippets/parse-start.md) |
 | step_37 | CODE «normalize QR keys» | валидация формы, сентинелы `x`/`0` | `{{step_2['output'].*}}` |
@@ -88,24 +87,24 @@
 | step_12 | `tables-find-records users` | имя участника по `telegram_id` из QR; **проекция колонок**: `first_name`, `last_name` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_13 | CODE «build participant name» | `first_name + last_name` | `{{step_12['output']}}` |
 | step_14 | ROUTER «outcome?» | `ok` (0) / `already` (1) / `Otherwise` (2) | `{{step_11['output'].outcome}}` |
-| step_9 (branch `ok`) | CODE «resolve i18n ok (эталон)» | `checkin.ok`, `checkin.name_unknown`, `lang: staffLang` | `{{step_8['output']}}` |
+| step_9 (branch `ok`) | CODE «тексты ok (ru)» | `checkin.ok`, `checkin.name_unknown` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_16→step_15 (branch `ok`) | CODE «stamp now» + `tables-update-record` с **`only_if` `checked_in_at not_exists`** (CAS, IDM-2) | `continueOnFailure: true`: проигрыш гонки — это `RECORD_PRECONDITION_FAILED`, а не сбой | `table_id = PNuChoFG0tIBTND86yzDL` |
 | step_19→step_29 (branch `ok`) | `tables-find-records registrations` + CODE «pick earliest» | перечитать строку после записи — нужно, чтобы отдать **чужое** время при проигрыше | — |
-| step_30→step_31 (branch `ok`) | CODE fmt + CODE resolve i18n `checkin.already` | текст на случай проигрыша; строки берутся из уже прочитанного `step_8` | эталоны [`fmt-time`](../snippets/fmt-time.md), [`i18n-resolve`](../snippets/i18n-resolve.md) |
+| step_30→step_31 (branch `ok`) | CODE fmt + CODE «тексты already (ru)» | текст на случай проигрыша гонки | эталоны [`fmt-time`](../snippets/fmt-time.md), [`ru-texts`](../snippets/ru-texts.md) |
 | step_17/18 (branch `ok`) | CODE + `return_response` | тело `ok` **или** `already` — решает по результату CAS; любая **другая** ошибка записи роняет прогон, а не отвечает `ok` | `{{step_15['error'].message}}`, `{{step_29}}`, `{{step_30}}`, `{{step_31}}` |
 | step_47 (branch `already`) | CODE «format checked_in_at (эталон)» | `Intl` → `Asia/Tashkent`, `format: time` | `{{step_11['output'].checkedInAt}}` · эталон [`fmt-time`](../snippets/fmt-time.md) |
-| step_10 (branch `already`) | CODE «resolve i18n already (эталон)» | `checkin.already`, `lang: staffLang` | `{{step_8['output']}}` |
+| step_10 (branch `already`) | CODE «текст already (ru)» | `checkin.already` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_20/21 (branch `already`) | CODE + `return_response` | тело `already` (+`text` с `{time}` = `checkedInAtTashkent`), статус `200` | `{{step_10['output']}}`, `{{step_47['output']}}` |
-| step_43 (branch `Otherwise`) | CODE «resolve i18n other (эталон)» | `checkin.wrong_event`, `checkin.invalid`, `checkin.not_registered` | `{{step_8['output']}}` |
+| step_43 (branch `Otherwise`) | CODE «тексты прочих исходов (ru)» | `checkin.wrong_event`, `checkin.invalid`, `checkin.not_registered` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
 | step_22/23 (branch `Otherwise`) | CODE + `return_response` | тело `wrong_event`/`invalid`/`not_registered` (+`text` по `outcome`), статус `200` | `{{step_43['output']}}`, `{{step_11['output'].outcome}}` |
 ## Зависимости
 
 - **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) —
   флоу end-to-end, вся переиспользуемая логика встроена CODE-шагами по эталонам
   [`catalog/snippets/`](../snippets/)
-- **Таблицы**: `event_staff` (чтение), `users` (чтение: язык контролёра + имя участника),
-  `strings` (чтение: два запроса — `step_8` на все ветки после аутентификации и `step_45` на `401`),
-  `registrations` (чтение `step_41` + запись `checked_in_at`/`checked_in_by` в `step_15`)
+- **Таблицы**: `event_staff` (чтение), `users` (чтение: **только имя участника**, `step_12`),
+  `registrations` (чтение `step_41` + запись `checked_in_at`/`checked_in_by` в `step_15`).
+  **`strings` не читается вовсе** с W24; чтение `users` ради языка контролёра удалено там же
 - **Переменные**: `BOT_TOKEN` (`step_35`), `QR_SIGNING_KEY` (`step_38`) — обе в длинной форме `{{variables['NAME']}}`
 - **Connections**: —
 
@@ -173,11 +172,15 @@
   это дефект валидатора, не флоу.** То же сообщение даёт живой рабочий
   `fn-verify-init-data`. Проверено 2026-09-12; на публикацию не влияет.
 
-- **Локализация текста исхода — на сервере (Q19, W7).** Язык — `users.lang`
-  контролёра: `step_28`/`step_6` резолвят его по `staffTelegramId` до маршрутизации
-  исходов. Каждая терминальная ветка `step_14`/`step_7`/`step_4` тянет нужный ключ
-  через `fn-t`; `step_17`/`step_20`/`step_22` вставляют `{name}`/`{time}` в шаблон.
-  `401` не может знать язык (пользователь не проверен) — фиксированный `ru`.
+- **Текст исхода собирается на сервере (Q19, W7), и он всегда русский.**
+  С W24 ([ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md))
+  выбора языка нет: каждая терминальная ветка берёт свой текст из входа
+  `texts` своего CODE-шага (эталон [`ru-texts`](../snippets/ru-texts.md)),
+  `step_17`/`step_20`/`step_22` вставляют `{name}`/`{time}` в шаблон.
+  Прежняя схема — `step_28`/`step_6` резолвили `users.lang` контролёра до
+  маршрутизации исходов — снята вместе с шагом `step_28`. Поле `staffLang` в
+  `step_6` осталось константой `'ru'`: на него ссылается неиспользуемый вход
+  `lang` у шагов текстов, и сносить его отдельно смысла нет.
   Страница сканера словарь исходов **не держит** — показывает серверный `text`.
 - **IDM-2 обеспечивается CAS (W20, 2026-09-12), а не только порядком шагов.**
   `step_15` пишет чекин с `only_if` «`checked_in_at` ещё пуст»
