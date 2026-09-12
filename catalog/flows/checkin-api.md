@@ -53,42 +53,114 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | вход сканера | — |
 | step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`, сентинел `-`) | `{{trigger['output'].body}}` |
-| step_2 | `callFlow → fn-verify-init-data` | HMAC токена бота + свежесть | `{{step_1['output'].initData}}`, `maxAgeSeconds: 86400` |
-| step_3 | CODE «combine auth» | `initDataValid`, `staffTelegramId` (сентинел `-`, если невалиден), `reason` | `{{step_2['output'].data}}` |
+| step_34 | CODE «parse initData» | разбор `initData`, `data_check_string` | `{{step_1['output'].initData}}` |
+| step_35 | CODE «hmac initData (эталон)» | HMAC-цепочка Telegram, `node:crypto` | `{{variables['BOT_TOKEN']}}`, `{{step_34['output'].dataCheckString}}` · эталон [`hmac-init-data`](../snippets/hmac-init-data.md) |
+| step_36 | CODE «verify initData» | constant-time сравнение + свежесть | `expected` = `{{step_35['output']}}`, `maxAgeSeconds: 86400` |
+| step_3 | CODE «combine auth» | `initDataValid`, `staffTelegramId` (сентинел `-`), `reason` | `{{step_36['output']}}` |
 | step_4 | ROUTER «initData valid?» | `valid` (branch 0) / `Otherwise` (branch 1 → `401`) | `{{step_3['output'].initDataValid}}` |
-| step_30 (branch 1) | `callFlow → fn-t` | `checkin.unauthorized`, `lang: ru` (пользователь не определён) | `{{step_4...}}` |
-| step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data` (+`text`), статус `401` | `{{step_30['output'].data.text}}` |
+| step_45 (branch 1) | `tables-find-records strings` | `key in (checkin.unauthorized)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
+| step_46 (branch 1) | CODE «resolve i18n unauthorized (эталон)» | язык → фолбэк → ключ; `lang: ru` (пользователь не определён) | `{{step_45['output']}}` · эталон [`i18n-resolve`](../snippets/i18n-resolve.md) |
+| step_24/25 (branch 1) | CODE + `return_response` | тело `invalid_init_data` (+`text`), статус `401` | `{{step_46['output'].text}}` |
 | step_5 (branch 0) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра, revoked_at not_exists)` | `table_id = CyW6KjJ2BdwQEph2KEqTt` |
 | step_28 | `tables-find-records users` | строка контролёра → язык; **проекция колонок**: только `lang` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_6 | CODE «decide isStaff» | `isStaff = records.length > 0`, `staffLang` (фолбэк `ru`) | `{{step_5['output']}}`, `{{step_28['output']}}` |
+| step_8 | `tables-find-records strings` | **одно** чтение на все ветки ниже: `key in (…7 ключей…)` | `table_id = qi6bBTL7plRGBgFUfli8w` |
 | step_7 | ROUTER «isStaff?» | `isStaff` (branch 0) / `Otherwise` (branch 1 → `403`) | `{{step_6['output'].isStaff}}` |
-| step_29 (branch 1) | `callFlow → fn-t` | `checkin.forbidden`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
-| step_26/27 (branch 1) | CODE + `return_response` | тело `forbidden` (+`text`), статус `403` | `{{step_29['output'].data.text}}` |
-| step_8 (branch 0) | `callFlow → fn-parse-start` | разбор `payload` (`kind` ожидается `c`) | `{{step_1['output'].payload}}` |
-| step_9 | `callFlow → fn-verify-qr` | подпись QR | `eventId/userId/sig` из `step_8` |
-| step_10 | `callFlow → fn-find-registration` | регистрация участника (`eventId` запроса, `userId` из QR) | `{{step_1['output'].eventId}}`, `{{step_8['output'].data.userId}}` |
-| step_11 | CODE «decide checkin outcome» | приоритет: `invalid` → `wrong_event` → `invalid` → `not_registered` → `already` → `ok` | `parse/verify/reg` из step_8/9/10, `requestEventId` из step_1 |
+| step_44 (branch 1) | CODE «resolve i18n forbidden (эталон)» | `checkin.forbidden`, `lang: staffLang` | `{{step_8['output']}}` |
+| step_26/27 (branch 1) | CODE + `return_response` | тело `forbidden` (+`text`), статус `403` | `{{step_44['output'].text}}` |
+| step_2 (branch 0) | CODE «parse QR payload (эталон)» | разбор `payload` (`kind` ожидается `c`) | `{{step_1['output'].payload}}` · эталон [`parse-start`](../snippets/parse-start.md) |
+| step_37 | CODE «normalize QR keys» | валидация формы, сентинелы `x`/`0` | `{{step_2['output'].*}}` |
+| step_38 | CODE «hmac QR (эталон)» | подпись `c:<eventId>:<userId>`, base64url, первые 10 | `{{variables['QR_SIGNING_KEY']}}` · эталон [`hmac-qr`](../snippets/hmac-qr.md) |
+| step_39 | CODE «verify QR signature» | constant-time сравнение подписи | `{{step_37['output'].sig}}`, `{{step_38['output']}}` |
+| step_40 | CODE «normalize registration keys» | сентинел `-` вместо пустого фильтра | `{{step_1['output'].eventId}}`, `{{step_2['output'].userId}}` |
+| step_41 | `tables-find-records registrations` | два `eq`, **без `limit`** (часть инварианта) | `table_id = PNuChoFG0tIBTND86yzDL` |
+| step_42 | CODE «pick earliest registration (ADR-0003)» | каноническая строка + самый ранний чекин | `{{step_41['output']}}` |
+| step_11 | CODE «decide checkin outcome» | приоритет: `invalid` → `wrong_event` → `invalid` → `not_registered` → `already` → `ok` | `{{step_2}}`/`{{step_39}}`/`{{step_42}}`, `requestEventId` из step_1 |
 | step_12 | `tables-find-records users` | имя участника по `telegram_id` из QR; **проекция колонок**: `first_name`, `last_name` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM` |
 | step_13 | CODE «build participant name» | `first_name + last_name` | `{{step_12['output']}}` |
 | step_14 | ROUTER «outcome?» | `ok` (0) / `already` (1) / `Otherwise` (2) | `{{step_11['output'].outcome}}` |
-| step_31 (branch `ok`) | `callFlow → fn-t` | `keys: [checkin.ok, checkin.name_unknown]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
+| step_9 (branch `ok`) | CODE «resolve i18n ok (эталон)» | `checkin.ok`, `checkin.name_unknown`, `lang: staffLang` | `{{step_8['output']}}` |
 | step_16→step_15 (branch `ok`) | CODE «stamp now» + `tables-update-record` | `checked_in_at = now`, `checked_in_by = staffTelegramId`, **только по `recordId`, который step_11 отдал именно для `outcome = ok`** | `table_id = PNuChoFG0tIBTND86yzDL` |
-| step_17/18 (branch `ok`) | CODE + `return_response` | тело `ok` (+`text` с `{name}`), статус `200` | `{{step_31['output'].data}}`, `{{step_13['output'].name}}` |
-| step_19 (branch `already`) | `callFlow → fn-fmt-time` | `checkedInAt` → `Asia/Tashkent`, `format: time` | `{{step_11['output'].checkedInAt}}` |
-| step_32 (branch `already`) | `callFlow → fn-t` | `keys: [checkin.already]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
-| step_20/21 (branch `already`) | CODE + `return_response` | тело `already` (+`text` с `{time}` = `checkedInAtTashkent`), статус `200` | `{{step_32['output'].data}}`, `{{step_19['output'].data}}` |
-| step_33 (branch `Otherwise`) | `callFlow → fn-t` | `keys: [checkin.wrong_event, checkin.invalid, checkin.not_registered]`, `lang: staffLang` | `{{step_6['output'].staffLang}}` |
-| step_22/23 (branch `Otherwise`) | CODE + `return_response` | тело `wrong_event`/`invalid`/`not_registered` (+`text` по `outcome`), статус `200` | `{{step_33['output'].data}}`, `{{step_11['output'].outcome}}` |
-
+| step_17/18 (branch `ok`) | CODE + `return_response` | тело `ok` (+`text` с `{name}`), статус `200` | `{{step_9['output']}}`, `{{step_13['output'].name}}` |
+| step_47 (branch `already`) | CODE «format checked_in_at (эталон)» | `Intl` → `Asia/Tashkent`, `format: time` | `{{step_11['output'].checkedInAt}}` · эталон [`fmt-time`](../snippets/fmt-time.md) |
+| step_10 (branch `already`) | CODE «resolve i18n already (эталон)» | `checkin.already`, `lang: staffLang` | `{{step_8['output']}}` |
+| step_20/21 (branch `already`) | CODE + `return_response` | тело `already` (+`text` с `{time}` = `checkedInAtTashkent`), статус `200` | `{{step_10['output']}}`, `{{step_47['output']}}` |
+| step_43 (branch `Otherwise`) | CODE «resolve i18n other (эталон)» | `checkin.wrong_event`, `checkin.invalid`, `checkin.not_registered` | `{{step_8['output']}}` |
+| step_22/23 (branch `Otherwise`) | CODE + `return_response` | тело `wrong_event`/`invalid`/`not_registered` (+`text` по `outcome`), статус `200` | `{{step_43['output']}}`, `{{step_11['output'].outcome}}` |
 ## Зависимости
 
-- **Subflow'ы**: `fn-verify-init-data`, `fn-parse-start`, `fn-verify-qr`, `fn-find-registration`, `fn-fmt-time`, `fn-t`
-- **Таблицы**: `event_staff` (чтение), `users` (чтение: язык контролёра + имя участника), `registrations` (чтение через `fn-find-registration` + прямая запись `checked_in_at`/`checked_in_by`)
-- **Переменные**: — (косвенно `QR_SIGNING_KEY` внутри `fn-verify-qr` — с 2026-09-09,
-  W16, напрямую, не через `fn-sign-qr`; `BOT_TOKEN` внутри `fn-verify-init-data`)
-- **Connections**: — (токен бота читается внутри `fn-verify-init-data` из Variable)
+- **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) —
+  флоу end-to-end, вся переиспользуемая логика встроена CODE-шагами по эталонам
+  [`catalog/snippets/`](../snippets/)
+- **Таблицы**: `event_staff` (чтение), `users` (чтение: язык контролёра + имя участника),
+  `strings` (чтение: два запроса — `step_8` на все ветки после аутентификации и `step_45` на `401`),
+  `registrations` (чтение `step_41` + запись `checked_in_at`/`checked_in_by` в `step_15`)
+- **Переменные**: `BOT_TOKEN` (`step_35`), `QR_SIGNING_KEY` (`step_38`) — обе в длинной форме `{{variables['NAME']}}`
+- **Connections**: —
 
 ## Заметки
+
+- **W21 (2026-09-12) — subflow'ов не осталось ни одного.** Десять `callFlow`
+  заменены встроенными шагами ([ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)):
+  `fn-verify-init-data` → `step_34`/`step_35`/`step_36`, `fn-parse-start` → `step_2`,
+  `fn-verify-qr` → `step_37`/`step_38`/`step_39`, `fn-find-registration` →
+  `step_40`/`step_41`/`step_42`, `fn-fmt-time` → `step_47`, пять вызовов `fn-t` →
+  два чтения `strings` (`step_8`, `step_45`) плюс по одному CODE-шагу разрешения
+  на ветку. 34 → 42 шага, вызовов на горячем пути — ноль.
+  - **Пять вызовов `fn-t` стали двумя чтениями таблицы, а не пятью.** Ключи
+    каждой ветки известны на этапе сборки, поэтому `step_8` читает объединение
+    ключей всех веток после аутентификации одним запросом `in`, а ветки лишь
+    разрешают язык из уже загруженной выборки. Отдельное чтение нужно только
+    ветке `401`: она исполняется **до** того, как известен пользователь.
+  - **Нормализации ключей (шаг `step_1` у `fn-t`) больше нет** — она превращала
+    рантайм-вход в список для фильтра `in`; здесь список статический. Вместе с
+    ней исчезла и её причина: сентинел `!no-key` на пустой список.
+  - **`limit` у `step_8`/`step_45` не задан намеренно.** У `fn-t` стоял `limit 200`,
+    и переполнение обрезало бы выборку **молча**. Здесь потолок не нужен: число
+    строк ограничено списком ключей (7 × 3 языка = 21).
+  - **Имена шагов переиспользуются платформой.** Удалённый `step_2` (`fn-verify-init-data`)
+    и добавленный следом CODE-шаг разбора QR получили **одно и то же имя** `step_2`;
+    то же с `step_8`/`step_9`/`step_10`. Ссылки вниз по флоу это переживают только
+    потому, что потребители были переписаны до удаления. Порядок «добавить новое →
+    перевести потребителей → удалить старое» здесь не стилистика, а условие
+    корректности.
+- **Как проверялось перед публикацией (W21, 2026-09-12).** `initData` синтезировать
+  нельзя ([Q16](../../docs/OPEN-QUESTIONS.md#q16)), поэтому ветки за `step_4`
+  прогонялись при **временно замкнутом** сравнении в черновике
+  (`step_36.expected` ← `{{step_34['output'].hash}}`). Замыкание снято сразу после
+  прогонов, возврат подтверждён двумя способами: чтением входа шага
+  (`ap_read_step_code`) и **различающим прогоном** — тот же вход, что проходил при
+  замыкании, дал `401 bad_hash` (прогон `uOOB7nJJ3NzprUuAFt80V`). Публикация — после
+  возврата. Прогоны (все `SUCCEEDED`, окружение `TESTING`):
+
+  | Исход | Прогон | Ответ | Время |
+  |---|---|---|---|
+  | `401` мусорная `initData` | `xyVclYSqIhFHUK4dBnMBG` | `401 invalid_init_data` | 1,5 с |
+  | `403` не-контролёр (`111222333`) | `E3pRNLxnrPkq0ormitDce` | `403 forbidden`, `step_5` → `[]` | 2,6 с |
+  | `403` контролёр **чужого** ивента (`other1`) | `mKJvvnpkq2Fiqo8sr58ix` | `403 forbidden`, `step_5` → `[]` | 2,4 с |
+  | `invalid` подпись не сошлась | `5SWdjE4vgobq4DJlXCCM3` | `200 invalid` | 3,6 с |
+  | `already` (IDM-2) | `G05GjI12dsGeWssBAwAAt` | `200 already`, `19:41` | 3,7 с |
+  | `ok` (запись чекина) | `07uT6MP3yOpwQ9xhNCCBn` | `200 ok`, записан `checked_in_at` | 5,9 с |
+
+  - **STF-2 закрыт двумя различающими прогонами плюс позитивным контролем**:
+    не-контролёр → `403`; контролёр `demo`, сканирующий `other1` → `403` (значит
+    `event_id` действительно в фильтре, а не «staff вообще где-то»); тот же
+    контролёр на `demo` → прошёл дальше. `step_5` в обоих отказах вернул `[]` —
+    fail-open из [#382](https://github.com/aiqadam/qadam-flow/issues/382) не
+    воспроизводится.
+  - **IDM-2 подтверждён впервые на живых данных**: `checked_in_at` = `14:41:46Z`
+    показан как `19:41` Ташкента (UTC+5, OWN-3) и **не перезаписан**.
+  - **Подпись QR проверена сквозным сценарием**: подпись для `(demo, 322876545)`
+    снята из `step_38` и подставлена на вход — `step_39` принял её, подделанная
+    (`AAAAAAAAAA`) отклонена. Это тот самый тест на дрейф копий крипты, ради
+    которого ADR-0012 принимает риск дублирования; **между** флоу он ещё не
+    прогонялся (нужен QR, подписанный в `registration`).
+  - **Цена прогона ветки `ok`**: `checked_in_at` у единственной строки
+    `registrations` был очищен перед прогоном и записан обратно самим флоу
+    (`15:09:04Z`). Фикстур не заводилось, мусора не осталось.
+- **`ap_validate_flow` сообщает о `{{variables...}}` как о несуществующей ссылке —
+  это дефект валидатора, не флоу.** То же сообщение даёт живой рабочий
+  `fn-verify-init-data`. Проверено 2026-09-12; на публикацию не влияет.
 
 - **Локализация текста исхода — на сервере (Q19, W7).** Язык — `users.lang`
   контролёра: `step_28`/`step_6` резолвят его по `staffTelegramId` до маршрутизации
