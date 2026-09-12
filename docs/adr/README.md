@@ -17,3 +17,4 @@
 | [0009](0009-hot-path-latency-budget-and-order.md) | Латентность горячего пути: бюджеты и порядок ускорения | Принято |
 | [0010](0010-unsandboxed-code-step-for-crypto.md) | `node:crypto` в Code step разрешён узко, для трёх HMAC-цепочек | Принято |
 | [0011](0011-idempotency-on-atomic-primitives.md) | Идемпотентность на атомарных примитивах (сужает 0003) | Принято |
+| [0012](0012-end-to-end-flows-instead-of-subflow-functions.md) | End-to-end флоу вместо subflow-функций (сужает 0001, отменяет локальность крипты 0010) | Принято |
