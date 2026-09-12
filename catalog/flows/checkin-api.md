@@ -80,8 +80,10 @@
 | step_13 | CODE «build participant name» | `first_name + last_name` | `{{step_12['output']}}` |
 | step_14 | ROUTER «outcome?» | `ok` (0) / `already` (1) / `Otherwise` (2) | `{{step_11['output'].outcome}}` |
 | step_9 (branch `ok`) | CODE «resolve i18n ok (эталон)» | `checkin.ok`, `checkin.name_unknown`, `lang: staffLang` | `{{step_8['output']}}` |
-| step_16→step_15 (branch `ok`) | CODE «stamp now» + `tables-update-record` | `checked_in_at = now`, `checked_in_by = staffTelegramId`, **только по `recordId`, который step_11 отдал именно для `outcome = ok`** | `table_id = PNuChoFG0tIBTND86yzDL` |
-| step_17/18 (branch `ok`) | CODE + `return_response` | тело `ok` (+`text` с `{name}`), статус `200` | `{{step_9['output']}}`, `{{step_13['output'].name}}` |
+| step_16→step_15 (branch `ok`) | CODE «stamp now» + `tables-update-record` с **`only_if` `checked_in_at not_exists`** (CAS, IDM-2) | `continueOnFailure: true`: проигрыш гонки — это `RECORD_PRECONDITION_FAILED`, а не сбой | `table_id = PNuChoFG0tIBTND86yzDL` |
+| step_19→step_29 (branch `ok`) | `tables-find-records registrations` + CODE «pick earliest» | перечитать строку после записи — нужно, чтобы отдать **чужое** время при проигрыше | — |
+| step_30→step_31 (branch `ok`) | CODE fmt + CODE resolve i18n `checkin.already` | текст на случай проигрыша; строки берутся из уже прочитанного `step_8` | эталоны [`fmt-time`](../snippets/fmt-time.md), [`i18n-resolve`](../snippets/i18n-resolve.md) |
+| step_17/18 (branch `ok`) | CODE + `return_response` | тело `ok` **или** `already` — решает по результату CAS; любая **другая** ошибка записи роняет прогон, а не отвечает `ok` | `{{step_15['error'].message}}`, `{{step_29}}`, `{{step_30}}`, `{{step_31}}` |
 | step_47 (branch `already`) | CODE «format checked_in_at (эталон)» | `Intl` → `Asia/Tashkent`, `format: time` | `{{step_11['output'].checkedInAt}}` · эталон [`fmt-time`](../snippets/fmt-time.md) |
 | step_10 (branch `already`) | CODE «resolve i18n already (эталон)» | `checkin.already`, `lang: staffLang` | `{{step_8['output']}}` |
 | step_20/21 (branch `already`) | CODE + `return_response` | тело `already` (+`text` с `{time}` = `checkedInAtTashkent`), статус `200` | `{{step_10['output']}}`, `{{step_47['output']}}` |
@@ -168,7 +170,26 @@
   через `fn-t`; `step_17`/`step_20`/`step_22` вставляют `{name}`/`{time}` в шаблон.
   `401` не может знать язык (пользователь не проверен) — фиксированный `ru`.
   Страница сканера словарь исходов **не держит** — показывает серверный `text`.
-- **IDM-2 обеспечивается на уровне решения, а не CAS-примитива.** `outcome = 'already'`
+- **IDM-2 обеспечивается CAS (W20, 2026-09-12), а не только порядком шагов.**
+  `step_15` пишет чекин с `only_if` «`checked_in_at` ещё пуст»
+  ([ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md)). Проигравший
+  гонку получает `409 RECORD_PRECONDITION_FAILED`, и `step_17` отдаёт `already`
+  с **чужим, исходным** временем — для этого строка перечитывается (`step_19`/`step_29`).
+  - **Цена названа прямо:** перечитывание выполняется **всегда** на ветке `ok`,
+    а не только при проигрыше, — примерно +0,4 с к успешному чекину. Router ради
+    экономии этих 0,4 с потребовал бы переносить шаги ответа внутрь ветки, а
+    `continueOnFailure` веток не создаёт: шаги ниже исполняются в обоих случаях.
+  - **Не любая ошибка записи означает «уже отмечен».** `step_17` проверяет код
+    ошибки и при любой другой **бросает исключение**: ответить `ok` на неудавшуюся
+    запись значит соврать контролёру, что участник отмечен.
+  - **Различающий прогон** `QsPQJcVcwUDVVQ9cVmT7d`: временный шаг записал чекин
+    между чтением и записью (имитация второго контролёра, `10:00Z`), CAS получил
+    409, ответ — `already` в `15:00` Ташкента, то есть **время победителя**, не наше.
+    Позитивный контроль `PIM2m7AfPKtPFl9Lw70Gk`: на пустом поле запись прошла, ответ `ok`.
+    Временный шаг удалён сразу после.
+
+- **Прежняя формулировка (до W20), сохранена как история:** IDM-2 обеспечивался
+  на уровне решения, а не CAS-примитива. `outcome = 'already'`
   вычисляется в step_11 **до** записи — `tables-update-record` (step_15) выполняется
   только в ветке `outcome = 'ok'`, которая по построению уже означает
   «`checked_in_at` было пусто на момент чтения» (step_10 `fn-find-registration`).
