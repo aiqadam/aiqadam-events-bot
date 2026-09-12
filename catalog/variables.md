@@ -135,7 +135,6 @@ step_3 references "{{variables...}}"        step_3 references "{{MINIAPP_URL...}
 | `registration` | `step_13`, `step_18`, `step_72`, `step_75`, `step_96` — все `{{variables...}}` | нет |
 | `tg-router` | нет вовсе | нет |
 | `i18n-sync` | нет вовсе | нет |
-
 | `bench-421-loop-code-final` (не флоу проекта, [Q34](../docs/OPEN-QUESTIONS.md#q34)) | нет вовсе | нет |
 
 Девять потребителей совпали с таблицей «Кто их читает» выше — строка в строку,
