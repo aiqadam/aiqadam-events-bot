@@ -83,7 +83,7 @@
   --ring:               oklch(0.70 0.105 192);
 }
 
-/* ——— Спец-цвета, логотип, шрифты, радиусы, тени, кривые · tokens.css:59-99 ——— */
+/* ——— Спец-цвета, логотип, шрифты, радиусы, тени, кривые · tokens.css:59-97 ——— */
 :root {
   /* Special-purpose */
   --live-indicator: oklch(0.7 0.2 145);
@@ -124,9 +124,9 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ——— База: reset, body, .display · tokens.css:99-114 ——— */
 * { box-sizing: border-box; }
-
-/* ——— База: reset, body, .display · tokens.css:101-114 ——— */
+html, body { margin: 0; padding: 0; }
 body {
   font-family: var(--font-sans);
   font-size: 14px;
