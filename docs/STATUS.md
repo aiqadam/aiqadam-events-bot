@@ -84,7 +84,7 @@
 | W27. Догон переводов `uz`/`en` | — | **W25** (уточнено 2026-09-13) | не начат — раньше W25 переводить нечего | — | — |
 | **W28. Пилот [ADR-0017](adr/0017-screen-not-message.md): гостевой срез одной карточкой** | 7 | фундамент (W26, W06) | **готов** 2026-09-14 — решением владельца, без повторного ревью ([почему](work/W28-single-card-guest-flow.md#ревью)) | агент W28 | [W28](work/W28-single-card-guest-flow.md) |
 | W29. Экспорт `flows/*.json` ([ADR-0018](adr/0018-rest-read-for-everyone.md) п. 3) | — | ключ API у человека (шаг 0.7) | **готов** 2026-09-14 — решением владельца после двух кругов ревью | агент W29 | [W29](work/W29-flows-export.md) |
-| W30. Бренд Mini App и `docs/VOICE.md` ([ADR-0019](adr/0019-design-system-from-brand-repo.md)) | — | [Q40](OPEN-QUESTIONS.md#q40) | не начат | — | — |
+| W30. Бренд Mini App и `docs/VOICE.md` ([ADR-0019](adr/0019-design-system-from-brand-repo.md)) | — | [Q40](OPEN-QUESTIONS.md#q40) — закрывается внутри пакета | **в работе** с 2026-09-13 | агент W30 | [W30](work/W30-brand-and-voice.md) |
 | W15. Приёмка | 9 | все `готов` на момент приёмки | не начат | — | — |
 
 Критический путь на 2026-09-13: **`W28 → W13 → W14 → W15`**. W10, W12, W29,
