@@ -5,7 +5,7 @@
   активная сессия визарда с `sessions.step='photo'`)
 - **Назначение**: принимает фото ивента (или пропуск `"-"`), затем передаёт
   эстафету касанию `address` (которое ведёт `event-wizard-field`).
-- **Flow ID (MCP)**: `mGUl0dCEyJQjjN3VtyjAN`
+- **Flow ID (MCP)**: `mGUl0dCEyJQjjN3VtyjAN` · **externalId**: `rgxegw7xRaYYGqZsPTujF`
 
 ## Шаги
 
@@ -15,8 +15,10 @@
 | step_1 | CODE «decide» | `ok = hasPhoto \|\| text === '-'`; `draft.photo_file_id` = `photoFileId` или `''` | |
 | step_2 | ROUTER: `ok`/`Otherwise` | | |
 | step_3 (ok) | `tables-upsert-records sessions` | `draft`, `step='address'` | |
-| step_5 | `send_text_message` | «Адрес текстом?» | |
-| step_4 (Otherwise) | `send_text_message` | «Пришлите фото или "-" чтобы пропустить.» — сессия не двигается | |
+| step_6 | CODE «address question text» | текст следующего вопроса | |
+| step_5 | `send_text_message` | вопрос об адресе | `{{step_6['output'].text}}` |
+| step_7 (Otherwise) | CODE «photo error text» | текст подсказки «фото или `-`» | |
+| step_4 (Otherwise) | `send_text_message` | подсказка — сессия не двигается, вопрос повторяется | `{{step_7['output'].text}}` |
 
 ## Зависимости
 

@@ -3,11 +3,11 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`,
   когда `session.step = await_pdn` (ADR-0015: касание = один вопрос со всеми
-  ответами на него, `pdn:yes`/`pdn:no` — один флоу)
+  ответами на него, `reg:pdn:yes`/`reg:pdn:no` — один флоу)
 - **Назначение**: согласие на обработку данных (PAR-1, обязательное). При
   согласии — создаёт/реактивирует регистрацию (IDM-1) и открывает вопрос
   о рассылке.
-- **Flow ID (MCP)**: `vQJDQ8NecB1PleIFrq07O`
+- **Flow ID (MCP)**: `vQJDQ8NecB1PleIFrq07O` · **externalId**: `PUf09unvIwSpobPr1u3kh`
 
 ## Шаги
 
@@ -15,10 +15,16 @@
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId`, `sessionDraft` (JSON `{eventId,utm}`) | — |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack — падает на синтетических `callback_query_id` в тестах, это ожидаемо | `{{trigger['output'].data.callbackQueryId}}` |
-| step_2 | CODE «parse draft + decide» | `isYes` по `callbackData`, разбор `sessionDraft`, `regId = eventId + '-' + telegramId` | `{{trigger['output'].data...}}` |
-| step_3 | ROUTER: branch 0 = `no`, branch 1 = `yes`, `Otherwise` — заглушка | | `{{step_2['output'].isYes}}` |
-| step_4→10 (`yes`) | `tables-upsert-records users` (`consent_pdn=true`) → `tables-upsert-records registrations` (ключ `event_id+telegram_id` — создаёт или реактивирует, IDM-1) → чтение `events.title` → CODE `reg.done` → `send_text_message` → `tables-upsert-records sessions` (`step=await_marketing`) → `send_text_message` вопрос о рассылке | | |
-| step_11→12 (`no`) | `send_text_message` `reg.consent_pdn.declined` → `tables-upsert-records sessions` (`scenario='-'`, `step='-'`) | регистрация **не создаётся** (PAR-1) | |
+| step_2 | CODE «parse draft + decide» | `isYes` = `callbackData === 'reg:pdn:yes'` (любой другой ответ — отказ), разбор `sessionDraft`, `regId = eventId + '-' + telegramId` | `{{trigger['output'].data...}}` |
+| step_3 | ROUTER: branch 0 = `no`, branch 1 = `yes`, `Otherwise` — заглушка (`step_13`) | | `{{step_2['output'].isYes}}` |
+| step_4 (`yes`) | `tables-upsert-records users` | `consent_pdn=true` | |
+| step_6 (`yes`) | `tables-find-records events` | `title` для текста подтверждения | |
+| step_5 (`yes`) | `tables-upsert-records registrations` | ключ `event_id+telegram_id` — создаёт или реактивирует (IDM-1) | |
+| step_7→8 (`yes`) | CODE `reg.done` → `send_text_message` | подтверждение регистрации | |
+| step_9 (`yes`) | `tables-upsert-records sessions` | `step=await_marketing` | |
+| step_15→10 (`yes`) | CODE «marketing question text» → `send_text_message` | вопрос о рассылке с кнопками (`reg:mkt:yes` / иное) | |
+| step_14→11 (`no`) | CODE `reg.consent_pdn.declined` → `send_text_message` | регистрация **не создаётся** (PAR-1) | |
+| step_12 (`no`) | `tables-upsert-records sessions` | `scenario='-'`, `step='-'` | |
 
 ## Зависимости
 

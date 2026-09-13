@@ -13,7 +13,7 @@
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId` | — |
-| step_1 | CODE «parse callback» | `confirm` / `do_yes` / `keep` + `eventId`; `eventId` валидируется алфавитом slug'а | `{{trigger['output'].data.callbackData}}` |
+| step_1 | CODE «parse callback» | `confirm` / `do_yes` / `keep` / `unknown` + `eventId`; форма колбэка задана regex'ами `^myreg:(cancel\|yes):([A-Za-z0-9_-]{1,64})$` и `^myreg:no$` — всё, что не совпало, уходит в `unknown` | `{{trigger['output'].data.callbackData}}` |
 | step_2 | `answer_callback_query` (`continueOnFailure`) | ack | `{{trigger['output'].data.callbackQueryId}}` |
 | step_3 | ROUTER по `action` | `confirm` / `do_yes` / `keep` / `Otherwise`-заглушка | `{{step_1['output'].action}}` |
 | step_4→6 (`confirm`) | `tables-find-records events` (по `id`, `limit 1`) → CODE `cancel.confirm` + кнопки → `send_text_message` | вопрос с кнопками «Да, отменить» / «Оставить»; неизвестный ивент — `cancel.not_found` без кнопок (не чужой ивент) | `{{step_1['output'].eventId}}` |
@@ -40,7 +40,7 @@
   отмене не мешает (чекин — факт прошлого, отмена — статус пары).
 - **Отмена пишется upsert'ом по ключу `(event_id, telegram_id)`** — та же
   строка, `id` вида `<eventId>-<telegramId>` по конвенции проекта; повторный
-  `pdn:yes` её реактивирует (IDM-1 в обе стороны).
+  `reg:pdn:yes` в `reg-consent-pdn` её реактивирует (IDM-1 в обе стороны).
 - **Тексты — во входе `texts`** (ADR-0014); значения сверены с `i18n/ru.json`.
   Ключ `cancel.kept` заведён этим пакетом — подтверждения «оставить» раньше
   не было ни в одном пакете.

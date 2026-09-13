@@ -1,8 +1,10 @@
 # Flow: fn-sign-qr
 
 - **Статус**: ENABLED
-- **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `registration`
-  (выдача QR) и `my-qr-api` (ADR-0015 п. 5)
+- **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается только из
+  `my-qr-api` (`step_4`, ADR-0015 п. 5). Выдача QR участнику на подпись не
+  ходит: `reg-phone` шлёт кнопку `web_app` на `ticket.html`, а подписывает
+  уже `my-qr-api` при открытии страницы
 - **Назначение**: подписать QR-payload участника (`c<eventId>-<userId>-<sig>`).
 - **Flow ID (MCP)**: `9XXJu9hlSJC8nIfoYjMcV` · **externalId (для `callFlow`)**: `VvSckbBbWGJcq7MaNGbwm`
 
@@ -30,6 +32,8 @@
 
 - Формат `msg = 'c:' + eventId + ':' + userId` менять нельзя — обесценивает
   все уже выданные QR.
-- Подписывает пустые/мусорные `eventId`/`userId` — намеренное исключение
-  из правила «не падать на мусоре» (`snippets/README.md`): подписать пустой
-  `eventId` хуже, чем упасть.
+- **Падает на пустых/мусорных `eventId`/`userId`** (`throw` в `step_1`:
+  `eventId` — `^[A-Za-z0-9_]{1,12}$`, `userId` — `^[0-9]{1,16}$`) — намеренное
+  исключение из правила «не падать на мусоре» (`snippets/README.md`):
+  подписать пустой `eventId` хуже, чем упасть. Поэтому вызывающий обязан
+  ставить `continueOnFailure: true` — см. `my-qr-api`.

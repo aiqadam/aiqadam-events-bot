@@ -6,7 +6,7 @@
 - **Назначение**: принимает геоточку ивента гео-сообщением (или пропуск `"-"`),
   затем передаёт эстафету первому вопросу дат (`starts_at`), который снова
   ведёт `event-wizard-field`.
-- **Flow ID (MCP)**: `sAJFoscopo3EgwQlDfaA7`
+- **Flow ID (MCP)**: `sAJFoscopo3EgwQlDfaA7` · **externalId**: `wZLWTVqVzSODF6DZYvOHx`
 
 ## Шаги
 
@@ -16,8 +16,10 @@
 | step_1 | CODE «decide» | `ok = hasLocation \|\| text === '-'`; `draft.lat/lon` из локации или `''` | |
 | step_2 | ROUTER: `ok`/`Otherwise` | | |
 | step_3 (ok) | `tables-upsert-records sessions` | `draft`, `step='starts_at'` | |
-| step_5 | `send_text_message` | «Когда начало? Формат: ДД.ММ.ГГГГ ЧЧ:ММ (время ташкентское)» | |
-| step_4 (Otherwise) | `send_text_message` | «Отправьте точку на карте или "-" чтобы пропустить.» — сессия не двигается | |
+| step_6 | CODE «starts_at question text» | текст вопроса о начале (формат `ДД.ММ.ГГГГ ЧЧ:ММ`, время ташкентское) | |
+| step_5 | `send_text_message` | вопрос о начале | `{{step_6['output'].text}}` |
+| step_7 (Otherwise) | CODE «geo error text» | текст подсказки «точка на карте или `-`» | |
+| step_4 (Otherwise) | `send_text_message` | подсказка — сессия не двигается, вопрос повторяется | `{{step_7['output'].text}}` |
 
 ## Зависимости
 

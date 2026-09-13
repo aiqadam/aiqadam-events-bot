@@ -5,7 +5,7 @@
   когда `session.step = await_marketing`
 - **Назначение**: отдельное согласие на рассылку (PAR-2, необязательное).
   Любой ответ оставляет регистрацию в силе.
-- **Flow ID (MCP)**: `3gLF6TcbpFObHONATQ64N`
+- **Flow ID (MCP)**: `3gLF6TcbpFObHONATQ64N` · **externalId**: `JH42q9BkKDYUti7leKJrC`
 
 ## Шаги
 
@@ -18,7 +18,8 @@
 | step_4 | CODE `reg.consent_marketing.saved_yes`/`saved_no` | | |
 | step_5 | `send_text_message` | подтверждение | |
 | step_6 | `tables-upsert-records sessions` | `step = await_phone` | |
-| step_7 | `send_text_message` | вопрос о телефоне, `reply_markup.keyboard` с `request_contact: true` | |
+| step_8 | CODE «phone question text» | текст вопроса о телефоне | |
+| step_7 | `send_text_message` | вопрос о телефоне, `reply_markup.keyboard` с `request_contact: true` | `{{step_8['output'].text}}` |
 
 ## Зависимости
 

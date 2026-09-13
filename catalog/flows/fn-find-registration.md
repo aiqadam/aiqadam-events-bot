@@ -1,8 +1,12 @@
 # Flow: fn-find-registration
 
 - **Статус**: ENABLED
-- **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `checkin-api`,
-  `my-qr-api`, обработчиков регистрации (ADR-0015 п. 5 — «общие чтения»)
+- **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из
+  `checkin-api` (`step_5`) и `my-qr-api` (`step_3`), ADR-0015 п. 5 —
+  «общие чтения». Обработчики регистрации и списков его **не** зовут:
+  `reg-start`, `my-regs`, `my-reg-cancel` читают `registrations` напрямую,
+  потому что им нужна выборка по ивенту или по участнику целиком, а не
+  одна каноническая строка пары
 - **Назначение**: найти каноническую регистрацию участника на ивент, схлопнув
   дубли по `(event_id, telegram_id)` детерминированно (IDM-1, ADR-0003).
 - **Flow ID (MCP)**: `O5TtpU4antbkUgeKXVwq5` · **externalId (для `callFlow`)**: `Q3iGnxOcpjzeUVvXQc48L`
