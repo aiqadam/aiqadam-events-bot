@@ -17,6 +17,11 @@
    недоведённый диалог.
 2. `/newevent` → `wiz_start`; `/editevent <id>` → `wiz_edit_start` —
    **независимо от активной сессии**, тем же принципом, что и `/start`.
+2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06) — команды
+   перекрывают активную сессию, как в пп. 1–2.
+2b. Колбэки `ev:list:upcoming` / `ev:list:past` → `events-list`;
+   `myreg:cancel:*` / `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) —
+   по префиксу `callbackData`, до проверок сессий.
 3. Иначе, если активная сессия — визард (`scenario` = `event_create`/`event_edit`):
    по `sessions.step` → `wiz_photo` (`step='photo'`), `wiz_geo` (`step='geo'`),
    `wiz_publish` (`step='preview'`, обычно вместе с `callback_query`), иначе
@@ -39,10 +44,11 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` | |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч | |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
-| step_10 | CODE «routing decision» | вычисляет `route` (см. выше) | |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`Otherwise` | | |
+| step_10 | CODE «routing decision» | вычисляет `route` (см. выше; W06 добавил `callbackData`-вход и маршруты `events_list`/`my_regs`/`my_reg_cancel`) | |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`Otherwise` | | |
 | step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации | |
 | step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда | |
+| step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) | `flowProps.payload: {chatId, telegramId, callbackData, callbackQueryId}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) | |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) | |
 
@@ -50,6 +56,7 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`,
+  `events-list`, `my-regs`, `my-reg-cancel`,
   `event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
   `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish` — делегирование,
   не subflow-функции (ADR-0015 п. 4)
