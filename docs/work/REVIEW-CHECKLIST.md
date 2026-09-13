@@ -182,8 +182,9 @@ tools/check-export-secrets.sh      # обязательно перед любы�
       `grep -nE '#[0-9a-fA-F]{3,8}|rgb\(|oklch\(|font-family|font-size' miniapp/*.html`
       обязан молчать: цвет и шрифт — только через `var(--token)`, ни одного
       литерала. Отдельно проверяется **зона покоя QR** в `ticket.html`
-      (`padding` плиты): код требует вокруг себя ≥ 4 модулей светлого поля,
-      и это не «воздух вокруг картинки», а условие сканирования;
+      (`padding` плиты): «Quiet zone: four modules, always» — правило бренда
+      ([«Event stands → QR codes»](https://brand.aiqadam.org/brand.html#stands)),
+      а не наше, и это не «воздух вокруг картинки», а условие сканирования;
 - [ ] **вендоренный бренд не разошёлся с источником**:
       `miniapp/vendor/aiqadam-brand-subset.css` — дословные блоки бренда,
       в шапке указан коммит, и блоки совпадают с этим коммитом. Правка

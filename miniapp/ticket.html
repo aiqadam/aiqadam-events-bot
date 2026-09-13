@@ -17,8 +17,10 @@
     /* Плита QR принудительно в светлой теме бренда: чёрный код на светлой
        подложке читается сканером и при системной тёмной. Тёмный QR не сканируется.
 
-       `padding: 32px` — зона покоя кода, а не воздух: QR требует вокруг себя
-       ≥ 4 модулей светлого поля. Payload — `c<eventId>-<userId>-<sig>`, и его
+       `padding: 32px` — зона покоя. Правило не наше: бренд формулирует его
+       в разделе «Event stands → QR codes» — «Quiet zone: four modules, always.
+       The empty margin around the code is part of the code»
+       (https://brand.aiqadam.org/brand.html#stands). Payload — `c<eventId>-<userId>-<sig>`, и его
        границы заданы не на глаз, а парсером: `eventId` — слаг
        `/^[A-Za-z0-9_]{1,12}$/`, `userId` — до 16 цифр, `sig` — 10 знаков
        (`catalog/snippets/hmac-qr.md`; `fn-sign-qr` на всём остальном падает).
