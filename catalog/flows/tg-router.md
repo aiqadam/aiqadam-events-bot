@@ -37,7 +37,7 @@
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов (`message`, `callback_query`) | — |
-| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey` | `{{trigger['output']}}` |
+| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey`, `messageId` входящего сообщения | `{{trigger['output']}}` |
 | step_2 | `@aiqadam/qadam-store : put_if_absent` | атомарный захват `upd:<update_id>` (IDM-4) | `ttl_seconds: 86400`, `store_scope: COLLECTION` |
 | step_3 | CODE «gate» | `proceed`/`reason` (`bad_update`/`duplicate`/`from_bot`/`non_private_chat`) | |
 | step_4 | ROUTER: `proceed` / `Otherwise` (лог) | | |
@@ -46,7 +46,7 @@
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
 | step_10 | CODE «routing decision» | вычисляет `route` (см. выше; W06 добавил `callbackData`-вход и маршруты `events_list`/`my_regs`/`my_reg_cancel`) | |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`Otherwise` | | |
-| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации | |
+| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации | все четыре получают `sessionDraft`; `reg-phone` дополнительно `userMessageId` |
 | step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда | |
 | step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) | `flowProps.payload: {chatId, telegramId, callbackData, callbackQueryId}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) | |
@@ -84,3 +84,13 @@
 - **Апсерт `users` (`step_6`) не пропускает запись при отсутствии изменений** —
   упрощение ради читаемости флоу (ADR-0015); латентность записи в таблицу не
   в приоритете (дорогая статья — отправка сообщений, не запись в таблицу).
+- **`sessionDraft` уходит всем четырём касаниям регистрации, а не только
+  `reg-consent-pdn`.** В нём живёт `cardMessageId` — без него касание не знает,
+  какое сообщение редактировать, и каждый шаг диалога начинал бы новую карточку
+  ([ADR-0017](../../docs/adr/0017-screen-not-message.md)).
+- **`userMessageId` нужен только `reg-phone`** — чтобы убрать из ленты ответ
+  гостя на транзиентный вопрос о телефоне.
+- **`exampleData` в пропе `flow` у `callFlow` должен совпадать с тем, что
+  отдаёт `ap_resolve_property_options`.** Добавили поле в схему триггера
+  callee — обновите и `exampleData` у вызова, иначе форма вызова и форма
+  приёма разъезжаются (CLAUDE.md, Gotchas, п. 7).

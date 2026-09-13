@@ -82,7 +82,7 @@
 | W25. Возврат i18n на платформенном механизме ([ADR-0014](adr/0014-russian-only-until-platform-i18n.md), qadam-flow#420) | 5 | W24, qadam-flow#420 | не начат — ждёт закрытия [#420](https://github.com/aiqadam/qadam-flow/issues/420) | — | — |
 | W26. Пересборка `events-dev` по [ADR-0015](adr/0015-one-touch-one-flow.md) + W11 визард (слит 2026-09-13, [ADR-0016](adr/0016-shared-flow-for-same-shaped-touches.md)) | 5 | ADR-0015, [Q35](OPEN-QUESTIONS.md#q35) | **готов** | агент W26 | [W26](work/W26-rebuild-on-one-touch.md) |
 | W27. Догон переводов `uz`/`en` | — | **W25** (уточнено 2026-09-13) | не начат — раньше W25 переводить нечего | — | — |
-| **W28. Пилот [ADR-0017](adr/0017-screen-not-message.md): гостевой срез одной карточкой** | 7 | фундамент (W26, W06) | **в работе** 2026-09-13 — точка остановки пройдена | агент W28 | [W28](work/W28-single-card-guest-flow.md) |
+| **W28. Пилот [ADR-0017](adr/0017-screen-not-message.md): гостевой срез одной карточкой** | 7 | фундамент (W26, W06) | **на проверке** 2026-09-13 — два пункта чек-листа за владельцем и W29 | агент W28 | [W28](work/W28-single-card-guest-flow.md) |
 | W29. Экспорт `flows/*.json` ([ADR-0018](adr/0018-rest-read-for-everyone.md) п. 3) | — | ключ API у человека (шаг 0.7) | не начат | — | — |
 | W30. Бренд Mini App и `docs/VOICE.md` ([ADR-0019](adr/0019-design-system-from-brand-repo.md)) | — | [Q40](OPEN-QUESTIONS.md#q40) | не начат | — | — |
 | W15. Приёмка | 9 | все `готов` на момент приёмки | не начат | — | — |

@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 21 | [flows/](flows/) |
+| Флоу | 22 | [flows/](flows/) |
 | Таблицы | 10 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 4 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL` | [variables.md](variables.md) |
@@ -26,6 +26,7 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
 | Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md), [reg-phone](flows/reg-phone.md) |
+| Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
 | Списки и отмена участника (W06) | [events-list](flows/events-list.md), [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
 | Визард ивента (создание/правка, ADR-0016) | [event-wizard-start](flows/event-wizard-start.md), [event-wizard-edit-start](flows/event-wizard-edit-start.md), [event-wizard-field](flows/event-wizard-field.md), [event-wizard-photo](flows/event-wizard-photo.md), [event-wizard-geo](flows/event-wizard-geo.md), [event-wizard-publish](flows/event-wizard-publish.md) |
 | Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md) |
