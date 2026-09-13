@@ -31,6 +31,7 @@
 | `BOT_TOKEN` | [my-qr-api](flows/my-qr-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
 | `MINIAPP_URL` | [reg-start](flows/reg-start.md) | кнопка QR в ветке `existing` |
 | `MINIAPP_URL` | [reg-phone](flows/reg-phone.md) | кнопка `web_app` на `ticket.html` (ADR-0007) |
+| `MINIAPP_URL` | [my-regs](flows/my-regs.md) | вход `miniappUrl` у CODE «render my regs» — кнопка QR в каждой активной регистрации |
 | `BOT_USERNAME` | [event-wizard-publish](flows/event-wizard-publish.md) | сборка `registrationUrl` (OWN-6), владельцу при создании ивента |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —

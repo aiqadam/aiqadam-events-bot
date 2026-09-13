@@ -5,7 +5,7 @@
   когда `session.step = await_phone`
 - **Назначение**: опциональный телефон (DAT-2) — контакт или пропуск (любой
   другой апдейт), затем выдача ссылки на QR через Mini App и завершение визарда.
-- **Flow ID (MCP)**: `Cx7U4wKXLwmBCtb4FR5AW`
+- **Flow ID (MCP)**: `Cx7U4wKXLwmBCtb4FR5AW` · **externalId**: `vHduLOLdbcdT0wZDeexJx`
 
 ## Шаги
 
