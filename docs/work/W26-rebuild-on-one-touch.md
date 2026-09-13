@@ -72,6 +72,10 @@ ADR-0015 — и привести каталог в соответствие с �
 | Флоу `fn-verify-qr` | `wZbneQfvOoO91zEQTrQGf` | [flows/fn-verify-qr.md](../../catalog/flows/fn-verify-qr.md) |
 | Флоу `fn-parse-start` | `9iKpekYS4tRUOsmYZaXZg` | [flows/fn-parse-start.md](../../catalog/flows/fn-parse-start.md) |
 | Флоу `fn-find-registration` | `O5TtpU4antbkUgeKXVwq5` | [flows/fn-find-registration.md](../../catalog/flows/fn-find-registration.md) |
+| Флоу `reg-start` | `FkxtgayOK5QubyqqMd9q4` | [flows/reg-start.md](../../catalog/flows/reg-start.md) |
+| Флоу `reg-consent-pdn` | `vQJDQ8NecB1PleIFrq07O` | [flows/reg-consent-pdn.md](../../catalog/flows/reg-consent-pdn.md) |
+| Флоу `reg-consent-mkt` | `3gLF6TcbpFObHONATQ64N` | [flows/reg-consent-mkt.md](../../catalog/flows/reg-consent-mkt.md) |
+| Флоу `reg-phone` | `Cx7U4wKXLwmBCtb4FR5AW` | [flows/reg-phone.md](../../catalog/flows/reg-phone.md) |
 
 ## Чек-лист готовности
 
@@ -151,6 +155,43 @@ ADR-0015 — и привести каталог в соответствие с �
   принят `fn-verify-qr`; `fn-find-registration` — тестовая строка найдена
   и корректно не находится по чужому `event_id` (тестовая строка удалена
   после прогонов). Карточки в `catalog/flows/fn-*.md` заведены с id прогонов.
+- **2026-09-13** — шаг 6 (касания регистрации): собраны и опубликованы
+  `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`. Владелец
+  подтвердил разрешение слать тестовые сообщения через dev-бота на свой
+  реальный Telegram (`322876545`) — синтетические `chat_id` в тестах дают
+  `400 chat not found`, реальная доставка проверяется только так же, как
+  делали W5/W8 («обязательный тест себе»).
+  **Ключевое упрощение против старого `registration`:** вместо read-then-branch
+  create/update использован `tables-upsert-records` везде, где раньше нужен
+  был ROUTER с последующим схождением веток — в Activepieces-подобном движке
+  ветки ROUTER не сходятся обратно, и старая схема (event-wizard, ADR-0015)
+  как раз пострадала от вынужденного дублирования логики в каждой ветке.
+  `tables-upsert-records` не был проверен прогоном ни разу в проекте
+  (CLAUDE.md) — проверен здесь первым: `ap_run_action` insert-then-upsert
+  на реальной таблице `users`, тот же `record id`, значение обновилось,
+  дублей нет.
+  **Найден новый факт платформы:** пустая строка не очищает поле не только
+  в `DATE` (это уже было известно), но и в `TEXT` — ни через
+  `tables-update-record`, ни через `tables-upsert-records`. Обнаружено при
+  попытке «очистить» `sessions.step`/`scenario` пустой строкой — значение
+  осталось прежним (`reg-phone` тест `LoA4qyda2eGgpggfqEQY6`, `reg-consent-pdn`
+  тест `KIk1U3IT3aABUtxnqEAZD`). Исправлено сентинелом `-` вместо `''` в
+  обоих флоу, перепроверено (`YvBjDU7UCTrzy1Lbx0sG4`) — сентинел пишется.
+  **`tg-router` обязан трактовать `sessions.step/scenario == '-'` как «нет
+  активной сессии»**, не только пустую строку.
+  Проверено позитивными и различающими прогонами с реальной доставкой в
+  Telegram: `reg-start` — `existing` (`2GiJ9WfTUn3g8IJxyNttP`), `new`
+  (`1S2UkmRi6WpVm3PMAHwSn`, время карточки в Asia/Tashkent подтверждено:
+  14:00Z→19:00), `no_seats` (`b7CWXN9Qu0Y5YtQUwxEY0`, фикстура 3
+  `registered`-строк при `capacity=2, overbook_pct=40` → `limit=3`);
+  `reg-consent-pdn` — `yes`/создание (`eS0G9dT7ykc536BZcgH4Q`), **реактивация
+  отменённой регистрации** (`B60AVUrHY20A7DIh3I1E0`, IDM-1: тот же `record id`,
+  не задвоилась), `no` (`YvBjDU7UCTrzy1Lbx0sG4`); `reg-consent-mkt` —
+  `yes`/`no` (`ZMnZb8bCMLU1SupVyAmsX`/`dyy8m15q5T85G8aJgWT5l`, `consent_pdn`
+  не тронут ни разу — PAR-1/PAR-2 независимы); `reg-phone` — контакт/пропуск
+  (`qKa1ABREtWMixGIQMuBbd`/`LoA4qyda2eGgpggfqEQY6`). Все фикстуры, кроме
+  ивента `demo` и связанной регистрации (оставлены для теста `tg-router`),
+  удалены после проверки.
 
 ## Ревью
 
