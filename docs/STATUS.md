@@ -47,7 +47,7 @@
 | W12b. `dedup-sweep` (сужен: уборка дублей строк; ключи `upd:*` закрыты TTL в W20) | 5 | W1, W5 | не начат | — | — |
 | W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **готов** 2026-09-13 (решением владельца, не «замечаний нет» — [почему](work/W17-inline-callflow.md#закрытие-2026-09-13--решением-владельца-проекта)) | агент W17 | [W17](work/W17-inline-callflow.md) |
-| W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | не начат | — | — |
+| W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | **готов** 2026-09-13 | агент W18 | [W18](work/W18-fail-open-mitigation.md) |
 | W19. Ревизия после обновления образа Qadam Flow ([Q26](OPEN-QUESTIONS.md#q26)) | 5 | W8 | **готов** 2026-09-13 (решением владельца — [почему](work/W19-platform-primitives-revision.md#закрытие-2026-09-13--решением-владельца-проекта)) | агент W19 | [W19](work/W19-platform-primitives-revision.md) |
 | W20. Пересмотр ADR-0003 на атомарных примитивах ([Q27](OPEN-QUESTIONS.md#q27), [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md)) | 5 | W19, W4, W5, W8 | **готов** 2026-09-13 | агент W20 | [W20](work/W20-idempotency-on-atomic-primitives.md) |
 | W21. Перевод флоу на end-to-end ([ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)) | 5 | W20, W17, W16 | **готов** 2026-09-13 | агент W21 | [W21](work/W21-end-to-end-flows.md) |
@@ -60,9 +60,11 @@
 
 ## Состояние инстанса
 
-**На 2026-09-13 в проекте 5 флоу** (`tg-router`, `registration`, `checkin-api`,
+**На 2026-09-13 у проекта 5 флоу** (`tg-router`, `registration`, `checkin-api`,
 `my-qr-api`, `i18n-sync`): W22 удалил девять subflow-«функций» `fn-*`, которые
-после W21 не вызывал никто. Канон переиспользуемой логики — только
+после W21 не вызывал никто. **Это флоу проекта, а не всё содержимое
+`events-dev`:** `ap_list_flows` отдаёт шесть — шестой, `bench-421-loop-code-final`,
+заведён не этим репозиторием ([Q34](OPEN-QUESTIONS.md#q34), найдено ревью W18). Канон переиспользуемой логики — только
 [catalog/snippets/](../catalog/snippets/). Живое состояние —
 [catalog/overview.md](../catalog/overview.md). Абзац ниже описывает состояние
 **на 2026-09-09** и сохранён как история.
@@ -210,6 +212,20 @@ HMAC в Python, собственные повторные прогоны — д�
 [catalog/flows/fn-sign-qr.md](../catalog/flows/fn-sign-qr.md),
 [catalog/flows/fn-verify-qr.md](../catalog/flows/fn-verify-qr.md).
 
+W18 не добавил и не удалил ни одного флоу: изменён **один** CODE-шаг
+`checkin-api/step_6` — решение о правах контролёра принимается теперь по полям
+записи `event_staff`, а не по непустоте выдачи чтения. Доказательство —
+дифференцирующий прогон, в котором шагу намеренно скормлена вся таблица
+(сценарий [#382](https://github.com/aiqadam/qadam-flow/issues/382)): не-контролёр
+получил `403`, настоящий контролёр — `200`; на старом коде права получили бы оба.
+Второй половиной пакета закрыт аудит короткой формы `{{VAR}}`: **ни одного
+вхождения** в пяти флоу проекта, ключи не ротировались. Попутно выяснено, что
+`ap_validate_flow` ловит короткую форму и в PIECE-шагах тоже, поэтому
+предполагавшийся BACKLOG'ом read-only REST для этого аудита не нужен —
+[catalog/variables.md](../catalog/variables.md#аудит-короткой-формы-var-w18-2026-09-13).
+Этим закрыт [Q25](OPEN-QUESTIONS.md#q25), последний блокер приёмки W15 из
+списка fail-open дефектов.
+
 ## Что сделано помимо пакетов
 
 - **Документы.** ТЗ ([SPEC.md](SPEC.md)) с нумерованными требованиями, архитектура,
@@ -237,11 +253,13 @@ HMAC в Python, собственные повторные прогоны — д�
   [Q22](OPEN-QUESTIONS.md#q22) (куда уходят секунды между шагами прогона; почему
   PRODUCTION медленнее TESTING — блокер ускорения, [ADR-0009](adr/0009-hot-path-latency-budget-and-order.md)),
   [Q23](OPEN-QUESTIONS.md#q23) (есть ли параллельное исполнение веток — [ADR-0009](adr/0009-hot-path-latency-budget-and-order.md)),
-  [Q25](OPEN-QUESTIONS.md#q25) (два fail-open дефекта платформы — блокер приёмки W15,
-  пакет [W18](BACKLOG.md#w18-страховка-от-fail-open-дефектов-платформы-382-392)),
   [Q26](OPEN-QUESTIONS.md#q26) (обновление образа `sha-95079f6`→`sha-6445a8e`:
   что из девяти апстрим-коммитов применимо к проекту — пакет
   [W19](BACKLOG.md#w19-ревизия-после-обновления-образа-qadam-flow)).
+  [Q25](OPEN-QUESTIONS.md#q25) (два fail-open дефекта платформы — был блокером
+  приёмки W15) закрыт 2026-09-13 выполнением W18: постфильтр прав в
+  `checkin-api/step_6` доказан дифференцирующим прогоном, аудит короткой формы
+  `{{VAR}}` по пяти флоу проекта не нашёл ни одного вхождения.
   [Q20](OPEN-QUESTIONS.md#q20) (`callFlow` с данными не настраивался через MCP —
   блокер W5, W10, W11) закрыт 2026-09-09: дело было не в платформе, а в форме
   `input.flow` при резолве `ap_get_piece_props` (нужен объект с `exampleData`, не
