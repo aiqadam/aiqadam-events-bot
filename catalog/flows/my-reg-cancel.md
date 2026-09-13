@@ -16,7 +16,7 @@
 | step_1 | CODE «parse callback» | `confirm` / `do_yes` / `keep` + `eventId`; `eventId` валидируется алфавитом slug'а | `{{trigger['output'].data.callbackData}}` |
 | step_2 | `answer_callback_query` (`continueOnFailure`) | ack | `{{trigger['output'].data.callbackQueryId}}` |
 | step_3 | ROUTER по `action` | `confirm` / `do_yes` / `keep` / `Otherwise`-заглушка | `{{step_1['output'].action}}` |
-| step_4→6 (`confirm`) | `tables-find-records events` (по `id`, `limit 1`) → CODE `cancel.confirm` + кнопки → `send_text_message` | вопрос с кнопками «Да, отменить» / «Оставить» | `{{step_1['output'].eventId}}` |
+| step_4→6 (`confirm`) | `tables-find-records events` (по `id`, `limit 1`) → CODE `cancel.confirm` + кнопки → `send_text_message` | вопрос с кнопками «Да, отменить» / «Оставить»; неизвестный ивент — `cancel.not_found` без кнопок (не чужой ивент) | `{{step_1['output'].eventId}}` |
 | step_7→9 (`do_yes`) | `tables-find-records events` → `tables-find-records registrations` (`event_id` + `telegram_id`) → CODE «decide cancel» | `ok` / `too_late` (`now >= starts_at`) / `not_found` (нет ивента или нет активной `registered`-строки) | |
 | step_10 | ROUTER по `outcome` | `ok` / `too_late` / `not_found` / `Otherwise`-заглушка | `{{step_9['output'].outcome}}` |
 | step_11→12 (`ok`) | `tables-upsert-records registrations` (`status = cancelled`, `cancelled_at = now`, ключ `event_id + telegram_id`) → `send_text_message` `cancel.done` | отмена той же строкой (`updated`, не `inserted` — дублей нет) | |
