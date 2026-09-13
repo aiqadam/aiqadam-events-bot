@@ -31,10 +31,7 @@
 | `BOT_TOKEN` | [my-qr-api](flows/my-qr-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
 | `MINIAPP_URL` | [reg-start](flows/reg-start.md) | кнопка QR в ветке `existing` |
 | `MINIAPP_URL` | [reg-phone](flows/reg-phone.md) | кнопка `web_app` на `ticket.html` (ADR-0007) |
-
-`BOT_USERNAME` в текущем составе флоу не читается ни одним (deep link для
-приглашений — не построена ни одна возможность его сгенерировать; переменная
-задана и ждёт первого потребителя).
+| `BOT_USERNAME` | [event-wizard-publish](flows/event-wizard-publish.md) | сборка `registrationUrl` (OWN-6), владельцу при создании ивента |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —
 секрет читает и передаёт вызывающий флоу (`{{variables['NAME']}}`), функция

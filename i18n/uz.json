@@ -142,6 +142,8 @@
   "wizard.err.datetime": "Sanani tushunmadim. 2026-09-20 19:00 formati kerak, vaqt Toshkent boʻyicha.",
   "wizard.err.ends_before_starts": "Tugash vaqti boshlanishdan oldin. Sanani tekshiring.",
   "wizard.err.deadline_after_starts": "Roʻyxatga olish muddati tadbir boshlanishidan keyin.",
+  "wizard.err.starts_at_past": "Boshlanish sanasi allaqachon oʻtib ketgan. Kelajakdagi sana va vaqtni kiriting.",
+  "wizard.err.deadline_past": "Roʻyxatga olish muddati allaqachon oʻtib ketgan. Kelajakdagi sana va vaqtni kiriting.",
   "wizard.err.geo_expected": "Aynan joylashuv kerak — Telegramdagi «Joylashuv» ilovasi.",
   "wizard.err.capacity": "Sigʻim — butun son yoki cheklovsiz uchun «-».",
   "wizard.err.overbook_pct": "Foiz — 0 dan 100 gacha butun son.",

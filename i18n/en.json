@@ -142,6 +142,8 @@
   "wizard.err.datetime": "Could not read the date. Use the format 2026-09-20 19:00, Tashkent time.",
   "wizard.err.ends_before_starts": "The end is before the start. Please check the date.",
   "wizard.err.deadline_after_starts": "The registration deadline is later than the event start.",
+  "wizard.err.starts_at_past": "The start date has already passed. Enter a future date and time.",
+  "wizard.err.deadline_past": "The registration deadline has already passed. Enter a future date and time.",
   "wizard.err.geo_expected": "A location is required — the “Location” attachment in Telegram.",
   "wizard.err.capacity": "Capacity is a whole number, or “-” for no limit.",
   "wizard.err.overbook_pct": "The percentage is a whole number from 0 to 100.",
