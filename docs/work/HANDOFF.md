@@ -73,6 +73,12 @@
 
 ## W30 — бренд Mini App и `docs/VOICE.md`
 
+> **Пакет взят и передан на проверку 2026-09-13**
+> ([журнал](W30-brand-and-voice.md)). Задание ниже оставлено как есть —
+> оно описывает, что просили; что из этого вышло, смотрите в журнале
+> и в [Q40](../OPEN-QUESTIONS.md#q40). Свободен только пункт «ревьюер».
+
+
 > Возьми пакет **W30** из `docs/BACKLOG.md`. Читай
 > `docs/adr/0019-design-system-from-brand-repo.md` и источник —
 > <https://brand.aiqadam.org/> (репозиторий `aiqadam/brand.aiqadam.org`).

@@ -4,32 +4,54 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Qadam Events</title>
+  <link rel="preconnect" href="https://app.flow.aiqadam.org" crossorigin>
+  <link rel="stylesheet" href="vendor/aiqadam-brand-subset.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="vendor/qrcode.min.js"></script>
   <script src="i18n.js"></script>
   <style>
-    :root { color-scheme: light dark; }
-    body {
-      margin: 0;
-      font: 16px/1.5 system-ui, sans-serif;
-      background: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #111111);
+    /* Только раскладка. Цвет, шрифт и радиусы — токенами бренда (ADR-0019 п. 2),
+       длины — по 4-пиксельной шкале бренда, своих значений тут нет. */
+    main { max-width: 384px; margin: 0 auto; padding: 16px; text-align: center; }
+    .ticket-card { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    /* Плита QR принудительно в светлой теме бренда: чёрный код на светлой
+       подложке читается сканером и при системной тёмной. Тёмный QR не сканируется.
+
+       Два значения тут неслучайны, и оба про сканируемость, а не про вид:
+
+       • `#ffffff` — ЕДИНСТВЕННЫЙ литерал цвета во всём `miniapp/`, и он
+         фолбэк, а не решение: если `vendor/aiqadam-brand-subset.css` не
+         доехал, `--card` не определён, плита становится прозрачной, зона
+         покоя вокруг кода пропадает — и QR перестаёт декодироваться
+         (проверено декодером, не на глаз). Билет в дверях обязан работать
+         и без оформления. Цвет страницы по-прежнему брендовый: фолбэк
+         срабатывает только там, где брендового цвета уже нет.
+       • `padding: 32px` — зона покоя. QR-код требует вокруг себя ≥ 4 модулей
+         светлого поля; при 224 px и ~30 модулях это ≈ 28 px. 16 px давали
+         две трети нормы. */
+    .qr-plate {
+      padding: 32px;
+      border-radius: var(--radius-lg);
+      background: var(--card, #ffffff);
+      border: 1px solid var(--border);
+      min-height: 224px;
+      min-width: 224px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    main { max-width: 24rem; margin: 0 auto; padding: 1.25rem; text-align: center; }
-    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.5rem; }
-    #qr { display: flex; justify-content: center; margin: 1.5rem 0; min-height: 200px; }
-    #status {
-      color: var(--tg-theme-hint-color, #666666);
-      min-height: 1.5em;
-    }
-    #status.error { color: #b00020; }
+    .qr-plate img, .qr-plate canvas { display: block; }
+    .msg { margin: 16px 0 0; }
+    .msg.error { color: var(--destructive); }
   </style>
 </head>
 <body>
   <main>
-    <h1 id="title"></h1>
-    <div id="qr"></div>
-    <p id="status"></p>
+    <div class="card ticket-card">
+      <h1 class="empty-heading" id="title"></h1>
+      <div class="qr-plate" data-theme="light" id="qr"></div>
+      <p class="empty-desc msg" id="status" role="status"></p>
+    </div>
   </main>
   <script>
     (function () {
@@ -47,61 +69,81 @@
         return dict[key] || key;
       }
 
+      // Тема — из Telegram, механизмом самого бренда ([data-theme]).
+      // Без JS остаётся светлая тема из `:root`, страница читается.
+      function applyTheme() {
+        var scheme = tg && tg.colorScheme === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', scheme);
+      }
+
       function showError(text) {
         statusEl.textContent = text;
-        statusEl.className = 'error';
+        statusEl.className = 'empty-desc msg error';
       }
 
       function showStatus(key) {
         statusEl.textContent = t(key);
-        statusEl.className = '';
+        statusEl.className = 'empty-desc msg';
+      }
+
+      function renderQr(payload) {
+        new QRCode(qrEl, { text: payload, width: 224, height: 224 });
+      }
+
+      if (tg) {
+        applyTheme();
+        tg.ready();
+        tg.expand();
+        if (tg.onEvent) { tg.onEvent('themeChanged', applyTheme); }
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      var eventId = params.get('event_id') || '';
+      var initData = tg && tg.initData ? tg.initData : '';
+
+      // QR запрашивается сразу, не дожидаясь словаря: на плохой связи это
+      // единственное, ради чего страницу открыли. Словарь приезжает параллельно
+      // и только подставляет подписи — сырой ключ на экране заметен, пустой нет.
+      var qrRequest = null;
+      if (tg && initData && eventId) {
+        qrRequest = fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: initData, eventId: eventId }),
+        }).then(function (r) { return r.json(); });
       }
 
       MiniAppI18n.load(function (err, d) {
         dict = d;
         document.title = t('ticket.title');
         titleEl.textContent = t('ticket.title');
-        if (err) { showError(t('ticket.error.unknown')); return; }
-
-        if (tg) {
-          tg.ready();
-          tg.expand();
-        }
-
-        var params = new URLSearchParams(window.location.search);
-        var eventId = params.get('event_id') || '';
-        var initData = tg && tg.initData ? tg.initData : '';
 
         if (!tg || !initData) {
           showError(t('ticket.not_in_telegram'));
-        } else if (!eventId) {
-          showError(t('ticket.no_event'));
-        } else {
-          showStatus('ticket.loading');
-          fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: initData, eventId: eventId }),
-          })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-              if (data && data.ok && data.payload) {
-                new QRCode(qrEl, {
-                  text: data.payload,
-                  width: 220,
-                  height: 220,
-                });
-                showStatus('ticket.show_at_entrance');
-              } else if (data && (data.error === 'not_registered' || data.error === 'invalid_init_data')) {
-                showError(typeof data.text === 'string' && data.text ? data.text : t('ticket.error.unknown'));
-              } else {
-                showError(t('ticket.error.unknown'));
-              }
-            })
-            .catch(function () {
-              showError(t('ticket.error.network'));
-            });
+          return;
         }
+        if (!eventId) {
+          showError(t('ticket.no_event'));
+          return;
+        }
+        // Словарь мог не доехать (err) — подписи будут сырыми ключами,
+        // но QR всё равно запрошен и всё равно будет показан.
+        showStatus('ticket.loading');
+
+        qrRequest
+          .then(function (data) {
+            if (data && data.ok && data.payload) {
+              renderQr(data.payload);
+              showStatus('ticket.show_at_entrance');
+            } else if (data && (data.error === 'not_registered' || data.error === 'invalid_init_data')) {
+              showError(typeof data.text === 'string' && data.text ? data.text : t('ticket.error.unknown'));
+            } else {
+              showError(t('ticket.error.unknown'));
+            }
+          })
+          .catch(function () {
+            showError(t('ticket.error.network'));
+          });
       });
     })();
   </script>

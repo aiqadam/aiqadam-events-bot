@@ -4,54 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Qadam Events</title>
+  <link rel="preconnect" href="https://app.flow.aiqadam.org" crossorigin>
+  <link rel="stylesheet" href="vendor/aiqadam-brand-subset.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="i18n.js"></script>
   <style>
-    :root { color-scheme: light dark; }
-    body {
-      margin: 0;
-      font: 16px/1.5 system-ui, sans-serif;
-      background: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #111111);
+    /* Только раскладка. Цвет и шрифт — токенами бренда (ADR-0019 п. 2),
+       длины — по 4-пиксельной шкале бренда, своих значений тут нет. */
+    [hidden] { display: none !important; }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
     }
-    main { max-width: 30rem; margin: 0 auto; padding: 1.25rem; text-align: center; }
-    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 1.5rem; }
-    #result { display: none; border-radius: 14px; padding: 1.5rem 1rem; margin: 0 0 1.5rem; }
-    #result.show { display: block; }
-    #result .text { font-size: 1.35rem; font-weight: 600; }
-    #result .sub { margin-top: 0.5rem; font-size: 0.95rem; }
-    #result.ok { background: #d7f2da; color: #0a4d15; }
-    #result.already { background: #fff0c2; color: #5c4a00; }
-    #result.wrong_event, #result.not_registered,
-    #result.invalid, #result.forbidden, #result.invalid_init_data {
-      background: #f9dcd8; color: #7a1206;
-    }
-    #status {
-      margin: 0 0 1rem;
-      color: var(--tg-theme-hint-color, #777777);
-      min-height: 1.5em;
-    }
-    button {
-      font: inherit;
-      padding: 0.7rem 1.4rem;
-      border: 0;
-      border-radius: 10px;
-      background: var(--tg-theme-button-color, #2aabee);
-      color: var(--tg-theme-button-text-color, #ffffff);
-      display: none;
-    }
-    button.show { display: inline-block; }
+    main > * { width: 100%; }
+    main > .btn { width: auto; }
+    /* Исход чекина — семантическими токенами бренда, а не своей палитрой:
+       успех / предупреждение / отказ у бренда уже названы.
+       Вердикт — это `.card`, а не `EmptyState`: пунктирная рамка «здесь пусто»
+       у бренда значит отсутствие данных, а тут данные как раз есть. */
+    .result.ok .empty-heading { color: var(--success); }
+    .result.warn .empty-heading { color: var(--warning); }
+    .result.bad .empty-heading { color: var(--destructive); }
+    .result > :last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
   <main>
-    <h1 id="title"></h1>
-    <div id="result" role="status">
-      <div class="text" id="resultText"></div>
-      <div class="sub" id="resultSub"></div>
+    <h1 class="empty-heading" id="title"></h1>
+    <div class="card result" id="result" role="status" hidden>
+      <p class="empty-heading" id="resultText"></p>
+      <p class="empty-desc" id="resultSub"></p>
     </div>
-    <p id="status"></p>
-    <button id="rescan"></button>
+    <p class="empty-desc" id="status"></p>
+    <button class="btn btn-primary btn-lg" id="rescan" hidden></button>
   </main>
   <script>
     (function () {
@@ -59,6 +50,17 @@
       // Q14: events-dev, адрес фиксирован, см. docs/OPEN-QUESTIONS.md#q14.
       var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/rKoDYtiIVdbzlW59b57uH/sync';
       var RESULT_MS = 1600;
+
+      // Исход чекина → тон бренда. Ключи — статусы checkin-api.
+      var TONE = {
+        ok: 'ok',
+        already: 'warn',
+        wrong_event: 'bad',
+        not_registered: 'bad',
+        invalid: 'bad',
+        forbidden: 'bad',
+        invalid_init_data: 'bad'
+      };
 
       var tg = window.Telegram && window.Telegram.WebApp;
       var dict = {};
@@ -79,6 +81,15 @@
         return dict[key] || key;
       }
 
+      // Тема — из Telegram, механизмом самого бренда ([data-theme]).
+      // Ставится до словаря и до любых проверок: отказ тоже должен быть
+      // в правильной теме. Без JS остаётся светлая тема из `:root`.
+      function applyTheme() {
+        var scheme = tg && tg.colorScheme === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', scheme);
+      }
+      applyTheme();
+
       function closePopup() {
         if (tg && tg.closeScanQrPopup) {
           try { tg.closeScanQrPopup(); } catch (e) {}
@@ -87,10 +98,15 @@
 
       function setStatus(key) { statusEl.textContent = t(key); }
 
-      function hideResult() { resultEl.className = ''; resultSubEl.textContent = ''; }
+      function hideResult() {
+        resultEl.hidden = true;
+        resultEl.className = 'card result';
+        resultSubEl.textContent = '';
+      }
 
-      function showResult(cssClass, text, subKey) {
-        resultEl.className = 'show ' + cssClass;
+      function showResult(status, text, subKey) {
+        resultEl.className = 'card result ' + (TONE[status] || 'bad');
+        resultEl.hidden = false;
         resultTextEl.textContent = text;
         resultSubEl.textContent = subKey ? t(subKey) : '';
       }
@@ -98,13 +114,15 @@
       function offerRescan() {
         stopped = false;
         rescanBtn.textContent = t('scan.rescan');
-        rescanBtn.className = 'show';
+        rescanBtn.hidden = false;
       }
 
-      function stopAll(cssClass, text, subKey) {
+      function stopAll(status, text, subKey) {
         stopped = true;
         hideResult();
-        showResult(cssClass, text, subKey);
+        showResult(status, text, subKey);
+        // Сканер остановлен — «Проверка…» под вердиктом врёт о том, что происходит.
+        statusEl.textContent = '';
         closePopup();
       }
 
@@ -187,12 +205,13 @@
         tg.ready();
         tg.expand();
         if (tg.onEvent) {
+          tg.onEvent('themeChanged', applyTheme);
           tg.onEvent('scanQrPopupClosed', function () {
             if (!stopped && !inFlight) { setStatus('scan.hint'); offerRescan(); }
           });
         }
         rescanBtn.addEventListener('click', function () {
-          rescanBtn.className = '';
+          rescanBtn.hidden = true;
           openScanner();
         });
         openScanner();
