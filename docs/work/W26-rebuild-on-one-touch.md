@@ -67,6 +67,11 @@ ADR-0015 — и привести каталог в соответствие с �
 | Таблица `broadcast_targets` | `PAH81WchbaOixGXSdFBK1` | [tables/broadcast_targets.md](../../catalog/tables/broadcast_targets.md) |
 | Таблица `sessions` | `toTKgngMTqDNJWDpQMh4d` | [tables/sessions.md](../../catalog/tables/sessions.md) |
 | Таблица `strings` | `9swx5NlpR0mbK6jXjIG15` | [tables/strings.md](../../catalog/tables/strings.md) (пуста, `i18n-sync` вне области W26) |
+| Флоу `fn-hmac-init-data` | `3iQO67hpGHq1HNGt1T84X` | [flows/fn-hmac-init-data.md](../../catalog/flows/fn-hmac-init-data.md) |
+| Флоу `fn-sign-qr` | `9XXJu9hlSJC8nIfoYjMcV` | [flows/fn-sign-qr.md](../../catalog/flows/fn-sign-qr.md) |
+| Флоу `fn-verify-qr` | `wZbneQfvOoO91zEQTrQGf` | [flows/fn-verify-qr.md](../../catalog/flows/fn-verify-qr.md) |
+| Флоу `fn-parse-start` | `9iKpekYS4tRUOsmYZaXZg` | [flows/fn-parse-start.md](../../catalog/flows/fn-parse-start.md) |
+| Флоу `fn-find-registration` | `O5TtpU4antbkUgeKXVwq5` | [flows/fn-find-registration.md](../../catalog/flows/fn-find-registration.md) |
 
 ## Чек-лист готовности
 
@@ -130,6 +135,22 @@ ADR-0015 — и привести каталог в соответствие с �
   [ADR-0015](../adr/0015-one-touch-one-flow.md#обновление-2026-09-13-w26-перемер-callflow-закрыл-q35)
   с id прогонов. Стенд удалён (`ap_delete_flow` × 3) — не часть продукта.
   Q35 закрыт, шаг 4 (`fn-*`) разблокирован.
+- **2026-09-13** — шаг 4: собраны и опубликованы пять `fn-*` из BACKLOG,
+  код — байт-в-байт эталоны `catalog/snippets/`. `fn-verify-qr` пересчитывает
+  подпись инлайн, не зовёт `fn-sign-qr` (ADR-0015 п. 5, один уровень
+  вложенности). Каждая функция проверена `ap_test_flow` позитивным и
+  негативным прогонами: `fn-hmac-init-data` — валидный `initData` даёт
+  `valid:true` с HMAC, независимо пересчитанным в Python
+  (`cCByeAhYo0ecOZrGnnukd`), испорченный `hash` → `valid:false,
+  reason:"bad_hash"`, `telegramId`/`user` пусты (`8pMXgyUBrZzMTbdKzx3cF`);
+  `fn-sign-qr` — сигнатура для `(demo, 322876545)` сошлась с независимым
+  пересчётом в Python (`AJrMTb88Rl6RW83ndnS0m`); `fn-verify-qr` — три прогона
+  (валид/испорченная подпись/подмена `userId` при валидном `sig`, все три
+  исхода верны); `fn-parse-start` — `e`/`c`-payload и мусорный вход, включая
+  сквозную проверку: `sig` от `fn-sign-qr` прошёл через `fn-parse-start` и был
+  принят `fn-verify-qr`; `fn-find-registration` — тестовая строка найдена
+  и корректно не находится по чужому `event_id` (тестовая строка удалена
+  после прогонов). Карточки в `catalog/flows/fn-*.md` заведены с id прогонов.
 
 ## Ревью
 
