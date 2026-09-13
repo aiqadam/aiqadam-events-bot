@@ -30,9 +30,9 @@
 | `title` | 2–200 символов | `description` |
 | `description` | без валидации, `"-"` → `''` (пропуск) | `photo` (передаёт эстафету `event-wizard-photo`) |
 | `address` | 2–300 символов | `geo` (эстафета `event-wizard-geo`) |
-| `starts_at` | формат `ДД.ММ.ГГГГ ЧЧ:ММ`, Asia/Tashkent → UTC | `ends_at` |
+| `starts_at` | формат `ДД.ММ.ГГГГ ЧЧ:ММ`, Asia/Tashkent → UTC, **должно быть в будущем** | `ends_at` |
 | `ends_at` | то же + должно быть позже `starts_at` | `reg_deadline_at` |
-| `reg_deadline_at` | то же + не позже `starts_at` | `preview` (исход `Otherwise`/preview) |
+| `reg_deadline_at` | то же + не позже `starts_at` + **должно быть в будущем** | `preview` (исход `Otherwise`/preview) |
 
 ## Зависимости
 
@@ -61,3 +61,9 @@
 - **`preview` не отдельный флоу** — сборка превью естественно продолжает
   обработку последнего поля (`reg_deadline_at`) тем же CODE-шагом; отдельный
   флоу добавил бы касание там, где реального нового вопроса пользователю нет.
+- **`starts_at`/`reg_deadline_at` в прошлом отклоняются** (`wizard.err.starts_at_past`/
+  `wizard.err.deadline_past`), а не создают неработающий ивент: без этой
+  проверки визард молча пропускал прошедшую дату дальше, и созданный ивент
+  либо сразу отдавал участнику `reg.deadline_passed`, либо (для `starts_at`)
+  никогда не появлялся в разделе «будущие» списка (PAR-3). `ends_at` такой
+  проверки не требует — уже покрыт условием «позже `starts_at`».

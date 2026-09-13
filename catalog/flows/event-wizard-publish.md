@@ -20,7 +20,7 @@
 | step_4 (cancel) | `send_text_message` | «Отменено.» | |
 | step_6 | `tables-upsert-records sessions` | сброс: `scenario='-', step='-', draft='-'` | |
 | step_5 (Otherwise/noop) | CODE «ничего не делаем» | защита от повторного/чужого callback | |
-| step_7 (publish) | CODE «prepare write + diff» | новый `id` (create) или переиспользование `draft.id` (edit); diff `draft._orig[f]` vs `draft[f]` по `notifyFields`; строит `changeSummaryText`/`ownerConfirmText` | |
+| step_7 (publish) | CODE «prepare write + diff» | новый `id` (create) или переиспользование `draft.id` (edit); diff `draft._orig[f]` vs `draft[f]` по `notifyFields`; строит `changeSummaryText`/`ownerConfirmText`/`registrationUrl` (OWN-6) | `botUsername: {{variables['BOT_USERNAME']}}` |
 | step_8 | `tables-upsert-records events` | запись по ключу `id` | |
 | step_9 | `tables-find-records registrations` | `event_id=id`, проекция `telegram_id,status` | |
 | step_10 | CODE «compute notify targets» | дедуп `telegram_id` где `status='registered'`; `[]` если `!hasChanges` | |
@@ -34,11 +34,24 @@
 - **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`), `registrations` (`SM8tMxfQuQCHRDdAiNJyQ`,
   чтение), `sessions` (`toTKgngMTqDNJWDpQMh4d`)
 - **Флоу**: вызывается из `tg-router`; сам никого не вызывает
-- **Переменные**: —
+- **Переменные**: `BOT_USERNAME` (сборка `registrationUrl`)
 - **Connections**: `AI Qadam Events (dev)`
 
 ## Заметки
 
+- **`id` создаваемого ивента — 12 символов `[A-Za-z0-9_]`, без собственного
+  префикса `e`**: `Date.now().toString(36) + random(4)`. Префикс `e` в
+  `?start=e<id>` — маркер вида диплинка у `fn-parse-start` (`SLUG =
+  ^[A-Za-z0-9_]{1,12}$`), не часть значения `id`. Если `id` сам начинается на
+  `e` (как было до фикса, когда генератор добавлял этот префикс дважды —
+  один раз в сам `id`, второй раз при сборке ссылки), диплинк на любой
+  созданный визардом ивент не проходит `SLUG` (13 символов вместо 12) и
+  `fn-parse-start` отдаёт `bad_event_id` на любой ссылке. Это применимо и к
+  QR (`fn-sign-qr`/`fn-verify-qr` используют тот же `eventId`).
+- **`registrationUrl` = `https://t.me/<BOT_USERNAME>?start=e<id>`**, отдаётся
+  владельцу в `ownerConfirmText` (ключ `wizard.published`, `{url}`) только при
+  создании (`!isEdit`) — у уже опубликованного ивента ссылка не меняется
+  при правке, повторно её не шлём.
 - **Тексты — через `inputs.texts`**, не литералом в коде (ADR-0014); значения сверены с `i18n/ru.json`, механизм — [`ru-texts.md`](../snippets/ru-texts.md).
 - **`notifyFields = [title, address, starts_at, ends_at, reg_deadline_at, lat, lon]`** —
   ровно перечень [notify-on-change](../../docs/DATA-MODEL.md#notify-on-change);
