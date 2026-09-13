@@ -22,8 +22,16 @@
 | step_1 | `callFlow fn-hmac-init-data` | проверка `initData` участника | `payload: {initData, botToken: {{variables['BOT_TOKEN']}}, maxAgeSeconds}` |
 | step_2 | `callFlow fn-find-registration` | своя регистрация на `eventId` | `payload: {eventId, telegramId: step_1.data.telegramId}` |
 | step_3 | `callFlow fn-sign-qr` (`continueOnFailure`) | подпись `(eventId, userId)` | `payload: {eventId, userId: step_1.data.telegramId, qrSigningKey: {{variables['QR_SIGNING_KEY']}}}` |
-| step_4 | CODE «decide result» | `unauthorized` / `not_registered` / `ok` | |
-| step_5 | `return_response` | JSON: `{status, eventId, userId, payload}` | |
+| step_4 | CODE «decide result» | `invalid_init_data` / `not_registered` / `ok` | |
+| step_5 | `return_response` | JSON: `{ok, error, text, payload, eventId, userId}` — форма, которую ждёт `ticket.html` | |
+
+### Контракт ответа (согласован с `miniapp/ticket.html`)
+
+| Ситуация | Тело |
+|---|---|
+| успех | `{ok: true, payload: "c<eventId>-<userId>-<sig>"}` |
+| `initData` невалиден/просрочен | `{ok: false, error: "invalid_init_data", text}`, HTTP 401 |
+| нет активной регистрации | `{ok: false, error: "not_registered", text}` |
 
 ## Зависимости
 
@@ -42,7 +50,18 @@
   без `continueOnFailure` весь флоу падал вместо ответа `401`.
 - **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** — как и везде
   после открытия W26 (см. `tg-router.md`).
-- Полный `ok`-сценарий требует настоящей `initData` от живого клиента —
-  тот же ограничитель, что в `checkin-api.md`. Проверено агентом: `401` на
-  мусорном `initData` (`fn-sign-qr` корректно поймана `continueOnFailure`,
-  ответ `{"status":"unauthorized"}`).
+- **Контракт ответа `{ok,error,text,payload}` — не мой выбор, а то, что уже
+  ждёт задеплоенный `ticket.html`.** Первая версия флоу отвечала `{status,...}`
+  (как `checkin-api`) — рассинхрон нашёлся только на живом тесте владельца
+  («Нет соединения»): страница проверяет `data.ok`/`data.error`, этих полей
+  не было. Урок: перед сборкой API с готовым клиентом — сверять форму ответа
+  с клиентским кодом **до** сборки, не после.
+- **Найден и исправлен блокер, не в самом флоу**: задеплоенный `ticket.html`
+  указывал на **старый** `flowId` `my-qr-api` (до-очистки, мёртвый) — та же
+  причина, что и у `checkin-api` (Pages деплоится только с `main`, W26 шёл
+  веткой). Исправлено PR [#35](https://github.com/aiqadam/aiqadam-events-bot/pull/35).
+- Проверено агентом: `401`/`invalid_init_data` на мусорном `initData`
+  (`fn-sign-qr` корректно поймана `continueOnFailure`). Полный `ok`-сценарий
+  подтверждён живым прогоном владельца в связке с `checkin-api` (см. его
+  карточку) — участник получил и отрисовал QR, который затем реально
+  отсканировали.

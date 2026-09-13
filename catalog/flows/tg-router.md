@@ -34,7 +34,7 @@
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
 | step_10 | CODE «routing decision» | вычисляет `route` (см. выше) | |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`Otherwise` | | |
-| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`inline`, `waitForResponse: false`) | делегирование обработчику | |
+| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику | |
 | step_16 | CODE «намерение без обработчика» | лог | |
 
 ## Зависимости
@@ -64,10 +64,19 @@
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
-- **`waitForResponse: false` на всех четырёх вызовах касаний** — роутер не
-  ждёт их завершения (они отправляют сообщения через Bot API, ~0,7–0,9 с
-  каждое). `executionMode: inline` — по Q35 хоп стоит ~96 мс, не ~1 с из
-  ADR-0012.
+- **`executionMode: queue` на всех четырёх вызовах касаний, не `inline`.**
+  Открытие 2026-09-13 (по жалобе владельца на медленную реакцию на `/start`):
+  `inline` синхронен независимо от `waitForResponse` — родитель ждёт **всю**
+  длительность вызванного флоу (включая отправку сообщений Bot API,
+  ~0,7–0,9 с каждое), а не только диспетчеризацию. `waitForResponse: false`
+  влияет лишь на то, забирается ли возврат, не на то, ждать ли завершения.
+  Это отменяет предположение W17/W20, что `inline` + `waitForResponse: false`
+  — fire-and-forget; в этом движке fire-and-forget даёт только `queue`.
+  Различающий прогон одного и того же вызова: `inline` — 1442 мс, `queue` —
+  0,1 мс. Собственная длительность `tg-router` упала с 1,7–2,1 с до 0,5–0,6 с.
+  **Правило:** `queue` для «передал и не жду ответа» (как здесь), `inline`
+  только когда родителю нужен ответ (`fn-parse-start` на `step_9` — inline,
+  и это правильно: Q35 даёт ~96 мс/хоп, а результат обязателен для маршрутизации).
 - **Апсерт `users` не пропускает запись при отсутствии изменений** (в отличие
   от исторической W22-оптимизации) — упрощение ради читаемости флоу
   (ADR-0015); латентность не в приоритете (Q35: дорогая статья — отправка
