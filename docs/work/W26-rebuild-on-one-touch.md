@@ -76,6 +76,7 @@ ADR-0015 — и привести каталог в соответствие с �
 | Флоу `reg-consent-pdn` | `vQJDQ8NecB1PleIFrq07O` | [flows/reg-consent-pdn.md](../../catalog/flows/reg-consent-pdn.md) |
 | Флоу `reg-consent-mkt` | `3gLF6TcbpFObHONATQ64N` | [flows/reg-consent-mkt.md](../../catalog/flows/reg-consent-mkt.md) |
 | Флоу `reg-phone` | `Cx7U4wKXLwmBCtb4FR5AW` | [flows/reg-phone.md](../../catalog/flows/reg-phone.md) |
+| Флоу `tg-router` | `nyaBzgKGG8TTTsryjc9tW` | [flows/tg-router.md](../../catalog/flows/tg-router.md) |
 
 ## Чек-лист готовности
 
@@ -192,6 +193,28 @@ ADR-0015 — и привести каталог в соответствие с �
   (`qKa1ABREtWMixGIQMuBbd`/`LoA4qyda2eGgpggfqEQY6`). Все фикстуры, кроме
   ивента `demo` и связанной регистрации (оставлены для теста `tg-router`),
   удалены после проверки.
+- **2026-09-13** — шаг 5 (`tg-router`): собран и опубликован. Классификация
+  апдейта (normalize → IDM-4 dedup через `store put_if_absent` → gate →
+  апсерт `users` → чтение сессии → `fn-parse-start` → решение о маршруте →
+  делегирование одному из четырёх касаний).
+  **Найден критичный, ранее не задокументированный факт платформы:**
+  `callFlow`'s `flowProps` теперь резолвится в единственное поле `payload`
+  (`OBJECT`), а не в плоские именованные поля callee, как было верно и
+  проверено в W2–W22 (`flows/README.md`). Без обёртки `{"payload": {...}}`
+  вызов проходит `ap_validate_flow`, шаг сам не падает — падает **внутри**
+  callee на пустых входах (`chat_id is empty` в `send_text_message` внутри
+  `reg-start`), то есть выглядит как баг обработчика, а не вызова. Найдено
+  различающим прогоном: тот же вызов `reg-start` без обёртки →
+  `outcome:"declined", reason:"not_found"` (eventId пуст) → `chat_id is empty`;
+  с обёрткой → полный успех, сообщения доставлены. Исправлено во всех пяти
+  вызовах `callFlow` в `tg-router` (`fn-parse-start` + 4 касания). Записано
+  в CLAUDE.md (готча 7a) как обязательное для всех будущих `callFlow`
+  (checkin-api/my-qr-api ниже, и будущие W9/W10/W11/W14).
+  Проверено сквозными прогонами с реальной доставкой в Telegram: все четыре
+  маршрута (`reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`, включая то, что
+  `/start` с валидным `e`-payload перебивает активную сессию), IDM-4 (дубль
+  `update_id` → `duplicate`, до `users` не дошёл), гейты `non_private_chat`
+  и `from_bot`.
 
 ## Ревью
 

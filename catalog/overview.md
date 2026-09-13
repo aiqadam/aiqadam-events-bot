@@ -13,20 +13,24 @@
 
 | Что | Сколько | Чем проверено |
 |---|---|---|
-| Флоу | **9** — пять `fn-*` и четыре касания регистрации (`reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`); `tg-router`, `checkin-api`, `my-qr-api` ещё нет | `ap_list_flows`, карточки в [flows/](flows/) |
+| Флоу | **10** — пять `fn-*`, четыре касания регистрации, `tg-router`; `checkin-api`, `my-qr-api` ещё нет | `ap_list_flows`, карточки в [flows/](flows/) |
 | Таблицы | **10** — все из [DATA-MODEL.md](../docs/DATA-MODEL.md), пересозданы W26 | `ap_list_tables`, карточки в [tables/](tables/) обновлены с новыми `externalId` |
 | Connections | **1** — `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`, ACTIVE) | `ap_list_connections` |
 | Variables | все четыре на месте (`QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`) | проверено в UI владельцем 2026-09-13 (агент W26 не имел доступа к браузеру) |
 
-Пять `fn-*` (ADR-0015 п. 5 — крипто и общие чтения) и четыре касания
-регистрации собраны, проверены позитивными/негативными прогонами (с реальной
-доставкой в Telegram владельца) и опубликованы: `fn-hmac-init-data`,
-`fn-sign-qr`, `fn-verify-qr`, `fn-parse-start`, `fn-find-registration`,
-`reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone` — карточки
-в [flows/](flows/). Осталось собрать `tg-router` (маршрутизацию к касаниям)
-и `checkin-api`/`my-qr-api`. Старые карточки этих трёх флоу в [flows/](flows/)
+Пять `fn-*`, четыре касания регистрации и `tg-router` собраны, проверены
+позитивными/негативными прогонами (с реальной доставкой в Telegram владельца)
+и опубликованы — карточки в [flows/](flows/). Осталось собрать
+`checkin-api`/`my-qr-api`. Старые карточки этих двух флоу в [flows/](flows/)
 описывают запрещённую ADR-0015 схему и **пересобирать по ним нельзя**;
 таблицы пересобраны, их карточки обновлены и достоверны.
+
+**Важное открытие W26:** `callFlow`'s `flowProps` теперь резолвится в
+единственное поле `payload` (`OBJECT`), а не в плоские именованные поля —
+без обёртки `{"payload": {...}}` вызов формально успешен, но callee получает
+пустые поля. Подробности — `catalog/flows/tg-router.md` и CLAUDE.md
+(готча 7a). Касается каждого нового `callFlow` в проекте, включая будущие
+W9/W10/W11/W14.
 
 ### Заодно: почему это не только про очистку
 

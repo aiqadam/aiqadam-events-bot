@@ -1,216 +1,86 @@
-> # ⛔ ФЛОУ НЕ СУЩЕСТВУЕТ
->
-> Инстанс `events-dev` очищен владельцем проекта **13.09.2026**: `ap_list_flows`
-> и `ap_list_tables` отдают пустой список. Описанный ниже флоу **удалён вместе
-> со всеми своими прогонами**, а его `flowId` и `externalId` мертвы.
->
-> **По этому файлу нельзя пересобирать.** Он описывает схему «сценарий целиком —
-> один флоу», которую [ADR-0015](../../docs/adr/0015-one-touch-one-flow.md)
-> запретил: единица флоу теперь — одно касание пользователя с системой.
-> Пересборка идёт пакетом [W26](../../docs/work/W26-rebuild-on-one-touch.md)
-> по новой схеме, и он же заменит эту карточку.
->
-> Файл сохранён до закрытия W26 как **история**: из него берут смысл шагов
-> и найденные ловушки, но не структуру и не идентификаторы.
-
 # Flow: tg-router
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-telegram-bot / new_telegram_message` (`update_types: message, callback_query`),
   connection `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 - **Назначение**: единственная точка входа бота — дедуп по `update_id` (IDM-4),
-  апсерт `users` (**запись только при изменениях**, W22), классификация апдейта,
-  делегирование обработчику.
-- **Flow ID (MCP)**: `Y1dNon2V2EhjWM0aYwdQi` · **externalId**: — (не subflow, `callFlow` его не вызывает)
+  апсерт `users`, классификация апдейта, делегирование одному из четырёх
+  касаний регистрации (ADR-0015).
+- **Flow ID (MCP)**: `nyaBzgKGG8TTTsryjc9tW` · **externalId**: — (не subflow)
 
 ## Контракт
 
-Роутер сам ничего не отвечает пользователю ([FLOWS.md](../../docs/FLOWS.md#tg-router--единственный-вход-бота)).
-На выходе (step_13, «классификация апдейта») — плоский объект:
+Роутер сам ничего не отвечает пользователю. Правило маршрутизации (`step_10`):
 
-| Поле | Смысл |
-|------|-------|
-| `kind` | `start_payload` \| `start` \| `command` \| `callback` \| `contact` \| `wizard_step` \| `text` |
-| `command` | имя команды без `/`, `''` если апдейт не команда |
-| `startPayload` | сырой payload после `/start ` (или `/start` без пробела), `''` если нет |
-| `callbackData`, `callbackQueryId` | из `callback_query` |
-| `contactPhone`, `contactIsOwn` | из `message.contact`; `contactIsOwn` — контакт принадлежит отправителю |
-| `tgId`, `chatId`, `messageId`, `updateId`, `text` | нормализованные поля апдейта |
-| `lang` | язык **из `users.lang`** (после апсерта), не из `language_code` напрямую |
-| `userExisted` | была ли строка `users` **до** этого апдейта |
-| `session.*` | активная (не протухшая, `< 24ч`) сессия визарда из `sessions`, если есть |
+1. `/start e<id>-<utm>` (валидный `fn-parse-start`, `kind='e'`) → `reg-start`,
+   **независимо от активной сессии** — новый вход по deep link перекрывает
+   недоведённый диалог.
+2. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
+   `scenario/step` не `-`) со `scenario='registration'`: по `step`
+   (`await_pdn`/`await_marketing`/`await_phone`) → соответствующее касание.
+3. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
 
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов бота (единственный потребитель на токен). **Доставка — long-polling, не вебхук** (проверено 2026-09-12, см. заметку ниже) | `update_types = [message, callback_query]` |
-| step_1 | CODE «normalize update» | достаёт `message`/`callback_query`/`contact`, парсит `/command payload`, язык из `language_code` | `{{trigger['output']}}` |
-| step_2 | `@aiqadam/qadam-store : put_if_absent` | **атомарный захват** `upd:<update_id>` (IDM-4, [ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md)) | `key = {{step_1['output'].dedupKey}}`, `value = {{step_1['output'].now}}`, scope `COLLECTION`, `ttl_seconds = 86400` |
-| step_3 | CODE «gate: свежий апдейт?» | решает `proceed` по `ok`/`seen`/`isBot`/`isPrivate`; `seen` = `stored === false` | `{{step_2['output']}}`, `{{step_1['output']}}` |
-| step_4 | ROUTER «обрабатываем только свежий апдейт» | ветка 0 = `proceed`, fallback = «Otherwise» | `{{step_3['output'].proceed}}` |
-| step_5 (ветка Otherwise) | CODE «апдейт пропущен — почему» | след в логе: `duplicate` / `bad_update` / `from_bot` / `non_private_chat` | `{{step_3['output'].reason}}` |
-| step_6 | `@aiqadam/qadam-tables : tables-find-records` | `users` по `telegram_id` | `table_id = z5PX9B8mTQC9Q6Dfuj5dM`, фильтр `eq`, проекция из 10 колонок |
-| step_8 | CODE «выбрать каноническую строку users + нужна ли запись» | детерминированный выбор при дублях (ADR-0003), решает язык (не перетирает выбор пользователя), перепроверяет `telegram_id` в коде (страховка от fail-open #382), считает `needsUpdate` | `{{step_6['output']}}`, `{{step_1['output']}}` |
-| step_9 | ROUTER «users: обновить или завести» | ветка 0 = `exists` **и** `needsUpdate`; ветка 1 = `exists` (менять нечего); fallback = завести | `{{step_8['output'].exists}}`, `{{step_8['output'].needsUpdate}}` |
-| step_10 (ветка 0) | `@aiqadam/qadam-tables : tables-update-record` | обновляет имя/username/lang, **снимает `blocked_bot`** | `record_id = {{step_8['output'].recordId}}` |
-| step_7 (ветка 1) | CODE «запись в users пропущена» | ничего не делает — ветка существует, чтобы не писать | `{{step_8['output'].recordId}}` |
-| step_11 (fallback) | `@aiqadam/qadam-tables : tables-create-records` | заводит строку `users` | `values.values[0]` |
-| step_12 | `@aiqadam/qadam-tables : tables-find-records` | активная сессия визарда | `table_id = tL4fbi1GisDwA8UJ9zSod`, фильтр `telegram_id eq` |
-| step_13 | CODE «классификация апдейта» | вычисляет `kind` и собирает выходной контракт | `{{step_1['output']}}`, `{{step_8['output']}}`, `{{step_12['output']}}` |
-| step_14 | ROUTER «делегирование обработчику» | ветка 0 = `start_payload`, ветка 1 = продолжение `registration`, fallback = ещё не подключено | `{{step_13['output'].kind}}`, `{{step_13['output'].session.scenario}}` |
-| step_15 (ветка 0) | CODE «разобрать start-payload (эталон, конверт)» | разбор `start`-payload на `kind`/`eventId`/`utm`/… | `start = {{step_13['output'].startPayload}}` · эталон [`parse-start`](../snippets/parse-start.md) |
-| step_17 (ветка 0) | ROUTER «по kind разобранной ссылки» | ветка 0 = `kind = 'e'` → `registration`, fallback = `c`/`s`/пусто (W10/W11, ещё не подключены) | `{{step_15['output'].data.kind}}` |
-| step_18 (ветка 0 → 0) | `callFlow → registration` (`action: start`, **`executionMode: inline`** с 12.09.2026) | делегирование в W5, `waitForResponse: false` | `eventId`/`utm` из `{{step_15['output'].data}}`, `telegramId/chatId/lang` из `{{step_13['output']}}` |
-| step_19 (ветка 0 → fallback) | CODE «start-payload разобран, обработчика для kind ещё нет» | след в логе для `c`/`s`/невалидных payload'ов | `{{step_15['output'].data.kind}}`, `.valid` |
-| step_20 (ветка 1) | `callFlow → registration` (`action: continue`, **`executionMode: inline`** с 12.09.2026) | продолжение визарда — вызывается, когда `session.scenario = 'registration'`, `waitForResponse: false` | `kind`/`callbackData`/`contactPhone`/… + `sessionStep`/`sessionDraft`/`sessionRecordId` из `{{step_13['output'].session}}` |
-| step_16 (fallback) | CODE «намерение без обработчика» | след в логе: апдейт классифицирован, но не обработан (`checkin-deeplink`/`staff-accept` — W10/W11) | `{{step_13['output']}}` |
+| trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов (`message`, `callback_query`) | — |
+| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey` | `{{trigger['output']}}` |
+| step_2 | `@aiqadam/qadam-store : put_if_absent` | атомарный захват `upd:<update_id>` (IDM-4) | `ttl_seconds: 86400`, `store_scope: COLLECTION` |
+| step_3 | CODE «gate» | `proceed`/`reason` (`bad_update`/`duplicate`/`from_bot`/`non_private_chat`) | |
+| step_4 | ROUTER: `proceed` / `Otherwise` (лог) | | |
+| step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` | |
+| step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч | |
+| step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
+| step_10 | CODE «routing decision» | вычисляет `route` (см. выше) | |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`Otherwise` | | |
+| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`inline`, `waitForResponse: false`) | делегирование обработчику | |
+| step_16 | CODE «намерение без обработчика» | лог | |
 
 ## Зависимости
 
-- **Таблицы**: `users` (`z5PX9B8mTQC9Q6Dfuj5dM`), `sessions` (`tL4fbi1GisDwA8UJ9zSod`, только чтение)
-- **Subflow'ы**: только `registration` (`RId6eBcN8T4oo8pkkWB7b`, W5) — это **делегирование обработчику**,
-  а не subflow-функция: по [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)
-  роутер маршрутизирует, а обработчик делает всё у себя. `fn-parse-start` встроен (W21).
+- **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
+- **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone` — делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
+- **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
-- **Store**: ключи `upd:<update_id>`, scope `COLLECTION`, **`ttl_seconds: 86400`**
-  ([ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md)).
-  **TTL проверен конфигурацией, истечение ключа не наблюдалось** — на это нужны
-  сутки; писать «ключи закрыты TTL» как факт с инстанса нельзя (замечание 6
-  ревью W20). TTL снимает нужду в уборке **ключей `upd:*`**, но **не закрывает
-  пакет W12b**: тот сужен до уборки дублей строк в таблицах и остаётся открытым.
-  Прежняя формулировка «фоновая уборка больше не нужна» была опровергнута в
-  BACKLOG и STATUS ещё 2026-09-12, а здесь пережила их на сутки — вторая копия
-  утверждения в другом файле, ровно как предупреждает
-  [work/README.md](../../docs/work/README.md).
 
 ## Заметки
 
-- **W21 (2026-09-12) — `fn-parse-start` встроен, subflow-функций не осталось.**
-  Вызовы `registration` (`step_18`, `step_20`) **сохранены намеренно**: по ADR-0012
-  роутер ловит, куда послать, и посылает — это делегирование обработчику, а не
-  вызов функции. Убирать его значило бы втащить весь визард в роутер.
-- **Замена встала под тем же именем `step_15` и вернула конверт `{status, data}`.**
-  На неё ссылаются ROUTER `step_17` и вызов `step_18` через
-  `{{step_15['output'].data...}}`; ROUTER-условия и входы PIECE-шагов через MCP
-  не читаются, поэтому единственный безопасный путь — не менять ни имя, ни форму.
-  **Цена:** платформа выдаёт свободное имя с наименьшим номером, а в этом флоу
-  после W19 пустовало `step_6`. Пришлось завести временный шаг-держатель на
-  `step_6`, удалить `step_15`, добавить замену (она получила `step_15`) и снести
-  держатель. Костыль описан честно: он существует, пока не починен
-  [#411](https://github.com/aiqadam/qadam-flow/issues/411).
-- **Проверено сквозным прогоном до публикации** (`sG75LRxGXZiCiz5AnIYV0`):
-  `/start edemo-w21router` → разбор `kind: e`, `eventId: demo`, `utm: w21router`
-  → ветка `e` → `registration` отработал (6,2 с), сообщения доставлены.
-  **IDM-4 подтверждён** (`Bd763A0isAYmygSjZQmuV`): тот же `update_id` второй раз
-  дал `stored: false`, `reason: duplicate`, ветка обработки не исполнялась —
-  прогон занял 0,6 с вместо 8,5 с.
-
-- **Оба вызова `registration` — `inline`** (с 12.09.2026, решение владельца,
-  W20). W17 держал их на `queue`, считая, что inline заставит роутер ждать
-  цепочку регистрации. Ждать действительно заставил: прогон роутера вырос с
-  3,8 с до 12–15 с. Но сквозное время не изменилось (≈16 с в обоих режимах,
-  разброс замеров шире разницы), а ~2 с диспетчеризации исчезли, то есть
-  первое сообщение пользователю приходит раньше.
-  **Цена:** прогон роутера занимает воркер дольше, и падение `registration`
-  теперь роняет прогон роутера. Под нагрузкой не проверено — перепроверить
-  до W15.
-
-- **`step_18` пересобран заново** (2026-09-12, W19) и опубликован. Правка одного
-  `displayName` вызвала перевалидацию против новой версии
-  `@aiqadam/qadam-subflows` и обнажила отсутствие ставшего обязательным пропа
-  `executionMode` (его добавил [#363](https://github.com/aiqadam/qadam-flow/issues/363)
-  уже после того, как W5 написал этот вход). Восстановлено по контракту
-  `registration/step_1`. **Поправка 2026-09-12 (повторное ревью):** здесь стояло
-  «`executionMode = queue` — как решил W17». В живом флоу у `step_18` и `step_20`
-  стоит **`inline`** (выставлено позже по прямой просьбе владельца, см. W20).
-  Область W17 действительно гласила «не трогаем» — значит изменение вышло за
-  её рамки, и это должно быть записано здесь, а не остаться расхождением.
-  **Грабли, на которые тут наступили:** значение пропа `flow` — объект
-  `{externalId, exampleData}`, а не строка; со строкой шаг валиден, но прогон
-  падает `{"message":"Please select a flow"}`. Проверено сквозным прогоном
-  `vqvFIl5nt4j4nXhtloWpT` и реальной отправкой в Telegram (прогон `registration`
-  `e4eh8kMqSRike8mSMwgQc`).
-  `step_20` — тот же случай; на 2026-09-12 он тоже `inline`.
-  **Цена inline здесь названа в [ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md):**
-  падение `registration` роняет прогон роутера **после** того, как `update_id`
-  заклеймён, — тап теряется без ретрая и без способа это заметить
-  ([Q18](../../docs/OPEN-QUESTIONS.md#q18)).
-- **Шаги `tables` и `store` этого флоу не редактируются через MCP напрямую** —
-  `qadam_metadata_not_found` ([#411](https://github.com/aiqadam/qadam-flow/issues/411)):
-  они пришпилены к версии qadam'а, которой после обновления образа нет. Флоу
-  при этом валиден и работает; отказ только на запись. Лечится пересозданием
-  шага — новый получает то же имя, ссылки вниз по флоу не ломаются (так сделан
-  `step_7`). Перепривязать версию правкой не удаётся даже явным `qadamName`.
-- **Проекция `users` расширена в W22 с пяти колонок до десяти** (`telegram_id`,
-  `first_name`, `last_name`, `username`, `phone`, `lang`, `consent_pdn`,
-  `consent_marketing`, `blocked_bot`, `created_at`). Это **осознанный размен**
-  ([Q17](../../docs/OPEN-QUESTIONS.md#q17)): чтобы решить, надо ли писать, шаг
-  обязан сравнить хранимые значения с пришедшими — иначе сравнивать нечего.
-  Имена и `username` вернулись в лог прогона `step_6`.
-  Обратная сторона размена: в **типичном** случае (ничего не изменилось) `step_10`
-  теперь не выполняется вовсе, а он логировал строку целиком и без проекции —
-  так что суммарно ПД в логах стало меньше, а не больше. Строка целиком уезжает
-  в лог только когда что-то действительно поменялось.
-- **Запись в `users` пропускается, когда сравнивать нечего** (W22, −0,56 с на
-  каждом шаге визарда). Поля `last_seen` у таблицы нет, поэтому пропуск ничего
-  не теряет. Доказано тремя различающими прогонами в TESTING:
-  `rVKYNeuRrYBwPNIvMFNgL` (нет строки → завели), `5cxzKm1Q1FRxdw380UScy`
-  (то же самое → `needsUpdate: false`, ветка пропуска, записи нет),
-  `UiJARuiA4j2XSU9zuYrK6` (**изменился `username`** → `needsUpdate: true`,
-  запись произошла, в строке новое значение). Третий прогон и есть тот, ради
-  которого пропуск нельзя принимать на веру.
-- **Апдейты приходят long-polling'ом, а не вебхуком** — проверено на живом
-  инстансе 2026-09-12 (W19, [Q26](../../docs/OPEN-QUESTIONS.md#q26)):
-  `POST /api/v1/webhooks/Y1dNon2V2EhjWM0aYwdQi` отвечает `409 «This flow receives
-  events by polling»`, а `getWebhookInfo` у dev-бота отдаёт `url: ""`. Это следствие
-  обновления образа платформы ([qadam-flow#393](https://github.com/aiqadam/qadam-flow/pull/393)),
-  а не наша настройка: у триггера нет пропа, которым это переключается.
-  Практические следствия: публичного ingress у бота нет (аутентифицировать
-  вебхук нечем и незачем), а интервал опроса добавляет неизмеренную задержку
-  на пути «пользователь написал → бот ответил».
-- **Дедуп IDM-4 — атомарный захват, а не «прочитать и записать»** (W20,
-  [ADR-0011](../../docs/adr/0011-idempotency-on-atomic-primitives.md)).
-  Было три шага: `store get` → CODE-гейт → `store put` в ветке 0, и между
-  чтением и записью существовало окно. Стало два: `put_if_absent` сам сообщает,
-  этот ли прогон занял ключ (`stored: true`) или ключ уже был
-  (`stored: false` + `value` = когда заняли впервые). Захват по-прежнему идёт
-  **до** любых побочных эффектов — теперь даже раньше, чем проверки
-  `isBot`/`isPrivate`, что только усиливает правило.
-  Различающий тест: прогоны `s5GJKUXZ13SZeYboS2Bf8` (свежий `update_id` →
-  `proceed`) и `GJ6yy0oS0rWOvWjmvnfAi` (тот же `update_id` → `duplicate`,
-  `firstSeenAt` = время первого, ноль побочных эффектов, 0,8 с против 2,6 с).
-  **TTL 24 ч** выбран под ретенцию самого Telegram: апдейты старше суток он
-  не переспрашивает, значит ключ дольше держать незачем.
-  Правило ADR-0003 «обработчики пишутся так, чтобы повтор был безвреден»
-  остаётся основным — примитив его усиливает, а не заменяет.
-- **Гейт step_3 отбивает четыре причины одним полем `reason`**: `bad_update`
-  (нет `update_id` или `from.id`), `duplicate`, `from_bot`, `non_private_chat`.
-  Порядок проверки: испорченный апдейт раньше дубля, дубль раньше бота/группы —
-  так `reason` всегда объясняет самую раннюю причину, а не последнюю.
-- **Роутер не различает группы от каналов и супергрупп** — фильтр `isPrivate` рубит
-  любой `chat.type !== 'private'`. Ни один флоу W4…W15 не работает с групповыми
-  чатами по SPEC.md, поэтому это осознанное сужение, а не недосмотр.
-- **Выбор языка не перетирает выбор пользователя** (I18N.md, «Выбор языка»):
-  `users.lang` меняется на `language_code` из Telegram только если в строке ещё
-  нет валидного `ru`/`uz`/`en` (`langWasSet: false`). Если пользователь однажды
-  сменил язык командой (будущий пакет), `tg-router` его не откатит.
-- **Активная сессия — самая свежая по `updated_at`, не протухшая (`< 24ч`)**,
-  остальные строки на `(telegram_id)` — дубли или хвосты; `session.duplicates`
-  наружу отдаётся для `dedup-sweep`, отдельного чтения не блокирует.
-- **`fn-parse-start` и `registration` подключены пакетом W5** (2026-09-09). Блокер
-  Q20 («`flowProps` не записать через MCP»), из-за которого W4 оставил `tg-router`
-  с одной fallback-веткой, оказался не платформенным: причина — форма `input.flow`
-  при резолве `ap_get_piece_props` (нужен объект с `exampleData`, а не строка) —
-  подробно в [ARCHITECTURE](../../docs/ARCHITECTURE.md#subflowы-на-практике--проверено-на-инстансе-2026-09-08-w2),
-  блок «Опровергнуто», и в [OPEN-QUESTIONS Q20](../../docs/OPEN-QUESTIONS.md#q20).
-- **`checkin-deeplink` и `staff-accept` (W10/W11) всё ещё не подключены** — payload'ы
-  `kind = c`/`s` разбираются `fn-parse-start`, но проваливаются в fallback-ветку
-  `step_19` без действия. Следующий пакет добавляет ветку на `step_17` тем же
-  приёмом, что и `registration` здесь, не трогая остальной `tg-router`.
-- **`waitForResponse: false` на обоих вызовах `registration`** (`step_18`, `step_20`) —
-  сознательно: `registration` — тяжёлая цепочка вложенных `callFlow` (~15–30 с,
-  как и `fn-event-card` в одиночку), и `tg-router`, синхронно ожидающий вебхук
-  бота, не обязан ждать её завершения. Цена — `tg-router` не узнает, упал ли
-  `registration` (только из его собственных логов прогонов).
+- **Открытие W26, критично для всех будущих `callFlow`: `flowProps` теперь
+  резолвится в единственное поле `payload` (тип `OBJECT`), а не в плоские
+  именованные поля, как было задокументировано в
+  [flows/README.md](README.md#проверенные-факты-про-subflowы-2026-09-08-пакет-w2)
+  и работало в W2–W22.** Без обёртки вызов проходит validate и **прогон
+  формально успешен**, но callee получает пустые поля — тихий отказ, не
+  ошибка (найдено на `chat_id is empty` при попытке `reg-start` без обёртки).
+  **Правильная форма:** `flowProps: {"payload": {<реальные поля callee>}}`;
+  callee по-прежнему читает их плоско, `{{trigger['output'].data.<field>}}` —
+  платформа разворачивает `payload` обратно на стороне callee. Проверено
+  различающим прогоном (без обёртки → `chat_id is empty`, с обёрткой →
+  сообщение доставлено) на `reg-start` (`FkxtgayOK5QubyqqMd9q4`) и
+  `fn-parse-start`. **Все будущие `callFlow` в проекте (`checkin-api`,
+  `my-qr-api`, W11, W14) обязаны использовать обёртку `payload`.**
+- **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
+  `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
+  «апдейт нечитаем» к «пользователь не тот»).
+- **`waitForResponse: false` на всех четырёх вызовах касаний** — роутер не
+  ждёт их завершения (они отправляют сообщения через Bot API, ~0,7–0,9 с
+  каждое). `executionMode: inline` — по Q35 хоп стоит ~96 мс, не ~1 с из
+  ADR-0012.
+- **Апсерт `users` не пропускает запись при отсутствии изменений** (в отличие
+  от исторической W22-оптимизации) — упрощение ради читаемости флоу
+  (ADR-0015); латентность не в приоритете (Q35: дорогая статья — отправка
+  сообщений, не запись в таблицу, ~25–70 мс).
+- **Проверено 2026-09-13, все маршруты и все три причины отказа, включая
+  различающие прогоны**: fresh `/start` → `reg_start` (`ngMVQePrlkSmxLXMTnRo4`,
+  событие найдено, карточка+сессия+вопрос о ПД доставлены); callback
+  `reg:pdn:yes` при активной сессии `await_pdn` → `reg_pdn`
+  (`3NJLHxB7dlyerTH247eyz`, сессия продвинута до `await_marketing` —
+  подтверждено чтением таблицы); `reg:mkt:yes` → `reg_mkt`
+  (`05PkuQZBaVnNYllI80VF3`, `await_phone`); контакт → `reg_phone`
+  (`hUfyXSls06ZQkDn8BPGq1`). **IDM-4**: тот же `update_id` повторно →
+  `stored:false, reason:duplicate`, до `users` не дошёл
+  (`h59E2gDMOTjHXEtEEFdZM`). **Гейты**: групповой чат → `non_private_chat`
+  (`LWqkk9yosJcD6o2UMqbqw`); отправитель-бот → `from_bot`
+  (`lCQDAfncbjrTSwQklumMF`).
