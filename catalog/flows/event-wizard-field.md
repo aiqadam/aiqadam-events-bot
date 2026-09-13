@@ -12,16 +12,16 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `callableFlow` | приём вызова | `{{trigger['output'].data.sessionStep/text/sessionScenario/sessionDraft/chatId}}` |
-| step_1 | CODE «validate + advance» | таблица правил по `sessionStep` (см. ниже); валидация, обновление `draft`, решение `outcome` | |
-| step_2 | ROUTER: `error`/`next`/`Otherwise` (=preview) | | |
-| step_3 (error) | `send_text_message` | текст ошибки валидации, сессия не двигается — участник отвечает на тот же вопрос | |
-| step_4 (next) | `tables-upsert-records sessions` | `draft`, `step=nextStep` | |
-| step_6 | `send_text_message` | следующий вопрос цепочки | |
-| step_5 (preview, Otherwise) | `tables-upsert-records sessions` | `draft`, `step='preview'` | |
-| step_7 | `send_text_message` | сводка черновика + inline-кнопки «Опубликовать»/«Отмена» (`wiz:publish`/`wiz:cancel`) | |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `callableFlow` | приём вызова |
+| step_1 | CODE «validate + advance» | таблица правил по `sessionStep` (см. ниже); валидация, обновление `draft`, решение `outcome` |
+| step_2 | ROUTER: `error`/`next`/`Otherwise` (=preview) | |
+| step_3 (error) | `send_text_message` | текст ошибки валидации, сессия не двигается — участник отвечает на тот же вопрос |
+| step_4 (next) | `tables-upsert-records sessions` | `draft`, `step=nextStep` |
+| step_6 | `send_text_message` | следующий вопрос цепочки |
+| step_5 (preview, Otherwise) | `tables-upsert-records sessions` | `draft`, `step='preview'` |
+| step_7 | `send_text_message` | сводка черновика + inline-кнопки «Опубликовать»/«Отмена» (`wiz:publish`/`wiz:cancel`) |
 
 ### Таблица полей (`step_1`, CODE)
 

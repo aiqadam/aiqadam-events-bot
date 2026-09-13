@@ -9,14 +9,14 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId` | — |
-| step_1 | `answer_callback_query` (`continueOnFailure`) | ack — падает на пустом `callback_query_id` при входе командой, это ожидаемо | `{{trigger['output'].data.callbackQueryId}}` |
-| step_2 | `tables-find-records registrations` | мои регистрации (`telegram_id eq …`, проекция `event_id`, `status`, `checked_in_at`, `registered_at`), `limit 50` | `{{trigger['output'].data.telegramId}}` |
-| step_3 | `tables-find-records events` | опубликованные ивенты для названий и дат (проекция `id`, `title`, `starts_at`, `status`), `limit 50` | фильтр `status eq published` |
-| step_4 | CODE «render my regs» | джойн по `event_id`, статусные подписи, кнопки: QR (`web_app`) + отмена только при `now < starts_at` | `{{step_2['output']}}`, `{{step_3['output']}}`, `{{variables['MINIAPP_URL']}}`, `texts: myreg.*, reg.qr.button` |
-| step_5 | `send_text_message` | список (пустой `reply_markup` не отправляется вовсе) | `{{step_4['output'].text}}`, `{{step_4['output'].reply_markup}}` |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId` |
+| step_1 | `answer_callback_query` (`continueOnFailure`) | ack — падает на пустом `callback_query_id` при входе командой, это ожидаемо |
+| step_2 | `tables-find-records registrations` | мои регистрации (`telegram_id eq …`, проекция `event_id`, `status`, `checked_in_at`, `registered_at`), `limit 50` |
+| step_3 | `tables-find-records events` | опубликованные ивенты для названий и дат (проекция `id`, `title`, `starts_at`, `status`), `limit 50` |
+| step_4 | CODE «render my regs» | джойн по `event_id`, статусные подписи, кнопки: QR (`web_app`) + отмена только при `now < starts_at` |
+| step_5 | `send_text_message` | список (пустой `reply_markup` не отправляется вовсе) |
 
 ## Зависимости
 

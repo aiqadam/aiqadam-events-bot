@@ -12,12 +12,12 @@
 «функция не зовёт функцию» (один уровень вложенности). Код пересчёта — та же
 логика, что в `fn-sign-qr`, продублирована намеренно (см. `hmac-qr.md`).
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход | — |
-| step_1 | CODE — пересчитать `sig` | тот же HMAC, что в `fn-sign-qr`, инлайн | `{{trigger['output'].data.eventId}}`, `.userId}}`, `.qrSigningKey}}` |
-| step_2 | CODE — сравнение | constant-time сравнение переданного `sig` с пересчитанным | `{{trigger['output'].data.sig}}`, `{{step_1['output'].sig}}` |
-| step_3 | `returnResponse` | отдаёт `{valid, eventId, userId}` | — |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход |
+| step_1 | CODE — пересчитать `sig` | тот же HMAC, что в `fn-sign-qr`, инлайн |
+| step_2 | CODE — сравнение | constant-time сравнение переданного `sig` с пересчитанным |
+| step_3 | `returnResponse` | отдаёт `{valid, eventId, userId}` |
 
 ## Зависимости
 

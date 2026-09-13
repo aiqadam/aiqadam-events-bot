@@ -10,13 +10,13 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId` | — |
-| step_1 | `answer_callback_query` (`continueOnFailure`) | ack — падает на пустом `callback_query_id` при входе командой, это ожидаемо | `{{trigger['output'].data.callbackQueryId}}` |
-| step_2 | `tables-find-records events` | ивенты со `status = published`, `limit 50` | фильтр `status eq published` |
-| step_3 | CODE «render list» | вкладка по `callbackData` (`ev:list:past` → прошедшие, иначе будущие), деление списков в коде, ташкентское время через `Intl` | `{{step_2['output']}}`, `texts: events.list.*` |
-| step_4 | `send_text_message` | список + переключатель вкладок | `{{step_3['output'].text}}`, `{{step_3['output'].reply_markup}}` |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId` |
+| step_1 | `answer_callback_query` (`continueOnFailure`) | ack — падает на пустом `callback_query_id` при входе командой, это ожидаемо |
+| step_2 | `tables-find-records events` | ивенты со `status = published`, `limit 50` |
+| step_3 | CODE «render list» | вкладка по `callbackData` (`ev:list:past` → прошедшие, иначе будущие), деление списков в коде, ташкентское время через `Intl` |
+| step_4 | `send_text_message` | список + переключатель вкладок |
 
 ## Зависимости
 

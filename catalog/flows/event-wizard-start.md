@@ -9,13 +9,13 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `callableFlow` | приём вызова от `tg-router` | `{{trigger['output'].data.telegramId/chatId}}` |
-| step_1 | CODE «now» | текущее время для `updated_at` | — |
-| step_2 | `tables-upsert-records sessions` | `scenario='event_create', step='title', draft='{}'` по ключу `telegram_id` | |
-| step_4 | CODE «title question text» | текст первого вопроса (`wizard.ask.title`) | |
-| step_3 | `send_text_message` | первый вопрос цепочки ADR-0016 — про название ивента | `chat_id: {{trigger['output'].data.chatId}}`, `{{step_4['output'].text}}` |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `callableFlow` | приём вызова от `tg-router` |
+| step_1 | CODE «now» | текущее время для `updated_at` |
+| step_2 | `tables-upsert-records sessions` | `scenario='event_create', step='title', draft='{}'` по ключу `telegram_id` |
+| step_4 | CODE «title question text» | текст первого вопроса (`wizard.ask.title`) |
+| step_3 | `send_text_message` | первый вопрос цепочки ADR-0016 — про название ивента |
 
 ## Зависимости
 

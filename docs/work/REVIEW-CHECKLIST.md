@@ -44,17 +44,31 @@ MCP её **не отдаёт**: `ap_read_step_code` только для CODE, `a
 Обязателен, если в пакете есть HTTP-шаги, cron- или webhook-триггеры, шаги
 `crypto`, либо фильтры `tables-find-records`.
 
+**Сначала смотрите `flows/` в PR** — там лежит экспорт шаблонов опубликованных
+флоу ([ADR-0018](../adr/0018-rest-read-for-everyone.md) п. 3), и `settings.input`
+виден прямо в диффе. Экспорт — **снимок, а не реальность**: если он выглядит
+подозрительно или его не обновили тем же коммитом, снимите свежий сами.
+
 ```bash
-# ключ — из macOS Keychain, не из репозитория и не литералом в команде
-curl -s -H "Authorization: Bearer $(security find-generic-password \
-  -s aiqadam-events-bot:qadam-flow-api -a reviewer -w)" \
-  "https://app.flow.aiqadam.org/api/v1/flows/<flowId>/template?projectId=<projectId>"
+tools/export-flows.sh              # все флоу проекта
+tools/export-flows.sh checkin-api  # или только нужные
+tools/check-export-secrets.sh      # обязательно перед любым коммитом flows/
 ```
+
+Скрипт берёт ключ из `QADAM_API_KEY`, иначе из macOS Keychain (сервис
+`aiqadam-events-bot:qadam-flow-api`) и передаёт его в `curl` по stdin — ключ
+не попадает ни в вывод, ни в `ps`, ни в историю оболочки. Выгружается
+**опубликованная** версия: скрипт явно передаёт `versionId=publishedVersionId`
+и громко пропускает флоу без публикации.
 
 Ключа нет в keychain — попросите его у владельца проекта и положите туда
 ([как](../adr/0006-rest-read-only-for-review.md#где-лежит-ключ) — сам ADR-0006
 отменён, но описание места хранения ключа остаётся верным). В репозитории его
 нет и не будет; в вывод и в историю команд он попадать не должен.
+
+У агента Claude Code вызов `security` требует разрешения
+`Bash(security find-generic-password:*)` в `.claude/settings.local.json` —
+без него скрипт упадёт на чтении ключа, и это не повод искать обход.
 
 - [ ] URL в HTTP-шагах ведут туда, куда заявлено (`main`, а не feature-ветка);
 - [ ] `cronExpression` и `timezone` триггера совпадают с каталогом;
@@ -76,10 +90,13 @@ curl -s -H "Authorization: Bearer $(security find-generic-password \
 - [ ] новые таблицы и поля отражены в `catalog/tables/` и `catalog/overview.md`;
 - [ ] в каталоге **нет** флоу и таблиц, которых в проекте не существует;
 - [ ] **экспорт `flows/*.json` обновлён тем же коммитом**, что и правка флоу
-      ([ADR-0018](../adr/0018-rest-read-for-everyone.md) п. 5) — проверять
-      с того момента, как [W29](../BACKLOG.md#w29-экспорт-flowsjson-в-репозиторий)
-      сделан; до него пункт не применим и отмечается «не относится»;
-- [ ] **в экспорте нет фактических значений секретов** — ссылки
+      ([ADR-0018](../adr/0018-rest-read-for-everyone.md) п. 5) — снимается
+      `tools/export-flows.sh`. Пункт применим с того момента, как в `flows/`
+      появился экспорт ([W29](../BACKLOG.md#w29-экспорт-flowsjson-в-репозиторий));
+      до этого отмечается «не относится». Формулировка та же в
+      [ROADMAP](../ROADMAP.md), шаг 6 порядка работы — расходиться им нельзя;
+- [ ] **в экспорте нет фактических значений секретов** — `tools/check-export-secrets.sh`
+      отработал с нулевым кодом возврата: ссылки
       `{{variables['...']}}` и `{{connections[...]}}` на месте, значений нет.
       [Q38](../OPEN-QUESTIONS.md#q38) проверил **текущее** поведение платформы,
       а не гарантию: сериализация шаблона может измениться с версией образа.

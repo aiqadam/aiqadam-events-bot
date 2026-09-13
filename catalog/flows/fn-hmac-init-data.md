@@ -12,13 +12,13 @@
 Код — байт-в-байт эталон [`snippets/hmac-init-data.md`](../snippets/hmac-init-data.md),
 три шага цепочки собраны в одном флоу вместо трёх копий по обработчикам.
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход | — |
-| step_1 | CODE — разбор `initData` | канонизация `data_check_string`, извлечение `hash`/`auth_date`/`user` | `{{trigger['output'].data.initData}}` |
-| step_2 | CODE — HMAC (`node:crypto`, ADR-0010) | derive secretKey из `botToken`, посчитать ожидаемый hash | `{{step_1['output'].dataCheckString}}`, `{{trigger['output'].data.botToken}}` |
-| step_3 | CODE — решение о валидности | constant-time сравнение, потолок свежести 24ч | `{{step_1/2['output']...}}`, `{{trigger['output'].data.maxAgeSeconds}}` |
-| step_4 | `returnResponse` | отдаёт `{valid, hashValid, fresh, reason, telegramId, user, authDate, authDateIso, ageSeconds, maxAgeSeconds}` | — |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход |
+| step_1 | CODE — разбор `initData` | канонизация `data_check_string`, извлечение `hash`/`auth_date`/`user` |
+| step_2 | CODE — HMAC (`node:crypto`, ADR-0010) | derive secretKey из `botToken`, посчитать ожидаемый hash |
+| step_3 | CODE — решение о валидности | constant-time сравнение, потолок свежести 24ч |
+| step_4 | `returnResponse` | отдаёт `{valid, hashValid, fresh, reason, telegramId, user, authDate, authDateIso, ageSeconds, maxAgeSeconds}` |
 
 ## Зависимости
 
