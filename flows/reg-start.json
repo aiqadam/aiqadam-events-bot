@@ -1,213 +1,173 @@
 {
-  "author": "",
-  "blogUrl": "",
-  "categories": [],
-  "description": "",
-  "flows": [
-    {
-      "displayName": "reg-start",
-      "notes": [],
-      "schemaVersion": "31",
-      "trigger": {
-        "displayName": "callableFlow",
-        "lastUpdatedDate": "2026-09-13T18:59:31.916Z",
-        "name": "trigger",
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "reg-start",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "read event",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "read event registrations",
+        "name": "step_2",
         "nextAction": {
-          "displayName": "read event",
-          "lastUpdatedDate": "2026-09-13T18:59:31.917Z",
-          "name": "step_1",
+          "displayName": "decide outcome",
+          "name": "step_3",
           "nextAction": {
-            "displayName": "read event registrations",
-            "lastUpdatedDate": "2026-09-13T18:59:31.918Z",
-            "name": "step_2",
-            "nextAction": {
-              "displayName": "decide outcome",
-              "lastUpdatedDate": "2026-09-13T18:59:31.918Z",
-              "name": "step_3",
-              "nextAction": {
-                "children": [
-                  {
-                    "displayName": "text by decline reason",
-                    "lastUpdatedDate": "2026-09-13T18:59:31.920Z",
-                    "name": "step_5",
-                    "nextAction": {
-                      "displayName": "send decline",
-                      "lastUpdatedDate": "2026-09-13T18:59:31.920Z",
-                      "name": "step_6",
-                      "settings": {
-                        "actionName": "send_text_message",
-                        "errorHandlingOptions": {
-                          "continueOnFailure": {
-                            "value": false
-                          },
-                          "retryOnFailure": {
-                            "value": false
-                          }
-                        },
-                        "input": {
-                          "chat_id": "{{trigger['output'].data.chatId}}",
-                          "disable_notification": false,
-                          "format": "None",
-                          "message": "{{step_5['output'].text}}",
-                          "protect_content": false,
-                          "web_page_preview": false
-                        },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+            "children": [
+              {
+                "displayName": "text by decline reason",
+                "name": "step_5",
+                "nextAction": {
+                  "displayName": "send decline",
+                  "name": "step_6",
+                  "settings": {
+                    "actionName": "send_text_message",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
                       },
-                      "type": "PIECE",
-                      "valid": true
-                    },
-                    "settings": {
-                      "errorHandlingOptions": {
-                        "continueOnFailure": {
-                          "value": false
-                        },
-                        "retryOnFailure": {
-                          "value": false
-                        }
-                      },
-                      "input": {
-                        "deadlineAt": "{{step_3['output'].deadlineAt}}",
-                        "reason": "{{step_3['output'].reason}}",
-                        "texts": {
-                          "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
-                          "event.card.not_found": "Карточку показать не удалось: такого ивента нет.",
-                          "reg.deadline_passed": "Регистрация закрыта: срок вышел {when}.",
-                          "reg.event_cancelled": "Ивент отменён, регистрация недоступна.",
-                          "reg.event_finished": "Ивент уже прошёл.",
-                          "reg.no_seats": "Свободных мест больше нет. Листа ожидания у нас нет — следите за анонсами.",
-                          "reg.not_published": "Ивент ещё не опубликован — регистрация закрыта."
-                        }
-                      },
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const reason = String(inputs.reason === undefined || inputs.reason === null ? '' : inputs.reason);\n\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n\n  const keyByReason = {\n    not_found: 'event.card.not_found',\n    event_cancelled: 'reg.event_cancelled',\n    event_finished: 'reg.event_finished',\n    not_published: 'reg.not_published',\n    deadline_passed: 'reg.deadline_passed',\n    no_seats: 'reg.no_seats'\n  };\n  const key = keyByReason[reason] || 'common.err.generic';\n  const raw = String(texts[key] || key);\n  const when = fmt(String(inputs.deadlineAt || ''));\n  const text = raw.split('{when}').join(when);\n\n  return { text: text, reason: reason };\n};",
-                        "packageJson": "{}"
+                      "retryOnFailure": {
+                        "value": false
                       }
                     },
-                    "type": "CODE",
-                    "valid": true
-                  },
-                  {
-                    "displayName": "text: already registered",
-                    "lastUpdatedDate": "2026-09-13T18:59:31.921Z",
-                    "name": "step_7",
-                    "nextAction": {
-                      "displayName": "send already + QR button",
-                      "lastUpdatedDate": "2026-09-13T18:59:31.922Z",
-                      "name": "step_8",
-                      "settings": {
-                        "actionName": "send_text_message",
-                        "errorHandlingOptions": {
-                          "continueOnFailure": {
-                            "value": false
-                          },
-                          "retryOnFailure": {
-                            "value": false
-                          }
-                        },
-                        "input": {
-                          "chat_id": "{{trigger['output'].data.chatId}}",
-                          "disable_notification": false,
-                          "format": "None",
-                          "message": "{{step_7['output'].text}}",
-                          "protect_content": false,
-                          "reply_markup": {
-                            "inline_keyboard": [
-                              [
-                                {
-                                  "text": "Показать QR",
-                                  "web_app": {
-                                    "url": "{{variables['MINIAPP_URL']}}ticket.html?event_id={{trigger['output'].data.eventId}}"
-                                  }
-                                }
-                              ]
-                            ]
-                          },
-                          "web_page_preview": false
-                        },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
-                      },
-                      "type": "PIECE",
-                      "valid": true
+                    "input": {
+                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                      "chat_id": "{{trigger['output'].data.chatId}}",
+                      "disable_notification": false,
+                      "format": "None",
+                      "message": "{{step_5['output'].text}}",
+                      "protect_content": false,
+                      "web_page_preview": false
                     },
-                    "settings": {
-                      "errorHandlingOptions": {
-                        "continueOnFailure": {
-                          "value": false
-                        },
-                        "retryOnFailure": {
-                          "value": false
-                        }
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-telegram-bot",
+                    "qadamVersion": "0.8.0"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "deadlineAt": "{{step_3['output'].deadlineAt}}",
+                    "reason": "{{step_3['output'].reason}}",
+                    "texts": {
+                      "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
+                      "event.card.not_found": "Карточку показать не удалось: такого ивента нет.",
+                      "reg.deadline_passed": "Регистрация закрыта: срок вышел {when}.",
+                      "reg.event_cancelled": "Ивент отменён, регистрация недоступна.",
+                      "reg.event_finished": "Ивент уже прошёл.",
+                      "reg.no_seats": "Свободных мест больше нет. Листа ожидания у нас нет — следите за анонсами.",
+                      "reg.not_published": "Ивент ещё не опубликован — регистрация закрыта."
+                    }
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const reason = String(inputs.reason === undefined || inputs.reason === null ? '' : inputs.reason);\n\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n\n  const keyByReason = {\n    not_found: 'event.card.not_found',\n    event_cancelled: 'reg.event_cancelled',\n    event_finished: 'reg.event_finished',\n    not_published: 'reg.not_published',\n    deadline_passed: 'reg.deadline_passed',\n    no_seats: 'reg.no_seats'\n  };\n  const key = keyByReason[reason] || 'common.err.generic';\n  const raw = String(texts[key] || key);\n  const when = fmt(String(inputs.deadlineAt || ''));\n  const text = raw.split('{when}').join(when);\n\n  return { text: text, reason: reason };\n};",
+                    "packageJson": "{}"
+                  }
+                },
+                "type": "CODE",
+                "valid": true
+              },
+              {
+                "displayName": "text: already registered",
+                "name": "step_7",
+                "nextAction": {
+                  "displayName": "send already + QR button",
+                  "name": "step_8",
+                  "settings": {
+                    "actionName": "send_text_message",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
                       },
-                      "input": {
-                        "texts": {
-                          "reg.already": "Вы уже зарегистрированы на «{title}». Ваш QR ниже."
-                        },
-                        "title": "{{step_3['output'].title}}"
-                      },
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const title = String(inputs.title === undefined || inputs.title === null ? '' : inputs.title);\n  const raw = String(texts['reg.already'] || 'reg.already');\n  const text = raw.split('{title}').join(title);\n  return { text: text };\n};",
-                        "packageJson": "{}"
+                      "retryOnFailure": {
+                        "value": false
                       }
                     },
-                    "type": "CODE",
-                    "valid": true
+                    "input": {
+                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                      "chat_id": "{{trigger['output'].data.chatId}}",
+                      "disable_notification": false,
+                      "format": "None",
+                      "message": "{{step_7['output'].text}}",
+                      "protect_content": false,
+                      "reply_markup": {
+                        "inline_keyboard": [
+                          [
+                            {
+                              "text": "Показать QR",
+                              "web_app": {
+                                "url": "{{variables['MINIAPP_URL']}}ticket.html?event_id={{trigger['output'].data.eventId}}"
+                              }
+                            }
+                          ]
+                        ]
+                      },
+                      "web_page_preview": false
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-telegram-bot",
+                    "qadamVersion": "0.8.0"
                   },
-                  {
-                    "displayName": "build card: ивент + вопрос ПД",
-                    "lastUpdatedDate": "2026-09-13T19:09:56.857Z",
-                    "name": "step_9",
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "texts": {
+                      "reg.already": "Вы уже зарегистрированы на «{title}». Ваш QR ниже."
+                    },
+                    "title": "{{step_3['output'].title}}"
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const title = String(inputs.title === undefined || inputs.title === null ? '' : inputs.title);\n  const raw = String(texts['reg.already'] || 'reg.already');\n  const text = raw.split('{title}').join(title);\n  return { text: text };\n};",
+                    "packageJson": "{}"
+                  }
+                },
+                "type": "CODE",
+                "valid": true
+              },
+              {
+                "displayName": "build card: ивент + вопрос ПД",
+                "name": "step_9",
+                "nextAction": {
+                  "displayName": "афиша отдельным сообщением (если есть)",
+                  "name": "step_12",
+                  "nextAction": {
+                    "displayName": "send card (единственная отправка)",
+                    "name": "step_10",
                     "nextAction": {
-                      "displayName": "send card (единственная отправка)",
-                      "lastUpdatedDate": "2026-09-13T19:10:05.747Z",
-                      "name": "step_10",
+                      "displayName": "draft JSON + cardMessageId",
+                      "name": "step_15",
                       "nextAction": {
-                        "displayName": "draft JSON + cardMessageId",
-                        "lastUpdatedDate": "2026-09-13T19:10:12.944Z",
-                        "name": "step_15",
-                        "nextAction": {
-                          "displayName": "start session await_pdn (+ cardMessageId)",
-                          "lastUpdatedDate": "2026-09-13T19:10:35.747Z",
-                          "name": "step_11",
-                          "settings": {
-                            "actionName": "tables-upsert-records",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
-                              },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "key_columns": [
-                                "N8CdPxcdxLX9vFCINvZbL"
-                              ],
-                              "table_id": "toTKgngMTqDNJWDpQMh4d",
-                              "values": {
-                                "values": [
-                                  {
-                                    "ESthrMwpn29JLvE2BNIj4": "registration",
-                                    "IdGimBh539UlGSz6L0Pyo": "await_pdn",
-                                    "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
-                                    "U9P3zTZHcFdAAtzLVVSYn": "{{step_9['output'].now}}",
-                                    "sctBFEsMf10UobeFgzsVt": "{{step_15['output'].draft}}"
-                                  }
-                                ]
-                              }
-                            },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.4.5"
-                          },
-                          "type": "PIECE",
-                          "valid": true
-                        },
+                        "displayName": "start session await_pdn (+ cardMessageId)",
+                        "name": "step_11",
                         "settings": {
+                          "actionName": "tables-upsert-records",
                           "errorHandlingOptions": {
                             "continueOnFailure": {
                               "value": false
@@ -217,20 +177,30 @@
                             }
                           },
                           "input": {
-                            "cardMessageId": "{{step_10['output'].body.result.message_id}}",
-                            "eventId": "{{trigger['output'].data.eventId}}",
-                            "utm": "{{trigger['output'].data.utm}}"
+                            "key_columns": [
+                              "N8CdPxcdxLX9vFCINvZbL"
+                            ],
+                            "table_id": "toTKgngMTqDNJWDpQMh4d",
+                            "values": {
+                              "values": [
+                                {
+                                  "ESthrMwpn29JLvE2BNIj4": "registration",
+                                  "IdGimBh539UlGSz6L0Pyo": "await_pdn",
+                                  "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                  "U9P3zTZHcFdAAtzLVVSYn": "{{step_9['output'].now}}",
+                                  "sctBFEsMf10UobeFgzsVt": "{{step_15['output'].draft}}"
+                                }
+                              ]
+                            }
                           },
-                          "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // cardMessageId живёт в JSON внутри sessions.draft, а не отдельной колонкой:\n  // схема таблиц заморожена с W1, а срок жизни поля равен сроку жизни сессии.\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
-                            "packageJson": "{}"
-                          }
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.4.5"
                         },
-                        "type": "CODE",
+                        "type": "PIECE",
                         "valid": true
                       },
                       "settings": {
-                        "actionName": "send_text_message",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": false
@@ -240,22 +210,20 @@
                           }
                         },
                         "input": {
-                          "chat_id": "{{trigger['output'].data.chatId}}",
-                          "disable_notification": false,
-                          "format": "MarkdownV2",
-                          "message": "{{step_9['output'].text}}",
-                          "protect_content": false,
-                          "reply_markup": "{{step_9['output'].replyMarkup}}",
-                          "web_page_preview": false
+                          "cardMessageId": "{{step_10['output'].body.result.message_id}}",
+                          "eventId": "{{trigger['output'].data.eventId}}",
+                          "utm": "{{trigger['output'].data.utm}}"
                         },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "sourceCode": {
+                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // cardMessageId живёт в JSON внутри sessions.draft, а не отдельной колонкой:\n  // схема таблиц заморожена с W1, а срок жизни поля равен сроку жизни сессии.\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                          "packageJson": "{}"
+                        }
                       },
-                      "type": "PIECE",
+                      "type": "CODE",
                       "valid": true
                     },
                     "settings": {
+                      "actionName": "send_text_message",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -265,168 +233,159 @@
                         }
                       },
                       "input": {
-                        "address": "{{step_3['output'].address}}",
-                        "description": "{{step_3['output'].description}}",
-                        "endsAt": "{{step_3['output'].endsAt}}",
-                        "lat": "{{step_3['output'].lat}}",
-                        "lon": "{{step_3['output'].lon}}",
-                        "regDeadlineAt": "{{step_3['output'].regDeadlineAt}}",
-                        "startsAt": "{{step_3['output'].startsAt}}",
-                        "texts": {
-                          "event.card.deadline_short": "Регистрация до {when}",
-                          "reg.consent_pdn.ask": "Чтобы зарегистрировать вас, нужно согласие на обработку персональных данных.",
-                          "reg.consent_pdn.btn_no": "Не сейчас",
-                          "reg.consent_pdn.btn_yes": "Согласен"
-                        },
-                        "title": "{{step_3['output'].title}}"
+                        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                        "chat_id": "{{trigger['output'].data.chatId}}",
+                        "disable_notification": false,
+                        "format": "MarkdownV2",
+                        "message": "{{step_9['output'].text}}",
+                        "protect_content": false,
+                        "reply_markup": "{{step_9['output'].replyMarkup}}",
+                        "web_page_preview": false
                       },
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  // Экранируются все 18 символов из Bot API; обратный слэш первым, иначе\n  // он удвоит уже добавленные слэши.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const title = str(inputs.title);\n  const description = str(inputs.description);\n  const address = str(inputs.address);\n  const startsAt = str(inputs.startsAt);\n  const endsAt = str(inputs.endsAt);\n  const regDeadlineAt = str(inputs.regDeadlineAt);\n\n  const lat = Number(inputs.lat);\n  const lon = Number(inputs.lon);\n  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n\n  // Карточка-экран: факты ивента и вопрос о согласии — одно сообщение,\n  // которое дальше редактируется на месте (ADR-0017).\n  const lines = [];\n  if (title) lines.push('*' + esc(title) + '*');\n  if (description) lines.push(esc(description));\n\n  const facts = [];\n  if (startsAt) facts.push('📅 ' + esc(fmt(startsAt)) + (endsAt ? ' — ' + esc(fmt(endsAt)) : ''));\n  if (address) facts.push('📍 ' + esc(address));\n  if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (regDeadlineAt) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(regDeadlineAt) })));\n  if (facts.length) lines.push(facts.join('\\n'));\n\n  lines.push(esc(t('reg.consent_pdn.ask')));\n\n  const replyMarkup = {\n    inline_keyboard: [[\n      { text: t('reg.consent_pdn.btn_yes'), callback_data: 'reg:pdn:yes' },\n      { text: t('reg.consent_pdn.btn_no'), callback_data: 'reg:pdn:no' }\n    ]]\n  };\n\n  return { text: lines.join('\\n\\n'), replyMarkup: replyMarkup, mapsUrl: mapsUrl, now: new Date().toISOString() };\n};",
-                        "packageJson": "{}"
-                      }
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                      "qadamVersion": "0.8.0"
                     },
-                    "type": "CODE",
+                    "type": "PIECE",
                     "valid": true
                   },
-                  {
-                    "displayName": "unexpected outcome — ничего не делаем",
-                    "lastUpdatedDate": "2026-09-13T18:59:31.926Z",
-                    "name": "step_13",
-                    "settings": {
-                      "errorHandlingOptions": {
-                        "continueOnFailure": {
-                          "value": false
-                        },
-                        "retryOnFailure": {
-                          "value": false
-                        }
+                  "settings": {
+                    "actionName": "send_media",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": true
                       },
-                      "input": {},
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  return { ignored: true };\n};",
-                        "packageJson": "{}"
+                      "retryOnFailure": {
+                        "value": false
                       }
                     },
-                    "type": "CODE",
-                    "valid": true
-                  }
-                ],
-                "displayName": "outcome",
-                "lastUpdatedDate": "2026-09-13T18:59:31.919Z",
-                "name": "step_4",
-                "settings": {
-                  "branches": [
-                    {
-                      "branchName": "declined",
-                      "branchType": "CONDITION",
-                      "conditions": [
-                        [
-                          {
-                            "firstValue": "{{step_3['output'].outcome}}",
-                            "operator": "TEXT_EXACTLY_MATCHES",
-                            "secondValue": "declined"
-                          }
-                        ]
-                      ]
+                    "input": {
+                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                      "chat_id": "{{trigger['output'].data.chatId}}",
+                      "disable_notification": false,
+                      "format": "None",
+                      "media": {
+                        "photoId": "{{step_3['output'].photoFileId}}"
+                      },
+                      "media_type": "photo",
+                      "protect_content": false
                     },
-                    {
-                      "branchName": "existing",
-                      "branchType": "CONDITION",
-                      "conditions": [
-                        [
-                          {
-                            "firstValue": "{{step_3['output'].outcome}}",
-                            "operator": "TEXT_EXACTLY_MATCHES",
-                            "secondValue": "existing"
-                          }
-                        ]
-                      ]
-                    },
-                    {
-                      "branchName": "new",
-                      "branchType": "CONDITION",
-                      "conditions": [
-                        [
-                          {
-                            "firstValue": "{{step_3['output'].outcome}}",
-                            "operator": "TEXT_EXACTLY_MATCHES",
-                            "secondValue": "new"
-                          }
-                        ]
-                      ]
-                    },
-                    {
-                      "branchName": "Otherwise",
-                      "branchType": "FALLBACK"
-                    }
-                  ],
-                  "executionType": "EXECUTE_FIRST_MATCH"
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-telegram-bot",
+                    "qadamVersion": "0.8.0"
+                  },
+                  "type": "PIECE",
+                  "valid": true
                 },
-                "type": "ROUTER",
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "address": "{{step_3['output'].address}}",
+                    "description": "{{step_3['output'].description}}",
+                    "endsAt": "{{step_3['output'].endsAt}}",
+                    "lat": "{{step_3['output'].lat}}",
+                    "lon": "{{step_3['output'].lon}}",
+                    "regDeadlineAt": "{{step_3['output'].regDeadlineAt}}",
+                    "startsAt": "{{step_3['output'].startsAt}}",
+                    "texts": {
+                      "event.card.deadline_short": "Регистрация до {when}",
+                      "reg.consent_pdn.ask": "Чтобы зарегистрировать вас, нужно согласие на обработку персональных данных.",
+                      "reg.consent_pdn.btn_no": "Не сейчас",
+                      "reg.consent_pdn.btn_yes": "Согласен"
+                    },
+                    "title": "{{step_3['output'].title}}"
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  // Экранируются все 18 символов из Bot API; обратный слэш первым, иначе\n  // он удвоит уже добавленные слэши.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const title = str(inputs.title);\n  const description = str(inputs.description);\n  const address = str(inputs.address);\n  const startsAt = str(inputs.startsAt);\n  const endsAt = str(inputs.endsAt);\n  const regDeadlineAt = str(inputs.regDeadlineAt);\n\n  const lat = Number(inputs.lat);\n  const lon = Number(inputs.lon);\n  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n\n  // Карточка-экран: факты ивента и вопрос о согласии — одно сообщение,\n  // которое дальше редактируется на месте (ADR-0017).\n  const lines = [];\n  if (title) lines.push('*' + esc(title) + '*');\n  if (description) lines.push(esc(description));\n\n  const facts = [];\n  if (startsAt) facts.push('📅 ' + esc(fmt(startsAt)) + (endsAt ? ' — ' + esc(fmt(endsAt)) : ''));\n  if (address) facts.push('📍 ' + esc(address));\n  if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (regDeadlineAt) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(regDeadlineAt) })));\n  if (facts.length) lines.push(facts.join('\\n'));\n\n  lines.push(esc(t('reg.consent_pdn.ask')));\n\n  const replyMarkup = {\n    inline_keyboard: [[\n      { text: t('reg.consent_pdn.btn_yes'), callback_data: 'reg:pdn:yes' },\n      { text: t('reg.consent_pdn.btn_no'), callback_data: 'reg:pdn:no' }\n    ]]\n  };\n\n  return { text: lines.join('\\n\\n'), replyMarkup: replyMarkup, mapsUrl: mapsUrl, now: new Date().toISOString() };\n};",
+                    "packageJson": "{}"
+                  }
+                },
+                "type": "CODE",
                 "valid": true
               },
-              "settings": {
-                "errorHandlingOptions": {
-                  "continueOnFailure": {
-                    "value": false
+              {
+                "displayName": "unexpected outcome — ничего не делаем",
+                "name": "step_13",
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
                   },
-                  "retryOnFailure": {
-                    "value": false
+                  "input": {},
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  return { ignored: true };\n};",
+                    "packageJson": "{}"
                   }
                 },
-                "input": {
-                  "eventRecords": "{{step_1['output']}}",
-                  "regRecords": "{{step_2['output']}}",
-                  "telegramId": "{{trigger['output'].data.telegramId}}"
-                },
-                "sourceCode": {
-                  "code": "export const code = async (inputs) => {\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const eventRows = arr(inputs.eventRecords).map(flat);\n  const ev = eventRows[0];\n  const telegramId = String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId);\n  const regRows = arr(inputs.regRecords).map(flat);\n  const myRow = regRows.find((r) => String(r.telegram_id || '') === telegramId);\n  const registeredCount = regRows.filter((r) => String(r.status || '') === 'registered').length;\n\n  if (myRow && String(myRow.status || '') === 'registered') {\n    return { outcome: 'existing', title: ev ? (ev.title || '') : '' };\n  }\n\n  if (!ev) return { outcome: 'declined', reason: 'not_found', deadlineAt: '' };\n  const status = ev.status || '';\n  if (status === 'cancelled') return { outcome: 'declined', reason: 'event_cancelled', deadlineAt: '' };\n  if (status === 'finished') return { outcome: 'declined', reason: 'event_finished', deadlineAt: '' };\n  if (status !== 'published') return { outcome: 'declined', reason: 'not_published', deadlineAt: '' };\n\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const nowMs = Date.now();\n  const deadlineMs = ev.reg_deadline_at ? parseIso(ev.reg_deadline_at) : NaN;\n  if (isFinite(deadlineMs) && nowMs > deadlineMs) return { outcome: 'declined', reason: 'deadline_passed', deadlineAt: ev.reg_deadline_at || '' };\n\n  const capacityRaw = ev.capacity;\n  const capacity = (capacityRaw === '' || capacityRaw === undefined) ? NaN : Number(capacityRaw);\n  const overbookRaw = ev.overbook_pct;\n  const overbook = (overbookRaw === '' || overbookRaw === undefined || !isFinite(Number(overbookRaw))) ? 40 : Number(overbookRaw);\n  if (isFinite(capacity)) {\n    const limit = Math.ceil(capacity * (1 + overbook / 100));\n    if (registeredCount >= limit) return { outcome: 'declined', reason: 'no_seats', deadlineAt: '' };\n  }\n\n  return {\n    outcome: 'new',\n    title: ev.title || '', description: ev.description || '', address: ev.address || '',\n    startsAt: ev.starts_at || '', endsAt: ev.ends_at || '', regDeadlineAt: ev.reg_deadline_at || '',\n    lat: ev.lat || '', lon: ev.lon || ''\n  };\n};",
-                  "packageJson": "{}"
-                }
-              },
-              "type": "CODE",
-              "valid": true
-            },
+                "type": "CODE",
+                "valid": true
+              }
+            ],
+            "displayName": "outcome",
+            "name": "step_4",
             "settings": {
-              "actionName": "tables-find-records",
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "columns": [
-                  "mVfpZFCwAZskWXNT7iCuI",
-                  "TZyqC63UAWrPbzxuf2q4w"
-                ],
-                "filters": {
-                  "filters": [
-                    {
-                      "field": {
-                        "id": "qQPYl9c0ew6n8w2CGYZII",
-                        "name": "event_id",
-                        "type": "TEXT"
-                      },
-                      "operator": "eq",
-                      "value": "{{trigger['output'].data.eventId}}"
-                    }
+              "branches": [
+                {
+                  "branchName": "declined",
+                  "branchType": "CONDITION",
+                  "conditions": [
+                    [
+                      {
+                        "firstValue": "{{step_3['output'].outcome}}",
+                        "operator": "TEXT_EXACTLY_MATCHES",
+                        "secondValue": "declined"
+                      }
+                    ]
                   ]
                 },
-                "record_ids": [],
-                "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
-              },
-              "propertySettings": {},
-              "qadamName": "@aiqadam/qadam-tables",
-              "qadamVersion": "0.4.5"
+                {
+                  "branchName": "existing",
+                  "branchType": "CONDITION",
+                  "conditions": [
+                    [
+                      {
+                        "firstValue": "{{step_3['output'].outcome}}",
+                        "operator": "TEXT_EXACTLY_MATCHES",
+                        "secondValue": "existing"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "branchName": "new",
+                  "branchType": "CONDITION",
+                  "conditions": [
+                    [
+                      {
+                        "firstValue": "{{step_3['output'].outcome}}",
+                        "operator": "TEXT_EXACTLY_MATCHES",
+                        "secondValue": "new"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "branchName": "Otherwise",
+                  "branchType": "FALLBACK"
+                }
+              ],
+              "executionType": "EXECUTE_FIRST_MATCH"
             },
-            "type": "PIECE",
+            "type": "ROUTER",
             "valid": true
           },
           "settings": {
-            "actionName": "tables-find-records",
             "errorHandlingOptions": {
               "continueOnFailure": {
                 "value": false
@@ -436,71 +395,117 @@
               }
             },
             "input": {
-              "filters": {
-                "filters": [
-                  {
-                    "field": {
-                      "id": "39qJ4o2MYyNYsT2VtxfcK",
-                      "name": "id",
-                      "type": "TEXT"
-                    },
-                    "operator": "eq",
-                    "value": "{{trigger['output'].data.eventId}}"
-                  }
-                ]
-              },
-              "limit": 1,
-              "record_ids": [],
-              "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+              "eventRecords": "{{step_1['output']}}",
+              "regRecords": "{{step_2['output']}}",
+              "telegramId": "{{trigger['output'].data.telegramId}}"
             },
-            "propertySettings": {},
-            "qadamName": "@aiqadam/qadam-tables",
-            "qadamVersion": "0.4.5"
+            "sourceCode": {
+              "code": "export const code = async (inputs) => {\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const eventRows = arr(inputs.eventRecords).map(flat);\n  const ev = eventRows[0];\n  const telegramId = String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId);\n  const regRows = arr(inputs.regRecords).map(flat);\n  const myRow = regRows.find((r) => String(r.telegram_id || '') === telegramId);\n  const registeredCount = regRows.filter((r) => String(r.status || '') === 'registered').length;\n\n  if (myRow && String(myRow.status || '') === 'registered') {\n    return { outcome: 'existing', title: ev ? (ev.title || '') : '', photoFileId: '' };\n  }\n\n  if (!ev) return { outcome: 'declined', reason: 'not_found', deadlineAt: '', photoFileId: '' };\n  const status = ev.status || '';\n  if (status === 'cancelled') return { outcome: 'declined', reason: 'event_cancelled', deadlineAt: '', photoFileId: '' };\n  if (status === 'finished') return { outcome: 'declined', reason: 'event_finished', deadlineAt: '', photoFileId: '' };\n  if (status !== 'published') return { outcome: 'declined', reason: 'not_published', deadlineAt: '', photoFileId: '' };\n\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const nowMs = Date.now();\n  const deadlineMs = ev.reg_deadline_at ? parseIso(ev.reg_deadline_at) : NaN;\n  if (isFinite(deadlineMs) && nowMs > deadlineMs) return { outcome: 'declined', reason: 'deadline_passed', deadlineAt: ev.reg_deadline_at || '', photoFileId: '' };\n\n  const capacityRaw = ev.capacity;\n  const capacity = (capacityRaw === '' || capacityRaw === undefined) ? NaN : Number(capacityRaw);\n  const overbookRaw = ev.overbook_pct;\n  const overbook = (overbookRaw === '' || overbookRaw === undefined || !isFinite(Number(overbookRaw))) ? 40 : Number(overbookRaw);\n  if (isFinite(capacity)) {\n    const limit = Math.ceil(capacity * (1 + overbook / 100));\n    if (registeredCount >= limit) return { outcome: 'declined', reason: 'no_seats', deadlineAt: '', photoFileId: '' };\n  }\n\n  return {\n    outcome: 'new',\n    title: ev.title || '', description: ev.description || '', address: ev.address || '',\n    startsAt: ev.starts_at || '', endsAt: ev.ends_at || '', regDeadlineAt: ev.reg_deadline_at || '',\n    lat: ev.lat || '', lon: ev.lon || '',\n    // Афиша: пустая строка = афиши нет. Шаг отправки медиа тогда упадёт\n    // и будет пропущен по continueOnFailure — см. catalog/flows/reg-start.md.\n    photoFileId: ev.photo_file_id || ''\n  };\n};",
+              "packageJson": "{}"
+            }
           },
-          "type": "PIECE",
+          "type": "CODE",
           "valid": true
         },
         "settings": {
-          "input": {
-            "exampleData": {
-              "sampleData": {}
+          "actionName": "tables-find-records",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
             },
-            "mode": "simple"
-          },
-          "propertySettings": {
-            "exampleData": {
-              "schema": {
-                "sampleData": {
-                  "displayName": "Sample Data",
-                  "required": true,
-                  "type": "OBJECT"
-                }
-              },
-              "type": "MANUAL"
+            "retryOnFailure": {
+              "value": false
             }
           },
-          "qadamName": "@aiqadam/qadam-subflows",
-          "qadamVersion": "0.4.14",
-          "sampleData": {},
-          "triggerName": "callableFlow"
+          "input": {
+            "columns": [
+              "mVfpZFCwAZskWXNT7iCuI",
+              "TZyqC63UAWrPbzxuf2q4w"
+            ],
+            "filters": {
+              "filters": [
+                {
+                  "field": {
+                    "id": "qQPYl9c0ew6n8w2CGYZII",
+                    "name": "event_id",
+                    "type": "TEXT"
+                  },
+                  "operator": "eq",
+                  "value": "{{trigger['output'].data.eventId}}"
+                }
+              ]
+            },
+            "record_ids": [],
+            "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-tables",
+          "qadamVersion": "0.4.5"
         },
-        "type": "PIECE_TRIGGER",
+        "type": "PIECE",
         "valid": true
       },
+      "settings": {
+        "actionName": "tables-find-records",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "filters": {
+            "filters": [
+              {
+                "field": {
+                  "id": "39qJ4o2MYyNYsT2VtxfcK",
+                  "name": "id",
+                  "type": "TEXT"
+                },
+                "operator": "eq",
+                "value": "{{trigger['output'].data.eventId}}"
+              }
+            ]
+          },
+          "limit": 1,
+          "record_ids": [],
+          "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-tables",
+        "qadamVersion": "0.4.5"
+      },
+      "type": "PIECE",
       "valid": true
-    }
-  ],
-  "metadata": {
-    "externalId": "HGX7KPhFsyFrapBRvlIAT"
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "sampleData": {}
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
   },
-  "name": "reg-start",
-  "qadams": [
-    "@aiqadam/qadam-subflows",
-    "@aiqadam/qadam-tables",
-    "@aiqadam/qadam-telegram-bot"
-  ],
-  "status": "PUBLISHED",
-  "summary": "",
-  "tags": [],
-  "type": "SHARED"
+  "valid": true
 }

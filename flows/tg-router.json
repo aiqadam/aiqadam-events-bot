@@ -1,922 +1,837 @@
 {
-  "author": "",
-  "blogUrl": "",
-  "categories": [],
-  "description": "",
-  "flows": [
-    {
-      "displayName": "tg-router",
-      "notes": [],
-      "schemaVersion": "31",
-      "trigger": {
-        "displayName": "new_telegram_message",
-        "lastUpdatedDate": "2026-09-13T16:42:48.039Z",
-        "name": "trigger",
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "tg-router",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "new_telegram_message",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "normalize update",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "dedup claim",
+        "name": "step_2",
         "nextAction": {
-          "displayName": "normalize update",
-          "lastUpdatedDate": "2026-09-13T19:20:34.267Z",
-          "name": "step_1",
+          "displayName": "gate",
+          "name": "step_3",
           "nextAction": {
-            "displayName": "dedup claim",
-            "lastUpdatedDate": "2026-09-13T16:42:48.040Z",
-            "name": "step_2",
-            "nextAction": {
-              "displayName": "gate",
-              "lastUpdatedDate": "2026-09-13T16:42:48.040Z",
-              "name": "step_3",
-              "nextAction": {
-                "children": [
-                  {
-                    "displayName": "upsert users",
-                    "lastUpdatedDate": "2026-09-13T16:42:48.041Z",
-                    "name": "step_6",
+            "children": [
+              {
+                "displayName": "upsert users",
+                "name": "step_6",
+                "nextAction": {
+                  "displayName": "read session",
+                  "name": "step_7",
+                  "nextAction": {
+                    "displayName": "pick session",
+                    "name": "step_8",
                     "nextAction": {
-                      "displayName": "read session",
-                      "lastUpdatedDate": "2026-09-13T16:42:48.042Z",
-                      "name": "step_7",
+                      "displayName": "parse start payload",
+                      "name": "step_9",
                       "nextAction": {
-                        "displayName": "pick session",
-                        "lastUpdatedDate": "2026-09-13T16:42:48.042Z",
-                        "name": "step_8",
+                        "displayName": "routing decision",
+                        "name": "step_10",
                         "nextAction": {
-                          "displayName": "parse start payload",
-                          "lastUpdatedDate": "2026-09-13T16:42:48.042Z",
-                          "name": "step_9",
-                          "nextAction": {
-                            "displayName": "routing decision",
-                            "lastUpdatedDate": "2026-09-13T16:42:48.043Z",
-                            "name": "step_10",
-                            "nextAction": {
-                              "children": [
-                                {
-                                  "displayName": "call reg-start",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.044Z",
-                                  "name": "step_12",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "eventId": "demo",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "HGX7KPhFsyFrapBRvlIAT"
-                                      },
-                                      "flowProps": {
-                                        "chatId": "{{step_1['output'].chatId}}",
-                                        "eventId": "{{step_10['output'].eventId}}",
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "eventId": "{{step_10['output'].eventId}}",
-                                          "telegramId": "{{step_1['output'].tgId}}",
-                                          "utm": "{{step_10['output'].utm}}"
-                                        },
-                                        "telegramId": "{{step_1['output'].tgId}}",
-                                        "utm": "{{step_10['output'].utm}}"
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call reg-consent-pdn",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.045Z",
-                                  "name": "step_13",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "callbackData": "reg:pdn:yes",
-                                          "callbackQueryId": "sample-cbq-id",
-                                          "chatId": "322876545",
-                                          "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\"}",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "PUf09unvIwSpobPr1u3kh"
-                                      },
-                                      "flowProps": {
-                                        "callbackData": "{{step_1['output'].callbackData}}",
-                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                        "chatId": "{{step_1['output'].chatId}}",
-                                        "payload": {
-                                          "callbackData": "{{step_1['output'].callbackData}}",
-                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        },
-                                        "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                        "telegramId": "{{step_1['output'].tgId}}"
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call reg-consent-mkt",
-                                  "lastUpdatedDate": "2026-09-13T19:20:45.188Z",
-                                  "name": "step_14",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "callbackData": "reg:mkt:yes",
-                                          "callbackQueryId": "sample-cbq-id",
-                                          "chatId": "322876545",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "JH42q9BkKDYUti7leKJrC"
-                                      },
-                                      "flowProps": {
-                                        "callbackData": "{{step_1['output'].callbackData}}",
-                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                        "chatId": "{{step_1['output'].chatId}}",
-                                        "payload": {
-                                          "callbackData": "{{step_1['output'].callbackData}}",
-                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        },
-                                        "telegramId": "{{step_1['output'].tgId}}"
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call reg-phone",
-                                  "lastUpdatedDate": "2026-09-13T19:20:51.500Z",
-                                  "name": "step_15",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "contactIsOwn": true,
-                                          "contactPhone": "+998901234567",
-                                          "eventId": "demo",
-                                          "kind": "contact",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "vHduLOLdbcdT0wZDeexJx"
-                                      },
-                                      "flowProps": {
-                                        "chatId": "{{step_1['output'].chatId}}",
-                                        "contactIsOwn": "{{step_1['output'].contactIsOwn}}",
-                                        "contactPhone": "{{step_1['output'].contactPhone}}",
-                                        "eventId": "{{step_10['output'].draftEventId}}",
-                                        "kind": "{{step_10['output'].phoneKind}}",
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "contactIsOwn": "{{step_1['output'].contactIsOwn}}",
-                                          "contactPhone": "{{step_1['output'].contactPhone}}",
-                                          "eventId": "{{step_10['output'].draftEventId}}",
-                                          "kind": "{{step_10['output'].phoneKind}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "telegramId": "{{step_1['output'].tgId}}",
-                                          "userMessageId": "{{step_1['output'].messageId}}"
-                                        },
-                                        "telegramId": "{{step_1['output'].tgId}}"
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call event-wizard-start",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.048Z",
-                                  "name": "step_17",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "hHkYSlrAOqi7Ka1WkQpbv"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call event-wizard-edit-start",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.049Z",
-                                  "name": "step_18",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "eventId": "demo",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "2AZsiGo92R12qcheRHqpg"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "eventId": "{{step_1['output'].commandArgs}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call event-wizard-field",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.050Z",
-                                  "name": "step_19",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "sessionDraft": "{}",
-                                          "sessionScenario": "event_create",
-                                          "sessionStep": "title",
-                                          "telegramId": "322876545",
-                                          "text": "Демо-ивент W26"
-                                        },
-                                        "externalId": "LzaoK8PdbMq5wOvt68pxc"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "sessionScenario": "{{step_8['output'].scenario}}",
-                                          "sessionStep": "{{step_10['output'].sessionStep}}",
-                                          "telegramId": "{{step_1['output'].tgId}}",
-                                          "text": "{{step_1['output'].text}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call event-wizard-photo",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.051Z",
-                                  "name": "step_20",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "sampleData": {}
-                                        },
-                                        "externalId": "rgxegw7xRaYYGqZsPTujF"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "hasPhoto": "{{step_1['output'].hasPhoto}}",
-                                          "photoFileId": "{{step_1['output'].photoFileId}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "sessionScenario": "{{step_8['output'].scenario}}",
-                                          "telegramId": "{{step_1['output'].tgId}}",
-                                          "text": "{{step_1['output'].text}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call event-wizard-geo",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.052Z",
-                                  "name": "step_21",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "hasLocation": false,
-                                          "sessionDraft": "{}",
-                                          "sessionScenario": "event_create",
-                                          "telegramId": "322876545",
-                                          "text": "-"
-                                        },
-                                        "externalId": "wZLWTVqVzSODF6DZYvOHx"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "hasLocation": "{{step_1['output'].hasLocation}}",
-                                          "locationLat": "{{step_1['output'].locationLat}}",
-                                          "locationLon": "{{step_1['output'].locationLon}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "sessionScenario": "{{step_8['output'].scenario}}",
-                                          "telegramId": "{{step_1['output'].tgId}}",
-                                          "text": "{{step_1['output'].text}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call event-wizard-publish",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.053Z",
-                                  "name": "step_22",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "callbackData": "wiz:publish",
-                                          "callbackQueryId": "sample-cbq-id",
-                                          "chatId": "322876545",
-                                          "sessionDraft": "{}",
-                                          "sessionScenario": "event_create",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "0mM4WtDVkOJNPswCCxCZP"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "callbackData": "{{step_1['output'].callbackData}}",
-                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                          "sessionScenario": "{{step_8['output'].scenario}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call events-list",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.054Z",
-                                  "name": "step_23",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "5Vwo7OcDP4TfHHCaPQycx"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "callbackData": "{{step_1['output'].callbackData}}",
-                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call my-regs",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.055Z",
-                                  "name": "step_24",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "chatId": "322876545",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "K4RS16MdhW0pf8UnYZueu"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "callbackData": "{{step_1['output'].callbackData}}",
-                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "call my-reg-cancel",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.056Z",
-                                  "name": "step_25",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "callbackData": "myreg:cancel:demo",
-                                          "callbackQueryId": "sample-cbq-id",
-                                          "chatId": "322876545",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "NgRBWT6gR7yhuf1qwG2mM"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "callbackData": "{{step_1['output'].callbackData}}",
-                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                          "chatId": "{{step_1['output'].chatId}}",
-                                          "telegramId": "{{step_1['output'].tgId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "намерение без обработчика",
-                                  "lastUpdatedDate": "2026-09-13T16:42:48.057Z",
-                                  "name": "step_16",
-                                  "settings": {
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {},
-                                    "sourceCode": {
-                                      "code": "export const code = async (inputs) => {\n  return { unhandled: true };\n};",
-                                      "packageJson": "{}"
-                                    }
-                                  },
-                                  "type": "CODE",
-                                  "valid": true
-                                }
-                              ],
-                              "displayName": "делегирование обработчику",
-                              "lastUpdatedDate": "2026-09-13T16:42:48.043Z",
-                              "name": "step_11",
+                          "children": [
+                            {
+                              "displayName": "call reg-start",
+                              "name": "step_12",
                               "settings": {
-                                "branches": [
-                                  {
-                                    "branchName": "reg_start",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "reg_start"
-                                        }
-                                      ]
-                                    ]
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
                                   },
-                                  {
-                                    "branchName": "reg_pdn",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "reg_pdn"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "reg_mkt",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "reg_mkt"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "reg_phone",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "reg_phone"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "wiz_start",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "wiz_start"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "wiz_edit_start",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "wiz_edit_start"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "wiz_field",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "wiz_field"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "wiz_photo",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "wiz_photo"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "wiz_geo",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "wiz_geo"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "wiz_publish",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "wiz_publish"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "events_list",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "events_list"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "my_regs",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "my_regs"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "my_reg_cancel",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_10['output'].route}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "my_reg_cancel"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "Otherwise",
-                                    "branchType": "FALLBACK"
+                                  "retryOnFailure": {
+                                    "value": false
                                   }
-                                ],
-                                "executionType": "EXECUTE_FIRST_MATCH"
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "eventId": "demo",
+                                      "telegramId": "322876545",
+                                      "utm": ""
+                                    },
+                                    "externalId": "HGX7KPhFsyFrapBRvlIAT"
+                                  },
+                                  "flowProps": {
+                                    "chatId": "{{step_1['output'].chatId}}",
+                                    "eventId": "{{step_10['output'].eventId}}",
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "eventId": "{{step_10['output'].eventId}}",
+                                      "telegramId": "{{step_1['output'].tgId}}",
+                                      "utm": "{{step_10['output'].utm}}"
+                                    },
+                                    "telegramId": "{{step_1['output'].tgId}}",
+                                    "utm": "{{step_10['output'].utm}}"
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
                               },
-                              "type": "ROUTER",
+                              "type": "PIECE",
                               "valid": true
                             },
-                            "settings": {
-                              "errorHandlingOptions": {
-                                "continueOnFailure": {
-                                  "value": false
-                                },
-                                "retryOnFailure": {
-                                  "value": false
-                                }
-                              },
-                              "input": {
-                                "callbackData": "{{step_1['output'].callbackData}}",
-                                "command": "{{step_1['output'].command}}",
-                                "commandArgs": "{{step_1['output'].commandArgs}}",
-                                "draftEventId": "{{step_8['output'].draftEventId}}",
-                                "hasContact": "{{step_1['output'].hasContact}}",
-                                "parsed": "{{step_9['output'].data}}",
-                                "sessionActive": "{{step_8['output'].active}}",
-                                "sessionDraft": "{{step_8['output'].draft}}",
-                                "sessionScenario": "{{step_8['output'].scenario}}",
-                                "sessionStep": "{{step_8['output'].step}}"
-                              },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const commandArgs = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const hasContact = inputs.hasContact === true || inputs.hasContact === 'true';\n\n  const isWizard = sessionScenario === 'event_create' || sessionScenario === 'event_edit';\n  const fieldSteps = ['title', 'description', 'address', 'starts_at', 'ends_at', 'reg_deadline_at'];\n\n  let route = 'none';\n  if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'newevent') {\n    route = 'wiz_start';\n  } else if (command === 'editevent') {\n    route = 'wiz_edit_start';\n  } else if (command === 'events') {\n    route = 'events_list';\n  } else if (command === 'myregs') {\n    route = 'my_regs';\n  } else if (callbackData === 'ev:list:upcoming' || callbackData === 'ev:list:past') {\n    route = 'events_list';\n  } else if (callbackData.indexOf('myreg:cancel:') === 0 || callbackData.indexOf('myreg:yes:') === 0 || callbackData === 'myreg:no') {\n    route = 'my_reg_cancel';\n  } else if (isWizard && sessionStep === 'photo') {\n    route = 'wiz_photo';\n  } else if (isWizard && sessionStep === 'geo') {\n    route = 'wiz_geo';\n  } else if (isWizard && sessionStep === 'preview') {\n    route = 'wiz_publish';\n  } else if (isWizard && fieldSteps.indexOf(sessionStep) >= 0) {\n    route = 'wiz_field';\n  } else if (sessionActive && sessionScenario === 'registration' && sessionStep === 'await_pdn') {\n    route = 'reg_pdn';\n  } else if (sessionActive && sessionScenario === 'registration' && sessionStep === 'await_marketing') {\n    route = 'reg_mkt';\n  } else if (sessionActive && sessionScenario === 'registration' && sessionStep === 'await_phone') {\n    route = 'reg_phone';\n  }\n\n  return {\n    route: route,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep, commandArgs: commandArgs,\n    phoneKind: hasContact ? 'contact' : 'text'\n  };\n};",
-                                "packageJson": "{}"
-                              }
-                            },
-                            "type": "CODE",
-                            "valid": true
-                          },
-                          "settings": {
-                            "actionName": "callFlow",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
-                              },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "executionMode": "inline",
-                              "flow": {
-                                "exampleData": {
-                                  "sampleData": {}
-                                },
-                                "externalId": "kn8WWJTyEm7S51Blwg0Eg"
-                              },
-                              "flowProps": {
-                                "payload": {
-                                  "start": "{{step_1['output'].startPayload}}"
-                                }
-                              },
-                              "mode": "simple",
-                              "waitForResponse": true
-                            },
-                            "propertySettings": {
-                              "flowProps": {
-                                "schema": {
-                                  "payload": {
-                                    "defaultValue": {},
-                                    "displayName": "Payload",
-                                    "required": true,
-                                    "type": "OBJECT"
+                            {
+                              "displayName": "call reg-consent-pdn",
+                              "name": "step_13",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
                                   }
                                 },
-                                "type": "MANUAL"
-                              }
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "reg:pdn:yes",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\"}",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "PUf09unvIwSpobPr1u3kh"
+                                  },
+                                  "flowProps": {
+                                    "callbackData": "{{step_1['output'].callbackData}}",
+                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                    "chatId": "{{step_1['output'].chatId}}",
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                    "telegramId": "{{step_1['output'].tgId}}"
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
                             },
-                            "qadamName": "@aiqadam/qadam-subflows",
-                            "qadamVersion": "0.4.14"
+                            {
+                              "displayName": "call reg-consent-mkt",
+                              "name": "step_14",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "reg:mkt:yes",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0}",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "JH42q9BkKDYUti7leKJrC"
+                                  },
+                                  "flowProps": {
+                                    "callbackData": "{{step_1['output'].callbackData}}",
+                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                    "chatId": "{{step_1['output'].chatId}}",
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "telegramId": "{{step_1['output'].tgId}}"
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call reg-phone",
+                              "name": "step_15",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "contactIsOwn": true,
+                                      "contactPhone": "+998901234567",
+                                      "eventId": "demo",
+                                      "kind": "contact",
+                                      "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0,\"promptMessageId\":0}",
+                                      "telegramId": "322876545",
+                                      "userMessageId": 0
+                                    },
+                                    "externalId": "vHduLOLdbcdT0wZDeexJx"
+                                  },
+                                  "flowProps": {
+                                    "chatId": "{{step_1['output'].chatId}}",
+                                    "contactIsOwn": "{{step_1['output'].contactIsOwn}}",
+                                    "contactPhone": "{{step_1['output'].contactPhone}}",
+                                    "eventId": "{{step_10['output'].draftEventId}}",
+                                    "kind": "{{step_10['output'].phoneKind}}",
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "contactIsOwn": "{{step_1['output'].contactIsOwn}}",
+                                      "contactPhone": "{{step_1['output'].contactPhone}}",
+                                      "eventId": "{{step_10['output'].draftEventId}}",
+                                      "kind": "{{step_10['output'].phoneKind}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}",
+                                      "userMessageId": "{{step_1['output'].messageId}}"
+                                    },
+                                    "telegramId": "{{step_1['output'].tgId}}"
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call event-wizard-start",
+                              "name": "step_17",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "hHkYSlrAOqi7Ka1WkQpbv"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call event-wizard-edit-start",
+                              "name": "step_18",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "eventId": "demo",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "2AZsiGo92R12qcheRHqpg"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "eventId": "{{step_1['output'].commandArgs}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call event-wizard-field",
+                              "name": "step_19",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "sessionDraft": "{}",
+                                      "sessionScenario": "event_create",
+                                      "sessionStep": "title",
+                                      "telegramId": "322876545",
+                                      "text": "Демо-ивент W26"
+                                    },
+                                    "externalId": "LzaoK8PdbMq5wOvt68pxc"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "sessionScenario": "{{step_8['output'].scenario}}",
+                                      "sessionStep": "{{step_10['output'].sessionStep}}",
+                                      "telegramId": "{{step_1['output'].tgId}}",
+                                      "text": "{{step_1['output'].text}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call event-wizard-photo",
+                              "name": "step_20",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "sampleData": {}
+                                    },
+                                    "externalId": "rgxegw7xRaYYGqZsPTujF"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "hasPhoto": "{{step_1['output'].hasPhoto}}",
+                                      "photoFileId": "{{step_1['output'].photoFileId}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "sessionScenario": "{{step_8['output'].scenario}}",
+                                      "telegramId": "{{step_1['output'].tgId}}",
+                                      "text": "{{step_1['output'].text}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call event-wizard-geo",
+                              "name": "step_21",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "hasLocation": false,
+                                      "locationLat": "",
+                                      "locationLon": "",
+                                      "sessionDraft": "{}",
+                                      "sessionScenario": "event_create",
+                                      "telegramId": "322876545",
+                                      "text": "-"
+                                    },
+                                    "externalId": "wZLWTVqVzSODF6DZYvOHx"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "hasLocation": "{{step_1['output'].hasLocation}}",
+                                      "locationLat": "{{step_1['output'].locationLat}}",
+                                      "locationLon": "{{step_1['output'].locationLon}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "sessionScenario": "{{step_8['output'].scenario}}",
+                                      "telegramId": "{{step_1['output'].tgId}}",
+                                      "text": "{{step_1['output'].text}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call event-wizard-publish",
+                              "name": "step_22",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "wiz:publish",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "sessionDraft": "{}",
+                                      "sessionScenario": "event_create",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "0mM4WtDVkOJNPswCCxCZP"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "sessionScenario": "{{step_8['output'].scenario}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call events-list",
+                              "name": "step_23",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "",
+                                      "callbackQueryId": "",
+                                      "chatId": "322876545",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "5Vwo7OcDP4TfHHCaPQycx"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call my-regs",
+                              "name": "step_24",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "",
+                                      "callbackQueryId": "",
+                                      "chatId": "322876545",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "K4RS16MdhW0pf8UnYZueu"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call my-reg-cancel",
+                              "name": "step_25",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "myreg:cancel:demo",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "NgRBWT6gR7yhuf1qwG2mM"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "намерение без обработчика",
+                              "name": "step_16",
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {},
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  return { unhandled: true };\n};",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            }
+                          ],
+                          "displayName": "делегирование обработчику",
+                          "name": "step_11",
+                          "settings": {
+                            "branches": [
+                              {
+                                "branchName": "reg_start",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "reg_start"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "reg_pdn",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "reg_pdn"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "reg_mkt",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "reg_mkt"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "reg_phone",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "reg_phone"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "wiz_start",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "wiz_start"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "wiz_edit_start",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "wiz_edit_start"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "wiz_field",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "wiz_field"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "wiz_photo",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "wiz_photo"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "wiz_geo",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "wiz_geo"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "wiz_publish",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "wiz_publish"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "events_list",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "events_list"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "my_regs",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "my_regs"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "my_reg_cancel",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "my_reg_cancel"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "Otherwise",
+                                "branchType": "FALLBACK"
+                              }
+                            ],
+                            "executionType": "EXECUTE_FIRST_MATCH"
                           },
-                          "type": "PIECE",
+                          "type": "ROUTER",
                           "valid": true
                         },
                         "settings": {
@@ -929,10 +844,19 @@
                             }
                           },
                           "input": {
-                            "records": "{{step_7['output']}}"
+                            "callbackData": "{{step_1['output'].callbackData}}",
+                            "command": "{{step_1['output'].command}}",
+                            "commandArgs": "{{step_1['output'].commandArgs}}",
+                            "draftEventId": "{{step_8['output'].draftEventId}}",
+                            "hasContact": "{{step_1['output'].hasContact}}",
+                            "parsed": "{{step_9['output'].data}}",
+                            "sessionActive": "{{step_8['output'].active}}",
+                            "sessionDraft": "{{step_8['output'].draft}}",
+                            "sessionScenario": "{{step_8['output'].scenario}}",
+                            "sessionStep": "{{step_8['output'].step}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const rows = arr(inputs.records).map(flat);\n  const row = rows[0];\n\n  const empty = { active: false, scenario: '', step: '', draft: '', draftEventId: '' };\n  if (!row) return empty;\n\n  const scenario = row.scenario || '';\n  const step = row.step || '';\n  if (scenario === '' || scenario === '-' || step === '' || step === '-') return empty;\n\n  const updatedAt = row.updated_at || '';\n  const ageMs = updatedAt ? (Date.now() - Date.parse(/[Zz]$/.test(updatedAt) || /[+-][0-9]{2}:?[0-9]{2}$/.test(updatedAt) ? updatedAt : updatedAt + 'Z')) : Infinity;\n  if (!isFinite(ageMs) || ageMs > 24 * 3600 * 1000) return empty;\n\n  let draftEventId = '';\n  try { const d = JSON.parse(row.draft || '{}'); draftEventId = String(d.eventId || ''); } catch (e) { draftEventId = ''; }\n\n  return { active: true, scenario: scenario, step: step, draft: row.draft || '{}', draftEventId: draftEventId };\n};",
+                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const commandArgs = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const hasContact = inputs.hasContact === true || inputs.hasContact === 'true';\n\n  const isWizard = sessionScenario === 'event_create' || sessionScenario === 'event_edit';\n  const fieldSteps = ['title', 'description', 'address', 'starts_at', 'ends_at', 'reg_deadline_at'];\n\n  let route = 'none';\n  if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'newevent') {\n    route = 'wiz_start';\n  } else if (command === 'editevent') {\n    route = 'wiz_edit_start';\n  } else if (command === 'events') {\n    route = 'events_list';\n  } else if (command === 'myregs') {\n    route = 'my_regs';\n  } else if (callbackData === 'ev:list:upcoming' || callbackData === 'ev:list:past') {\n    route = 'events_list';\n  } else if (callbackData.indexOf('myreg:cancel:') === 0 || callbackData.indexOf('myreg:yes:') === 0 || callbackData === 'myreg:no') {\n    route = 'my_reg_cancel';\n  } else if (isWizard && sessionStep === 'photo') {\n    route = 'wiz_photo';\n  } else if (isWizard && sessionStep === 'geo') {\n    route = 'wiz_geo';\n  } else if (isWizard && sessionStep === 'preview') {\n    route = 'wiz_publish';\n  } else if (isWizard && fieldSteps.indexOf(sessionStep) >= 0) {\n    route = 'wiz_field';\n  } else if (sessionActive && sessionScenario === 'registration' && sessionStep === 'await_pdn') {\n    route = 'reg_pdn';\n  } else if (sessionActive && sessionScenario === 'registration' && sessionStep === 'await_marketing') {\n    route = 'reg_mkt';\n  } else if (sessionActive && sessionScenario === 'registration' && sessionStep === 'await_phone') {\n    route = 'reg_phone';\n  }\n\n  return {\n    route: route,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep, commandArgs: commandArgs,\n    phoneKind: hasContact ? 'contact' : 'text'\n  };\n};",
                             "packageJson": "{}"
                           }
                         },
@@ -940,7 +864,7 @@
                         "valid": true
                       },
                       "settings": {
-                        "actionName": "tables-find-records",
+                        "actionName": "callFlow",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": false
@@ -950,32 +874,41 @@
                           }
                         },
                         "input": {
-                          "filters": {
-                            "filters": [
-                              {
-                                "field": {
-                                  "id": "N8CdPxcdxLX9vFCINvZbL",
-                                  "name": "telegram_id",
-                                  "type": "TEXT"
-                                },
-                                "operator": "eq",
-                                "value": "{{step_1['output'].tgId}}"
-                              }
-                            ]
+                          "executionMode": "inline",
+                          "flow": {
+                            "exampleData": {
+                              "sampleData": {}
+                            },
+                            "externalId": "kn8WWJTyEm7S51Blwg0Eg"
                           },
-                          "limit": 1,
-                          "record_ids": [],
-                          "table_id": "toTKgngMTqDNJWDpQMh4d"
+                          "flowProps": {
+                            "payload": {
+                              "start": "{{step_1['output'].startPayload}}"
+                            }
+                          },
+                          "mode": "simple",
+                          "waitForResponse": true
                         },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-tables",
-                        "qadamVersion": "0.4.5"
+                        "propertySettings": {
+                          "flowProps": {
+                            "schema": {
+                              "payload": {
+                                "defaultValue": {},
+                                "displayName": "Payload",
+                                "required": true,
+                                "type": "OBJECT"
+                              }
+                            },
+                            "type": "MANUAL"
+                          }
+                        },
+                        "qadamName": "@aiqadam/qadam-subflows",
+                        "qadamVersion": "0.4.14"
                       },
                       "type": "PIECE",
                       "valid": true
                     },
                     "settings": {
-                      "actionName": "tables-upsert-records",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -985,127 +918,135 @@
                         }
                       },
                       "input": {
-                        "key_columns": [
-                          "JtylZU291K7TuMn9c9F2t"
-                        ],
-                        "table_id": "xHhYjhwqKdONkrYJGcBsz",
-                        "values": {
-                          "values": [
-                            {
-                              "JtylZU291K7TuMn9c9F2t": "{{step_1['output'].tgId}}",
-                              "QCFLn2jRQPxB4RpMKxAKH": "{{step_1['output'].username}}",
-                              "TS1eYS5hUJOWx8CBlNMDx": "{{step_1['output'].now}}",
-                              "ja2S7DwVun5AKs3Jk7jK6": "false",
-                              "nWPJjEcVpqMUaMwdEpPX5": "{{step_1['output'].firstName}}",
-                              "wW12TT5X2kFgLryWbnnm5": "{{step_1['output'].languageCode}}",
-                              "yd5CbkPctz2GXmBabZeVV": "{{step_1['output'].lastName}}"
-                            }
-                          ]
-                        }
-                      },
-                      "propertySettings": {},
-                      "qadamName": "@aiqadam/qadam-tables",
-                      "qadamVersion": "0.4.5"
-                    },
-                    "type": "PIECE",
-                    "valid": true
-                  },
-                  {
-                    "displayName": "апдейт пропущен — почему",
-                    "lastUpdatedDate": "2026-09-13T16:42:48.058Z",
-                    "name": "step_5",
-                    "settings": {
-                      "errorHandlingOptions": {
-                        "continueOnFailure": {
-                          "value": false
-                        },
-                        "retryOnFailure": {
-                          "value": false
-                        }
-                      },
-                      "input": {
-                        "reason": "{{step_3['output'].reason}}"
+                        "records": "{{step_7['output']}}"
                       },
                       "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  return { skipped: true, reason: String(inputs.reason === undefined || inputs.reason === null ? '' : inputs.reason) };\n};",
+                        "code": "export const code = async (inputs) => {\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const rows = arr(inputs.records).map(flat);\n  const row = rows[0];\n\n  const empty = { active: false, scenario: '', step: '', draft: '', draftEventId: '' };\n  if (!row) return empty;\n\n  const scenario = row.scenario || '';\n  const step = row.step || '';\n  if (scenario === '' || scenario === '-' || step === '' || step === '-') return empty;\n\n  const updatedAt = row.updated_at || '';\n  const ageMs = updatedAt ? (Date.now() - Date.parse(/[Zz]$/.test(updatedAt) || /[+-][0-9]{2}:?[0-9]{2}$/.test(updatedAt) ? updatedAt : updatedAt + 'Z')) : Infinity;\n  if (!isFinite(ageMs) || ageMs > 24 * 3600 * 1000) return empty;\n\n  let draftEventId = '';\n  try { const d = JSON.parse(row.draft || '{}'); draftEventId = String(d.eventId || ''); } catch (e) { draftEventId = ''; }\n\n  return { active: true, scenario: scenario, step: step, draft: row.draft || '{}', draftEventId: draftEventId };\n};",
                         "packageJson": "{}"
                       }
                     },
                     "type": "CODE",
                     "valid": true
-                  }
-                ],
-                "displayName": "обрабатываем только свежий апдейт",
-                "lastUpdatedDate": "2026-09-13T16:42:48.040Z",
-                "name": "step_4",
-                "settings": {
-                  "branches": [
-                    {
-                      "branchName": "proceed",
-                      "branchType": "CONDITION",
-                      "conditions": [
-                        [
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "filters": {
+                        "filters": [
                           {
-                            "firstValue": "{{step_3['output'].proceed}}",
-                            "operator": "BOOLEAN_IS_TRUE"
+                            "field": {
+                              "id": "N8CdPxcdxLX9vFCINvZbL",
+                              "name": "telegram_id",
+                              "type": "TEXT"
+                            },
+                            "operator": "eq",
+                            "value": "{{step_1['output'].tgId}}"
                           }
                         ]
-                      ]
+                      },
+                      "limit": 1,
+                      "record_ids": [],
+                      "table_id": "toTKgngMTqDNJWDpQMh4d"
                     },
-                    {
-                      "branchName": "Otherwise",
-                      "branchType": "FALLBACK"
-                    }
-                  ],
-                  "executionType": "EXECUTE_FIRST_MATCH"
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
                 },
-                "type": "ROUTER",
+                "settings": {
+                  "actionName": "tables-upsert-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "key_columns": [
+                      "JtylZU291K7TuMn9c9F2t"
+                    ],
+                    "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                    "values": {
+                      "values": [
+                        {
+                          "JtylZU291K7TuMn9c9F2t": "{{step_1['output'].tgId}}",
+                          "QCFLn2jRQPxB4RpMKxAKH": "{{step_1['output'].username}}",
+                          "TS1eYS5hUJOWx8CBlNMDx": "{{step_1['output'].now}}",
+                          "ja2S7DwVun5AKs3Jk7jK6": "false",
+                          "nWPJjEcVpqMUaMwdEpPX5": "{{step_1['output'].firstName}}",
+                          "wW12TT5X2kFgLryWbnnm5": "{{step_1['output'].languageCode}}",
+                          "yd5CbkPctz2GXmBabZeVV": "{{step_1['output'].lastName}}"
+                        }
+                      ]
+                    }
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
                 "valid": true
               },
-              "settings": {
-                "errorHandlingOptions": {
-                  "continueOnFailure": {
-                    "value": false
+              {
+                "displayName": "апдейт пропущен — почему",
+                "name": "step_5",
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
                   },
-                  "retryOnFailure": {
-                    "value": false
+                  "input": {
+                    "reason": "{{step_3['output'].reason}}"
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  return { skipped: true, reason: String(inputs.reason === undefined || inputs.reason === null ? '' : inputs.reason) };\n};",
+                    "packageJson": "{}"
                   }
                 },
-                "input": {
-                  "isBot": "{{step_1['output'].isBot}}",
-                  "isPrivate": "{{step_1['output'].isPrivate}}",
-                  "ok": "{{step_1['output'].ok}}",
-                  "stored": "{{step_2['output'].stored}}"
-                },
-                "sourceCode": {
-                  "code": "export const code = async (inputs) => {\n  const ok = inputs.ok === true || inputs.ok === 'true';\n  const isBot = inputs.isBot === true || inputs.isBot === 'true';\n  const isPrivate = inputs.isPrivate === true || inputs.isPrivate === 'true';\n  const stored = inputs.stored === true || inputs.stored === 'true';\n\n  let reason = '';\n  if (!ok) reason = 'bad_update';\n  else if (!stored) reason = 'duplicate';\n  else if (isBot) reason = 'from_bot';\n  else if (!isPrivate) reason = 'non_private_chat';\n\n  return { proceed: reason === '', reason: reason };\n};",
-                  "packageJson": "{}"
-                }
-              },
-              "type": "CODE",
-              "valid": true
-            },
+                "type": "CODE",
+                "valid": true
+              }
+            ],
+            "displayName": "обрабатываем только свежий апдейт",
+            "name": "step_4",
             "settings": {
-              "actionName": "put_if_absent",
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
+              "branches": [
+                {
+                  "branchName": "proceed",
+                  "branchType": "CONDITION",
+                  "conditions": [
+                    [
+                      {
+                        "firstValue": "{{step_3['output'].proceed}}",
+                        "operator": "BOOLEAN_IS_TRUE"
+                      }
+                    ]
+                  ]
                 },
-                "retryOnFailure": {
-                  "value": false
+                {
+                  "branchName": "Otherwise",
+                  "branchType": "FALLBACK"
                 }
-              },
-              "input": {
-                "key": "{{step_1['output'].dedupKey}}",
-                "store_scope": "COLLECTION",
-                "ttl_seconds": 86400,
-                "value": "{{step_1['output'].now}}"
-              },
-              "propertySettings": {},
-              "qadamName": "@aiqadam/qadam-store",
-              "qadamVersion": "0.7.0"
+              ],
+              "executionType": "EXECUTE_FIRST_MATCH"
             },
-            "type": "PIECE",
+            "type": "ROUTER",
             "valid": true
           },
           "settings": {
@@ -1118,10 +1059,13 @@
               }
             },
             "input": {
-              "update": "{{trigger['output']}}"
+              "isBot": "{{step_1['output'].isBot}}",
+              "isPrivate": "{{step_1['output'].isPrivate}}",
+              "ok": "{{step_1['output'].ok}}",
+              "stored": "{{step_2['output'].stored}}"
             },
             "sourceCode": {
-              "code": "export const code = async (inputs) => {\n  const upd = inputs.update || {};\n  const updateId = upd.update_id;\n  const msg = upd.message;\n  const cbq = upd.callback_query;\n\n  const src = cbq ? cbq : msg;\n  const from = (src && src.from) || {};\n  const isBot = from.is_bot === true;\n\n  const chat = cbq ? (cbq.message && cbq.message.chat) : (msg && msg.chat);\n  const isPrivate = !!(chat && chat.type === 'private');\n\n  const text = msg && typeof msg.text === 'string' ? msg.text : '';\n  let command = '';\n  let startPayload = '';\n  let commandArgs = '';\n  if (text.charAt(0) === '/') {\n    const sp = text.indexOf(' ');\n    const cmdRaw = sp < 0 ? text.slice(1) : text.slice(1, sp);\n    command = cmdRaw.split('@')[0];\n    commandArgs = sp < 0 ? '' : text.slice(sp + 1).trim();\n    if (command === 'start') startPayload = commandArgs;\n  }\n\n  const contact = msg && msg.contact;\n  const contactPhone = contact ? String(contact.phone_number || '') : '';\n  const contactIsOwn = !!(contact && String(contact.user_id || '') === String(from.id || ''));\n\n  const photos = msg && Array.isArray(msg.photo) ? msg.photo : null;\n  const hasPhoto = !!(photos && photos.length > 0);\n  const photoFileId = hasPhoto ? String(photos[photos.length - 1].file_id || '') : '';\n\n  const location = msg && msg.location;\n  const hasLocation = !!(location && typeof location.latitude === 'number' && typeof location.longitude === 'number');\n  const locationLat = hasLocation ? String(location.latitude) : '';\n  const locationLon = hasLocation ? String(location.longitude) : '';\n\n  const callbackData = cbq ? String(cbq.data || '') : '';\n  const callbackQueryId = cbq ? String(cbq.id || '') : '';\n\n  // messageId — входящее сообщение гостя. Нужен, чтобы убрать из ленты\n  // ответ на транзиентный вопрос (ADR-0017: в ленте остаются карточка и билет).\n  const messageId = msg && msg.message_id !== undefined && msg.message_id !== null ? Number(msg.message_id) : 0;\n\n  const tgId = String(from.id === undefined || from.id === null ? '' : from.id);\n  const chatId = String(chat && chat.id !== undefined && chat.id !== null ? chat.id : tgId);\n\n  const dedupKey = 'upd:' + String(updateId === undefined || updateId === null ? '' : updateId);\n  const bad = (updateId === undefined || updateId === null) || tgId === '';\n\n  return {\n    ok: !bad,\n    updateId: updateId, dedupKey: dedupKey,\n    tgId: tgId, chatId: chatId, messageId: messageId,\n    text: text, command: command, startPayload: startPayload, commandArgs: commandArgs,\n    callbackData: callbackData, callbackQueryId: callbackQueryId,\n    contactPhone: contactPhone, contactIsOwn: contactIsOwn,\n    hasContact: !!contact,\n    hasPhoto: hasPhoto, photoFileId: photoFileId,\n    hasLocation: hasLocation, locationLat: locationLat, locationLon: locationLon,\n    isBot: isBot, isPrivate: isPrivate,\n    firstName: String(from.first_name || ''), lastName: String(from.last_name || ''),\n    username: String(from.username || ''), languageCode: String(from.language_code || ''),\n    now: new Date().toISOString()\n  };\n};",
+              "code": "export const code = async (inputs) => {\n  const ok = inputs.ok === true || inputs.ok === 'true';\n  const isBot = inputs.isBot === true || inputs.isBot === 'true';\n  const isPrivate = inputs.isPrivate === true || inputs.isPrivate === 'true';\n  const stored = inputs.stored === true || inputs.stored === 'true';\n\n  let reason = '';\n  if (!ok) reason = 'bad_update';\n  else if (!stored) reason = 'duplicate';\n  else if (isBot) reason = 'from_bot';\n  else if (!isPrivate) reason = 'non_private_chat';\n\n  return { proceed: reason === '', reason: reason };\n};",
               "packageJson": "{}"
             }
           },
@@ -1129,36 +1073,64 @@
           "valid": true
         },
         "settings": {
+          "actionName": "put_if_absent",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
           "input": {
-            "update_types": [
-              "message",
-              "callback_query"
-            ]
+            "key": "{{step_1['output'].dedupKey}}",
+            "store_scope": "COLLECTION",
+            "ttl_seconds": 86400,
+            "value": "{{step_1['output'].now}}"
           },
           "propertySettings": {},
-          "qadamName": "@aiqadam/qadam-telegram-bot",
-          "qadamVersion": "0.8.0",
-          "sampleData": {},
-          "triggerName": "new_telegram_message"
+          "qadamName": "@aiqadam/qadam-store",
+          "qadamVersion": "0.7.0"
         },
-        "type": "PIECE_TRIGGER",
+        "type": "PIECE",
         "valid": true
       },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "update": "{{trigger['output']}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const upd = inputs.update || {};\n  const updateId = upd.update_id;\n  const msg = upd.message;\n  const cbq = upd.callback_query;\n\n  const src = cbq ? cbq : msg;\n  const from = (src && src.from) || {};\n  const isBot = from.is_bot === true;\n\n  const chat = cbq ? (cbq.message && cbq.message.chat) : (msg && msg.chat);\n  const isPrivate = !!(chat && chat.type === 'private');\n\n  const text = msg && typeof msg.text === 'string' ? msg.text : '';\n  let command = '';\n  let startPayload = '';\n  let commandArgs = '';\n  if (text.charAt(0) === '/') {\n    const sp = text.indexOf(' ');\n    const cmdRaw = sp < 0 ? text.slice(1) : text.slice(1, sp);\n    command = cmdRaw.split('@')[0];\n    commandArgs = sp < 0 ? '' : text.slice(sp + 1).trim();\n    if (command === 'start') startPayload = commandArgs;\n  }\n\n  const contact = msg && msg.contact;\n  const contactPhone = contact ? String(contact.phone_number || '') : '';\n  const contactIsOwn = !!(contact && String(contact.user_id || '') === String(from.id || ''));\n\n  const photos = msg && Array.isArray(msg.photo) ? msg.photo : null;\n  const hasPhoto = !!(photos && photos.length > 0);\n  const photoFileId = hasPhoto ? String(photos[photos.length - 1].file_id || '') : '';\n\n  const location = msg && msg.location;\n  const hasLocation = !!(location && typeof location.latitude === 'number' && typeof location.longitude === 'number');\n  const locationLat = hasLocation ? String(location.latitude) : '';\n  const locationLon = hasLocation ? String(location.longitude) : '';\n\n  const callbackData = cbq ? String(cbq.data || '') : '';\n  const callbackQueryId = cbq ? String(cbq.id || '') : '';\n\n  // messageId — входящее сообщение гостя. Нужен, чтобы убрать из ленты\n  // ответ на транзиентный вопрос (ADR-0017: в ленте остаются карточка и билет).\n  const messageId = msg && msg.message_id !== undefined && msg.message_id !== null ? Number(msg.message_id) : 0;\n\n  const tgId = String(from.id === undefined || from.id === null ? '' : from.id);\n  const chatId = String(chat && chat.id !== undefined && chat.id !== null ? chat.id : tgId);\n\n  const dedupKey = 'upd:' + String(updateId === undefined || updateId === null ? '' : updateId);\n  const bad = (updateId === undefined || updateId === null) || tgId === '';\n\n  return {\n    ok: !bad,\n    updateId: updateId, dedupKey: dedupKey,\n    tgId: tgId, chatId: chatId, messageId: messageId,\n    text: text, command: command, startPayload: startPayload, commandArgs: commandArgs,\n    callbackData: callbackData, callbackQueryId: callbackQueryId,\n    contactPhone: contactPhone, contactIsOwn: contactIsOwn,\n    hasContact: !!contact,\n    hasPhoto: hasPhoto, photoFileId: photoFileId,\n    hasLocation: hasLocation, locationLat: locationLat, locationLon: locationLon,\n    isBot: isBot, isPrivate: isPrivate,\n    firstName: String(from.first_name || ''), lastName: String(from.last_name || ''),\n    username: String(from.username || ''), languageCode: String(from.language_code || ''),\n    now: new Date().toISOString()\n  };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
       "valid": true
-    }
-  ],
-  "metadata": {
-    "externalId": "dteOwtACmsTI0IVJF38mg"
+    },
+    "settings": {
+      "input": {
+        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+        "update_types": [
+          "message",
+          "callback_query"
+        ]
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-telegram-bot",
+      "qadamVersion": "0.8.0",
+      "sampleData": {},
+      "triggerName": "new_telegram_message"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
   },
-  "name": "tg-router",
-  "qadams": [
-    "@aiqadam/qadam-telegram-bot",
-    "@aiqadam/qadam-store",
-    "@aiqadam/qadam-tables",
-    "@aiqadam/qadam-subflows"
-  ],
-  "status": "PUBLISHED",
-  "summary": "",
-  "tags": [],
-  "type": "SHARED"
+  "valid": true
 }

@@ -1,117 +1,87 @@
 {
-  "author": "",
-  "blogUrl": "",
-  "categories": [],
-  "description": "",
-  "flows": [
-    {
-      "displayName": "fn-parse-start",
-      "notes": [],
-      "schemaVersion": "31",
-      "trigger": {
-        "displayName": "callableFlow",
-        "lastUpdatedDate": "2026-09-13T12:35:09.544Z",
-        "name": "trigger",
-        "nextAction": {
-          "displayName": "parse",
-          "lastUpdatedDate": "2026-09-13T12:32:41.585Z",
-          "name": "step_1",
-          "nextAction": {
-            "displayName": "return",
-            "lastUpdatedDate": "2026-09-13T12:32:41.585Z",
-            "name": "step_2",
-            "settings": {
-              "actionName": "returnResponse",
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "mode": "simple",
-                "response": {
-                  "response": {
-                    "error": "{{step_1['output'].error}}",
-                    "eventId": "{{step_1['output'].eventId}}",
-                    "kind": "{{step_1['output'].kind}}",
-                    "sig": "{{step_1['output'].sig}}",
-                    "start": "{{step_1['output'].start}}",
-                    "token": "{{step_1['output'].token}}",
-                    "userId": "{{step_1['output'].userId}}",
-                    "utm": "{{step_1['output'].utm}}",
-                    "valid": "{{step_1['output'].valid}}"
-                  }
-                }
-              },
-              "propertySettings": {},
-              "qadamName": "@aiqadam/qadam-subflows",
-              "qadamVersion": "0.4.14"
-            },
-            "type": "PIECE",
-            "valid": true
-          },
-          "settings": {
-            "errorHandlingOptions": {
-              "continueOnFailure": {
-                "value": false
-              },
-              "retryOnFailure": {
-                "value": false
-              }
-            },
-            "input": {
-              "start": "{{trigger['output'].data.start}}"
-            },
-            "sourceCode": {
-              "code": "export const code = async (inputs) => {\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const UTM = /^[A-Za-z0-9_]{1,32}$/;\n  const USER = /^[0-9]{1,16}$/;\n  const TOKEN = /^[A-Za-z0-9]{22}$/;\n  const SIG = /^[A-Za-z0-9_-]{10}$/;\n  const ALPHABET = /^[A-Za-z0-9_-]+$/;\n\n  const base = { valid: false, kind: '', error: '', eventId: '', userId: '', utm: '', token: '', sig: '', start: '' };\n  const fail = (error, start) => Object.assign({}, base, { error: error, start: start || '' });\n\n  const raw = inputs.start;\n  if (raw === undefined || raw === null) return fail('empty', '');\n  const s = String(raw);\n  if (s.length === 0) return fail('empty', '');\n  if (s.length > 64) return fail('too_long', '');\n  if (!ALPHABET.test(s)) return fail('bad_charset', '');\n\n  const kind = s.charAt(0);\n  const rest = s.slice(1);\n\n  if (kind === 'e') {\n    const i = rest.indexOf('-');\n    const eventId = i < 0 ? rest : rest.slice(0, i);\n    const utm = i < 0 ? '' : rest.slice(i + 1);\n    if (!SLUG.test(eventId)) return fail('bad_event_id', s);\n    if (utm !== '' && !UTM.test(utm)) return fail('bad_utm', s);\n    return Object.assign({}, base, { valid: true, kind: 'e', eventId: eventId, utm: utm, start: s });\n  }\n\n  if (kind === 'c') {\n    if (rest.length < 14) return fail('bad_qr_payload', s);\n    if (rest.charAt(rest.length - 11) !== '-') return fail('bad_qr_payload', s);\n    const sig = rest.slice(rest.length - 10);\n    const body = rest.slice(0, rest.length - 11);\n    const i = body.indexOf('-');\n    if (i <= 0) return fail('bad_qr_payload', s);\n    const eventId = body.slice(0, i);\n    const userId = body.slice(i + 1);\n    if (!SLUG.test(eventId)) return fail('bad_event_id', s);\n    if (!USER.test(userId)) return fail('bad_user_id', s);\n    if (!SIG.test(sig)) return fail('bad_sig', s);\n    return Object.assign({}, base, { valid: true, kind: 'c', eventId: eventId, userId: userId, sig: sig, start: s });\n  }\n\n  if (kind === 's') {\n    const i = rest.indexOf('-');\n    if (i <= 0) return fail('bad_invite_payload', s);\n    const eventId = rest.slice(0, i);\n    const token = rest.slice(i + 1);\n    if (!SLUG.test(eventId)) return fail('bad_event_id', s);\n    if (!TOKEN.test(token)) return fail('bad_token', s);\n    return Object.assign({}, base, { valid: true, kind: 's', eventId: eventId, token: token, start: s });\n  }\n\n  return fail('unknown_kind', s);\n};",
-              "packageJson": "{}"
-            }
-          },
-          "type": "CODE",
-          "valid": true
-        },
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "fn-parse-start",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "parse",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "return",
+        "name": "step_2",
         "settings": {
-          "input": {
-            "exampleData": {
-              "sampleData": {}
+          "actionName": "returnResponse",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
             },
-            "mode": "simple"
-          },
-          "propertySettings": {
-            "exampleData": {
-              "schema": {
-                "sampleData": {
-                  "displayName": "Sample Data",
-                  "required": true,
-                  "type": "OBJECT"
-                }
-              },
-              "type": "MANUAL"
+            "retryOnFailure": {
+              "value": false
             }
           },
+          "input": {
+            "mode": "simple",
+            "response": {
+              "response": {
+                "error": "{{step_1['output'].error}}",
+                "eventId": "{{step_1['output'].eventId}}",
+                "kind": "{{step_1['output'].kind}}",
+                "sig": "{{step_1['output'].sig}}",
+                "start": "{{step_1['output'].start}}",
+                "token": "{{step_1['output'].token}}",
+                "userId": "{{step_1['output'].userId}}",
+                "utm": "{{step_1['output'].utm}}",
+                "valid": "{{step_1['output'].valid}}"
+              }
+            }
+          },
+          "propertySettings": {},
           "qadamName": "@aiqadam/qadam-subflows",
-          "qadamVersion": "0.4.14",
-          "sampleData": {},
-          "triggerName": "callableFlow"
+          "qadamVersion": "0.4.14"
         },
-        "type": "PIECE_TRIGGER",
+        "type": "PIECE",
         "valid": true
       },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "start": "{{trigger['output'].data.start}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const UTM = /^[A-Za-z0-9_]{1,32}$/;\n  const USER = /^[0-9]{1,16}$/;\n  const TOKEN = /^[A-Za-z0-9]{22}$/;\n  const SIG = /^[A-Za-z0-9_-]{10}$/;\n  const ALPHABET = /^[A-Za-z0-9_-]+$/;\n\n  const base = { valid: false, kind: '', error: '', eventId: '', userId: '', utm: '', token: '', sig: '', start: '' };\n  const fail = (error, start) => Object.assign({}, base, { error: error, start: start || '' });\n\n  const raw = inputs.start;\n  if (raw === undefined || raw === null) return fail('empty', '');\n  const s = String(raw);\n  if (s.length === 0) return fail('empty', '');\n  if (s.length > 64) return fail('too_long', '');\n  if (!ALPHABET.test(s)) return fail('bad_charset', '');\n\n  const kind = s.charAt(0);\n  const rest = s.slice(1);\n\n  if (kind === 'e') {\n    const i = rest.indexOf('-');\n    const eventId = i < 0 ? rest : rest.slice(0, i);\n    const utm = i < 0 ? '' : rest.slice(i + 1);\n    if (!SLUG.test(eventId)) return fail('bad_event_id', s);\n    if (utm !== '' && !UTM.test(utm)) return fail('bad_utm', s);\n    return Object.assign({}, base, { valid: true, kind: 'e', eventId: eventId, utm: utm, start: s });\n  }\n\n  if (kind === 'c') {\n    if (rest.length < 14) return fail('bad_qr_payload', s);\n    if (rest.charAt(rest.length - 11) !== '-') return fail('bad_qr_payload', s);\n    const sig = rest.slice(rest.length - 10);\n    const body = rest.slice(0, rest.length - 11);\n    const i = body.indexOf('-');\n    if (i <= 0) return fail('bad_qr_payload', s);\n    const eventId = body.slice(0, i);\n    const userId = body.slice(i + 1);\n    if (!SLUG.test(eventId)) return fail('bad_event_id', s);\n    if (!USER.test(userId)) return fail('bad_user_id', s);\n    if (!SIG.test(sig)) return fail('bad_sig', s);\n    return Object.assign({}, base, { valid: true, kind: 'c', eventId: eventId, userId: userId, sig: sig, start: s });\n  }\n\n  if (kind === 's') {\n    const i = rest.indexOf('-');\n    if (i <= 0) return fail('bad_invite_payload', s);\n    const eventId = rest.slice(0, i);\n    const token = rest.slice(i + 1);\n    if (!SLUG.test(eventId)) return fail('bad_event_id', s);\n    if (!TOKEN.test(token)) return fail('bad_token', s);\n    return Object.assign({}, base, { valid: true, kind: 's', eventId: eventId, token: token, start: s });\n  }\n\n  return fail('unknown_kind', s);\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
       "valid": true
-    }
-  ],
-  "metadata": {
-    "externalId": "kn8WWJTyEm7S51Blwg0Eg"
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "start": "e_demo01"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
   },
-  "name": "fn-parse-start",
-  "qadams": [
-    "@aiqadam/qadam-subflows"
-  ],
-  "status": "PUBLISHED",
-  "summary": "",
-  "tags": [],
-  "type": "SHARED"
+  "valid": true
 }

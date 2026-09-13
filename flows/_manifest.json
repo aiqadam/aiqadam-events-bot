@@ -80,9 +80,14 @@
     "publishedVersionId": "Kb3GsDpMgE5SImpTNks1j"
   },
   {
+    "flow": "reg-afterword",
+    "flowId": "oMIjSHxUO7m9P7iaeMZ8y",
+    "publishedVersionId": "ajdXHQC8JATtnhZOzQ8Hg"
+  },
+  {
     "flow": "reg-consent-mkt",
     "flowId": "3gLF6TcbpFObHONATQ64N",
-    "publishedVersionId": "Bt8ODHHOUmxqO03H9PUXN"
+    "publishedVersionId": "NFCUH1DydJkgHQmpBsD1n"
   },
   {
     "flow": "reg-consent-pdn",
@@ -92,16 +97,16 @@
   {
     "flow": "reg-phone",
     "flowId": "Cx7U4wKXLwmBCtb4FR5AW",
-    "publishedVersionId": "adcGRrlndcYM3tNKbTd9r"
+    "publishedVersionId": "olVAaV42wBSRjdx9h5vhT"
   },
   {
     "flow": "reg-start",
     "flowId": "FkxtgayOK5QubyqqMd9q4",
-    "publishedVersionId": "o7q5RwFrBjqY0WInoZ1vC"
+    "publishedVersionId": "LT3IJuMtqFaUEodZV6ZTJ"
   },
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "NCgeZubY1rgmCKvMejDkl"
+    "publishedVersionId": "IcthFfi5vi4YyQbI5b6NM"
   }
 ]

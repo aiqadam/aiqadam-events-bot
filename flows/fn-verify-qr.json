@@ -1,78 +1,25 @@
 {
-  "author": "",
-  "blogUrl": "",
-  "categories": [],
-  "description": "",
-  "flows": [
-    {
-      "displayName": "fn-verify-qr",
-      "notes": [],
-      "schemaVersion": "31",
-      "trigger": {
-        "displayName": "callableFlow",
-        "lastUpdatedDate": "2026-09-13T12:32:26.644Z",
-        "name": "trigger",
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "fn-verify-qr",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "recompute sig",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "compare",
+        "name": "step_2",
         "nextAction": {
-          "displayName": "recompute sig",
-          "lastUpdatedDate": "2026-09-13T12:32:26.644Z",
-          "name": "step_1",
-          "nextAction": {
-            "displayName": "compare",
-            "lastUpdatedDate": "2026-09-13T12:32:26.645Z",
-            "name": "step_2",
-            "nextAction": {
-              "displayName": "return",
-              "lastUpdatedDate": "2026-09-13T12:32:26.645Z",
-              "name": "step_3",
-              "settings": {
-                "actionName": "returnResponse",
-                "errorHandlingOptions": {
-                  "continueOnFailure": {
-                    "value": false
-                  },
-                  "retryOnFailure": {
-                    "value": false
-                  }
-                },
-                "input": {
-                  "mode": "simple",
-                  "response": {
-                    "response": {
-                      "eventId": "{{trigger['output'].data.eventId}}",
-                      "userId": "{{trigger['output'].data.userId}}",
-                      "valid": "{{step_2['output'].valid}}"
-                    }
-                  }
-                },
-                "propertySettings": {},
-                "qadamName": "@aiqadam/qadam-subflows",
-                "qadamVersion": "0.4.14"
-              },
-              "type": "PIECE",
-              "valid": true
-            },
-            "settings": {
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "expectedSig": "{{step_1['output'].sig}}",
-                "providedSig": "{{trigger['output'].data.sig}}"
-              },
-              "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  const ctEq = (a, b) => {\n    const x = String(a === undefined || a === null ? '' : a);\n    const y = String(b === undefined || b === null ? '' : b);\n    let diff = x.length ^ y.length;\n    const n = x.length > y.length ? x.length : y.length;\n    for (let i = 0; i < n; i++) {\n      const cx = i < x.length ? x.charCodeAt(i) : 0;\n      const cy = i < y.length ? y.charCodeAt(i) : 0;\n      diff |= cx ^ cy;\n    }\n    return diff === 0;\n  };\n\n  const provided = String(inputs.providedSig === undefined || inputs.providedSig === null ? '' : inputs.providedSig);\n  const expected = String(inputs.expectedSig === undefined || inputs.expectedSig === null ? '' : inputs.expectedSig);\n  const valid = provided.length === 10 && expected.length === 10 && ctEq(provided, expected);\n\n  return { valid: valid };\n};",
-                "packageJson": "{}"
-              }
-            },
-            "type": "CODE",
-            "valid": true
-          },
+          "displayName": "return",
+          "name": "step_3",
           "settings": {
+            "actionName": "returnResponse",
             "errorHandlingOptions": {
               "continueOnFailure": {
                 "value": false
@@ -82,49 +29,82 @@
               }
             },
             "input": {
-              "qrSigningKey": "{{trigger['output'].data.qrSigningKey}}",
-              "signEventId": "{{trigger['output'].data.eventId}}",
-              "signUserId": "{{trigger['output'].data.userId}}"
+              "mode": "simple",
+              "response": {
+                "response": {
+                  "eventId": "{{trigger['output'].data.eventId}}",
+                  "userId": "{{trigger['output'].data.userId}}",
+                  "valid": "{{step_2['output'].valid}}"
+                }
+              }
             },
-            "sourceCode": {
-              "code": "export const code = async (inputs) => {\n  const crypto = require('node:crypto');\n\n  const eventId = String(inputs.signEventId === undefined || inputs.signEventId === null ? '' : inputs.signEventId);\n  const userId = String(inputs.signUserId === undefined || inputs.signUserId === null ? '' : inputs.signUserId);\n  const qrSigningKey = String(inputs.qrSigningKey === undefined || inputs.qrSigningKey === null ? '' : inputs.qrSigningKey);\n\n  const msg = 'c:' + eventId + ':' + userId;\n  const raw = crypto.createHmac('sha256', qrSigningKey).update(msg, 'utf8').digest('base64');\n  const b64url = raw.replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');\n  const sig = b64url.slice(0, 10);\n  if (sig.length !== 10) throw new Error('fn-verify-qr: short hmac output');\n\n  return { sig: sig };\n};",
-              "packageJson": "{}"
-            }
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-subflows",
+            "qadamVersion": "0.4.14"
           },
-          "type": "CODE",
+          "type": "PIECE",
           "valid": true
         },
         "settings": {
-          "input": {
-            "exampleData": {
-              "eventId": "demo",
-              "qrSigningKey": "sample-qr-signing-key-000000000000000000000000",
-              "sig": "aIxmwbnzb_",
-              "userId": "322876545"
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
             },
-            "mode": "simple"
+            "retryOnFailure": {
+              "value": false
+            }
           },
-          "propertySettings": {},
-          "qadamName": "@aiqadam/qadam-subflows",
-          "qadamVersion": "0.4.14",
-          "sampleData": {},
-          "triggerName": "callableFlow"
+          "input": {
+            "expectedSig": "{{step_1['output'].sig}}",
+            "providedSig": "{{trigger['output'].data.sig}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const ctEq = (a, b) => {\n    const x = String(a === undefined || a === null ? '' : a);\n    const y = String(b === undefined || b === null ? '' : b);\n    let diff = x.length ^ y.length;\n    const n = x.length > y.length ? x.length : y.length;\n    for (let i = 0; i < n; i++) {\n      const cx = i < x.length ? x.charCodeAt(i) : 0;\n      const cy = i < y.length ? y.charCodeAt(i) : 0;\n      diff |= cx ^ cy;\n    }\n    return diff === 0;\n  };\n\n  const provided = String(inputs.providedSig === undefined || inputs.providedSig === null ? '' : inputs.providedSig);\n  const expected = String(inputs.expectedSig === undefined || inputs.expectedSig === null ? '' : inputs.expectedSig);\n  const valid = provided.length === 10 && expected.length === 10 && ctEq(provided, expected);\n\n  return { valid: valid };\n};",
+            "packageJson": "{}"
+          }
         },
-        "type": "PIECE_TRIGGER",
+        "type": "CODE",
         "valid": true
       },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "qrSigningKey": "{{trigger['output'].data.qrSigningKey}}",
+          "signEventId": "{{trigger['output'].data.eventId}}",
+          "signUserId": "{{trigger['output'].data.userId}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const crypto = require('node:crypto');\n\n  const eventId = String(inputs.signEventId === undefined || inputs.signEventId === null ? '' : inputs.signEventId);\n  const userId = String(inputs.signUserId === undefined || inputs.signUserId === null ? '' : inputs.signUserId);\n  const qrSigningKey = String(inputs.qrSigningKey === undefined || inputs.qrSigningKey === null ? '' : inputs.qrSigningKey);\n\n  const msg = 'c:' + eventId + ':' + userId;\n  const raw = crypto.createHmac('sha256', qrSigningKey).update(msg, 'utf8').digest('base64');\n  const b64url = raw.replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');\n  const sig = b64url.slice(0, 10);\n  if (sig.length !== 10) throw new Error('fn-verify-qr: short hmac output');\n\n  return { sig: sig };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
       "valid": true
-    }
-  ],
-  "metadata": {
-    "externalId": "m5ZG7GqWIQCIluusyNX4c"
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "eventId": "demo",
+          "qrSigningKey": "sample-qr-signing-key-000000000000000000000000",
+          "sig": "aIxmwbnzb_",
+          "userId": "322876545"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
   },
-  "name": "fn-verify-qr",
-  "qadams": [
-    "@aiqadam/qadam-subflows"
-  ],
-  "status": "PUBLISHED",
-  "summary": "",
-  "tags": [],
-  "type": "SHARED"
+  "valid": true
 }

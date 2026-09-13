@@ -1,84 +1,32 @@
 {
-  "author": "",
-  "blogUrl": "",
-  "categories": [],
-  "description": "",
-  "flows": [
-    {
-      "displayName": "event-wizard-photo",
-      "notes": [],
-      "schemaVersion": "31",
-      "trigger": {
-        "displayName": "callableFlow",
-        "lastUpdatedDate": "2026-09-13T14:11:45.764Z",
-        "name": "trigger",
-        "nextAction": {
-          "displayName": "decide",
-          "lastUpdatedDate": "2026-09-13T14:11:45.631Z",
-          "name": "step_1",
-          "nextAction": {
-            "children": [
-              {
-                "displayName": "advance to address",
-                "lastUpdatedDate": "2026-09-13T14:12:02.705Z",
-                "name": "step_3",
-                "nextAction": {
-                  "displayName": "address question text",
-                  "lastUpdatedDate": "2026-09-13T15:39:08.603Z",
-                  "name": "step_6",
-                  "nextAction": {
-                    "displayName": "ask address",
-                    "lastUpdatedDate": "2026-09-13T15:39:17.400Z",
-                    "name": "step_5",
-                    "settings": {
-                      "actionName": "send_text_message",
-                      "errorHandlingOptions": {
-                        "continueOnFailure": {
-                          "value": false
-                        },
-                        "retryOnFailure": {
-                          "value": false
-                        }
-                      },
-                      "input": {
-                        "chat_id": "{{trigger['output'].data.chatId}}",
-                        "disable_notification": false,
-                        "format": "None",
-                        "message": "{{step_6['output'].text}}",
-                        "protect_content": false,
-                        "web_page_preview": false
-                      },
-                      "propertySettings": {},
-                      "qadamName": "@aiqadam/qadam-telegram-bot",
-                      "qadamVersion": "0.8.0"
-                    },
-                    "type": "PIECE",
-                    "valid": true
-                  },
-                  "settings": {
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {
-                      "texts": {
-                        "wizard.ask.address": "Адрес текстом — как его прочтёт участник."
-                      }
-                    },
-                    "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  return { text: String(texts['wizard.ask.address'] || 'wizard.ask.address') };\n};",
-                      "packageJson": "{}"
-                    }
-                  },
-                  "type": "CODE",
-                  "valid": true
-                },
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "event-wizard-photo",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "decide",
+      "name": "step_1",
+      "nextAction": {
+        "children": [
+          {
+            "displayName": "advance to address",
+            "name": "step_3",
+            "nextAction": {
+              "displayName": "address question text",
+              "name": "step_6",
+              "nextAction": {
+                "displayName": "ask address",
+                "name": "step_5",
                 "settings": {
-                  "actionName": "tables-upsert-records",
+                  "actionName": "send_text_message",
                   "errorHandlingOptions": {
                     "continueOnFailure": {
                       "value": false
@@ -88,225 +36,256 @@
                     }
                   },
                   "input": {
-                    "key_columns": [
-                      "N8CdPxcdxLX9vFCINvZbL"
-                    ],
-                    "table_id": "toTKgngMTqDNJWDpQMh4d",
-                    "values": {
-                      "values": [
-                        {
-                          "ESthrMwpn29JLvE2BNIj4": "{{step_1['output'].scenario}}",
-                          "IdGimBh539UlGSz6L0Pyo": "address",
-                          "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
-                          "U9P3zTZHcFdAAtzLVVSYn": "{{step_1['output'].now}}",
-                          "sctBFEsMf10UobeFgzsVt": "{{step_1['output'].draft}}"
-                        }
-                      ]
-                    }
+                    "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                    "chat_id": "{{trigger['output'].data.chatId}}",
+                    "disable_notification": false,
+                    "format": "None",
+                    "message": "{{step_6['output'].text}}",
+                    "protect_content": false,
+                    "web_page_preview": false
                   },
-                  "propertySettings": {
-                    "values": {
-                      "schema": {
-                        "values": {
-                          "description": "Add one or more records to insert or update",
-                          "displayName": "Records",
-                          "properties": {
-                            "ESthrMwpn29JLvE2BNIj4": {
-                              "defaultValue": "",
-                              "description": "Text",
-                              "displayName": "scenario",
-                              "required": false,
-                              "type": "SHORT_TEXT"
-                            },
-                            "IdGimBh539UlGSz6L0Pyo": {
-                              "defaultValue": "",
-                              "description": "Text",
-                              "displayName": "step",
-                              "required": false,
-                              "type": "SHORT_TEXT"
-                            },
-                            "N8CdPxcdxLX9vFCINvZbL": {
-                              "defaultValue": "",
-                              "description": "Text",
-                              "displayName": "telegram_id",
-                              "required": false,
-                              "type": "SHORT_TEXT"
-                            },
-                            "U9P3zTZHcFdAAtzLVVSYn": {
-                              "description": "Date",
-                              "displayName": "updated_at",
-                              "required": false,
-                              "type": "DATE_TIME"
-                            },
-                            "sctBFEsMf10UobeFgzsVt": {
-                              "defaultValue": "",
-                              "description": "Text",
-                              "displayName": "draft",
-                              "required": false,
-                              "type": "SHORT_TEXT"
-                            }
-                          },
-                          "required": true,
-                          "type": "ARRAY"
-                        }
-                      },
-                      "type": "MANUAL"
-                    }
-                  },
-                  "qadamName": "@aiqadam/qadam-tables",
-                  "qadamVersion": "0.4.5"
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                  "qadamVersion": "0.8.0"
                 },
                 "type": "PIECE",
                 "valid": true
               },
-              {
-                "displayName": "photo error text",
-                "lastUpdatedDate": "2026-09-13T15:39:23.442Z",
-                "name": "step_7",
-                "nextAction": {
-                  "displayName": "send error",
-                  "lastUpdatedDate": "2026-09-13T15:39:27.428Z",
-                  "name": "step_4",
-                  "settings": {
-                    "actionName": "send_text_message",
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {
-                      "chat_id": "{{trigger['output'].data.chatId}}",
-                      "disable_notification": false,
-                      "format": "None",
-                      "message": "{{step_7['output'].text}}",
-                      "protect_content": false,
-                      "web_page_preview": false
-                    },
-                    "propertySettings": {},
-                    "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
                   },
-                  "type": "PIECE",
-                  "valid": true
-                },
-                "settings": {
-                  "errorHandlingOptions": {
-                    "continueOnFailure": {
-                      "value": false
-                    },
-                    "retryOnFailure": {
-                      "value": false
-                    }
-                  },
-                  "input": {
-                    "texts": {
-                      "wizard.err.photo_expected": "Пришлите фото или «-» чтобы пропустить."
-                    }
-                  },
-                  "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  return { text: String(texts['wizard.err.photo_expected'] || 'wizard.err.photo_expected') };\n};",
-                    "packageJson": "{}"
+                  "retryOnFailure": {
+                    "value": false
                   }
                 },
-                "type": "CODE",
-                "valid": true
-              }
-            ],
-            "displayName": "ok?",
-            "lastUpdatedDate": "2026-09-13T14:11:45.631Z",
-            "name": "step_2",
-            "settings": {
-              "branches": [
-                {
-                  "branchName": "ok",
-                  "branchType": "CONDITION",
-                  "conditions": [
-                    [
-                      {
-                        "firstValue": "{{step_1['output'].ok}}",
-                        "operator": "BOOLEAN_IS_TRUE"
-                      }
-                    ]
-                  ]
+                "input": {
+                  "texts": {
+                    "wizard.ask.address": "Адрес текстом — как его прочтёт участник."
+                  }
                 },
-                {
-                  "branchName": "Otherwise",
-                  "branchType": "FALLBACK"
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  return { text: String(texts['wizard.ask.address'] || 'wizard.ask.address') };\n};",
+                  "packageJson": "{}"
                 }
-              ],
-              "executionType": "EXECUTE_FIRST_MATCH"
+              },
+              "type": "CODE",
+              "valid": true
             },
-            "type": "ROUTER",
+            "settings": {
+              "actionName": "tables-upsert-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "key_columns": [
+                  "N8CdPxcdxLX9vFCINvZbL"
+                ],
+                "table_id": "toTKgngMTqDNJWDpQMh4d",
+                "values": {
+                  "values": [
+                    {
+                      "ESthrMwpn29JLvE2BNIj4": "{{step_1['output'].scenario}}",
+                      "IdGimBh539UlGSz6L0Pyo": "address",
+                      "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                      "U9P3zTZHcFdAAtzLVVSYn": "{{step_1['output'].now}}",
+                      "sctBFEsMf10UobeFgzsVt": "{{step_1['output'].draft}}"
+                    }
+                  ]
+                }
+              },
+              "propertySettings": {
+                "values": {
+                  "schema": {
+                    "values": {
+                      "description": "Add one or more records to insert or update",
+                      "displayName": "Records",
+                      "properties": {
+                        "ESthrMwpn29JLvE2BNIj4": {
+                          "defaultValue": "",
+                          "description": "Text",
+                          "displayName": "scenario",
+                          "required": false,
+                          "type": "SHORT_TEXT"
+                        },
+                        "IdGimBh539UlGSz6L0Pyo": {
+                          "defaultValue": "",
+                          "description": "Text",
+                          "displayName": "step",
+                          "required": false,
+                          "type": "SHORT_TEXT"
+                        },
+                        "N8CdPxcdxLX9vFCINvZbL": {
+                          "defaultValue": "",
+                          "description": "Text",
+                          "displayName": "telegram_id",
+                          "required": false,
+                          "type": "SHORT_TEXT"
+                        },
+                        "U9P3zTZHcFdAAtzLVVSYn": {
+                          "description": "Date",
+                          "displayName": "updated_at",
+                          "required": false,
+                          "type": "DATE_TIME"
+                        },
+                        "sctBFEsMf10UobeFgzsVt": {
+                          "defaultValue": "",
+                          "description": "Text",
+                          "displayName": "draft",
+                          "required": false,
+                          "type": "SHORT_TEXT"
+                        }
+                      },
+                      "required": true,
+                      "type": "ARRAY"
+                    }
+                  },
+                  "type": "MANUAL"
+                }
+              },
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
             "valid": true
           },
-          "settings": {
-            "errorHandlingOptions": {
-              "continueOnFailure": {
-                "value": false
+          {
+            "displayName": "photo error text",
+            "name": "step_7",
+            "nextAction": {
+              "displayName": "send error",
+              "name": "step_4",
+              "settings": {
+                "actionName": "send_text_message",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                  "chat_id": "{{trigger['output'].data.chatId}}",
+                  "disable_notification": false,
+                  "format": "None",
+                  "message": "{{step_7['output'].text}}",
+                  "protect_content": false,
+                  "web_page_preview": false
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-telegram-bot",
+                "qadamVersion": "0.8.0"
               },
-              "retryOnFailure": {
-                "value": false
-              }
+              "type": "PIECE",
+              "valid": true
             },
-            "input": {
-              "hasPhoto": "{{trigger['output'].data.hasPhoto}}",
-              "photoFileId": "{{trigger['output'].data.photoFileId}}",
-              "sessionDraft": "{{trigger['output'].data.sessionDraft}}",
-              "sessionScenario": "{{trigger['output'].data.sessionScenario}}",
-              "text": "{{trigger['output'].data.text}}"
-            },
-            "sourceCode": {
-              "code": "export const code = async (inputs) => {\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const text = String(inputs.text === undefined || inputs.text === null ? '' : inputs.text).trim();\n  const scenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  let draft = {};\n  try { draft = JSON.parse(String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft)); } catch (e) { draft = {}; }\n\n  const ok = hasPhoto || text === '-';\n  if (ok) {\n    draft.photo_file_id = hasPhoto ? String(inputs.photoFileId || '') : '';\n  }\n\n  return {\n    ok: ok, scenario: scenario,\n    draft: JSON.stringify(draft),\n    now: new Date().toISOString()\n  };\n};",
-              "packageJson": "{}"
-            }
-          },
-          "type": "CODE",
-          "valid": true
-        },
-        "settings": {
-          "input": {
-            "exampleData": {
-              "sampleData": {}
-            },
-            "mode": "simple"
-          },
-          "propertySettings": {
-            "exampleData": {
-              "schema": {
-                "sampleData": {
-                  "displayName": "Sample Data",
-                  "required": true,
-                  "type": "OBJECT"
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
                 }
               },
-              "type": "MANUAL"
+              "input": {
+                "texts": {
+                  "wizard.err.photo_expected": "Пришлите фото или «-» чтобы пропустить."
+                }
+              },
+              "sourceCode": {
+                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  return { text: String(texts['wizard.err.photo_expected'] || 'wizard.err.photo_expected') };\n};",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          }
+        ],
+        "displayName": "ok?",
+        "name": "step_2",
+        "settings": {
+          "branches": [
+            {
+              "branchName": "ok",
+              "branchType": "CONDITION",
+              "conditions": [
+                [
+                  {
+                    "firstValue": "{{step_1['output'].ok}}",
+                    "operator": "BOOLEAN_IS_TRUE"
+                  }
+                ]
+              ]
+            },
+            {
+              "branchName": "Otherwise",
+              "branchType": "FALLBACK"
             }
-          },
-          "qadamName": "@aiqadam/qadam-subflows",
-          "qadamVersion": "0.4.14",
-          "sampleData": {},
-          "triggerName": "callableFlow"
+          ],
+          "executionType": "EXECUTE_FIRST_MATCH"
         },
-        "type": "PIECE_TRIGGER",
+        "type": "ROUTER",
         "valid": true
       },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "hasPhoto": "{{trigger['output'].data.hasPhoto}}",
+          "photoFileId": "{{trigger['output'].data.photoFileId}}",
+          "sessionDraft": "{{trigger['output'].data.sessionDraft}}",
+          "sessionScenario": "{{trigger['output'].data.sessionScenario}}",
+          "text": "{{trigger['output'].data.text}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const text = String(inputs.text === undefined || inputs.text === null ? '' : inputs.text).trim();\n  const scenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  let draft = {};\n  try { draft = JSON.parse(String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft)); } catch (e) { draft = {}; }\n\n  const ok = hasPhoto || text === '-';\n  if (ok) {\n    draft.photo_file_id = hasPhoto ? String(inputs.photoFileId || '') : '';\n  }\n\n  return {\n    ok: ok, scenario: scenario,\n    draft: JSON.stringify(draft),\n    now: new Date().toISOString()\n  };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
       "valid": true
-    }
-  ],
-  "metadata": {
-    "externalId": "rgxegw7xRaYYGqZsPTujF"
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "sampleData": {}
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
   },
-  "name": "event-wizard-photo",
-  "qadams": [
-    "@aiqadam/qadam-subflows",
-    "@aiqadam/qadam-tables",
-    "@aiqadam/qadam-telegram-bot"
-  ],
-  "status": "PUBLISHED",
-  "summary": "",
-  "tags": [],
-  "type": "SHARED"
+  "valid": true
 }

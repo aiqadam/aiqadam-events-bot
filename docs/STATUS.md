@@ -83,7 +83,7 @@
 | W26. Пересборка `events-dev` по [ADR-0015](adr/0015-one-touch-one-flow.md) + W11 визард (слит 2026-09-13, [ADR-0016](adr/0016-shared-flow-for-same-shaped-touches.md)) | 5 | ADR-0015, [Q35](OPEN-QUESTIONS.md#q35) | **готов** | агент W26 | [W26](work/W26-rebuild-on-one-touch.md) |
 | W27. Догон переводов `uz`/`en` | — | **W25** (уточнено 2026-09-13) | не начат — раньше W25 переводить нечего | — | — |
 | **W28. Пилот [ADR-0017](adr/0017-screen-not-message.md): гостевой срез одной карточкой** | 7 | фундамент (W26, W06) | **не начат — следующий по критическому пути** | — | — |
-| W29. Экспорт `flows/*.json` ([ADR-0018](adr/0018-rest-read-for-everyone.md) п. 3) | — | ключ API у человека (шаг 0.7) | **на проверке** 2026-09-14 — 21 флоу выгружен, Q39 закрыт числом | агент W29 | [W29](work/W29-flows-export.md) |
+| W29. Экспорт `flows/*.json` ([ADR-0018](adr/0018-rest-read-for-everyone.md) п. 3) | — | ключ API у человека (шаг 0.7) | **в работе** 2026-09-14 — замечания первого ревью исправлены, ушло на повторное | агент W29 | [W29](work/W29-flows-export.md) |
 | W30. Бренд Mini App и `docs/VOICE.md` ([ADR-0019](adr/0019-design-system-from-brand-repo.md)) | — | [Q40](OPEN-QUESTIONS.md#q40) | не начат | — | — |
 | W15. Приёмка | 9 | все `готов` на момент приёмки | не начат | — | — |
 

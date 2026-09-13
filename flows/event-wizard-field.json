@@ -1,325 +1,305 @@
 {
-  "author": "",
-  "blogUrl": "",
-  "categories": [],
-  "description": "",
-  "flows": [
-    {
-      "displayName": "event-wizard-field",
-      "notes": [],
-      "schemaVersion": "31",
-      "trigger": {
-        "displayName": "callableFlow",
-        "lastUpdatedDate": "2026-09-13T17:09:19.426Z",
-        "name": "trigger",
-        "nextAction": {
-          "displayName": "validate + advance",
-          "lastUpdatedDate": "2026-09-13T17:09:19.426Z",
-          "name": "step_1",
-          "nextAction": {
-            "children": [
-              {
-                "displayName": "send error",
-                "lastUpdatedDate": "2026-09-13T17:09:19.428Z",
-                "name": "step_3",
-                "settings": {
-                  "actionName": "send_text_message",
-                  "errorHandlingOptions": {
-                    "continueOnFailure": {
-                      "value": false
-                    },
-                    "retryOnFailure": {
-                      "value": false
-                    }
-                  },
-                  "input": {
-                    "chat_id": "{{trigger['output'].data.chatId}}",
-                    "disable_notification": false,
-                    "format": "None",
-                    "message": "{{step_1['output'].errorText}}",
-                    "protect_content": false,
-                    "web_page_preview": false
-                  },
-                  "propertySettings": {},
-                  "qadamName": "@aiqadam/qadam-telegram-bot",
-                  "qadamVersion": "0.8.0"
-                },
-                "type": "PIECE",
-                "valid": true
-              },
-              {
-                "displayName": "advance session",
-                "lastUpdatedDate": "2026-09-13T17:09:19.428Z",
-                "name": "step_4",
-                "nextAction": {
-                  "displayName": "send next prompt",
-                  "lastUpdatedDate": "2026-09-13T17:09:19.429Z",
-                  "name": "step_6",
-                  "settings": {
-                    "actionName": "send_text_message",
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {
-                      "chat_id": "{{trigger['output'].data.chatId}}",
-                      "disable_notification": false,
-                      "format": "None",
-                      "message": "{{step_1['output'].nextPrompt}}",
-                      "protect_content": false,
-                      "web_page_preview": false
-                    },
-                    "propertySettings": {},
-                    "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
-                  },
-                  "type": "PIECE",
-                  "valid": true
-                },
-                "settings": {
-                  "actionName": "tables-upsert-records",
-                  "errorHandlingOptions": {
-                    "continueOnFailure": {
-                      "value": false
-                    },
-                    "retryOnFailure": {
-                      "value": false
-                    }
-                  },
-                  "input": {
-                    "key_columns": [
-                      "N8CdPxcdxLX9vFCINvZbL"
-                    ],
-                    "table_id": "toTKgngMTqDNJWDpQMh4d",
-                    "values": {
-                      "values": [
-                        {
-                          "ESthrMwpn29JLvE2BNIj4": "{{step_1['output'].scenario}}",
-                          "IdGimBh539UlGSz6L0Pyo": "{{step_1['output'].nextStep}}",
-                          "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
-                          "U9P3zTZHcFdAAtzLVVSYn": "{{step_1['output'].now}}",
-                          "sctBFEsMf10UobeFgzsVt": "{{step_1['output'].draft}}"
-                        }
-                      ]
-                    }
-                  },
-                  "propertySettings": {},
-                  "qadamName": "@aiqadam/qadam-tables",
-                  "qadamVersion": "0.4.5"
-                },
-                "type": "PIECE",
-                "valid": true
-              },
-              {
-                "displayName": "advance session to preview",
-                "lastUpdatedDate": "2026-09-13T17:09:19.429Z",
-                "name": "step_5",
-                "nextAction": {
-                  "displayName": "send preview",
-                  "lastUpdatedDate": "2026-09-13T17:09:19.430Z",
-                  "name": "step_7",
-                  "settings": {
-                    "actionName": "send_text_message",
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {
-                      "chat_id": "{{trigger['output'].data.chatId}}",
-                      "disable_notification": false,
-                      "format": "None",
-                      "message": "{{step_1['output'].previewText}}",
-                      "protect_content": false,
-                      "reply_markup": {
-                        "inline_keyboard": [
-                          [
-                            {
-                              "callback_data": "wiz:publish",
-                              "text": "Опубликовать"
-                            },
-                            {
-                              "callback_data": "wiz:cancel",
-                              "text": "Отмена"
-                            }
-                          ]
-                        ]
-                      },
-                      "web_page_preview": false
-                    },
-                    "propertySettings": {},
-                    "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
-                  },
-                  "type": "PIECE",
-                  "valid": true
-                },
-                "settings": {
-                  "actionName": "tables-upsert-records",
-                  "errorHandlingOptions": {
-                    "continueOnFailure": {
-                      "value": false
-                    },
-                    "retryOnFailure": {
-                      "value": false
-                    }
-                  },
-                  "input": {
-                    "key_columns": [
-                      "N8CdPxcdxLX9vFCINvZbL"
-                    ],
-                    "table_id": "toTKgngMTqDNJWDpQMh4d",
-                    "values": {
-                      "values": [
-                        {
-                          "ESthrMwpn29JLvE2BNIj4": "{{step_1['output'].scenario}}",
-                          "IdGimBh539UlGSz6L0Pyo": "preview",
-                          "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
-                          "U9P3zTZHcFdAAtzLVVSYn": "{{step_1['output'].now}}",
-                          "sctBFEsMf10UobeFgzsVt": "{{step_1['output'].draft}}"
-                        }
-                      ]
-                    }
-                  },
-                  "propertySettings": {},
-                  "qadamName": "@aiqadam/qadam-tables",
-                  "qadamVersion": "0.4.5"
-                },
-                "type": "PIECE",
-                "valid": true
-              }
-            ],
-            "displayName": "outcome",
-            "lastUpdatedDate": "2026-09-13T17:09:19.427Z",
-            "name": "step_2",
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "event-wizard-field",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "validate + advance",
+      "name": "step_1",
+      "nextAction": {
+        "children": [
+          {
+            "displayName": "send error",
+            "name": "step_3",
             "settings": {
-              "branches": [
-                {
-                  "branchName": "error",
-                  "branchType": "CONDITION",
-                  "conditions": [
-                    [
-                      {
-                        "firstValue": "{{step_1['output'].outcome}}",
-                        "operator": "TEXT_EXACTLY_MATCHES",
-                        "secondValue": "error"
-                      }
-                    ]
-                  ]
+              "actionName": "send_text_message",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
                 },
-                {
-                  "branchName": "next",
-                  "branchType": "CONDITION",
-                  "conditions": [
-                    [
-                      {
-                        "firstValue": "{{step_1['output'].outcome}}",
-                        "operator": "TEXT_EXACTLY_MATCHES",
-                        "secondValue": "next"
-                      }
-                    ]
-                  ]
-                },
-                {
-                  "branchName": "Otherwise",
-                  "branchType": "FALLBACK"
+                "retryOnFailure": {
+                  "value": false
                 }
-              ],
-              "executionType": "EXECUTE_FIRST_MATCH"
+              },
+              "input": {
+                "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                "chat_id": "{{trigger['output'].data.chatId}}",
+                "disable_notification": false,
+                "format": "None",
+                "message": "{{step_1['output'].errorText}}",
+                "protect_content": false,
+                "web_page_preview": false
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-telegram-bot",
+              "qadamVersion": "0.8.0"
             },
-            "type": "ROUTER",
+            "type": "PIECE",
             "valid": true
           },
-          "settings": {
-            "errorHandlingOptions": {
-              "continueOnFailure": {
-                "value": false
+          {
+            "displayName": "advance session",
+            "name": "step_4",
+            "nextAction": {
+              "displayName": "send next prompt",
+              "name": "step_6",
+              "settings": {
+                "actionName": "send_text_message",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                  "chat_id": "{{trigger['output'].data.chatId}}",
+                  "disable_notification": false,
+                  "format": "None",
+                  "message": "{{step_1['output'].nextPrompt}}",
+                  "protect_content": false,
+                  "web_page_preview": false
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-telegram-bot",
+                "qadamVersion": "0.8.0"
               },
-              "retryOnFailure": {
-                "value": false
-              }
+              "type": "PIECE",
+              "valid": true
             },
-            "input": {
-              "sessionDraft": "{{trigger['output'].data.sessionDraft}}",
-              "sessionScenario": "{{trigger['output'].data.sessionScenario}}",
-              "sessionStep": "{{trigger['output'].data.sessionStep}}",
-              "text": "{{trigger['output'].data.text}}",
-              "texts": {
-                "event.card.deadline": "Регистрация до: {when}",
-                "event.card.ends": "Окончание: {when}",
-                "event.card.when": "Когда: {when}",
-                "event.card.where": "Где: {address}",
-                "wizard.ask.description": "Описание ивента? (можно «-» чтобы пропустить)",
-                "wizard.ask.ends_at": "Окончание ивента. Время ташкентское.",
-                "wizard.ask.geo": "Отправьте точку на карте (гео-сообщением), или «-» чтобы пропустить.",
-                "wizard.ask.photo": "Пришлите фото афиши или пропустите шаг.",
-                "wizard.ask.reg_deadline_at": "Дедлайн регистрации. Время ташкентское.",
-                "wizard.err.address_length": "Адрес слишком короткий или длинный. Повторите.",
-                "wizard.err.datetime": "Не разобрал дату. Формат: ДД.ММ.ГГГГ ЧЧ:ММ, время ташкентское. Повторите.",
-                "wizard.err.deadline_after_starts": "Дедлайн регистрации позже начала ивента.",
-                "wizard.err.deadline_past": "Дедлайн регистрации уже прошёл. Введите дату и время в будущем.",
-                "wizard.err.ends_before_starts": "Окончание раньше начала. Проверьте дату.",
-                "wizard.err.starts_at_past": "Дата начала уже прошла. Введите дату и время в будущем.",
-                "wizard.err.title_length": "Название слишком короткое или длинное (2-200 символов). Повторите.",
-                "wizard.err.unexpected_step": "Что-то пошло не так, начните заново командой /newevent.",
-                "wizard.hint.datetime": "Формат: ДД.ММ.ГГГГ ЧЧ:ММ, время ташкентское.",
-                "wizard.preview.confirm": "Опубликовать?",
-                "wizard.preview.geo": "Гео: {lat}, {lon}",
-                "wizard.preview.header": "Проверьте черновик:",
-                "wizard.preview.photo_no": "Фото: нет",
-                "wizard.preview.photo_yes": "Фото: приложено"
-              }
+            "settings": {
+              "actionName": "tables-upsert-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "key_columns": [
+                  "N8CdPxcdxLX9vFCINvZbL"
+                ],
+                "table_id": "toTKgngMTqDNJWDpQMh4d",
+                "values": {
+                  "values": [
+                    {
+                      "ESthrMwpn29JLvE2BNIj4": "{{step_1['output'].scenario}}",
+                      "IdGimBh539UlGSz6L0Pyo": "{{step_1['output'].nextStep}}",
+                      "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                      "U9P3zTZHcFdAAtzLVVSYn": "{{step_1['output'].now}}",
+                      "sctBFEsMf10UobeFgzsVt": "{{step_1['output'].draft}}"
+                    }
+                  ]
+                }
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
             },
-            "sourceCode": {
-              "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n\n  const step = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n  const text = String(inputs.text === undefined || inputs.text === null ? '' : inputs.text).trim();\n  const scenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  let draft = {};\n  try { draft = JSON.parse(String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft)); } catch (e) { draft = {}; }\n\n  const TZ_OFFSET_MIN = 5 * 60;\n  const parseTashkent = (s) => {\n    const m = /^([0-3]?\\d)\\.([01]?\\d)\\.(\\d{4})\\s+([0-2]?\\d):([0-5]\\d)$/.exec(s);\n    if (!m) return null;\n    const day = Number(m[1]), month = Number(m[2]), year = Number(m[3]), hour = Number(m[4]), minute = Number(m[5]);\n    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23) return null;\n    const ms = Date.UTC(year, month - 1, day, hour, minute - TZ_OFFSET_MIN);\n    if (!isFinite(ms)) return null;\n    return new Date(ms);\n  };\n\n  let outcome = 'error';\n  let errorText = '';\n  let nextStep = '';\n  let nextPrompt = '';\n\n  if (step === 'title') {\n    if (text.length < 2 || text.length > 200) { errorText = t('wizard.err.title_length'); }\n    else { draft.title = text; nextStep = 'description'; nextPrompt = t('wizard.ask.description'); outcome = 'next'; }\n  } else if (step === 'description') {\n    draft.description = (text === '-') ? '' : text;\n    nextStep = 'photo'; nextPrompt = t('wizard.ask.photo');\n    outcome = 'next';\n  } else if (step === 'address') {\n    if (text.length < 2 || text.length > 300) { errorText = t('wizard.err.address_length'); }\n    else { draft.address = text; nextStep = 'geo'; nextPrompt = t('wizard.ask.geo'); outcome = 'next'; }\n  } else if (step === 'starts_at' || step === 'ends_at' || step === 'reg_deadline_at') {\n    const d = parseTashkent(text);\n    const now = Date.now();\n    if (!d) {\n      errorText = t('wizard.err.datetime');\n    } else if (step === 'starts_at') {\n      if (d.getTime() <= now) { errorText = t('wizard.err.starts_at_past'); }\n      else { draft.starts_at = d.toISOString(); nextStep = 'ends_at'; nextPrompt = t('wizard.ask.ends_at') + ' ' + t('wizard.hint.datetime'); outcome = 'next'; }\n    } else if (step === 'ends_at') {\n      const startsMs = draft.starts_at ? Date.parse(draft.starts_at) : NaN;\n      if (isFinite(startsMs) && d.getTime() <= startsMs) { errorText = t('wizard.err.ends_before_starts'); }\n      else { draft.ends_at = d.toISOString(); nextStep = 'reg_deadline_at'; nextPrompt = t('wizard.ask.reg_deadline_at') + ' ' + t('wizard.hint.datetime'); outcome = 'next'; }\n    } else {\n      const startsMs = draft.starts_at ? Date.parse(draft.starts_at) : NaN;\n      if (d.getTime() <= now) { errorText = t('wizard.err.deadline_past'); }\n      else if (isFinite(startsMs) && d.getTime() > startsMs) { errorText = t('wizard.err.deadline_after_starts'); }\n      else { draft.reg_deadline_at = d.toISOString(); nextStep = 'preview'; outcome = 'preview'; }\n    }\n  } else {\n    errorText = t('wizard.err.unexpected_step');\n  }\n\n  let previewText = '';\n  if (outcome === 'preview') {\n    const TZ = 'Asia/Tashkent';\n    const fmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n    const f = (iso) => { if (!iso) return ''; const d2 = new Date(iso); return isNaN(d2.getTime()) ? '' : fmt.format(d2); };\n    const lines = [];\n    lines.push(draft.title || '');\n    if (draft.description) lines.push(draft.description);\n    lines.push(t('event.card.when', { when: f(draft.starts_at) }));\n    lines.push(t('event.card.ends', { when: f(draft.ends_at) }));\n    lines.push(t('event.card.where', { address: draft.address || '' }));\n    lines.push(t('event.card.deadline', { when: f(draft.reg_deadline_at) }));\n    if (draft.lat && draft.lon) lines.push(t('wizard.preview.geo', { lat: draft.lat, lon: draft.lon }));\n    lines.push(draft.photo_file_id ? t('wizard.preview.photo_yes') : t('wizard.preview.photo_no'));\n    previewText = t('wizard.preview.header') + '\\n\\n' + lines.join('\\n') + '\\n\\n' + t('wizard.preview.confirm');\n  }\n\n  return {\n    outcome: outcome, errorText: errorText, scenario: scenario,\n    draft: JSON.stringify(draft), nextStep: nextStep, nextPrompt: nextPrompt,\n    previewText: previewText, now: new Date().toISOString()\n  };\n};",
-              "packageJson": "{}"
-            }
+            "type": "PIECE",
+            "valid": true
           },
-          "type": "CODE",
-          "valid": true
-        },
+          {
+            "displayName": "advance session to preview",
+            "name": "step_5",
+            "nextAction": {
+              "displayName": "send preview",
+              "name": "step_7",
+              "settings": {
+                "actionName": "send_text_message",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                  "chat_id": "{{trigger['output'].data.chatId}}",
+                  "disable_notification": false,
+                  "format": "None",
+                  "message": "{{step_1['output'].previewText}}",
+                  "protect_content": false,
+                  "reply_markup": {
+                    "inline_keyboard": [
+                      [
+                        {
+                          "callback_data": "wiz:publish",
+                          "text": "Опубликовать"
+                        },
+                        {
+                          "callback_data": "wiz:cancel",
+                          "text": "Отмена"
+                        }
+                      ]
+                    ]
+                  },
+                  "web_page_preview": false
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-telegram-bot",
+                "qadamVersion": "0.8.0"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-upsert-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "key_columns": [
+                  "N8CdPxcdxLX9vFCINvZbL"
+                ],
+                "table_id": "toTKgngMTqDNJWDpQMh4d",
+                "values": {
+                  "values": [
+                    {
+                      "ESthrMwpn29JLvE2BNIj4": "{{step_1['output'].scenario}}",
+                      "IdGimBh539UlGSz6L0Pyo": "preview",
+                      "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                      "U9P3zTZHcFdAAtzLVVSYn": "{{step_1['output'].now}}",
+                      "sctBFEsMf10UobeFgzsVt": "{{step_1['output'].draft}}"
+                    }
+                  ]
+                }
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
+            "valid": true
+          }
+        ],
+        "displayName": "outcome",
+        "name": "step_2",
         "settings": {
-          "input": {
-            "exampleData": {
-              "chatId": "322876545",
-              "sessionDraft": "{}",
-              "sessionScenario": "event_create",
-              "sessionStep": "title",
-              "telegramId": "322876545",
-              "text": "Демо-ивент W26"
+          "branches": [
+            {
+              "branchName": "error",
+              "branchType": "CONDITION",
+              "conditions": [
+                [
+                  {
+                    "firstValue": "{{step_1['output'].outcome}}",
+                    "operator": "TEXT_EXACTLY_MATCHES",
+                    "secondValue": "error"
+                  }
+                ]
+              ]
             },
-            "mode": "simple"
-          },
-          "propertySettings": {},
-          "qadamName": "@aiqadam/qadam-subflows",
-          "qadamVersion": "0.4.14",
-          "sampleData": {},
-          "triggerName": "callableFlow"
+            {
+              "branchName": "next",
+              "branchType": "CONDITION",
+              "conditions": [
+                [
+                  {
+                    "firstValue": "{{step_1['output'].outcome}}",
+                    "operator": "TEXT_EXACTLY_MATCHES",
+                    "secondValue": "next"
+                  }
+                ]
+              ]
+            },
+            {
+              "branchName": "Otherwise",
+              "branchType": "FALLBACK"
+            }
+          ],
+          "executionType": "EXECUTE_FIRST_MATCH"
         },
-        "type": "PIECE_TRIGGER",
+        "type": "ROUTER",
         "valid": true
       },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "sessionDraft": "{{trigger['output'].data.sessionDraft}}",
+          "sessionScenario": "{{trigger['output'].data.sessionScenario}}",
+          "sessionStep": "{{trigger['output'].data.sessionStep}}",
+          "text": "{{trigger['output'].data.text}}",
+          "texts": {
+            "event.card.deadline": "Регистрация до: {when}",
+            "event.card.ends": "Окончание: {when}",
+            "event.card.when": "Когда: {when}",
+            "event.card.where": "Где: {address}",
+            "wizard.ask.description": "Описание ивента? (можно «-» чтобы пропустить)",
+            "wizard.ask.ends_at": "Окончание ивента. Время ташкентское.",
+            "wizard.ask.geo": "Отправьте точку на карте (гео-сообщением), или «-» чтобы пропустить.",
+            "wizard.ask.photo": "Пришлите фото афиши или пропустите шаг.",
+            "wizard.ask.reg_deadline_at": "Дедлайн регистрации. Время ташкентское.",
+            "wizard.err.address_length": "Адрес слишком короткий или длинный. Повторите.",
+            "wizard.err.datetime": "Не разобрал дату. Формат: ДД.ММ.ГГГГ ЧЧ:ММ, время ташкентское. Повторите.",
+            "wizard.err.deadline_after_starts": "Дедлайн регистрации позже начала ивента.",
+            "wizard.err.deadline_past": "Дедлайн регистрации уже прошёл. Введите дату и время в будущем.",
+            "wizard.err.ends_before_starts": "Окончание раньше начала. Проверьте дату.",
+            "wizard.err.starts_at_past": "Дата начала уже прошла. Введите дату и время в будущем.",
+            "wizard.err.title_length": "Название слишком короткое или длинное (2-200 символов). Повторите.",
+            "wizard.err.unexpected_step": "Что-то пошло не так, начните заново командой /newevent.",
+            "wizard.hint.datetime": "Формат: ДД.ММ.ГГГГ ЧЧ:ММ, время ташкентское.",
+            "wizard.preview.confirm": "Опубликовать?",
+            "wizard.preview.geo": "Гео: {lat}, {lon}",
+            "wizard.preview.header": "Проверьте черновик:",
+            "wizard.preview.photo_no": "Фото: нет",
+            "wizard.preview.photo_yes": "Фото: приложено"
+          }
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n\n  const step = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n  const text = String(inputs.text === undefined || inputs.text === null ? '' : inputs.text).trim();\n  const scenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  let draft = {};\n  try { draft = JSON.parse(String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft)); } catch (e) { draft = {}; }\n\n  const TZ_OFFSET_MIN = 5 * 60;\n  const parseTashkent = (s) => {\n    const m = /^([0-3]?\\d)\\.([01]?\\d)\\.(\\d{4})\\s+([0-2]?\\d):([0-5]\\d)$/.exec(s);\n    if (!m) return null;\n    const day = Number(m[1]), month = Number(m[2]), year = Number(m[3]), hour = Number(m[4]), minute = Number(m[5]);\n    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23) return null;\n    const ms = Date.UTC(year, month - 1, day, hour, minute - TZ_OFFSET_MIN);\n    if (!isFinite(ms)) return null;\n    return new Date(ms);\n  };\n\n  let outcome = 'error';\n  let errorText = '';\n  let nextStep = '';\n  let nextPrompt = '';\n\n  if (step === 'title') {\n    if (text.length < 2 || text.length > 200) { errorText = t('wizard.err.title_length'); }\n    else { draft.title = text; nextStep = 'description'; nextPrompt = t('wizard.ask.description'); outcome = 'next'; }\n  } else if (step === 'description') {\n    draft.description = (text === '-') ? '' : text;\n    nextStep = 'photo'; nextPrompt = t('wizard.ask.photo');\n    outcome = 'next';\n  } else if (step === 'address') {\n    if (text.length < 2 || text.length > 300) { errorText = t('wizard.err.address_length'); }\n    else { draft.address = text; nextStep = 'geo'; nextPrompt = t('wizard.ask.geo'); outcome = 'next'; }\n  } else if (step === 'starts_at' || step === 'ends_at' || step === 'reg_deadline_at') {\n    const d = parseTashkent(text);\n    const now = Date.now();\n    if (!d) {\n      errorText = t('wizard.err.datetime');\n    } else if (step === 'starts_at') {\n      if (d.getTime() <= now) { errorText = t('wizard.err.starts_at_past'); }\n      else { draft.starts_at = d.toISOString(); nextStep = 'ends_at'; nextPrompt = t('wizard.ask.ends_at') + ' ' + t('wizard.hint.datetime'); outcome = 'next'; }\n    } else if (step === 'ends_at') {\n      const startsMs = draft.starts_at ? Date.parse(draft.starts_at) : NaN;\n      if (isFinite(startsMs) && d.getTime() <= startsMs) { errorText = t('wizard.err.ends_before_starts'); }\n      else { draft.ends_at = d.toISOString(); nextStep = 'reg_deadline_at'; nextPrompt = t('wizard.ask.reg_deadline_at') + ' ' + t('wizard.hint.datetime'); outcome = 'next'; }\n    } else {\n      const startsMs = draft.starts_at ? Date.parse(draft.starts_at) : NaN;\n      if (d.getTime() <= now) { errorText = t('wizard.err.deadline_past'); }\n      else if (isFinite(startsMs) && d.getTime() > startsMs) { errorText = t('wizard.err.deadline_after_starts'); }\n      else { draft.reg_deadline_at = d.toISOString(); nextStep = 'preview'; outcome = 'preview'; }\n    }\n  } else {\n    errorText = t('wizard.err.unexpected_step');\n  }\n\n  let previewText = '';\n  if (outcome === 'preview') {\n    const TZ = 'Asia/Tashkent';\n    const fmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n    const f = (iso) => { if (!iso) return ''; const d2 = new Date(iso); return isNaN(d2.getTime()) ? '' : fmt.format(d2); };\n    const lines = [];\n    lines.push(draft.title || '');\n    if (draft.description) lines.push(draft.description);\n    lines.push(t('event.card.when', { when: f(draft.starts_at) }));\n    lines.push(t('event.card.ends', { when: f(draft.ends_at) }));\n    lines.push(t('event.card.where', { address: draft.address || '' }));\n    lines.push(t('event.card.deadline', { when: f(draft.reg_deadline_at) }));\n    if (draft.lat && draft.lon) lines.push(t('wizard.preview.geo', { lat: draft.lat, lon: draft.lon }));\n    lines.push(draft.photo_file_id ? t('wizard.preview.photo_yes') : t('wizard.preview.photo_no'));\n    previewText = t('wizard.preview.header') + '\\n\\n' + lines.join('\\n') + '\\n\\n' + t('wizard.preview.confirm');\n  }\n\n  return {\n    outcome: outcome, errorText: errorText, scenario: scenario,\n    draft: JSON.stringify(draft), nextStep: nextStep, nextPrompt: nextPrompt,\n    previewText: previewText, now: new Date().toISOString()\n  };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
       "valid": true
-    }
-  ],
-  "metadata": {
-    "externalId": "LzaoK8PdbMq5wOvt68pxc"
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "chatId": "322876545",
+          "sessionDraft": "{}",
+          "sessionScenario": "event_create",
+          "sessionStep": "title",
+          "telegramId": "322876545",
+          "text": "Демо-ивент W26"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
   },
-  "name": "event-wizard-field",
-  "qadams": [
-    "@aiqadam/qadam-subflows",
-    "@aiqadam/qadam-telegram-bot",
-    "@aiqadam/qadam-tables"
-  ],
-  "status": "PUBLISHED",
-  "summary": "",
-  "tags": [],
-  "type": "SHARED"
+  "valid": true
 }
