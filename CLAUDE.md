@@ -18,7 +18,9 @@ Events Bot для AI Qadam. Несущий стек — [Qadam Flow](https://git
 - **Code steps** — только чистые функции: ни сетевых вызовов, ни записи в БД внутри.
   HTTP делает `http`/`telegram-bot` qadam, запись — `tables`;
 - core-qadam'ы: `tables`, `crypto`, `store`, `schedule`, `webhook`, `http`, `csv`, `qrcode`, `delay`;
-- одна статическая страница Mini App (единственное исключение, см. ADR-0001).
+- статические страницы Mini App — **ровно три**: `ticket`, `scan`, `manage`
+  (исключение ADR-0001, расширенное с одной страницы до трёх
+  [ADR-0017](docs/adr/0017-screen-not-message.md)). Четвёртая — только новым ADR.
 
 Криптографию руками не пишем: HMAC — `crypto` qadam (`hmac-signature`),
 Code step рядом только кодирует и сравнивает. **Исключение** (с 2026-09-09,
