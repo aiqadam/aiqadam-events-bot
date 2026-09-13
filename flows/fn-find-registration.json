@@ -1,0 +1,352 @@
+{
+  "author": "",
+  "blogUrl": "",
+  "categories": [],
+  "description": "",
+  "flows": [
+    {
+      "displayName": "fn-find-registration",
+      "notes": [],
+      "schemaVersion": "31",
+      "trigger": {
+        "displayName": "callableFlow",
+        "lastUpdatedDate": "2026-09-13T12:33:03.361Z",
+        "name": "trigger",
+        "nextAction": {
+          "displayName": "normalize",
+          "lastUpdatedDate": "2026-09-13T12:33:03.362Z",
+          "name": "step_1",
+          "nextAction": {
+            "displayName": "read registrations",
+            "lastUpdatedDate": "2026-09-13T12:33:03.363Z",
+            "name": "step_2",
+            "nextAction": {
+              "displayName": "pick earliest",
+              "lastUpdatedDate": "2026-09-13T12:33:03.364Z",
+              "name": "step_3",
+              "nextAction": {
+                "displayName": "return",
+                "lastUpdatedDate": "2026-09-13T12:33:03.365Z",
+                "name": "step_4",
+                "settings": {
+                  "actionName": "returnResponse",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "mode": "simple",
+                    "response": {
+                      "response": {
+                        "anyCancelled": "{{step_3['output'].anyCancelled}}",
+                        "anyRegistered": "{{step_3['output'].anyRegistered}}",
+                        "cancelled": "{{step_3['output'].cancelled}}",
+                        "checkedIn": "{{step_3['output'].checkedIn}}",
+                        "checkedInAt": "{{step_3['output'].checkedInAt}}",
+                        "duplicates": "{{step_3['output'].duplicates}}",
+                        "eventId": "{{step_3['output'].eventId}}",
+                        "found": "{{step_3['output'].found}}",
+                        "inputOk": "{{step_3['output'].inputOk}}",
+                        "recordId": "{{step_3['output'].recordId}}",
+                        "recordIds": "{{step_3['output'].recordIds}}",
+                        "registered": "{{step_3['output'].registered}}",
+                        "registration": "{{step_3['output'].registration}}",
+                        "statuses": "{{step_3['output'].statuses}}",
+                        "telegramId": "{{step_3['output'].telegramId}}"
+                      }
+                    }
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-subflows",
+                  "qadamVersion": "0.4.14"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "eventId": "{{step_1['output'].eventId}}",
+                  "inputOk": "{{step_1['output'].inputOk}}",
+                  "records": "{{step_2['output']}}",
+                  "telegramId": "{{step_1['output'].telegramId}}"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const inputOk = inputs.inputOk === true || inputs.inputOk === 'true';\n  const src = inputs.records;\n  const list = Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : (src && Array.isArray(src.items) ? src.items : []));\n\n  const empty = {\n    found: false, inputOk: inputOk, duplicates: 0, recordId: '', recordIds: [],\n    registration: null, checkedIn: false, checkedInAt: '', cancelled: false, registered: false,\n    statuses: [], anyRegistered: false, anyCancelled: false,\n    eventId: String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId),\n    telegramId: String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId)\n  };\n  if (!inputOk || list.length === 0) return empty;\n\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : ''), __created: String(rec && rec.created ? rec.created : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') {\n        out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n      }\n    });\n    return out;\n  };\n\n  const wantEventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId);\n  const wantTelegramId = String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId);\n  const rows = list.map(flat).filter((r) =>\n    (wantEventId === '' || String(r.event_id || '') === wantEventId) &&\n    (wantTelegramId === '' || String(r.telegram_id || '') === wantTelegramId)\n  );\n  if (rows.length === 0) return empty;\n\n  const sortKey = (r) => {\n    const t = r.registered_at || r.__created || '';\n    const ms = t === '' ? Number.POSITIVE_INFINITY : Date.parse(/[Zz]$/.test(t) || /[+-][0-9]{2}:?[0-9]{2}$/.test(t) ? t : t + 'Z');\n    return isFinite(ms) ? ms : Number.POSITIVE_INFINITY;\n  };\n\n  rows.sort((a, b) => {\n    const d = sortKey(a) - sortKey(b);\n    if (d !== 0) return d;\n    const c = String(a.__created).localeCompare(String(b.__created));\n    if (c !== 0) return c;\n    return String(a.__recordId).localeCompare(String(b.__recordId));\n  });\n\n  const first = rows[0];\n\n  let checkedInAt = '';\n  let checkedInMs = Number.POSITIVE_INFINITY;\n  let checkedInBy = '';\n  rows.forEach((r) => {\n    const t = r.checked_in_at || '';\n    if (t === '') return;\n    const ms = Date.parse(/[Zz]$/.test(t) || /[+-][0-9]{2}:?[0-9]{2}$/.test(t) ? t : t + 'Z');\n    if (isFinite(ms) && ms < checkedInMs) { checkedInMs = ms; checkedInAt = t; checkedInBy = r.checked_in_by || ''; }\n  });\n\n  const statuses = rows.map((r) => r.status || '');\n  const anyRegistered = statuses.indexOf('registered') >= 0;\n  const anyCancelled = statuses.indexOf('cancelled') >= 0;\n\n  const registration = {\n    id: first.id || '',\n    event_id: first.event_id || '',\n    telegram_id: first.telegram_id || '',\n    status: first.status || '',\n    source: first.source || '',\n    registered_at: first.registered_at || '',\n    cancelled_at: first.cancelled_at || '',\n    checked_in_at: checkedInAt,\n    checked_in_by: checkedInBy\n  };\n\n  return {\n    found: true,\n    inputOk: true,\n    duplicates: rows.length,\n    recordId: first.__recordId,\n    recordIds: rows.map((r) => r.__recordId),\n    registration: registration,\n    checkedIn: checkedInAt !== '',\n    checkedInAt: checkedInAt,\n    cancelled: (first.status || '') === 'cancelled',\n    registered: (first.status || '') === 'registered',\n    statuses: statuses,\n    anyRegistered: anyRegistered,\n    anyCancelled: anyCancelled,\n    eventId: String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId),\n    telegramId: String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId)\n  };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-find-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "filters": {
+                  "filters": [
+                    {
+                      "field": {
+                        "id": "qQPYl9c0ew6n8w2CGYZII",
+                        "name": "event_id",
+                        "type": "TEXT"
+                      },
+                      "operator": "eq",
+                      "value": "{{step_1['output'].queryEventId}}"
+                    },
+                    {
+                      "field": {
+                        "id": "mVfpZFCwAZskWXNT7iCuI",
+                        "name": "telegram_id",
+                        "type": "TEXT"
+                      },
+                      "operator": "eq",
+                      "value": "{{step_1['output'].queryTelegramId}}"
+                    }
+                  ]
+                },
+                "record_ids": [],
+                "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+              },
+              "propertySettings": {
+                "filters": {
+                  "schema": {
+                    "filters": {
+                      "displayName": "Filters",
+                      "properties": {
+                        "field": {
+                          "displayName": "Field",
+                          "options": {
+                            "options": [
+                              {
+                                "label": "id",
+                                "value": {
+                                  "id": "BGTxyxBZqagpqUB3UqXta",
+                                  "name": "id",
+                                  "type": "TEXT"
+                                }
+                              },
+                              {
+                                "label": "telegram_id",
+                                "value": {
+                                  "id": "mVfpZFCwAZskWXNT7iCuI",
+                                  "name": "telegram_id",
+                                  "type": "TEXT"
+                                }
+                              },
+                              {
+                                "label": "event_id",
+                                "value": {
+                                  "id": "qQPYl9c0ew6n8w2CGYZII",
+                                  "name": "event_id",
+                                  "type": "TEXT"
+                                }
+                              },
+                              {
+                                "label": "status",
+                                "value": {
+                                  "id": "TZyqC63UAWrPbzxuf2q4w",
+                                  "name": "status",
+                                  "type": "STATIC_DROPDOWN"
+                                }
+                              },
+                              {
+                                "label": "registered_at",
+                                "value": {
+                                  "id": "RZYFhQBQbSfNzIVEvmYgd",
+                                  "name": "registered_at",
+                                  "type": "DATE"
+                                }
+                              },
+                              {
+                                "label": "source",
+                                "value": {
+                                  "id": "WFWifafyD6UNNCxLQyML1",
+                                  "name": "source",
+                                  "type": "TEXT"
+                                }
+                              },
+                              {
+                                "label": "checked_in_by",
+                                "value": {
+                                  "id": "atmJzUFotSzE9G0akUU2M",
+                                  "name": "checked_in_by",
+                                  "type": "TEXT"
+                                }
+                              },
+                              {
+                                "label": "cancelled_at",
+                                "value": {
+                                  "id": "OlFAWgVQmrqhqxlraOPOZ",
+                                  "name": "cancelled_at",
+                                  "type": "DATE"
+                                }
+                              },
+                              {
+                                "label": "checked_in_at",
+                                "value": {
+                                  "id": "uCnpOj11sJLaX4Rqu6TUG",
+                                  "name": "checked_in_at",
+                                  "type": "DATE"
+                                }
+                              }
+                            ]
+                          },
+                          "required": true,
+                          "type": "STATIC_DROPDOWN"
+                        },
+                        "operator": {
+                          "displayName": "Operator",
+                          "options": {
+                            "options": [
+                              {
+                                "label": "Equals",
+                                "value": "eq"
+                              },
+                              {
+                                "label": "Not Equals",
+                                "value": "neq"
+                              },
+                              {
+                                "label": "Greater Than",
+                                "value": "gt"
+                              },
+                              {
+                                "label": "Greater Than or Equal",
+                                "value": "gte"
+                              },
+                              {
+                                "label": "Less Than",
+                                "value": "lt"
+                              },
+                              {
+                                "label": "Less Than or Equal",
+                                "value": "lte"
+                              },
+                              {
+                                "label": "Contains",
+                                "value": "co"
+                              },
+                              {
+                                "label": "In",
+                                "value": "in"
+                              },
+                              {
+                                "label": "Not In",
+                                "value": "not_in"
+                              },
+                              {
+                                "label": "Exists",
+                                "value": "exists"
+                              },
+                              {
+                                "label": "Does not exist",
+                                "value": "not_exists"
+                              }
+                            ]
+                          },
+                          "required": true,
+                          "type": "STATIC_DROPDOWN"
+                        },
+                        "value": {
+                          "description": "For \"In\" / \"Not In\", pass a comma-separated list or a list variable. Greater/Less Than compare by the column type: Number numerically, Date by timestamp (ISO, or any date the engine can parse — not epoch milliseconds), Text and Single Select alphabetically, ignoring case. A date without a time names the whole day in UTC, so \"Less Than or Equal 2026-09-11\" includes rows dated the 11th.",
+                          "displayName": "Value",
+                          "required": false,
+                          "type": "SHORT_TEXT"
+                        }
+                      },
+                      "required": false,
+                      "type": "ARRAY"
+                    }
+                  },
+                  "type": "MANUAL"
+                }
+              },
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "eventId": "{{trigger['output'].data.eventId}}",
+              "telegramId": "{{trigger['output'].data.telegramId}}"
+            },
+            "sourceCode": {
+              "code": "export const code = async (inputs) => {\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const USER = /^[0-9]{1,16}$/;\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n\n  const eventId = str(inputs.eventId);\n  const telegramId = str(inputs.telegramId);\n  const inputOk = SLUG.test(eventId) && USER.test(telegramId);\n\n  return {\n    inputOk: inputOk,\n    eventId: eventId,\n    telegramId: telegramId,\n    queryEventId: inputOk ? eventId : '-',\n    queryTelegramId: inputOk ? telegramId : '-'\n  };\n};",
+              "packageJson": "{}"
+            }
+          },
+          "type": "CODE",
+          "valid": true
+        },
+        "settings": {
+          "input": {
+            "exampleData": {
+              "sampleData": {}
+            },
+            "mode": "simple"
+          },
+          "propertySettings": {
+            "exampleData": {
+              "schema": {
+                "sampleData": {
+                  "displayName": "Sample Data",
+                  "required": true,
+                  "type": "OBJECT"
+                }
+              },
+              "type": "MANUAL"
+            }
+          },
+          "qadamName": "@aiqadam/qadam-subflows",
+          "qadamVersion": "0.4.14",
+          "sampleData": {},
+          "triggerName": "callableFlow"
+        },
+        "type": "PIECE_TRIGGER",
+        "valid": true
+      },
+      "valid": true
+    }
+  ],
+  "metadata": {
+    "externalId": "Q3iGnxOcpjzeUVvXQc48L"
+  },
+  "name": "fn-find-registration",
+  "qadams": [
+    "@aiqadam/qadam-subflows",
+    "@aiqadam/qadam-tables"
+  ],
+  "status": "PUBLISHED",
+  "summary": "",
+  "tags": [],
+  "type": "SHARED"
+}

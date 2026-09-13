@@ -26,17 +26,18 @@ OUT_DIR="$REPO_ROOT/flows"
 
 BASE_URL="${QADAM_BASE_URL:-https://app.flow.aiqadam.org}"
 PROJECT_ID="${QADAM_PROJECT_ID:-vZXlkfz60dx6kX97yICx7}"   # dev, catalog/project.md
-KEYCHAIN_SERVICE="${QADAM_KEYCHAIN_SERVICE:-aiqadam-events-bot:qadam-flow-api}"
-KEYCHAIN_ACCOUNT="${QADAM_KEYCHAIN_ACCOUNT:-}"
+# Имя записи в Keychain владельца. Разрешение агента выдано ТОЧЕЧНО на неё
+# и ровно на форму `find-generic-password -w -s <это имя>` — порядок флагов
+# менять нельзя, иначе вызов перестанет проходить.
+KEYCHAIN_SERVICE="aiqadam-events-bot:qadam-flow-api"
 
 command -v jq >/dev/null || { echo "нужен jq" >&2; exit 1; }
 
 # --- ключ -------------------------------------------------------------
 # Ни echo, ни set -x: значение не должно попасть ни в вывод, ни в лог.
+# Приоритет — переменная окружения; Keychain остаётся фолбэком.
 if [[ -z "${QADAM_API_KEY:-}" ]]; then
-  kc_args=(find-generic-password -s "$KEYCHAIN_SERVICE" -w)
-  [[ -n "$KEYCHAIN_ACCOUNT" ]] && kc_args=(find-generic-password -s "$KEYCHAIN_SERVICE" -a "$KEYCHAIN_ACCOUNT" -w)
-  if ! QADAM_API_KEY="$(security "${kc_args[@]}" 2>/dev/null)"; then
+  if ! QADAM_API_KEY="$(security find-generic-password -w -s aiqadam-events-bot:qadam-flow-api 2>/dev/null)"; then
     cat >&2 <<MSG
 Ключа платформы нет ни в QADAM_API_KEY, ни в Keychain
 (сервис: $KEYCHAIN_SERVICE).

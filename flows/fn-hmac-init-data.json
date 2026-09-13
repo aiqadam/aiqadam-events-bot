@@ -1,0 +1,174 @@
+{
+  "author": "",
+  "blogUrl": "",
+  "categories": [],
+  "description": "",
+  "flows": [
+    {
+      "displayName": "fn-hmac-init-data",
+      "notes": [],
+      "schemaVersion": "31",
+      "trigger": {
+        "displayName": "callableFlow",
+        "lastUpdatedDate": "2026-09-13T12:31:53.800Z",
+        "name": "trigger",
+        "nextAction": {
+          "displayName": "parse initData",
+          "lastUpdatedDate": "2026-09-13T12:31:53.800Z",
+          "name": "step_1",
+          "nextAction": {
+            "displayName": "hmac",
+            "lastUpdatedDate": "2026-09-13T12:31:53.801Z",
+            "name": "step_2",
+            "nextAction": {
+              "displayName": "decide validity",
+              "lastUpdatedDate": "2026-09-13T12:31:53.801Z",
+              "name": "step_3",
+              "nextAction": {
+                "displayName": "return",
+                "lastUpdatedDate": "2026-09-13T12:31:53.801Z",
+                "name": "step_4",
+                "settings": {
+                  "actionName": "returnResponse",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "mode": "simple",
+                    "response": {
+                      "response": {
+                        "ageSeconds": "{{step_3['output'].ageSeconds}}",
+                        "authDate": "{{step_3['output'].authDate}}",
+                        "authDateIso": "{{step_3['output'].authDateIso}}",
+                        "fresh": "{{step_3['output'].fresh}}",
+                        "hashValid": "{{step_3['output'].hashValid}}",
+                        "maxAgeSeconds": "{{step_3['output'].maxAgeSeconds}}",
+                        "reason": "{{step_3['output'].reason}}",
+                        "telegramId": "{{step_3['output'].telegramId}}",
+                        "user": "{{step_3['output'].user}}",
+                        "valid": "{{step_3['output'].valid}}"
+                      }
+                    }
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-subflows",
+                  "qadamVersion": "0.4.14"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "authDate": "{{step_1['output'].authDate}}",
+                  "expected": "{{step_2['output']}}",
+                  "hash": "{{step_1['output'].hash}}",
+                  "maxAgeSeconds": "{{trigger['output'].data.maxAgeSeconds}}",
+                  "parsedOk": "{{step_1['output'].ok}}",
+                  "reason": "{{step_1['output'].reason}}",
+                  "telegramId": "{{step_1['output'].telegramId}}",
+                  "user": "{{step_1['output'].user}}"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const ctEq = (a, b) => {\n    const x = String(a === undefined || a === null ? '' : a);\n    const y = String(b === undefined || b === null ? '' : b);\n    let diff = x.length ^ y.length;\n    const n = x.length > y.length ? x.length : y.length;\n    for (let i = 0; i < n; i++) {\n      const cx = i < x.length ? x.charCodeAt(i) : 0;\n      const cy = i < y.length ? y.charCodeAt(i) : 0;\n      diff |= cx ^ cy;\n    }\n    return diff === 0;\n  };\n\n  const MAX_AGE_CAP = 86400;\n  const SKEW = 300;\n\n  const parsedOk = inputs.parsedOk === true || inputs.parsedOk === 'true';\n  const parseReason = String(inputs.reason === undefined || inputs.reason === null ? '' : inputs.reason);\n  const expectedRaw = inputs.expected;\n  const expected = typeof expectedRaw === 'string' ? expectedRaw : String(expectedRaw === undefined || expectedRaw === null ? '' : expectedRaw);\n  const hash = String(inputs.hash === undefined || inputs.hash === null ? '' : inputs.hash);\n\n  const authDateNum = Number(inputs.authDate);\n  const authDate = isFinite(authDateNum) && authDateNum > 0 ? authDateNum : 0;\n\n  let maxAge = Number(inputs.maxAgeSeconds);\n  if (!isFinite(maxAge) || maxAge <= 0) maxAge = MAX_AGE_CAP;\n  if (maxAge > MAX_AGE_CAP) maxAge = MAX_AGE_CAP;\n\n  const nowSec = Math.floor(Date.now() / 1000);\n  const ageSeconds = authDate > 0 ? nowSec - authDate : -1;\n\n  const hashValid = parsedOk && /^[0-9a-f]{64}$/.test(expected) && ctEq(hash, expected);\n  const fresh = authDate > 0 && ageSeconds <= maxAge && ageSeconds >= -SKEW;\n  const valid = hashValid && fresh;\n\n  const reason = valid ? '' : (!parsedOk ? (parseReason || 'malformed') : (!hashValid ? 'bad_hash' : 'expired'));\n\n  return {\n    valid: valid,\n    hashValid: hashValid,\n    fresh: fresh,\n    reason: reason,\n    telegramId: valid ? String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId) : '',\n    user: valid ? (inputs.user === undefined ? null : inputs.user) : null,\n    authDate: authDate,\n    authDateIso: authDate > 0 ? new Date(authDate * 1000).toISOString() : '',\n    ageSeconds: ageSeconds,\n    maxAgeSeconds: maxAge\n  };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "botToken": "{{trigger['output'].data.botToken}}",
+                "dataCheckString": "{{step_1['output'].dataCheckString}}"
+              },
+              "sourceCode": {
+                "code": "export const code = async (inputs) => {\n  const crypto = require('node:crypto');\n\n  const dataCheckString = String(inputs.dataCheckString === undefined || inputs.dataCheckString === null ? '' : inputs.dataCheckString);\n  const botToken = String(inputs.botToken === undefined || inputs.botToken === null ? '' : inputs.botToken);\n\n  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken, 'utf8').digest();\n  const expected = crypto.createHmac('sha256', secretKey).update(dataCheckString, 'utf8').digest('hex');\n\n  return expected;\n};",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          },
+          "settings": {
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "initData": "{{trigger['output'].data.initData}}"
+            },
+            "sourceCode": {
+              "code": "export const code = async (inputs) => {\n  const fail = (reason) => ({\n    ok: false, reason: reason,\n    dataCheckString: 'x', hash: '', authDate: 0, telegramId: '', user: null, keys: []\n  });\n\n  const raw = inputs.initData;\n  if (raw === undefined || raw === null) return fail('malformed');\n  const s = String(raw).trim();\n  if (s === '') return fail('malformed');\n  if (s.length > 8192) return fail('too_long');\n\n  const parts = s.split('&');\n  const fields = {};\n  for (let i = 0; i < parts.length; i++) {\n    const p = parts[i];\n    if (p === '') continue;\n    const j = p.indexOf('=');\n    if (j <= 0) return fail('malformed');\n    let k, v;\n    try {\n      k = decodeURIComponent(p.slice(0, j).replace(/\\+/g, ' '));\n      v = decodeURIComponent(p.slice(j + 1).replace(/\\+/g, ' '));\n    } catch (e) {\n      return fail('malformed');\n    }\n    fields[k] = v;\n  }\n\n  const hash = typeof fields.hash === 'string' ? fields.hash : '';\n  if (!/^[0-9a-f]{64}$/.test(hash)) return fail('bad_hash_format');\n\n  const keys = Object.keys(fields).filter((k) => k !== 'hash').sort();\n  if (keys.length === 0) return fail('malformed');\n  const dataCheckString = keys.map((k) => k + '=' + fields[k]).join('\\n');\n\n  const authDateNum = Number(fields.auth_date);\n  const authDate = isFinite(authDateNum) && authDateNum > 0 ? authDateNum : 0;\n\n  let user = null;\n  let telegramId = '';\n  if (typeof fields.user === 'string' && fields.user !== '') {\n    try { user = JSON.parse(fields.user); } catch (e) { user = null; }\n    if (user && (typeof user.id === 'number' || typeof user.id === 'string')) telegramId = String(user.id);\n  }\n\n  return { ok: true, reason: '', dataCheckString: dataCheckString, hash: hash, authDate: authDate, telegramId: telegramId, user: user, keys: keys };\n};",
+              "packageJson": "{}"
+            }
+          },
+          "type": "CODE",
+          "valid": true
+        },
+        "settings": {
+          "input": {
+            "exampleData": {
+              "sampleData": {}
+            },
+            "mode": "simple"
+          },
+          "propertySettings": {
+            "exampleData": {
+              "schema": {
+                "sampleData": {
+                  "displayName": "Sample Data",
+                  "required": true,
+                  "type": "OBJECT"
+                }
+              },
+              "type": "MANUAL"
+            }
+          },
+          "qadamName": "@aiqadam/qadam-subflows",
+          "qadamVersion": "0.4.14",
+          "sampleData": {},
+          "triggerName": "callableFlow"
+        },
+        "type": "PIECE_TRIGGER",
+        "valid": true
+      },
+      "valid": true
+    }
+  ],
+  "metadata": {
+    "externalId": "VzXoy80RWnX7pM4dm8eor"
+  },
+  "name": "fn-hmac-init-data",
+  "qadams": [
+    "@aiqadam/qadam-subflows"
+  ],
+  "status": "PUBLISHED",
+  "summary": "",
+  "tags": [],
+  "type": "SHARED"
+}

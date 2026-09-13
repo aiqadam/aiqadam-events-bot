@@ -1,0 +1,172 @@
+{
+  "author": "",
+  "blogUrl": "",
+  "categories": [],
+  "description": "",
+  "flows": [
+    {
+      "displayName": "events-list",
+      "notes": [],
+      "schemaVersion": "31",
+      "trigger": {
+        "displayName": "callableFlow",
+        "lastUpdatedDate": "2026-09-13T16:42:32.920Z",
+        "name": "trigger",
+        "nextAction": {
+          "displayName": "ack callback",
+          "lastUpdatedDate": "2026-09-13T16:42:32.921Z",
+          "name": "step_1",
+          "nextAction": {
+            "displayName": "read published events",
+            "lastUpdatedDate": "2026-09-13T16:42:32.921Z",
+            "name": "step_2",
+            "nextAction": {
+              "displayName": "render list",
+              "lastUpdatedDate": "2026-09-13T16:42:32.921Z",
+              "name": "step_3",
+              "nextAction": {
+                "displayName": "send list",
+                "lastUpdatedDate": "2026-09-13T16:42:32.922Z",
+                "name": "step_4",
+                "settings": {
+                  "actionName": "send_text_message",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "chat_id": "{{trigger['output'].data.chatId}}",
+                    "format": "None",
+                    "message": "{{step_3['output'].text}}",
+                    "reply_markup": "{{step_3['output'].reply_markup}}"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                  "qadamVersion": "0.8.0"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "callbackData": "{{trigger['output'].data.callbackData}}",
+                  "eventRecords": "{{step_2['output']}}",
+                  "texts": {
+                    "events.list.btn.past": "Прошедшие",
+                    "events.list.btn.upcoming": "Будущие",
+                    "events.list.empty_past": "Прошедших ивентов ещё нет.",
+                    "events.list.empty_upcoming": "Пока ничего не запланировано.",
+                    "events.list.item": "{title} — {when}",
+                    "events.list.past_title": "Прошедшие ивенты",
+                    "events.list.upcoming_title": "Будущие ивенты"
+                  }
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const ms = parseIso(iso);\n    return isFinite(ms) ? dateFmt.format(new Date(ms)) : '';\n  };\n  const cb = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const tab = cb === 'ev:list:past' ? 'past' : 'upcoming';\n  const nowMs = Date.now();\n  const rows = arr(inputs.eventRecords).map(flat)\n    .filter((r) => String(r.status || '') === 'published')\n    .sort((a, b) => parseIso(a.starts_at) - parseIso(b.starts_at));\n  const isPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs <= nowMs : false;\n  };\n  const list = tab === 'past' ? rows.filter(isPast) : rows.filter((r) => !isPast(r));\n  const lines = [t(tab === 'past' ? 'events.list.past_title' : 'events.list.upcoming_title')];\n  if (list.length === 0) {\n    lines.push(t(tab === 'past' ? 'events.list.empty_past' : 'events.list.empty_upcoming'));\n  } else {\n    list.forEach((r) => lines.push(t('events.list.item', { title: r.title || '', when: fmt(r.starts_at) })));\n  }\n  return {\n    text: lines.join('\\n\\n'),\n    reply_markup: { inline_keyboard: [[\n      { text: t('events.list.btn.upcoming'), callback_data: 'ev:list:upcoming' },\n      { text: t('events.list.btn.past'), callback_data: 'ev:list:past' }\n    ]] }\n  };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-find-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "filters": {
+                  "filters": [
+                    {
+                      "field": {
+                        "id": "iUPI69WFE2B8w3BBHdrak",
+                        "name": "status",
+                        "type": "STATIC_DROPDOWN"
+                      },
+                      "operator": "eq",
+                      "value": "published"
+                    }
+                  ]
+                },
+                "limit": 50,
+                "record_ids": [],
+                "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "answer_callback_query",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": true
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "callback_query_id": "{{trigger['output'].data.callbackQueryId}}"
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-telegram-bot",
+            "qadamVersion": "0.8.0"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "input": {
+            "exampleData": {
+              "chatId": "322876545",
+              "telegramId": "322876545"
+            },
+            "mode": "simple"
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-subflows",
+          "qadamVersion": "0.4.14",
+          "sampleData": {},
+          "triggerName": "callableFlow"
+        },
+        "type": "PIECE_TRIGGER",
+        "valid": true
+      },
+      "valid": true
+    }
+  ],
+  "metadata": {
+    "externalId": "5Vwo7OcDP4TfHHCaPQycx"
+  },
+  "name": "events-list",
+  "qadams": [
+    "@aiqadam/qadam-subflows",
+    "@aiqadam/qadam-telegram-bot",
+    "@aiqadam/qadam-tables"
+  ],
+  "status": "PUBLISHED",
+  "summary": "",
+  "tags": [],
+  "type": "SHARED"
+}

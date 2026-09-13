@@ -1,0 +1,386 @@
+{
+  "author": "",
+  "blogUrl": "",
+  "categories": [],
+  "description": "",
+  "flows": [
+    {
+      "displayName": "reg-consent-mkt",
+      "notes": [],
+      "schemaVersion": "31",
+      "trigger": {
+        "displayName": "callableFlow",
+        "lastUpdatedDate": "2026-09-13T19:15:40.053Z",
+        "name": "trigger",
+        "nextAction": {
+          "displayName": "ack callback",
+          "lastUpdatedDate": "2026-09-13T19:15:40.054Z",
+          "name": "step_1",
+          "nextAction": {
+            "displayName": "decide yes/no + разбор draft",
+            "lastUpdatedDate": "2026-09-13T19:15:40.110Z",
+            "name": "step_2",
+            "nextAction": {
+              "displayName": "save consent_marketing",
+              "lastUpdatedDate": "2026-09-13T19:15:40.056Z",
+              "name": "step_3",
+              "nextAction": {
+                "displayName": "advance session to await_phone (draft сохраняется)",
+                "lastUpdatedDate": "2026-09-13T19:16:05.036Z",
+                "name": "step_6",
+                "nextAction": {
+                  "displayName": "card text: рассылка учтена, остался телефон",
+                  "lastUpdatedDate": "2026-09-13T19:16:21.718Z",
+                  "name": "step_4",
+                  "nextAction": {
+                    "continueOnFailureBranches": {
+                      "onFailure": {
+                        "displayName": "фолбэк: карточку не отредактировать — шлём новую",
+                        "lastUpdatedDate": "2026-09-13T19:16:35.600Z",
+                        "name": "step_9",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "MarkdownV2",
+                            "message": "{{step_4['output'].text}}",
+                            "protect_content": false,
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      }
+                    },
+                    "displayName": "edit card → рассылка учтена, кнопки сняты",
+                    "lastUpdatedDate": "2026-09-13T19:16:29.388Z",
+                    "name": "step_5",
+                    "nextAction": {
+                      "displayName": "phone prompt: текст + reply-клавиатура",
+                      "lastUpdatedDate": "2026-09-13T19:17:00.020Z",
+                      "name": "step_8",
+                      "nextAction": {
+                        "displayName": "send phone prompt (транзиентное, потом удаляется)",
+                        "lastUpdatedDate": "2026-09-13T19:17:05.904Z",
+                        "name": "step_7",
+                        "nextAction": {
+                          "displayName": "draft: cardMessageId + promptMessageId",
+                          "lastUpdatedDate": "2026-09-13T19:17:14.696Z",
+                          "name": "step_10",
+                          "nextAction": {
+                            "displayName": "записать promptMessageId в draft",
+                            "lastUpdatedDate": "2026-09-13T19:17:26.483Z",
+                            "name": "step_11",
+                            "settings": {
+                              "actionName": "tables-upsert-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "key_columns": [
+                                  "N8CdPxcdxLX9vFCINvZbL"
+                                ],
+                                "table_id": "toTKgngMTqDNJWDpQMh4d",
+                                "values": {
+                                  "values": [
+                                    {
+                                      "ESthrMwpn29JLvE2BNIj4": "registration",
+                                      "IdGimBh539UlGSz6L0Pyo": "await_phone",
+                                      "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                      "U9P3zTZHcFdAAtzLVVSYn": "{{step_10['output'].now}}",
+                                      "sctBFEsMf10UobeFgzsVt": "{{step_10['output'].draftJson}}"
+                                    }
+                                  ]
+                                }
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "cardMessageId": "{{step_2['output'].cardMessageId}}",
+                              "eventId": "{{step_2['output'].eventId}}",
+                              "fallbackCardId": "{{step_9['output'].body.result.message_id}}",
+                              "promptMessageId": "{{step_7['output'].body.result.message_id}}",
+                              "utm": "{{step_2['output'].utm}}"
+                            },
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const num = (v) => { const n = Number(v); return isFinite(n) && n > 0 ? n : 0; };\n  // Если карточку не удалось отредактировать, актуальной становится та,\n  // что ушла фолбэком. Шаг фолбэка выполняется не всегда, поэтому его\n  // выход коалесцируется, а не читается напрямую.\n  const cardMessageId = num(inputs.fallbackCardId) || num(inputs.cardMessageId);\n  return {\n    draftJson: JSON.stringify({\n      eventId: str(inputs.eventId),\n      utm: str(inputs.utm),\n      cardMessageId: cardMessageId,\n      promptMessageId: num(inputs.promptMessageId)\n    }),\n    now: new Date().toISOString()\n  };\n};",
+                              "packageJson": "{}"
+                            }
+                          },
+                          "type": "CODE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "None",
+                            "message": "{{step_8['output'].text}}",
+                            "protect_content": false,
+                            "reply_markup": "{{step_8['output'].replyMarkup}}",
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "texts": {
+                            "reg.phone.ask": "Поделитесь телефоном кнопкой ниже — или пропустите, если не хотите.",
+                            "reg.phone.btn_share": "Отправить телефон",
+                            "reg.phone.btn_skip": "Пропустить"
+                          }
+                        },
+                        "sourceCode": {
+                          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Здесь format=None (текст без разметки), поэтому экранирование не нужно:\n  // сообщение транзиентное и состоит только из наших строк.\n  // Телефон берётся ТОЛЬКО через request_contact (DAT-2) — а это reply-клавиатура,\n  // которую edit_message_text не принимает («inline keyboard expected»).\n  // Поэтому вопрос уходит отдельным сообщением и потом удаляется.\n  const replyMarkup = {\n    keyboard: [\n      [{ text: t('reg.phone.btn_share'), request_contact: true }],\n      [{ text: t('reg.phone.btn_skip') }]\n    ],\n    resize_keyboard: true,\n    one_time_keyboard: true\n  };\n  return { text: t('reg.phone.ask'), replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                          "packageJson": "{}"
+                        }
+                      },
+                      "type": "CODE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "edit_message_text",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": true
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "chat_id": "{{trigger['output'].data.chatId}}",
+                        "disable_web_page_preview": false,
+                        "format": "MarkdownV2",
+                        "message_id": "{{step_2['output'].cardMessageId}}",
+                        "text": "{{step_4['output'].text}}"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                      "qadamVersion": "0.8.0"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "isYes": "{{step_2['output'].isYes}}",
+                      "texts": {
+                        "reg.consent_marketing.saved_no": "Анонсы присылать не будем.",
+                        "reg.consent_marketing.saved_yes": "Договорились, будем присылать анонсы.",
+                        "reg.done.header": "✅ Вы зарегистрированы",
+                        "reg.phone.ask_card": "Осталось одно: телефон на случай, если нужно будет связаться. Можно пропустить."
+                      }
+                    },
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const isYes = inputs.isYes === true || inputs.isYes === 'true';\n  const lines = [\n    esc(t('reg.done.header')),\n    esc(t(isYes ? 'reg.consent_marketing.saved_yes' : 'reg.consent_marketing.saved_no')),\n    esc(t('reg.phone.ask_card'))\n  ];\n  return { text: lines.join('\\n\\n'), now: new Date().toISOString() };\n};",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-upsert-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "key_columns": [
+                      "N8CdPxcdxLX9vFCINvZbL"
+                    ],
+                    "table_id": "toTKgngMTqDNJWDpQMh4d",
+                    "values": {
+                      "values": [
+                        {
+                          "ESthrMwpn29JLvE2BNIj4": "registration",
+                          "IdGimBh539UlGSz6L0Pyo": "await_phone",
+                          "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                          "U9P3zTZHcFdAAtzLVVSYn": "{{step_2['output'].now}}",
+                          "sctBFEsMf10UobeFgzsVt": "{{step_2['output'].draftJson}}"
+                        }
+                      ]
+                    }
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "tables-upsert-records",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "key_columns": [
+                    "JtylZU291K7TuMn9c9F2t"
+                  ],
+                  "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                  "values": {
+                    "values": [
+                      {
+                        "3t75byELQCZ1ejfTADsvp": "{{step_2['output'].now}}",
+                        "FpWznk9Fgl8wUXXUKolRu": "{{step_2['output'].consentValue}}",
+                        "JtylZU291K7TuMn9c9F2t": "{{trigger['output'].data.telegramId}}"
+                      }
+                    ]
+                  }
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.5"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "callbackData": "{{trigger['output'].data.callbackData}}",
+                "sessionDraft": "{{trigger['output'].data.sessionDraft}}"
+              },
+              "sourceCode": {
+                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:mkt:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  return {\n    isYes: isYes,\n    consentValue: isYes ? 'true' : 'false',\n    eventId: eventId, utm: utm, cardMessageId: cardId,\n    // Черновик на следующий шаг: promptMessageId допишется после отправки\n    // вопроса о телефоне — его message_id до отправки неизвестен.\n    draftJson: JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId, promptMessageId: 0 }),\n    now: new Date().toISOString()\n  };\n};",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "answer_callback_query",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": true
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "callback_query_id": "{{trigger['output'].data.callbackQueryId}}"
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-telegram-bot",
+            "qadamVersion": "0.8.0"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "input": {
+            "exampleData": {
+              "callbackData": "reg:mkt:yes",
+              "callbackQueryId": "sample-cbq-id",
+              "chatId": "322876545",
+              "telegramId": "322876545"
+            },
+            "mode": "simple"
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-subflows",
+          "qadamVersion": "0.4.14",
+          "sampleData": {},
+          "triggerName": "callableFlow"
+        },
+        "type": "PIECE_TRIGGER",
+        "valid": true
+      },
+      "valid": true
+    }
+  ],
+  "metadata": {
+    "externalId": "JH42q9BkKDYUti7leKJrC"
+  },
+  "name": "reg-consent-mkt",
+  "qadams": [
+    "@aiqadam/qadam-subflows",
+    "@aiqadam/qadam-telegram-bot",
+    "@aiqadam/qadam-tables"
+  ],
+  "status": "PUBLISHED",
+  "summary": "",
+  "tags": [],
+  "type": "SHARED"
+}
