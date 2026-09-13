@@ -13,19 +13,22 @@
 
 | Что | Сколько | Чем проверено |
 |---|---|---|
-| Флоу | **12** — все построены: пять `fn-*`, четыре касания регистрации, `tg-router`, `checkin-api`, `my-qr-api` | `ap_list_flows`, карточки в [flows/](flows/) |
+| Флоу | **18** — пять `fn-*`, четыре касания регистрации, `tg-router`, `checkin-api`, `my-qr-api`, шесть флоу визарда ивента (W11, слит в W26) | `ap_list_flows`, карточки в [flows/](flows/) |
 | Таблицы | **10** — все из [DATA-MODEL.md](../docs/DATA-MODEL.md), пересозданы W26 | `ap_list_tables`, карточки в [tables/](tables/) обновлены с новыми `externalId` |
 | Connections | **1** — `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`, ACTIVE) | `ap_list_connections` |
 | Variables | все четыре на месте (`QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`) | проверено в UI владельцем 2026-09-13 (агент W26 не имел доступа к браузеру) |
 
-Все 12 флоу собраны и опубликованы: пять `fn-*`, четыре касания регистрации,
-`tg-router`, `checkin-api`, `my-qr-api` — карточки в [flows/](flows/).
-Регистрация проверена сквозными прогонами с реальной доставкой в Telegram
-владельца. `checkin-api`/`my-qr-api` проверены агентом только на пути
-`unauthorized` (мусорный `initData`) и атомарность записи чекина — полный
-путь с валидной подписью Telegram требует прогона от **живого клиента**
-(`BOT_TOKEN` секретный, агент подделать `initData` не может), это отдельный
-обязательный шаг перед `готово` (тот же паттерн, что был в W8, Q16).
+Все 18 флоу собраны и опубликованы: пять `fn-*`, четыре касания регистрации,
+`tg-router`, `checkin-api`, `my-qr-api`, шесть флоу визарда ивента
+(`event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
+`event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish` —
+[ADR-0016](../docs/adr/0016-shared-flow-for-same-shaped-touches.md)) —
+карточки в [flows/](flows/).
+Регистрация, чекин (со всеми четырьмя сценариями STF-2 на реальной подписи
+Telegram) и визард ивента (маршрутизация, все шесть полей, авторизация
+правки, уведомление на изменение) проверены сквозными прогонами, включая
+реальную доставку в Telegram владельца — подробности в
+[docs/work/W26-rebuild-on-one-touch.md](../docs/work/W26-rebuild-on-one-touch.md).
 
 **Важное открытие W26:** `callFlow`'s `flowProps` теперь резолвится в
 единственное поле `payload` (`OBJECT`), а не в плоские именованные поля —

@@ -4,8 +4,8 @@
 - **Триггер**: `@aiqadam/qadam-telegram-bot / new_telegram_message` (`update_types: message, callback_query`),
   connection `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 - **Назначение**: единственная точка входа бота — дедуп по `update_id` (IDM-4),
-  апсерт `users`, классификация апдейта, делегирование одному из четырёх
-  касаний регистрации (ADR-0015).
+  апсерт `users`, классификация апдейта, делегирование одному из касаний
+  регистрации (ADR-0015) или визарда ивента (W11, слит в W26, ADR-0016).
 - **Flow ID (MCP)**: `nyaBzgKGG8TTTsryjc9tW` · **externalId**: — (не subflow)
 
 ## Контракт
@@ -15,10 +15,17 @@
 1. `/start e<id>-<utm>` (валидный `fn-parse-start`, `kind='e'`) → `reg-start`,
    **независимо от активной сессии** — новый вход по deep link перекрывает
    недоведённый диалог.
-2. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
+2. `/newevent` → `wiz_start`; `/editevent <id>` → `wiz_edit_start` —
+   **независимо от активной сессии**, тем же принципом, что и `/start`.
+3. Иначе, если активная сессия — визард (`scenario` = `event_create`/`event_edit`):
+   по `sessions.step` → `wiz_photo` (`step='photo'`), `wiz_geo` (`step='geo'`),
+   `wiz_publish` (`step='preview'`, обычно вместе с `callback_query`), иначе
+   (`title`/`description`/`address`/`starts_at`/`ends_at`/`reg_deadline_at`) →
+   `wiz_field` — один флоу на все шесть текстовых полей (ADR-0016).
+4. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
    `scenario/step` не `-`) со `scenario='registration'`: по `step`
    (`await_pdn`/`await_marketing`/`await_phone`) → соответствующее касание.
-3. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
+5. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
 
@@ -33,14 +40,19 @@
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч | |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
 | step_10 | CODE «routing decision» | вычисляет `route` (см. выше) | |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`Otherwise` | | |
-| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику | |
-| step_16 | CODE «намерение без обработчика» | лог | |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`Otherwise` | | |
+| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации | |
+| step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда | |
+| step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) | |
+| step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) | |
 
 ## Зависимости
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
-- **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone` — делегирование, не subflow-функции (ADR-0015 п. 4)
+- **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`,
+  `event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
+  `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish` — делегирование,
+  не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
@@ -93,3 +105,11 @@
   (`h59E2gDMOTjHXEtEEFdZM`). **Гейты**: групповой чат → `non_private_chat`
   (`LWqkk9yosJcD6o2UMqbqw`); отправитель-бот → `from_bot`
   (`lCQDAfncbjrTSwQklumMF`).
+- **Маршруты визарда (W11, слит в W26) проверены тем же способом — все шесть**:
+  `/newevent` → `wiz_start` (`QHnZ4y2RbuE2QcK6M37e6`); `/editevent <id>` →
+  `wiz_edit_start`, включая перебивание стуковавшей сессии `event_create`
+  (`m8eygtY7u3NkPlxc8AidP`); текст при `sessions.step='title'` → `wiz_field`
+  (`Lop1K9edGNX6ByDgQJA75`); фото-сообщение при `step='photo'` → `wiz_photo`
+  (`OeYdh1MyrrOii97K96XSC`); гео-сообщение при `step='geo'` → `wiz_geo`
+  (`DxSoEcujIrNUfdUQQSQc8`); `callback_query` `wiz:cancel` при `step='preview'`
+  → `wiz_publish` (`txh7HK0Zo0mXlPRQD0D9j`).

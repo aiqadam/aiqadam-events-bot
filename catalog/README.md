@@ -3,13 +3,16 @@
 > ## ⏳ Пересборка после очистки инстанса — все флоу построены, ждёт ревью (W26)
 >
 > Инстанс `events-dev` очищен 13.09.2026. [W26](../docs/work/W26-rebuild-on-one-touch.md)
-> пересобрал проект по [ADR-0015](../docs/adr/0015-one-touch-one-flow.md):
-> **10 таблиц и все 12 флоу построены** (`fn-hmac-init-data`, `fn-sign-qr`,
+> пересобрал проект по [ADR-0015](../docs/adr/0015-one-touch-one-flow.md) и
+> слил в себя W11 (визард ивента) по [ADR-0016](../docs/adr/0016-shared-flow-for-same-shaped-touches.md):
+> **10 таблиц и все 18 флоу построены** (`fn-hmac-init-data`, `fn-sign-qr`,
 > `fn-verify-qr`, `fn-parse-start`, `fn-find-registration`, `reg-start`,
 > `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`, `tg-router`,
-> `checkin-api`, `my-qr-api`). Регистрация проверена сквозными прогонами
-> с реальной доставкой в Telegram; `checkin-api`/`my-qr-api` — только путь
-> `unauthorized` (нужен прогон от живого клиента для остального, см. их карточки).
+> `checkin-api`, `my-qr-api`, `event-wizard-start`, `event-wizard-edit-start`,
+> `event-wizard-field`, `event-wizard-photo`, `event-wizard-geo`,
+> `event-wizard-publish`). Регистрация, чекин (все сценарии STF-2) и визард
+> (маршрутизация, все шесть полей, авторизация правки, уведомление на
+> изменение) проверены сквозными прогонами с реальной доставкой в Telegram.
 > Пакет ещё не закрыт: независимое ревью не пройдено.
 >
 > Текущее состояние — [overview.md](overview.md).
