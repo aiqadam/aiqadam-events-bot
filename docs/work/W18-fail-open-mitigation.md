@@ -853,9 +853,9 @@ markdown, а не по рендеру. Остальные таблицы в за
 
 **Связность и целость.** Разделы ревью всех трёх кругов, замечания и ответы
 *Исправлено* на месте, ничего не затёрто (11 отметок *Исправлено*: 5 + 2 + 3
-плюс поправка). Ссылки `[Q34](../docs/OPEN-QUESTIONS.md#q34)` из
-`catalog/variables.md` и `catalog/overview.md`, `[Q34](OPEN-QUESTIONS.md#q34)`
-из `STATUS.md`, `[Q25](OPEN-QUESTIONS.md#q25)` — ведут в нужный файл, оба
+плюс поправка). Ссылки `[Q34](../OPEN-QUESTIONS.md#q34)` из
+`catalog/variables.md` и `catalog/overview.md`, `[Q34](../OPEN-QUESTIONS.md#q34)`
+из `STATUS.md`, `[Q25](../OPEN-QUESTIONS.md#q25)` — ведут в нужный файл, оба
 вопроса в нём есть. Markdown валиден, висящих ссылок нет.
 
 **Чек-лист готовности W18 из [BACKLOG.md](../BACKLOG.md) — пройден весь:**
