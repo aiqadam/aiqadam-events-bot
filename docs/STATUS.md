@@ -67,7 +67,7 @@
 | W23. Слияние CODE-цепочек и остатки латентности | 5 | W22 | **не будет сделан** 2026-09-13 — [почему](BACKLOG.md#w23-слияние-code-цепочек-и-остатки-латентности--закрыт-как-неактуальный) | — | — |
 | W24. Русский-онли до платформенного i18n ([ADR-0014](adr/0014-russian-only-until-platform-i18n.md), qadam-flow#420) | 5 | W22 | **готов** 2026-09-13 | агент W24 | [W24](work/W24-russian-only.md) |
 | W25. Возврат i18n на платформенном механизме ([ADR-0014](adr/0014-russian-only-until-platform-i18n.md), qadam-flow#420) | 5 | W24, qadam-flow#420 | не начат — ждёт закрытия [#420](https://github.com/aiqadam/qadam-flow/issues/420) | — | — |
-| W26. Пересборка `events-dev` по [ADR-0015](adr/0015-one-touch-one-flow.md) + W11 визард (слит 2026-09-13, [ADR-0016](adr/0016-shared-flow-for-same-shaped-touches.md)) | 5 | ADR-0015, [Q35](OPEN-QUESTIONS.md#q35) | **в работе** | агент W26 | [W26](work/W26-rebuild-on-one-touch.md) |
+| W26. Пересборка `events-dev` по [ADR-0015](adr/0015-one-touch-one-flow.md) + W11 визард (слит 2026-09-13, [ADR-0016](adr/0016-shared-flow-for-same-shaped-touches.md)) | 5 | ADR-0015, [Q35](OPEN-QUESTIONS.md#q35) | **на проверке** | агент W26 | [W26](work/W26-rebuild-on-one-touch.md) |
 | W15. Приёмка | 6 | все, включая W26 | не начат | — | — |
 
 Критический путь после очистки инстанса: `Variables → W26 (таблицы → Q35 → fn-* → tg-router → касания регистрации → визард) → W15`.
