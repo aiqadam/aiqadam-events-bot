@@ -11,17 +11,17 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `callableFlow` | приём вызова | `{{trigger['output'].data.telegramId/chatId/eventId}}` |
-| step_1 | `tables-find-records events` | ивент по `id` | `id eq {{trigger['output'].data.eventId}}` |
-| step_2 | CODE «decide + build draft» | `ok`/`not_found`/`not_owner`; `draft = {id, ...поля, _orig: {...те же поля}}`, где поля — `title`, `description`, `address`, `starts_at`, `ends_at`, `reg_deadline_at`, `lat`, `lon`, `photo_file_id`, `status` | |
-| step_3 | ROUTER: `ok`/`not_found`/`Otherwise` (=not_owner) | | |
-| step_4 (ok) | `tables-upsert-records sessions` | `scenario='event_edit', step='title', draft` | |
-| step_7 | CODE «ask title text» | текст первого вопроса с текущим значением `title` | |
-| step_8 | `send_text_message` | | |
-| step_5 (not_found) | `send_text_message` | «Ивент с таким id не найден.» | |
-| step_6 (Otherwise/not_owner) | `send_text_message` | «Вы не владелец этого ивента.» | |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `callableFlow` | приём вызова |
+| step_1 | `tables-find-records events` | ивент по `id` |
+| step_2 | CODE «decide + build draft» | `ok`/`not_found`/`not_owner`; `draft = {id, ...поля, _orig: {...те же поля}}`, где поля — `title`, `description`, `address`, `starts_at`, `ends_at`, `reg_deadline_at`, `lat`, `lon`, `photo_file_id`, `status` |
+| step_3 | ROUTER: `ok`/`not_found`/`Otherwise` (=not_owner) | |
+| step_4 (ok) | `tables-upsert-records sessions` | `scenario='event_edit', step='title', draft` |
+| step_7 | CODE «ask title text» | текст первого вопроса с текущим значением `title` |
+| step_8 | `send_text_message` | |
+| step_5 (not_found) | `send_text_message` | «Ивент с таким id не найден.» |
+| step_6 (Otherwise/not_owner) | `send_text_message` | «Вы не владелец этого ивента.» |
 
 ## Зависимости
 

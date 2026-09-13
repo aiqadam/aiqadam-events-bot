@@ -37,23 +37,23 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов (`message`, `callback_query`) | — |
-| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey`, `messageId` входящего сообщения | `{{trigger['output']}}` |
-| step_2 | `@aiqadam/qadam-store : put_if_absent` | атомарный захват `upd:<update_id>` (IDM-4) | `ttl_seconds: 86400`, `store_scope: COLLECTION` |
-| step_3 | CODE «gate» | `proceed`/`reason` (`bad_update`/`duplicate`/`from_bot`/`non_private_chat`) | |
-| step_4 | ROUTER: `proceed` / `Otherwise` (лог) | | |
-| step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` | |
-| step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч | |
-| step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
-| step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` | |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`Otherwise` | | |
-| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации | все четыре получают `sessionDraft`; `reg-phone` дополнительно `userMessageId` |
-| step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда | |
-| step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) | `flowProps.payload: {chatId, telegramId, callbackData, callbackQueryId}` |
-| step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) | |
-| step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) | |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов (`message`, `callback_query`) |
+| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey`, `messageId` входящего сообщения |
+| step_2 | `@aiqadam/qadam-store : put_if_absent` | атомарный захват `upd:<update_id>` (IDM-4); окно дедупликации — сутки |
+| step_3 | CODE «gate» | `proceed`/`reason` (`bad_update`/`duplicate`/`from_bot`/`non_private_chat`) |
+| step_4 | ROUTER: `proceed` / `Otherwise` (лог) | |
+| step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
+| step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
+| step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
+| step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`Otherwise` | |
+| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все четыре получают `sessionDraft`, `reg-phone` дополнительно `userMessageId` |
+| step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда |
+| step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) |
+| step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
+| step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
 ## Зависимости
 

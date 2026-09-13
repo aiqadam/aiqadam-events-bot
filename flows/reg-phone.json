@@ -1,0 +1,324 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "reg-phone",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "decide phone/skip + разбор draft",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "save phone",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "clear session",
+          "name": "step_5",
+          "nextAction": {
+            "displayName": "убрать вопрос о телефоне из ленты",
+            "name": "step_3",
+            "nextAction": {
+              "displayName": "убрать ответ гостя (контакт/«Пропустить») из ленты",
+              "name": "step_4",
+              "nextAction": {
+                "displayName": "read event для финальной карточки",
+                "name": "step_6",
+                "nextAction": {
+                  "displayName": "тексты: финальная карточка и билет",
+                  "name": "step_7",
+                  "nextAction": {
+                    "displayName": "edit card → итог диалога",
+                    "name": "step_8",
+                    "nextAction": {
+                      "displayName": "send ticket (отдельным сообщением, ADR-0007)",
+                      "name": "step_9",
+                      "settings": {
+                        "actionName": "send_text_message",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_notification": false,
+                          "format": "MarkdownV2",
+                          "message": "{{step_7['output'].ticketText}}",
+                          "protect_content": false,
+                          "reply_markup": {
+                            "inline_keyboard": [
+                              [
+                                {
+                                  "text": "Открыть билет",
+                                  "web_app": {
+                                    "url": "{{variables['MINIAPP_URL']}}ticket.html?event_id={{step_1['output'].eventId}}"
+                                  }
+                                }
+                              ]
+                            ]
+                          },
+                          "web_page_preview": false
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "edit_message_text",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": true
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                        "chat_id": "{{trigger['output'].data.chatId}}",
+                        "disable_web_page_preview": false,
+                        "format": "MarkdownV2",
+                        "message_id": "{{step_1['output'].cardMessageId}}",
+                        "text": "{{step_7['output'].cardText}}"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                      "qadamVersion": "0.8.0"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "hasContact": "{{step_1['output'].hasContact}}",
+                      "records": "{{step_6['output']}}",
+                      "texts": {
+                        "reg.done.header": "✅ Вы зарегистрированы",
+                        "reg.phone.saved": "Телефон сохранён. Билет — в сообщении ниже.",
+                        "reg.phone.skipped": "Телефон пропущен. Билет — в сообщении ниже.",
+                        "ticket.header": "🎟 Ваш билет",
+                        "ticket.hint": "Покажите QR на входе. Он откроется по кнопке ниже — сохранять ничего не надо."
+                      }
+                    },
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const ev = arr(inputs.records).map(flat)[0] || {};\n\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n\n  const hasContact = inputs.hasContact === true || inputs.hasContact === 'true';\n\n  // Карточка застывает итогом диалога; билет уходит отдельным сообщением,\n  // потому что это факт, к которому возвращаются (ADR-0017 п. 2).\n  const cardLines = [esc(t('reg.done.header'))];\n  const card = [];\n  if (ev.title) card.push('*' + esc(ev.title) + '*');\n  if (ev.starts_at) card.push('📅 ' + esc(fmt(ev.starts_at)));\n  if (ev.address) card.push('📍 ' + esc(ev.address));\n  if (card.length) cardLines.push(card.join('\\n'));\n  cardLines.push(esc(t(hasContact ? 'reg.phone.saved' : 'reg.phone.skipped')));\n\n  const ticketLines = [esc(t('ticket.header')), esc(t('ticket.hint'))];\n\n  return {\n    cardText: cardLines.join('\\n\\n'),\n    ticketText: ticketLines.join('\\n\\n'),\n    title: ev.title || '',\n    now: new Date().toISOString()\n  };\n};",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-find-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "columns": [
+                      "tQEzfGR3hYG0ztG50Po00",
+                      "8me4o2U2wj6cyrv8lfJv9",
+                      "kSRM3ouou0Owj2yDYk92W"
+                    ],
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": "id",
+                          "operator": "eq",
+                          "value": "{{step_1['output'].eventId}}"
+                        }
+                      ]
+                    },
+                    "limit": 1,
+                    "record_ids": [],
+                    "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "delete_message",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": true
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                  "chat_id": "{{trigger['output'].data.chatId}}",
+                  "message_id": "{{step_1['output'].userMessageId}}"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-telegram-bot",
+                "qadamVersion": "0.8.0"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "delete_message",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": true
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                "chat_id": "{{trigger['output'].data.chatId}}",
+                "message_id": "{{step_1['output'].promptMessageId}}"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-telegram-bot",
+              "qadamVersion": "0.8.0"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "tables-upsert-records",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "key_columns": [
+                "N8CdPxcdxLX9vFCINvZbL"
+              ],
+              "table_id": "toTKgngMTqDNJWDpQMh4d",
+              "values": {
+                "values": [
+                  {
+                    "ESthrMwpn29JLvE2BNIj4": "-",
+                    "IdGimBh539UlGSz6L0Pyo": "-",
+                    "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}"
+                  }
+                ]
+              }
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-tables",
+            "qadamVersion": "0.4.5"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "tables-upsert-records",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "key_columns": [
+              "JtylZU291K7TuMn9c9F2t"
+            ],
+            "table_id": "xHhYjhwqKdONkrYJGcBsz",
+            "values": {
+              "values": [
+                {
+                  "JtylZU291K7TuMn9c9F2t": "{{trigger['output'].data.telegramId}}",
+                  "U05XVnW62T9q9IkZw1W3N": "{{step_1['output'].phoneToSave}}"
+                }
+              ]
+            }
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-tables",
+          "qadamVersion": "0.4.5"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "contactIsOwn": "{{trigger['output'].data.contactIsOwn}}",
+          "contactPhone": "{{trigger['output'].data.contactPhone}}",
+          "eventId": "{{trigger['output'].data.eventId}}",
+          "kind": "{{trigger['output'].data.kind}}",
+          "sessionDraft": "{{trigger['output'].data.sessionDraft}}",
+          "userMessageId": "{{trigger['output'].data.userMessageId}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const num = (v) => { const n = Number(v); return isFinite(n) && n > 0 ? n : 0; };\n\n  // DAT-2: телефон сохраняется только из request_contact и только свой,\n  // не пересланный чужой контакт.\n  const isContact = str(inputs.kind) === 'contact';\n  const isOwn = inputs.contactIsOwn === true || inputs.contactIsOwn === 'true';\n  const hasContact = isContact && isOwn;\n  const phoneToSave = hasContact ? str(inputs.contactPhone) : '';\n\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n\n  return {\n    hasContact: hasContact,\n    phoneToSave: phoneToSave,\n    eventId: str(draft.eventId) || str(inputs.eventId),\n    cardMessageId: num(draft.cardMessageId),\n    promptMessageId: num(draft.promptMessageId),\n    userMessageId: num(inputs.userMessageId),\n    now: new Date().toISOString()\n  };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "chatId": "322876545",
+          "contactIsOwn": true,
+          "contactPhone": "+998901234567",
+          "eventId": "demo",
+          "kind": "contact",
+          "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0,\"promptMessageId\":0}",
+          "telegramId": "322876545",
+          "userMessageId": 0
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

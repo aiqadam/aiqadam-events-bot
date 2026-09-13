@@ -1,0 +1,121 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "fn-sign-qr",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "canonical msg",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "sign",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "return",
+          "name": "step_3",
+          "settings": {
+            "actionName": "returnResponse",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "mode": "simple",
+              "response": {
+                "response": {
+                  "eventId": "{{step_2['output'].eventId}}",
+                  "msg": "{{step_2['output'].msg}}",
+                  "payload": "{{step_2['output'].payload}}",
+                  "sig": "{{step_2['output'].sig}}",
+                  "userId": "{{step_2['output'].userId}}"
+                }
+              }
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-subflows",
+            "qadamVersion": "0.4.14"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "eventId": "{{step_1['output'].eventId}}",
+            "msg": "{{step_1['output'].msg}}",
+            "qrSigningKey": "{{trigger['output'].data.qrSigningKey}}",
+            "userId": "{{step_1['output'].userId}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const crypto = require('node:crypto');\n\n  const msg = String(inputs.msg === undefined || inputs.msg === null ? '' : inputs.msg);\n  const eventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId);\n  const userId = String(inputs.userId === undefined || inputs.userId === null ? '' : inputs.userId);\n  const qrSigningKey = String(inputs.qrSigningKey === undefined || inputs.qrSigningKey === null ? '' : inputs.qrSigningKey);\n\n  const raw = crypto.createHmac('sha256', qrSigningKey).update(msg, 'utf8').digest('base64');\n\n  const b64url = raw.replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');\n  const sig = b64url.slice(0, 10);\n  if (sig.length !== 10) throw new Error('fn-sign-qr: short hmac output');\n\n  return {\n    sig: sig,\n    eventId: eventId,\n    userId: userId,\n    msg: msg,\n    payload: 'c' + eventId + '-' + userId + '-' + sig\n  };\n};",
+            "packageJson": "{}"
+          }
+        },
+        "type": "CODE",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "eventId": "{{trigger['output'].data.eventId}}",
+          "userId": "{{trigger['output'].data.userId}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const USER = /^[0-9]{1,16}$/;\n\n  const eventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId).trim();\n  const userId = String(inputs.userId === undefined || inputs.userId === null ? '' : inputs.userId).trim();\n\n  if (!SLUG.test(eventId)) throw new Error('fn-sign-qr: bad eventId');\n  if (!USER.test(userId)) throw new Error('fn-sign-qr: bad userId');\n\n  return { eventId: eventId, userId: userId, msg: 'c:' + eventId + ':' + userId };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "sampleData": {}
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

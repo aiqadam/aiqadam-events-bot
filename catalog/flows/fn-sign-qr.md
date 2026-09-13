@@ -13,12 +13,12 @@
 Код — байт-в-байт эталон [`snippets/hmac-qr.md`](../snippets/hmac-qr.md), раздел
 «Код — сторона подписи».
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход | — |
-| step_1 | CODE — канонический `msg` | валидация формы `eventId`/`userId`, падает громко на мусоре | `{{trigger['output'].data.eventId}}`, `.userId}}` |
-| step_2 | CODE — подпись (`node:crypto`, ADR-0010) | HMAC-SHA256 → base64 → base64url → срез 10 символов | `{{step_1['output'].msg}}`, `{{trigger['output'].data.qrSigningKey}}` |
-| step_3 | `returnResponse` | отдаёт `{sig, eventId, userId, msg, payload}` | — |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход |
+| step_1 | CODE — канонический `msg` | валидация формы `eventId`/`userId`, падает громко на мусоре |
+| step_2 | CODE — подпись (`node:crypto`, ADR-0010) | HMAC-SHA256 → base64 → base64url → срез 10 символов |
+| step_3 | `returnResponse` | отдаёт `{sig, eventId, userId, msg, payload}` |
 
 ## Зависимости
 

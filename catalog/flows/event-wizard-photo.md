@@ -9,16 +9,16 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `callableFlow` | приём вызова | `{{trigger['output'].data.hasPhoto/photoFileId/text/sessionDraft/chatId}}` |
-| step_1 | CODE «decide» | `ok = hasPhoto \|\| text === '-'`; `draft.photo_file_id` = `photoFileId` или `''` | |
-| step_2 | ROUTER: `ok`/`Otherwise` | | |
-| step_3 (ok) | `tables-upsert-records sessions` | `draft`, `step='address'` | |
-| step_6 | CODE «address question text» | текст следующего вопроса | |
-| step_5 | `send_text_message` | вопрос об адресе | `{{step_6['output'].text}}` |
-| step_7 (Otherwise) | CODE «photo error text» | текст подсказки «фото или `-`» | |
-| step_4 (Otherwise) | `send_text_message` | подсказка — сессия не двигается, вопрос повторяется | `{{step_7['output'].text}}` |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `callableFlow` | приём вызова |
+| step_1 | CODE «decide» | `ok = hasPhoto \|\| text === '-'`; `draft.photo_file_id` = `photoFileId` или `''` |
+| step_2 | ROUTER: `ok`/`Otherwise` | |
+| step_3 (ok) | `tables-upsert-records sessions` | `draft`, `step='address'` |
+| step_6 | CODE «address question text» | текст следующего вопроса |
+| step_5 | `send_text_message` | вопрос об адресе |
+| step_7 (Otherwise) | CODE «photo error text» | текст подсказки «фото или `-`» |
+| step_4 (Otherwise) | `send_text_message` | подсказка — сессия не двигается, вопрос повторяется |
 
 ## Зависимости
 

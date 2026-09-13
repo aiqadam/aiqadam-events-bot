@@ -15,13 +15,13 @@
 
 Код — байт-в-байт эталон [`snippets/find-registration.md`](../snippets/find-registration.md).
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход | — |
-| step_1 | CODE — normalize | валидация формы, сентинел `-` вместо пустого фильтра | `{{trigger['output'].data.eventId}}`, `.telegramId}}` |
-| step_2 | `tables-find-records` (`registrations`, `SM8tMxfQuQCHRDdAiNJyQ`) | `eq event_id` + `eq telegram_id`, без `limit` | `{{step_1['output'].queryEventId}}`, `.queryTelegramId}}` |
-| step_3 | CODE — pick earliest | отбор по паре повторяется в коде (страховка от fail-open, #382), сортировка по `registered_at`→`created`→`id`, самый ранний `checked_in_at` (IDM-2) | `{{step_2['output']}}` |
-| step_4 | `returnResponse` | отдаёт `{found, inputOk, duplicates, recordId, recordIds, registration, checkedIn, checkedInAt, cancelled, registered, statuses, anyRegistered, anyCancelled, eventId, telegramId}` | — |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход |
+| step_1 | CODE — normalize | валидация формы, сентинел `-` вместо пустого фильтра |
+| step_2 | `tables-find-records` (`registrations`, `SM8tMxfQuQCHRDdAiNJyQ`) | `eq event_id` + `eq telegram_id`, без `limit` |
+| step_3 | CODE — pick earliest | отбор по паре повторяется в коде (страховка от fail-open, #382), сортировка по `registered_at`→`created`→`id`, самый ранний `checked_in_at` (IDM-2) |
+| step_4 | `returnResponse` | отдаёт `{found, inputOk, duplicates, recordId, recordIds, registration, checkedIn, checkedInAt, cancelled, registered, statuses, anyRegistered, anyCancelled, eventId, telegramId}` |
 
 ## Зависимости
 

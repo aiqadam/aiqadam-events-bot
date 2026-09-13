@@ -11,24 +11,24 @@
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `callableFlow` | приём вызова | `{{trigger['output'].data.callbackData/callbackQueryId/sessionScenario/sessionDraft/telegramId/chatId}}` |
-| step_1 | `answer_callback_query` (`continueOnFailure`) | закрыть «часики» на кнопке | |
-| step_2 | CODE «decide action» | `cancel`/`publish`/`noop` по `callbackData` | |
-| step_3 | ROUTER: `cancel`/`publish`/`Otherwise`(=noop) | | |
-| step_15 (cancel) | CODE «cancelled text» | текст отмены визарда | |
-| step_4 (cancel) | `send_text_message` | сообщение об отмене | `{{step_15['output'].text}}` |
-| step_6 | `tables-upsert-records sessions` | сброс: `scenario='-', step='-', draft='-'` | |
-| step_5 (Otherwise/noop) | CODE «ничего не делаем» | защита от повторного/чужого callback | |
-| step_7 (publish) | CODE «prepare write + diff» | новый `id` (create) или переиспользование `draft.id` (edit); diff `draft._orig[f]` vs `draft[f]` по `notifyFields`; строит `changeSummaryText`/`ownerConfirmText`/`registrationUrl` (OWN-6) | `botUsername: {{variables['BOT_USERNAME']}}` |
-| step_8 | `tables-upsert-records events` | запись по ключу `id` | |
-| step_9 | `tables-find-records registrations` | `event_id=id`, проекция `telegram_id,status` | |
-| step_10 | CODE «compute notify targets» | дедуп `telegram_id` где `status='registered'`; `[]` если `!hasChanges` | |
-| step_11 | `LOOP_ON_ITEMS` по `{{step_10['output'].targets}}` | | |
-| step_12 | `send_text_message` (в цикле, `continueOnFailure`) | уведомление одному зарегистрированному | `chat_id: {{step_11['output'].item}}` |
-| step_13 | `send_text_message` | подтверждение владельцу (`ownerConfirmText`) | |
-| step_14 | `tables-upsert-records sessions` | сброс сессии после успешной публикации | |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `callableFlow` | приём вызова |
+| step_1 | `answer_callback_query` (`continueOnFailure`) | закрыть «часики» на кнопке |
+| step_2 | CODE «decide action» | `cancel`/`publish`/`noop` по `callbackData` |
+| step_3 | ROUTER: `cancel`/`publish`/`Otherwise`(=noop) | |
+| step_15 (cancel) | CODE «cancelled text» | текст отмены визарда |
+| step_4 (cancel) | `send_text_message` | сообщение об отмене |
+| step_6 | `tables-upsert-records sessions` | сброс: `scenario='-', step='-', draft='-'` |
+| step_5 (Otherwise/noop) | CODE «ничего не делаем» | защита от повторного/чужого callback |
+| step_7 (publish) | CODE «prepare write + diff» | новый `id` (create) или переиспользование `draft.id` (edit); diff `draft._orig[f]` vs `draft[f]` по `notifyFields`; строит `changeSummaryText`/`ownerConfirmText`/`registrationUrl` (OWN-6) |
+| step_8 | `tables-upsert-records events` | запись по ключу `id` |
+| step_9 | `tables-find-records registrations` | `event_id=id`, проекция `telegram_id,status` |
+| step_10 | CODE «compute notify targets» | дедуп `telegram_id` где `status='registered'`; `[]` если `!hasChanges` |
+| step_11 | `LOOP_ON_ITEMS` по `{{step_10['output'].targets}}` | |
+| step_12 | `send_text_message` (в цикле, `continueOnFailure`) | уведомление одному зарегистрированному |
+| step_13 | `send_text_message` | подтверждение владельцу (`ownerConfirmText`) |
+| step_14 | `tables-upsert-records sessions` | сброс сессии после успешной публикации |
 
 ## Зависимости
 

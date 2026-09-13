@@ -13,11 +13,11 @@
 плоская форма: конверт не нужен, ответ вызывающий и так читает как
 `{{step_N['output'].data.<поле>}}`.
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход | — |
-| step_1 | CODE — разбор | алфавит/длина → `kind` по первому символу → разбор `e`/`c`/`s` | `{{trigger['output'].data.start}}` |
-| step_2 | `returnResponse` | отдаёт `{valid, kind, error, eventId, userId, utm, token, sig, start}` | — |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход |
+| step_1 | CODE — разбор | алфавит/длина → `kind` по первому символу → разбор `e`/`c`/`s` |
+| step_2 | `returnResponse` | отдаёт `{valid, kind, error, eventId, userId, utm, token, sig, start}` |
 
 ## Зависимости
 

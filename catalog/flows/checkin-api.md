@@ -21,21 +21,21 @@
 чтобы мусорный публичный запрос (эндпоинт `authType: none`) не тратил
 обращения к `event_staff` и `callFlow`-хопы.
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём POST | — |
-| step_1 | `callFlow fn-hmac-init-data` | HMAC `initData` по `BOT_TOKEN` (STF-2, первая половина) | `payload: {initData, botToken: {{variables['BOT_TOKEN']}}, maxAgeSeconds}` |
-| step_10 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` | |
-| step_11 (Otherwise) | CODE «invalid init data response» | `texts['checkin.unauthorized']`, `httpStatus: 401` | |
-| step_12 (Otherwise) | `return_response` | ответ `401` немедленно, ветка `valid` не выполняется | `status/body` из `step_11` |
-| step_2 (valid) | `callFlow fn-parse-start` | разбор QR-`payload` (`kind` должен быть `c`) | `payload: {start}` |
-| step_3 (valid) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра)` + `revoked_at not_exists` — **вторая половина STF-2**: без фильтра по `event_id` любой участник отметит соседа | `event_id eq {{trigger.body.eventId}}`, `telegram_id eq {{step_1.data.telegramId}}` |
-| step_4 (valid) | `callFlow fn-verify-qr` | подпись QR по `QR_SIGNING_KEY` | `payload: {eventId, userId, sig, qrSigningKey}` из `step_2.data` |
-| step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса | `payload: {eventId, telegramId}` = `step_2.data.eventId/userId` |
-| step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) | `telegram_id eq {{step_2.data.userId}}` |
-| step_7 (valid) | CODE «decide result» | пять оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) | |
-| step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2 | `record_id` = реальный id при исходе `ok`, иначе `-` (гарантированно 404, безопасный no-op) |
-| step_9 (valid) | `return_response` | JSON-ответ Mini App | `status`/`text` из `step_7` |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём POST |
+| step_1 | `callFlow fn-hmac-init-data` | HMAC `initData` по `BOT_TOKEN` (STF-2, первая половина) |
+| step_10 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` |
+| step_11 (Otherwise) | CODE «invalid init data response» | `texts['checkin.unauthorized']`, `httpStatus: 401` |
+| step_12 (Otherwise) | `return_response` | ответ `401` немедленно, ветка `valid` не выполняется |
+| step_2 (valid) | `callFlow fn-parse-start` | разбор QR-`payload` (`kind` должен быть `c`) |
+| step_3 (valid) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра)` + `revoked_at not_exists` — **вторая половина STF-2**: без фильтра по `event_id` любой участник отметит соседа |
+| step_4 (valid) | `callFlow fn-verify-qr` | подпись QR по `QR_SIGNING_KEY` |
+| step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса |
+| step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) |
+| step_7 (valid) | CODE «decide result» | пять оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
+| step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2. При исходе не-`ok` вместо id записи подставляется сентинел `-`: гарантированный 404, безопасный no-op |
+| step_9 (valid) | `return_response` | JSON-ответ Mini App |
 
 ### Порядок проверок и HTTP-статусы
 
