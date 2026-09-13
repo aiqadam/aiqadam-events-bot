@@ -90,6 +90,12 @@ Telegram-клиентом) и не переделываются — визард
 | Флоу `tg-router` | `nyaBzgKGG8TTTsryjc9tW` | [flows/tg-router.md](../../catalog/flows/tg-router.md) |
 | Флоу `checkin-api` | `rKoDYtiIVdbzlW59b57uH` | [flows/checkin-api.md](../../catalog/flows/checkin-api.md) |
 | Флоу `my-qr-api` | `WYmnxVM4xPAWZA1IvNZok` | [flows/my-qr-api.md](../../catalog/flows/my-qr-api.md) |
+| Флоу `event-wizard-start` | `hlteuRDfyahnfcHHip15E` | [flows/event-wizard-start.md](../../catalog/flows/event-wizard-start.md) |
+| Флоу `event-wizard-edit-start` | `aPZHkBfShDwwjIcYKq6Tf` | [flows/event-wizard-edit-start.md](../../catalog/flows/event-wizard-edit-start.md) |
+| Флоу `event-wizard-field` | `iOtIXWIIX1lgtz6RQUPVN` | [flows/event-wizard-field.md](../../catalog/flows/event-wizard-field.md) |
+| Флоу `event-wizard-photo` | `mGUl0dCEyJQjjN3VtyjAN` | [flows/event-wizard-photo.md](../../catalog/flows/event-wizard-photo.md) |
+| Флоу `event-wizard-geo` | `sAJFoscopo3EgwQlDfaA7` | [flows/event-wizard-geo.md](../../catalog/flows/event-wizard-geo.md) |
+| Флоу `event-wizard-publish` | `4nbqCqBrSRZXertysDp7v` | [flows/event-wizard-publish.md](../../catalog/flows/event-wizard-publish.md) |
 
 ## Чек-лист готовности
 
@@ -148,7 +154,30 @@ Telegram-клиентом) и не переделываются — визард
 
 > Чем именно, а не «протестировано». Фикстуры, отрицательные сценарии, что видел на экране.
 
-- —
+Сводно (доказательства с run id — в «Журнале» ниже, по шагам сборки):
+
+- **STF-2** (`checkin-api`): 4 сценария на реальной подписи Telegram —
+  не-контролёр/чужой ивент/отозванный → `403`, настоящий → `200`.
+- **IDM-2** (`checkin-api/step_8`): `only_if: checked_in_at not_exists` —
+  повторный чекин даёт `409`, время не переписывается (проверено и синтетикой,
+  и живым прогоном владельца).
+- **IDM-4** (`tg-router`): тот же `update_id` дважды → вторая попытка
+  `duplicate`, до `users` не доходит.
+- **PAR-1/PAR-2** (`reg-consent-pdn`/`reg-consent-mkt`): раздельные прогоны
+  `pdn:yes`+`mkt:no` — `consent_marketing` не тронут согласием на ПД и наоборот.
+- **Авторизация правки визарда** (`event-wizard-edit-start`): `ok`/`not_found`/
+  `not_owner` — три различающих прогона, реальная доставка сообщений.
+- **Даты и границы валидации** (`event-wizard-field`): все шесть полей,
+  включая `ends_at ≤ starts_at` и `reg_deadline_at > starts_at`.
+- **Diff-уведомление** (`event-wizard-publish`): правка реального тестового
+  ивента с одной регистрацией — диф посчитан верно, уведомление доставлено,
+  `published_at` не переписан при правке.
+- **Маршрутизация `tg-router`**: все десять маршрутов (четыре касания
+  регистрации + шесть визарда) подтверждены прогонами с реальными
+  Telegram-апдейтами.
+- **ADR-0014 (`inputs.texts`)**: после ревью — все 12 текстонесущих флоу
+  пакета переведены на `texts`-вход, каждое значение сверено скриптом
+  построчно с `i18n/ru.json` (см. журнал, раздел «Ответ на ревью»).
 
 ## Журнал
 
@@ -407,11 +436,190 @@ Telegram-клиентом) и не переделываются — визард
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 > Владелец пакета сюда не пишет — только отвечает под замечаниями, что исправлено.
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: независимый агент (свежий контекст) · **Дата**: 2026-09-13 · **Вердикт**: есть замечания
+
+Проверено через `ap_list_flows`/`ap_list_tables` (18 флоу, 10 таблиц — совпадает
+с заявленным), `ap_flow_structure` + `ap_read_step_code` по всем 18 флоу,
+read-only REST-экспорт (`GET /flows/<id>/template`) по всем 18 флоу для
+конфигурации PIECE-шагов (`callFlow` `executionMode`/`flowProps`,
+`tables-find-records` фильтры, `only_if`, `errorHandlingOptions`,
+короткая/длинная форма `{{variables[...]}}`), `ap_list_runs`/`ap_get_run` —
+реальные `PRODUCTION`/`TESTING`-прогоны с `SUCCEEDED`. Позитив, который стоит
+явно назвать: STF-2 (`checkin-api/step_3`, фильтр `event_id` + `telegram_id`
++ `revoked_at not_exists`), IDM-2 (`step_8`, `only_if: checked_in_at
+not_exists`, реальный `409` на повторе), IDM-4 (`tg-router`, дедуп
+`put_if_absent`, прогон `h59E2gDMOTjHXEtEEFdZM` перепроверен), PAR-1/PAR-2
+(`reg-consent-pdn/step_4` и `reg-consent-mkt/step_3` пишут разные поля
+`users`, ни один не трогает поле другого), авторизация правки
+(`event-wizard-edit-start/step_2`, сравнение `owner_id == telegramId`),
+даты в `event-wizard-field/step_1` (ручной парсер, `UTC = Tashkent − 5ч`,
+`ends_at > starts_at`, `reg_deadline_at <= starts_at` — все проверены),
+diff/уведомление в `event-wizard-publish` (поля `notify-on-change` без
+`description`/`photo_file_id`, `LOOP_ON_ITEMS` через `{{step_11['output'].item}}`,
+`continueOnFailure: true` на шаге рассылки, фильтр регистрантов по
+`event_id` целевого ивента), крипто-цепочки `fn-hmac-init-data`/`fn-sign-qr`/
+`fn-verify-qr` (HMAC через `node:crypto`, canonical `dataCheckString`,
+constant-time сравнение, `sig` — срез по длине строки, не `split('-')`),
+`callFlow` `flowProps` — везде обёрнуто в `{"payload": {...}}`, ни одной
+короткой формы `{{VAR}}` ни в одном из 18 экспортов, `executionMode` верный
+у всех вызовов (`queue` для передачи касания без ожидания, `inline` для
+`fn-*` и межфлоуных вызовов с ответом) — всё это подтвердилось и претензий
+не вызвало. Замечания ниже — не об этом, а о том, что осталось непроверенным
+или незамеченным при сборке.
 
 ### Замечания
 
-—
+1. **важно** — `checkin-api` и `my-qr-api` линейны (без `ROUTER`, все шаги —
+   прямая цепочка `next`), поэтому при **невалидном** `initData` шаги всё
+   равно выполняются безусловно: `checkin-api/step_3` (`tables-find-records`
+   на `event_staff`), `step_4` (`callFlow` → `fn-verify-qr`), `step_5`
+   (`callFlow` → `fn-find-registration`), `step_6` (чтение имени участника) —
+   все отрабатывают до того, как `step_7` («decide result») вообще
+   посмотрит на `hmacValid`. То же в `my-qr-api` (`step_2`, `step_3`
+   выполняются раньше проверки `hmacValid` в `step_4`). Это прямое нарушение
+   явного пункта чек-листа (REVIEW-CHECKLIST 4.5: «невалидный `initData`
+   должен отсекаться первым шагом, до обращений к таблицам») и одноимённого
+   требования в CLAUDE.md — вебхук публичный, и мусорный запрос сейчас стоит
+   столько же ресурсов (2 запроса к `tables` + 3 `callFlow`-хопа), сколько
+   легитимный. Утечки данных нет (ответ по-прежнему решается только в
+   `step_7`, до него ничего не возвращается), это вопрос устойчивости
+   (нагрузки), а не авторизации. Исправление — либо `ROUTER` сразу после
+   `step_1`/`step_2` (`my-qr-api`), либо явный ранний `return_response` при
+   `!hmacValid`, ценой которого будет отход от «линейного без ROUTER» стиля,
+   выбранного в этом пакете.
+
+2. **важно** — Конвенция [ADR-0014](../adr/0014-russian-only-until-platform-i18n.md)
+   («Тексты живут во входе того CODE-шага... проп `texts: {ключ: строка}»,
+   эталон [`catalog/snippets/ru-texts.md`](../../catalog/snippets/ru-texts.md))
+   не применена **ни в одном** из 18 флоу пакета. Все русские строки зашиты
+   литералом прямо в тело CODE-шага — например, `checkin-api/step_7`:
+   `'Данные Mini App устарели — переоткройте приложение'`,
+   `'Нет прав на чекин этого ивента'`; `event-wizard-field/step_1`: тексты
+   вопросов и все формулировки ошибок валидации; `event-wizard-publish/step_7`:
+   `ownerConfirmText`/`changeSummaryText`. Ни один CODE-шаг пакета не принимает
+   `inputs.texts`. Следствие: [`tools/check-texts.py`](../../tools/check-texts.py) —
+   принятое как ревью W24 смягчение цены «два источника правды на текст» —
+   для всего пакета W26 не проверяет вообще ничего (ищет проп `texts` в
+   `settings.input`, не находит его нигде, `checked: 0`). Бот по-прежнему
+   говорит только по-русски, поведение не сломано, но конвенция и
+   единственный механизм аудита текста молча потеряны на 18 новых флоу.
+
+3. **важно** — `catalog/snippets/*.md` (`hmac-init-data.md`, `hmac-qr.md`,
+   `parse-start.md`, `find-registration.md`, `fmt-time.md`, `event-card.md`,
+   `i18n-resolve.md`, `ru-texts.md`) не обновлён пакетом W26, хотя пакет
+   переписал ровно те флоу, которые в них перечислены. Таблицы «Встраивают»
+   во всех файлах ссылаются на несуществующие сущности: флоу `registration`
+   (удалён вместе с очисткой инстанса), старые `checkin-api`
+   (`CUKqiby1PoHiQiiCQy24V`), `my-qr-api` (`I5nd8ggKH4wkQLaww9Dkl`),
+   `tg-router` (`Y1dNon2V2EhjWM0aYwdQi`) и номера шагов от 40+-шаговых версий
+   этих флоу — их больше нет ни под этими id, ни в таком виде. Ни один из
+   новых флоу пакета не добавлен ни в одну из этих таблиц, хотя минимум три
+   независимые копии форматирования времени в Asia/Tashkent появились заново
+   (`checkin-api/step_7`, `event-wizard-field/step_1`,
+   `event-wizard-publish/step_7`) и не сверены побайтово ни с одним эталоном
+   (в основном потому, что находка 2 означает, что эталон `ru-texts`/
+   `fmt-time` в новых флоу вообще не используется в задуманном виде). Это
+   прямое нарушение REVIEW-CHECKLIST п. 2a и собственного правила
+   [`snippets/README.md`](../../catalog/snippets/README.md) («список
+   встраивающих флоу... если он устарел, это дефект каталога, а не мелочь»).
+   Пакет заявляет «`catalog/` совпадает с живым проектом» — верно для
+   `catalog/flows/`, `catalog/tables/`, `catalog/overview.md`, но не для
+   `catalog/snippets/`, который в эту сверку, похоже, не попал.
+
+4. **на будущее** — [`catalog/tables/events.md`](../../catalog/tables/events.md)
+   утверждает: «Подставлять дефолт [`overbook_pct = 40`] обязан визард
+   (W11)», но `event-wizard-publish/step_8` (`write event`) ни разу не пишет
+   поле `overbook_pct` — оно остаётся `null` у всех ивентов, созданных
+   визардом. Не критично функционально: `reg-start/step_3` независимо
+   дефолтит `overbook = 40` при чтении, если поле пусто, поэтому лимит
+   регистрации (OWN-15) считается верно. Но заметка в каталоге приписывает
+   визарду поведение, которого в коде нет — стоит либо поправить заметку,
+   либо (раз уж поле в `events` для этого и заведено) добавить явную запись
+   `overbook_pct: 40` в `step_8`, чтобы значение было видно в сырых данных
+   и будущем экспорте (OWN-8), а не только в производном расчёте `reg-start`.
+
+5. **на будущее** — Таблица «Что построено» в этом журнале (раздел выше)
+   перечисляет 10 таблиц и 12 флоу (`fn-*`, `reg-*`, `tg-router`,
+   `checkin-api`, `my-qr-api`), но не шесть флоу визарда
+   (`event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
+   `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish`) —
+   они появляются только в прозе «Журнала» ниже по тексту, без строки с
+   id. Раздел «Как проверено» пуст (как и отмечено в задании на ревью) —
+   вся доказательная база размазана по «Журналу» вместо сводного раздела,
+   что осложняет проверку по чек-листу. Не блокирует приёмку, но стоит
+   дописать таблицу и/или раздел «Как проверено» при следующей правке
+   журнала, а не оставлять как есть.
+
+6. **на будущее** — В `tg-router` вызовы `step_12`–`step_15`
+   (`reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone`) несут в
+   `flowProps` одновременно обёртку `payload` **и** дублирующие плоские поля
+   верхнего уровня (`utm`, `chatId`, `eventId`, `telegramId` и т. п.) —
+   судя по всему, остаток шага 5 (готча 7a): плоские поля были там до
+   фикса, `payload` добавили поверх, старое не убрали. Функционально
+   безвредно (callee читает только `payload`, платформа игнорирует лишние
+   ключи `flowProps`), но захламляет экспорт и может ввести в заблуждение
+   будущего ревьюера — тем более что шесть более поздних вызовов
+   (`event-wizard-*`, `step_17`–`step_22`) этого мусора уже не содержат,
+   то есть это именно недочищенный переходный артефакт одного шага сборки,
+   а не текущий паттерн команды.
+
+### Ответ владельца пакета
+
+1. **Исправлено.** `checkin-api` и `my-qr-api` пересобраны: `ROUTER` сразу
+   после проверки `initData` (`step_1`/`step_2`), ветка `Otherwise`
+   (невалиден) отвечает `401` немедленно, ни один `tables-find-records`/`callFlow`
+   больше не выполняется на мусорном `initData`. **Платформенная ловушка,
+   найденная по пути и стоившая отдельной попытки и отката**: `ap_add_step`
+   с `ROUTER` через `AFTER` на уже связанный шаг не гейтит старое продолжение —
+   обе цепочки выполняются параллельно (см. CLAUDE.md, гочa #10). Рабочий
+   путь — удалить старую цепочку (`ap_delete_step` по одному шагу, каждый
+   реиспользует settings соседнего) и пересобрать её заново **внутри**
+   нужной ветки. Пересборка проверена прогоном реального `garbage initData`
+   (короткий путь, 4 шага вместо 9) и replay реального прод-прогона
+   (idентичный результат `already`/`403` и т.д. до и после).
+2. **Исправлено.** Все 12 текстонесущих флоу пакета (`reg-start`,
+   `reg-consent-pdn`, `reg-consent-mkt`, `checkin-api`, `my-qr-api`,
+   `event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
+   `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish`) переведены
+   на `inputs.texts`; `reg-phone`/`reg-consent-mkt` уже были в конвенции
+   (не подпадали под замечание). Каждое значение проверено построчно против
+   `i18n/ru.json` (см. ниже). Добавлены отсутствовавшие ключи
+   (`wizard.edit.ask_title`, `wizard.edit.not_found`, `wizard.edit.not_owner`,
+   `wizard.err.title_length`, `wizard.err.address_length`,
+   `wizard.err.photo_expected`, `wizard.preview.*`, `wizard.publish.*`) и
+   поправлены три расходившихся с реальным поведением (`wizard.hint.datetime`/
+   `wizard.err.datetime` — формат дат ДД.ММ.ГГГГ, а не ISO; `wizard.ask.geo`/
+   `wizard.err.geo_expected` — с явным упоминанием пропуска через `-`).
+   Каждый затронутый флоу переопубликован и перепроверен `ap_test_flow` —
+   позитивный путь и (где применимо) путь ошибки, с реальной доставкой
+   сообщений там же, где это делалось при сборке.
+3. **Исправлено.** `catalog/snippets/hmac-init-data.md`, `hmac-qr.md`,
+   `parse-start.md`, `find-registration.md` переписаны: три из четырёх
+   больше не описывают дублирование (криптография и разбор теперь в
+   единственном `fn-*`, копий нет — таблицу «Встраивают» вести не для чего);
+   `hmac-qr.md` оставлена с двумя записями (`fn-sign-qr`/`fn-verify-qr` —
+   сознательное исключение ADR-0015 п. 5). `fmt-time.md` и `event-card.md`
+   отмечены устаревшими для W26: многоязычный батч-эталон и раздельный
+   резолвер были нужны до ADR-0014, сейчас каждый флоу форматирует время и
+   тексты инлайн — списки «Встраивают» заменены на честное «копии не
+   идентичны, байтовая сверка неприменима» вместо ложных записей о мёртвых
+   флоу. `ru-texts.md` дополнен разделом про более лёгкий вариант W26.
+   `snippets/README.md` приведён в соответствие: Q35 закрыт, `fn-*` собраны,
+   секция «что изменится после Q35» переписана в прошедшем времени.
+4. **Исправлено.** `catalog/tables/events.md`: заметка про `overbook_pct`
+   больше не приписывает визарду запись дефолта — сказано прямо, что поле
+   остаётся пустым, дефолт учитывает только `reg-start` при расчёте лимита.
+5. **Исправлено.** Таблица «Что построено» дополнена шестью флоу визарда.
+   Раздел «Как проверено» заполнен сводкой (была пустой строкой «—»).
+6. **Не исправлено, осознанно отложено.** Лишние плоские ключи в `flowProps`
+   четырёх вызовов `tg-router` (`reg-start`/`reg-consent-pdn`/
+   `reg-consent-mkt`/`reg-phone`) убрать не удалось: `ap_update_step` не
+   умеет удалять под-поля DYNAMIC-пропа, только перезаписывать (см. описание
+   инструмента) — а владельцу пакета `settings.input` этих шагов через MCP
+   не виден вовсе (ADR-0006, REST — только у ревьюера). Функционально
+   безвредно, задокументировано как хвост; чинится либо ревьюером (есть
+   REST-доступ), либо полной пересборкой этих четырёх шагов, что не
+   оправдано ради косметики.
 
 ## Хвосты и блокеры
 

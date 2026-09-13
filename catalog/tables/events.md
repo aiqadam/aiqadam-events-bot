@@ -21,7 +21,7 @@
 | reg_deadline_at | DATE | `j4BZ0Z6VMwWbHc5RlTBfB` | `cPbEh2PR0nWqLq0cM7Cl2` | UTC |
 | status | STATIC_DROPDOWN | `iUPI69WFE2B8w3BBHdrak` | `Ia0fI5cUGnI4VH7iXsEbv` | `draft` / `published` / `cancelled` / `finished` |
 | capacity | NUMBER | `tVHurK8WamXGJZNCzWHGE` | `gdS990dKszDq93IdXqRLU` | пусто = без лимита |
-| overbook_pct | NUMBER | `SjLUFfn2RhsADnLE0wWw3` | `asK197MVeFolrZm9Chvyd` | дефолт 40 (OWN-15), ставит визард |
+| overbook_pct | NUMBER | `SjLUFfn2RhsADnLE0wWw3` | `asK197MVeFolrZm9Chvyd` | пусто = дефолт 40 при расчёте лимита (OWN-15) |
 | published_at | DATE | `TH7QDW3lLW7KHUP4LE2ra` | `vhfxjnMEzbe7q2yOcba0y` | |
 | cancelled_at | DATE | `9bwuaZzPNqmutUMLVIpOO` | `IDiqCP3it8CRD2fRgJYNK` | |
 | finished_at | DATE | `Xtzz8LHOpBTVk2hTDYJvL` | `gYWyiIAjpoghrZFFLxnCM` | |
@@ -30,6 +30,9 @@
 
 - Ссылки на Я.Карты в таблице нет — генерируется из `lat`/`lon` (OWN-2).
 - Дефолт `overbook_pct = 40` таблицей **не** обеспечивается: `NUMBER` без значения
-  читается как `null`. Подставлять дефолт обязан визард (W11) и расчёт лимита (W5).
+  читается как `null`. Визард поле не пишет вовсе (пусто у всех ивентов, созданных
+  через `event-wizard-publish`); дефолт подставляет только `reg-start` при расчёте
+  лимита регистрации — в сырых данных и будущем экспорте (OWN-8) значение видно
+  как пустое, а не как 40.
 - Значение `status` платформой не валидируется (см. [README.md](README.md)) —
   допустимость проверяет флоу.
