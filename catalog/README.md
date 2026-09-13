@@ -1,18 +1,16 @@
 # Агентский каталог
 
-> ## ⏳ Пересборка после очистки инстанса в процессе (W26)
+> ## ⏳ Пересборка после очистки инстанса — все флоу построены, ждёт ревью (W26)
 >
 > Инстанс `events-dev` очищен 13.09.2026. [W26](../docs/work/W26-rebuild-on-one-touch.md)
-> пересобирает проект по [ADR-0015](../docs/adr/0015-one-touch-one-flow.md):
-> **таблицы пересозданы** (10), **пять `fn-*` собраны и проверены**
-> (`fn-hmac-init-data`, `fn-sign-qr`, `fn-verify-qr`, `fn-parse-start`,
-> `fn-find-registration`), **обработчики-касания ещё нет** (`tg-router`,
-> `reg-*`, `checkin-api`, `my-qr-api`).
->
-> Карточки старых `tg-router`/`registration`/`checkin-api`/`my-qr-api` в
-> [flows/](flows/) описывают схему «сценарий целиком — один флоу», запрещённую
-> ADR-0015, — **пересобирать по ним нельзя**. Карточки `fn-*` и [tables/](tables/) —
-> актуальны, баннеры сняты.
+> пересобрал проект по [ADR-0015](../docs/adr/0015-one-touch-one-flow.md):
+> **10 таблиц и все 12 флоу построены** (`fn-hmac-init-data`, `fn-sign-qr`,
+> `fn-verify-qr`, `fn-parse-start`, `fn-find-registration`, `reg-start`,
+> `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`, `tg-router`,
+> `checkin-api`, `my-qr-api`). Регистрация проверена сквозными прогонами
+> с реальной доставкой в Telegram; `checkin-api`/`my-qr-api` — только путь
+> `unauthorized` (нужен прогон от живого клиента для остального, см. их карточки).
+> Пакет ещё не закрыт: независимое ревью не пройдено.
 >
 > Текущее состояние — [overview.md](overview.md).
 
