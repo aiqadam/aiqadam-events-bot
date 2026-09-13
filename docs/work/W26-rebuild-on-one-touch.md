@@ -57,15 +57,24 @@ ADR-0015 — и привести каталог в соответствие с �
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| — | — | — |
+| Таблица `users` | `xHhYjhwqKdONkrYJGcBsz` | [tables/users.md](../../catalog/tables/users.md) |
+| Таблица `events` | `R4aSQpLZvw7d3u6DVOSjH` | [tables/events.md](../../catalog/tables/events.md) |
+| Таблица `chapters` | `dsNl5HIdqSQqspIz6fWuK` | [tables/chapters.md](../../catalog/tables/chapters.md) |
+| Таблица `registrations` | `SM8tMxfQuQCHRDdAiNJyQ` | [tables/registrations.md](../../catalog/tables/registrations.md) |
+| Таблица `event_staff` | `t1g8Vae3iEoDk93D6Rle7` | [tables/event_staff.md](../../catalog/tables/event_staff.md) |
+| Таблица `staff_invites` | `JIjKkDu3Im2ylBmkkH5Fu` | [tables/staff_invites.md](../../catalog/tables/staff_invites.md) |
+| Таблица `broadcasts` | `XrygYF5Q4EUOKkaBFallb` | [tables/broadcasts.md](../../catalog/tables/broadcasts.md) |
+| Таблица `broadcast_targets` | `PAH81WchbaOixGXSdFBK1` | [tables/broadcast_targets.md](../../catalog/tables/broadcast_targets.md) |
+| Таблица `sessions` | `toTKgngMTqDNJWDpQMh4d` | [tables/sessions.md](../../catalog/tables/sessions.md) |
+| Таблица `strings` | `9swx5NlpR0mbK6jXjIG15` | [tables/strings.md](../../catalog/tables/strings.md) (пуста, `i18n-sync` вне области W26) |
 
 ## Чек-лист готовности
 
 > Скопирован из [BACKLOG.md](../BACKLOG.md#готово-когда) при взятии пакета.
 > Отмечать по мере прохождения.
 
-- [ ] Variables проверены в UI, все четыре на месте (или заведён блокер к владельцу)
-- [ ] 10 таблиц созданы, карточки содержат новые идентификаторы, баннеры сняты
+- [x] Variables проверены в UI, все четыре на месте (или заведён блокер к владельцу)
+- [x] 10 таблиц созданы, карточки содержат новые идентификаторы, баннеры сняты
 - [ ] Q35 закрыт числом с прогретого инстанса; при цене вызова ~1 с пакет остановлен
 - [ ] ни один флоу не превышает ~25 шагов, иначе причина объяснена в карточке
 - [ ] обработчик не зовёт обработчик; вложенность `fn-*` — один уровень
@@ -96,6 +105,20 @@ ADR-0015 — и привести каталог в соответствие с �
 - **2026-09-13** — пакет взят в работу. План: шаг 1 (Variables в UI) →
   шаг 2 (10 таблиц) → шаг 3 (перемер `callFlow`, Q35) → далее по порядку
   зависимостей из BACKLOG.
+- **2026-09-13** — шаг 1: браузерное расширение Claude in Chrome недоступно
+  в сессии агента (`tabs_context_mcp` отвечает «not connected»), поэтому
+  Variables проверил владелец проекта в UI лично, по прямому запросу в чате:
+  все четыре (`QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`)
+  на месте. Агент их значения не видел и не проверял сам.
+- **2026-09-13** — шаг 2: создано 10 таблиц по схеме DATA-MODEL.md
+  (`ap_create_table` × 10), externalId таблиц и полей сняты
+  (`ap_resolve_property_options` на `table_id`, затем `ap_get_piece_props`
+  с `input.table_id` на `tables-create-records` для каждой — резолвит
+  `values` в конкретные externalId полей). Карточки `catalog/tables/*.md`
+  переписаны с новыми id, баннеры «таблица не существует» сняты;
+  `catalog/README.md` и `catalog/overview.md` приведены в соответствие
+  (флоу всё ещё 0, таблиц теперь 10). `strings` создана по схеме, но
+  оставлена пустой — `i18n-sync` не входит в область W26.
 
 ## Ревью
 

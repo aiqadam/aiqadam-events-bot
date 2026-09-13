@@ -1,18 +1,9 @@
-> # ⛔ ТАБЛИЦА НЕ СУЩЕСТВУЕТ
->
-> Инстанс `events-dev` очищен владельцем проекта **13.09.2026**: таблиц в проекте
-> ноль. Все идентификаторы ниже — и `externalId`, и внутренний `id`, и id полей —
-> **мертвы**; при пересборке платформа выдаст новые
-> ([tables/README.md](README.md#два-namespaceа-идентификаторов--главная-ловушка)).
->
-> **Схема полей ниже актуальна и есть спека для пересборки.** Идентификаторы —
-> нет. Пересборка идёт пакетом
-> [W26](../../docs/work/W26-rebuild-on-one-touch.md).
-
 # Table: users
 
 - **Назначение**: люди, которых бот видел, их язык и согласия (DAT-1, PAR-1, PAR-2).
-- **externalId таблицы**: `z5PX9B8mTQC9Q6Dfuj5dM` · **внутренний id**: `vWhLIDzqSFF0brn7bdF47`
+- **externalId таблицы**: `xHhYjhwqKdONkrYJGcBsz` · **внутренний id**: `gyMqrk23KWlFQweY3qDU0`
+- Пересоздана в [W26](../../docs/work/W26-rebuild-on-one-touch.md) 2026-09-13
+  после очистки инстанса 13.09.2026. Идентификаторы ниже — новые.
 
 ## Поля
 
@@ -22,18 +13,18 @@
 
 | Field | Type | externalId | field id | Назначение |
 |-------|------|-----------|----------|-----------|
-| telegram_id | TEXT | `EHOxpkEWRZvCqsH2DDUGK` | `yTuZ3TkrJyt6kvwXPAtYv` | единственный ключ пользователя (DAT-1), строкой |
-| first_name | TEXT | `Py9jSQQDOrp1QkkYUowAH` | `3dtyQib3P6uuViiJ38nbO` | из апдейта |
-| last_name | TEXT | `LAIY5UjBa6pThlMupxk6M` | `i1rfpqHR9H3yOqN1EV5lr` | может отсутствовать |
-| username | TEXT | `wkWKhDUfiWM0MCmbBp054` | `DkN1JCEsv1ox31T30Nx1q` | справочно, связей по нему нет |
-| phone | TEXT | `q4mHoEshUvxKHjRxI19Tc` | `6BRrwL5m0hgHNJ905wkum` | только из `request_contact` (DAT-2) |
-| lang | TEXT | `P3UEfd4v8IigwuGrmeuFJ` | `yA9sS1SuKgjKlRgDMpbGV` | `ru` / `uz` / `en` |
-| consent_pdn | STATIC_DROPDOWN | `yV3faVVofnEVjqaYKVfcW` | `tDDeYbTyumJNxUrqM77X1` | `true` / `false` — согласие на обработку данных (PAR-1) |
-| consent_pdn_at | DATE | `aPJGrUsxBq5zmfp1BZBC3` | `AGXTt0wbdf98jBMcUUM22` | когда дано, UTC |
-| consent_marketing | STATIC_DROPDOWN | `okGBtVrZ2FNPs7ETslHlr` | `ihVOkitsYQ7xHtz8vMs3e` | `true` / `false` — отдельное согласие (PAR-2) |
-| consent_marketing_at | DATE | `3PVn3wQKAMsjmlC4W1IkS` | `HhjcIiUVtrIy4cQo5g2uu` | |
-| blocked_bot | STATIC_DROPDOWN | `iXD5CZ4WHR29OWcNYDjAv` | `KXgtfvrjsxjvFoHHkZtMF` | `true` / `false` — ставится при `403` (OWN-12) |
-| created_at | DATE | `V4lq9yAljXHKxVOFLoCKH` | `UGj2VNSy38dXCyr3PFQcw` | |
+| telegram_id | TEXT | `JtylZU291K7TuMn9c9F2t` | `wXNExrKuctrBdtrX5IHEC` | единственный ключ пользователя (DAT-1), строкой |
+| first_name | TEXT | `nWPJjEcVpqMUaMwdEpPX5` | `1Q944fmm16kJUSM9Aa6df` | из апдейта |
+| last_name | TEXT | `yd5CbkPctz2GXmBabZeVV` | `Q0Jc5p5zp4k3Za1FcBuDk` | может отсутствовать |
+| username | TEXT | `QCFLn2jRQPxB4RpMKxAKH` | `HeXQlTD8AgLnMvXAYtC4i` | справочно, связей по нему нет |
+| phone | TEXT | `U05XVnW62T9q9IkZw1W3N` | `uLDyHJxawdUNwKZnBUrKv` | только из `request_contact` (DAT-2) |
+| lang | TEXT | `wW12TT5X2kFgLryWbnnm5` | `XzWbggBmUBAYSMxGkaTYs` | `ru` / `uz` / `en` |
+| consent_pdn | STATIC_DROPDOWN | `KtdV8plfevjdnKlLko08q` | `mtWROpZrIW5v1Aqv3dM5U` | `true` / `false` — согласие на обработку данных (PAR-1) |
+| consent_pdn_at | DATE | `LeY6BeUOzWIyEtUFfKNbI` | `tw8cz1KCjEp91HhCTvIGS` | когда дано, UTC |
+| consent_marketing | STATIC_DROPDOWN | `FpWznk9Fgl8wUXXUKolRu` | `p5kwWMUyrOXRvQx4oTH29` | `true` / `false` — отдельное согласие (PAR-2) |
+| consent_marketing_at | DATE | `3t75byELQCZ1ejfTADsvp` | `43TyWVNELRXBlud9Iuziy` | |
+| blocked_bot | STATIC_DROPDOWN | `ja2S7DwVun5AKs3Jk7jK6` | `9u6qoAhEOXOp00K5AjshG` | `true` / `false` — ставится при `403` (OWN-12) |
+| created_at | DATE | `TS1eYS5hUJOWx8CBlNMDx` | `EKvitZWz6m3tsDLIX2njA` | |
 
 ## Заметки
 

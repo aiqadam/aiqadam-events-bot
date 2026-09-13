@@ -1,41 +1,32 @@
-> # ⛔ ТАБЛИЦА НЕ СУЩЕСТВУЕТ
->
-> Инстанс `events-dev` очищен владельцем проекта **13.09.2026**: таблиц в проекте
-> ноль. Все идентификаторы ниже — и `externalId`, и внутренний `id`, и id полей —
-> **мертвы**; при пересборке платформа выдаст новые
-> ([tables/README.md](README.md#два-namespaceа-идентификаторов--главная-ловушка)).
->
-> **Схема полей ниже актуальна и есть спека для пересборки.** Идентификаторы —
-> нет. Пересборка идёт пакетом
-> [W26](../../docs/work/W26-rebuild-on-one-touch.md).
-
 # Table: events
 
 - **Назначение**: ивенты, их время, место и жизненный цикл (OWN-2…OWN-4, OWN-15).
-- **externalId таблицы**: `kVLg1FSfDBtsP32FGPk3P` · **внутренний id**: `9Hw8OsZkAV3zspM6w756N`
+- **externalId таблицы**: `R4aSQpLZvw7d3u6DVOSjH` · **внутренний id**: `bVtxmEkqb3dPwZ2FKljqk`
+- Пересоздана в [W26](../../docs/work/W26-rebuild-on-one-touch.md) 2026-09-13
+  после очистки инстанса 13.09.2026. Идентификаторы ниже — новые.
 
 ## Поля
 
 | Field | Type | externalId | field id | Назначение |
 |-------|------|-----------|----------|-----------|
-| id | TEXT | `V1uVUJxRiBTNRsnsjXXUY` | `ckvC2yBajIHxv9hNgvl8t` | slug `A-Za-z0-9_`, влезает в deep link |
-| owner_id | TEXT | `6TmwIHPX0UaPnNxvdnrrk` | `tov8ei9S9JVXot5eCVm1N` | → `users.telegram_id`, роль owner (DAT-3) |
-| chapter_id | TEXT | `ItYAJqBiO55ABxz3Su60C` | `k08kr0RtRqqVYqcp1NVW4` | → `chapters.id`, логики пока нет (Q8) |
-| title | TEXT | `LOIQ9plnkxPH4jXB1oNeD` | `MqrO6G1FGbnt050clWSY4` | |
-| description | TEXT | `WjLeekyT9WYU0rGUwcafu` | `Hc1t6roLZYQTvcQc5vaui` | |
-| photo_file_id | TEXT | `DZH1o5aw6MhsyiYwA2vrI` | `x5lFXyLrWsUwwHQaKrb2Z` | Telegram `file_id`, не URL |
-| address | TEXT | `T7B6BnXIUCJDwlzzo1Nsl` | `aqyOUBNXHWEL23Fdhic3V` | адрес текстом |
-| lat | NUMBER | `6WkKTgc8gbJuw4CVVkFns` | `CklnFDhIFl7niX768YTUe` | для `sendVenue` (OWN-2) |
-| lon | NUMBER | `MzIthWahR00RPRn9N1akr` | `MgkSbFNlvXoWywK7hIsxv` | |
-| starts_at | DATE | `A5ZcLrSEIzBEXT5uesrhT` | `gcIaSyicrZYP40vsGdl7G` | UTC |
-| ends_at | DATE | `TUxiWLoriJmOJb1dMMT7B` | `lwNowgYzGAig6dAyBuGyY` | UTC, по нему автопереход в `finished` (OWN-4) |
-| reg_deadline_at | DATE | `7k5oXNbYn0umuLNHKetTS` | `b7JGv8sRPi0sLPwXg8Rt3` | UTC |
-| status | STATIC_DROPDOWN | `HSfxXr33rkOZpqNSOtUA2` | `xVBVMi1h5jjXwNBAdrJUn` | `draft` / `published` / `cancelled` / `finished` |
-| capacity | NUMBER | `Dlr2qj1qXxfeZ9TCSOUrr` | `eyxtLr2MvicIcHrocfbf9` | пусто = без лимита |
-| overbook_pct | NUMBER | `KZK3DiIsYOzCPywUUyZp3` | `nkrKP4oeTbnRPCduooTfS` | дефолт 40 (OWN-15), ставит визард |
-| published_at | DATE | `O9JaaeAt1kvnpy6Yxgrxw` | `m1NGGzA5lDu9HPafZ3U84` | |
-| cancelled_at | DATE | `mi5YkgxedVCHdh5BSgXpt` | `01ZXuEGEn4fYzBEcplYsh` | |
-| finished_at | DATE | `EpAtyKS5NUw3gBBSnifEu` | `Onp9M5NP7nPgyW6Wj5K9Y` | |
+| id | TEXT | `39qJ4o2MYyNYsT2VtxfcK` | `fnvGRZ5dTFES29pqSCu3Q` | slug `A-Za-z0-9_`, влезает в deep link |
+| owner_id | TEXT | `6KqxIPre6r76ycWhCX8uU` | `C9RTZG5cBrYYzoiYlqPZR` | → `users.telegram_id`, роль owner (DAT-3) |
+| chapter_id | TEXT | `Femtgz8bh7N8jSOMUHfRt` | `FLG7wUpIdITkTd4wSUU5Y` | → `chapters.id`, логики пока нет (Q8) |
+| title | TEXT | `tQEzfGR3hYG0ztG50Po00` | `GZkI8QmdKsUEaHAFzo3sh` | |
+| description | TEXT | `8PdNUVtOvTuwRzJFQDgfy` | `7WeqSNfx6MNzB8gIVPjN3` | |
+| photo_file_id | TEXT | `hfpenYm4IZ5apFOt6cIgD` | `cxblz5YPWPPMfXAadROMf` | Telegram `file_id`, не URL |
+| address | TEXT | `kSRM3ouou0Owj2yDYk92W` | `cS62NQgXQgmB5LNDuBFfE` | адрес текстом |
+| lat | NUMBER | `EKEX5zyhKo3WChz5ZquY0` | `1Q8tRDqMP8pT7q1Ssx6mS` | для `sendVenue` (OWN-2) |
+| lon | NUMBER | `Br2f0wjLugSGIS2kjfoFE` | `vUjQ80W4oqe2YQ8kByUUS` | |
+| starts_at | DATE | `8me4o2U2wj6cyrv8lfJv9` | `SBg2C3f2Mj6axkPQoYEHY` | UTC |
+| ends_at | DATE | `zIA6xEHm7y1bwkajoYDQn` | `MPxJsawgCgyOdHSL4mVms` | UTC, по нему автопереход в `finished` (OWN-4) |
+| reg_deadline_at | DATE | `j4BZ0Z6VMwWbHc5RlTBfB` | `cPbEh2PR0nWqLq0cM7Cl2` | UTC |
+| status | STATIC_DROPDOWN | `iUPI69WFE2B8w3BBHdrak` | `Ia0fI5cUGnI4VH7iXsEbv` | `draft` / `published` / `cancelled` / `finished` |
+| capacity | NUMBER | `tVHurK8WamXGJZNCzWHGE` | `gdS990dKszDq93IdXqRLU` | пусто = без лимита |
+| overbook_pct | NUMBER | `SjLUFfn2RhsADnLE0wWw3` | `asK197MVeFolrZm9Chvyd` | дефолт 40 (OWN-15), ставит визард |
+| published_at | DATE | `TH7QDW3lLW7KHUP4LE2ra` | `vhfxjnMEzbe7q2yOcba0y` | |
+| cancelled_at | DATE | `9bwuaZzPNqmutUMLVIpOO` | `IDiqCP3it8CRD2fRgJYNK` | |
+| finished_at | DATE | `Xtzz8LHOpBTVk2hTDYJvL` | `gYWyiIAjpoghrZFFLxnCM` | |
 
 ## Заметки
 
