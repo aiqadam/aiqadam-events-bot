@@ -32,9 +32,6 @@
 
 - **`telegramId`/`user` отдаются ТОЛЬКО при `valid`** (не при `hashValid`) —
   просроченный `initData` не должен нести годный `telegramId`.
-- Проверено 2026-09-13 позитивным и негативным прогонами с независимым
-  пересчётом HMAC в Python: `cCByeAhYo0ecOZrGnnukd` (валидный `initData`,
-  `hash` сошёлся с Python-эталоном) и `8pMXgyUBrZzMTbdKzx3cF` (испорченный
-  `hash` → `valid:false`, `reason:"bad_hash"`, `telegramId`/`user` пусты).
+- **Испорченный `hash` → `valid:false, reason:"bad_hash"`**, `telegramId`/`user` пусты.
 - Единственная копия HMAC-цепочки в проекте — расхождения между обработчиками
   больше не может возникнуть по построению.

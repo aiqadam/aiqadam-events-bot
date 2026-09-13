@@ -25,10 +25,7 @@
 
 ## Заметки
 
-- **Первый флоу цепочки ADR-0016**: не задаёт вопрос сам по себе, а только
-  инициализирует `sessions.step='title'` — дальше все шесть однотипных полей
-  (`title`/`description`/`address`/`starts_at`/`ends_at`/`reg_deadline_at`)
-  ведёт один флоу `event-wizard-field`, а не шесть копий (см.
-  [ADR-0016](../../docs/adr/0016-shared-flow-for-same-shaped-touches.md)).
-- Проверено интеграционным прогоном через `tg-router`: `/newevent` →
-  маршрут `wiz_start` (прогон `QHnZ4y2RbuE2QcK6M37e6`).
+- Не задаёт вопрос сам по себе, а только инициализирует `sessions.step='title'` —
+  дальше все шесть однотипных полей (`title`/`description`/`address`/
+  `starts_at`/`ends_at`/`reg_deadline_at`) ведёт один флоу `event-wizard-field`,
+  а не шесть копий (см. [ADR-0016](../../docs/adr/0016-shared-flow-for-same-shaped-touches.md)).

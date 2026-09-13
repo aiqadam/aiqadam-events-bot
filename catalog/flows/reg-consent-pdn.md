@@ -28,22 +28,12 @@
 
 ## Заметки
 
-- **`tables-upsert-records registrations` заменяет create-or-reactivate ROUTER**
-  из старого `registration` (было: найти строку → ветка create/reactivate).
-  Один шаг вместо трёх, дублей не плодит (IDM-1) — проверено прогоном
-  (см. журнал W26).
-- **Сессию нельзя «очистить» пустой строкой** — открытие W26: `tables-upsert-records`
-  (как и `tables-update-record`) молча игнорирует пустую строку в TEXT-поле,
-  значение остаётся прежним (не только в DATE-полях, как было известно раньше,
-  см. [tables/README.md](../tables/README.md)). Используется сентинел `-`
-  (тот же приём, что и в `find-registration` для фильтров) — `tg-router`
-  обязан трактовать `scenario/step = '-'` как «нет активной сессии».
-- **Проверено 2026-09-13, реальная доставка в Telegram владельца (`322876545`)**:
-  `yes`, новая регистрация (`eS0G9dT7ykc536BZcgH4Q`) — `consent_pdn=true`,
-  строка `registrations` создана (`demo-322876545`, `status=registered`),
-  текст «Вы зарегистрированы на «Демо-ивент W26»» с точной подстановкой
-  title, вопрос о рассылке отправлен; **реактивация отменённой регистрации**
-  (`B60AVUrHY20A7DIh3I1E0`, IDM-1) — **тот же** `record id`, статус
-  `cancelled → registered`, `source` обновлён, дублей не создано;
-  `no` (`YvBjDU7UCTrzy1Lbx0sG4`, после фикса сентинела) — отказ отправлен,
-  `sessions.scenario/step = '-'` подтверждено чтением записи.
+- **`tables-upsert-records registrations` заменяет create-or-reactivate ROUTER**:
+  `yes` и на новую, и на ранее отменённую (`cancelled`) регистрацию даёт
+  один и тот же шаг и тот же `record id` (IDM-1, дублей не плодит).
+- **Сессию нельзя «очистить» пустой строкой**: `tables-upsert-records` (как и
+  `tables-update-record`) молча игнорирует пустую строку в TEXT-поле, значение
+  остаётся прежним (не только в DATE-полях — см. [tables/README.md](../tables/README.md)).
+  Используется сентинел `-` (тот же приём, что и в `fn-find-registration` для
+  фильтров) — `tg-router` обязан трактовать `scenario/step = '-'` как «нет
+  активной сессии».

@@ -29,8 +29,5 @@
 
 - **`sig` — последние 10 символов, не `split('-')`**: base64url содержит дефис
   (SECURITY.md#ловушка-парсинга). Разбор `c`-payload идёт с конца строки.
-- Проверено 2026-09-13 тремя прогонами: `e`-payload с utm
-  (`sSqiOssO3lUK3Fc7l7gvx`, `edemo01-utm_ig` → `eventId:"demo01", utm:"utm_ig"`);
-  `c`-payload (`bsXNrOAM2v9lKZLt4RcsR`, `cdemo-322876545-zrT53qwJct` — тот самый
-  `sig`, выданный `fn-sign-qr` для этой пары, разобран корректно); мусорный вход
-  с пробелом/`!` (`FVZjWIOTG2E5m59dqNSUC` → `valid:false, error:"bad_charset"`).
+- **Алфавит payload** — `A-Za-z0-9_-`; символ вне алфавита (пробел, `!`) даёт
+  `valid:false, error:"bad_charset"`.

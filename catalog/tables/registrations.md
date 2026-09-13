@@ -2,8 +2,6 @@
 
 - **Назначение**: регистрации и чекины (IDM-1, IDM-2, OWN-6, OWN-7, OWN-9).
 - **externalId таблицы**: `SM8tMxfQuQCHRDdAiNJyQ` · **внутренний id**: `a87VoexSxH2QEj4JBhSgn`
-- Пересоздана в [W26](../../docs/work/W26-rebuild-on-one-touch.md) 2026-09-13
-  после очистки инстанса 13.09.2026. Идентификаторы ниже — новые.
 
 ## Поля
 
