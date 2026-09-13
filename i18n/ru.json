@@ -88,6 +88,7 @@
   "cancel.done": "Регистрация на «{title}» отменена.",
   "cancel.too_late": "Ивент уже начался — отменить регистрацию нельзя.",
   "cancel.not_found": "Активной регистрации не нашлось.",
+  "cancel.kept": "Хорошо, регистрация оставлена.",
   "checkin.ok": "{name} — отмечен",
   "checkin.already": "Уже отмечен в {time}",
   "checkin.not_registered": "Нет регистрации",
