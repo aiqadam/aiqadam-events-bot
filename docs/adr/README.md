@@ -18,3 +18,6 @@
 | [0010](0010-unsandboxed-code-step-for-crypto.md) | `node:crypto` в Code step разрешён узко, для трёх HMAC-цепочек | Принято |
 | [0011](0011-idempotency-on-atomic-primitives.md) | Идемпотентность на атомарных примитивах (сужает 0003) | Принято |
 | [0012](0012-end-to-end-flows-instead-of-subflow-functions.md) | End-to-end флоу вместо subflow-функций (сужает 0001, отменяет локальность крипты 0010) | Принято |
+| [0013](0013-fewer-messages-on-start.md) | Меньше сообщений на `/start` | Принято |
+| [0014](0014-russian-only-until-platform-i18n.md) | Русский-онли до платформенного i18n | Принято |
+| [0015](0015-one-touch-one-flow.md) | Одно касание = один флоу (сужает 0012, частично отменяет его запрет subflow'ов) | Принято |

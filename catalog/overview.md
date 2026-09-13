@@ -4,85 +4,91 @@
 > что реально существует в проекте**. Планы живут в
 > [ROADMAP.md](../docs/ROADMAP.md) и [BACKLOG.md](../docs/BACKLOG.md).
 
-**Состояние на 2026-09-13 (после W24):** 10 таблиц (W1), **5 флоу проекта**, из
-них `i18n-sync` — **DISABLED**; один connection (шаг 0.2).
+## ⛔ Состояние на 2026-09-13: проект пуст
 
-> «Пять флоу» — это флоу **проекта**, а не всё, что лежит в `events-dev`.
-> `ap_list_flows` на 2026-09-13 отдаёт шесть: шестой,
-> `bench-421-loop-code-final`, — чужой замер к
-> [qadam-flow#421](https://github.com/aiqadam/qadam-flow/issues/421), заведён
-> не этим репозиторием и в каталоге намеренно не описан
-> ([Q34](../docs/OPEN-QUESTIONS.md#q34)). Разница найдена ревью W18.
+Владелец проекта **очистил инстанс `events-dev` 13.09.2026**. Проверено через
+MCP в тот же день:
 
-**Локализации в проекте больше нет** — только русский
-([ADR-0014](../docs/adr/0014-russian-only-until-platform-i18n.md), возврат
-привязан к [qadam-flow#420](https://github.com/aiqadam/qadam-flow/issues/420),
-milestone v2.0.0). Из горячего пути ушли 16 чтений `strings` и два чтения языка
-пользователя; тексты лежат во входе шага, который формирует сообщение
-(эталон [`ru-texts`](snippets/ru-texts.md)). Таблица `strings` и файлы
-`i18n/*.json` **не тронуты** — они нужны для импорта при возврате.
+| Что | Сколько | Чем проверено |
+|---|---|---|
+| Флоу | **0** | `ap_list_flows` → `{"flows":[],"count":0}` |
+| Таблицы | **0** | `ap_list_tables` → `{"tables":[],"count":0}` |
+| Connections | **1** — `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`, ACTIVE) | `ap_list_connections` |
+| Variables | не проверялись — MCP их не перечисляет, смотреть в UI | — |
 
-Девять subflow-«функций» `fn-*` **удалены в W22**: после [W21](../docs/work/W21-end-to-end-flows.md)
-их не вызывал никто, а [ADR-0012](../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)
-запретил их как практику. Канон переиспользуемой логики теперь живёт **только**
-в [snippets/](snippets/) — включая `resolve-segment`, который не был встроен
-никуда и был бы потерян вместе с флоу.
+Всё, что раньше стояло в этом файле — пять флоу проекта, десять таблиц, их
+`externalId` и связи между ними, — **больше не существует**. Карточки в
+[flows/](flows/) и [tables/](tables/) сохранены до закрытия
+[W26](../docs/work/W26-rebuild-on-one-touch.md) как история и помечены
+баннерами; **пересобирать по ним нельзя** — они описывают схему, запрещённую
+[ADR-0015](../docs/adr/0015-one-touch-one-flow.md).
 
-Остальные флоу (`event-wizard`, `checkin-deeplink`, `staff-invite`/`staff-accept`,
-рассылки) ещё не собраны. Статические страницы Mini App собраны в W7: сканер
-`miniapp/index.html` (`showScanQrPopup`, STF-1, бьёт в `checkin-api`) и выдача QR
-`miniapp/ticket.html` (W5, [ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md));
-обе тянут собственные надписи с того же GitHub Pages из `i18n/<lang>.json` (Q19).
+Пересборка — пакет [W26](../docs/BACKLOG.md#w26-пересборка-events-dev-по-adr-0015).
+Он же заводит карточки заново.
+
+### Заодно: почему это не только про очистку
+
+Каталог разошёлся с реальностью **до** очистки, пока инстанс ещё работал
+(найдено 13.09.2026 при челлендже каталога). На тот момент здесь было написано
+«вызовов между флоу ровно один» — их было пять; «`event-wizard` ещё не собран» —
+он был собран, 66 шагов, ENABLED; шестым флоу назван чужой бенчмарк
+[Q34](../docs/OPEN-QUESTIONS.md#q34) — его уже не было. Правило синхронизации
+из [README.md](README.md#правило-синхронизации) не выдержало нагрузки при живом
+инстансе, и это отдельная проблема, которую очистка не создала, а обнажила.
+W26 обязан ответить, чем её лечить, а не просто переписать файл заново.
+
+## Что пережило очистку и остаётся в силе
+
+К инстансу не привязано, идентификаторов не содержит, при пересборке
+экономит круги ревью:
+
+| Документ | Что в нём |
+|---|---|
+| [flows/README.md](flows/README.md) | 13 проверенных фактов про MCP, subflow'ы и логи прогонов. Пункты 1–4 (вход в `trigger['output'].data`, форма ответа `callFlow`, «callee публикуется раньше вызывающего», «callee исполняется в PRODUCTION при тесте вызывающего») снова стали горячими: ADR-0015 возвращает `fn-*`. Пункты 10–12 куплены полутора кругами ревью W2 |
+| [tables/README.md](tables/README.md) | два namespace'а идентификаторов, ловушка `cells[<fieldId>].value`, рецепт пересборки схемы |
+| [flows/README.md](flows/README.md#соглашения-унаследованные-сниппетами) | сентинелы `-` / `!no-key`, постфильтр прав в коде поверх фильтра чтения (страховка от [#382](https://github.com/aiqadam/qadam-flow/issues/382)), проекция колонок |
+| [snippets/](snippets/) | **код** эталонов. Обоснование в [snippets/README.md](snippets/README.md) устарело — см. ниже |
+| [variables.md](variables.md), [connections.md](connections.md) | имена Variables и требуемые connections; connection очистку пережил |
+| [tables/*.md](tables/) | схемы полей — актуальны как спека, идентификаторы в них мертвы |
+
+**Оговорка по `snippets/README.md`:** раздел «Почему так, а не subflow» стоит
+на замерах от 12.09.2026 (`callFlow` ≈ 1,0–1,2 с, CODE-шаг ≈ 0,06 с). Оба числа
+сняты **до** апстрим-фиксов [#412](https://github.com/aiqadam/qadam-flow/issues/412)
+и [#417](https://github.com/aiqadam/qadam-flow/issues/417) от 13.09, и цифра для
+CODE-шага расходится с замеренной после них (2–5 мс) в 12–30 раз. Перемер
+заведён как [Q35](../docs/OPEN-QUESTIONS.md#q35) и блокирует пункт 5 ADR-0015.
 
 ## Flows
 
-Как читать, два namespace'а id и проверенные факты про subflow'ы —
-[flows/README.md](flows/README.md).
-
-| Flow | Триггер | Назначение | Файл |
-|------|---------|-----------|------|
-| `tg-router` | `@aiqadam/qadam-telegram-bot / new_telegram_message` | единственный вход бота: дедуп `update_id` (IDM-4), апсерт `users` **только при изменениях** (W22), классификация апдейта, делегирование в `registration` | [tg-router.md](flows/tg-router.md) |
-| `registration` | `subflows / callableFlow` | регистрация участника: места/овербукинг, согласия PAR-1/PAR-2, QR | [registration.md](flows/registration.md) |
-| `checkin-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | чекин: `initData` контролёра, членство в `event_staff` этого `event_id` (STF-2), подпись QR, запись `checked_in_at` (IDM-2) | [checkin-api.md](flows/checkin-api.md) |
-| `my-qr-api` | `@aiqadam/qadam-webhook / catch_webhook` (sync) | подписанный `payload` QR для `miniapp/ticket.html` (ADR-0007) | [my-qr-api.md](flows/my-qr-api.md) |
-| `i18n-sync` | cron `0 4 * * *` (Asia/Tashkent) — **DISABLED с 2026-09-13** | заливал `i18n/*.json` из `main` в таблицу `strings`; выключен по ADR-0014, включается при возврате i18n | [i18n-sync.md](flows/i18n-sync.md) |
-
-**Вызовов между флоу ровно один**: `tg-router` → `registration` (`callFlow`,
-`executionMode: inline`). Больше `callFlow` в проекте нет.
+**Нет ни одного.** Как читать каталог, когда они появятся, и проверенные факты
+про subflow'ы — [flows/README.md](flows/README.md). Целевой состав по ADR-0015 —
+[BACKLOG W26](../docs/BACKLOG.md#w26-пересборка-events-dev-по-adr-0015).
 
 ## Таблицы
 
-Заведены в W1. Идентификаторы, dropdown-значения и рецепт пересборки —
-[tables/README.md](tables/README.md).
+**Нет ни одной.** Модель и смысл полей — [docs/DATA-MODEL.md](../docs/DATA-MODEL.md),
+схемы полей и рецепт пересборки — [tables/README.md](tables/README.md) и карточки
+в [tables/](tables/). Идентификаторы после пересборки будут другими.
 
-| Таблица | Назначение | externalId | Файл |
-|---------|-----------|-----------|------|
-| `users` | люди, язык, согласия (DAT-1, PAR-1, PAR-2) | `z5PX9B8mTQC9Q6Dfuj5dM` | [users.md](tables/users.md) |
-| `events` | ивенты, время, место, статус (OWN-2…OWN-4) | `kVLg1FSfDBtsP32FGPk3P` | [events.md](tables/events.md) |
-| `chapters` | чаптеры, заведена под будущее (Q8) | `yRaGKY6Rhmn6m3SKUBmOV` | [chapters.md](tables/chapters.md) |
-| `registrations` | регистрации и чекины (IDM-1, IDM-2) | `PNuChoFG0tIBTND86yzDL` | [registrations.md](tables/registrations.md) |
-| `event_staff` | права контролёра на конкретный ивент (STF-2) | `CyW6KjJ2BdwQEph2KEqTt` | [event_staff.md](tables/event_staff.md) |
-| `staff_invites` | одноразовые инвайты staff на 24ч (OWN-14) | `TrHzP09CQTbpU14FPBZLQ` | [staff_invites.md](tables/staff_invites.md) |
-| `broadcasts` | рассылки, прогресс, курсор (OWN-10…OWN-13) | `RtlPCu8KxBRPHCX62ifhc` | [broadcasts.md](tables/broadcasts.md) |
-| `broadcast_targets` | снимок получателей рассылки | `lg5rQmGCnNrbAJSAQOUfX` | [broadcast_targets.md](tables/broadcast_targets.md) |
-| `sessions` | состояние визардов, `draft` — JSON строкой | `tL4fbi1GisDwA8UJ9zSod` | [sessions.md](tables/sessions.md) |
-| `strings` | рабочая копия i18n — **никем не читается с 2026-09-13** (ADR-0014), сохранена для импорта при возврате | `qi6bBTL7plRGBgFUfli8w` | [strings.md](tables/strings.md) |
-
-Данные в таблицах: `strings` наполняется флоу `i18n-sync` (W3) и содержит
-**по одной строке на каждую пару `(key, lang)` из `i18n/*.json`** — на
-2026-09-08 это 203 `ru` + 202 `uz` + 202 `en`. Точное число здесь сознательно
-не фиксируется: оно меняется с каждым добавленным ключом, а сверять его нужно
-не с каталогом, а с файлами репозитория — так делает и сам `i18n-sync`.
-Остальные девять таблиц пусты: фикстуры W1 и W2 удалены после проверок.
-Актуальные `rowCount` смотрите через `ap_list_tables`.
+Данные тоже не пережили очистку: таблица `strings` (её вёл `i18n-sync`) пуста
+вместе со всеми остальными. Источник правды для неё не тронут — это
+`i18n/*.json` в репозитории; при возврате локализации
+([W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме),
+[ADR-0014](../docs/adr/0014-russian-only-until-platform-i18n.md)) она
+наполняется из них заново.
 
 ## Переменные
 
-См. [variables.md](variables.md).
+См. [variables.md](variables.md). Очистку флоу и таблиц Variables пережили —
+но **проверено это не было**: MCP их не перечисляет, смотреть в UI. Первый
+пункт W26 — убедиться, что `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`
+и `MINIAPP_URL` на месте.
 
 ## Connections
 
-См. [connections.md](connections.md).
+См. [connections.md](connections.md). `AI Qadam Events (dev)`
+(`@aiqadam/qadam-telegram-bot`) очистку пережил, статус ACTIVE — проверено
+`ap_list_connections` 13.09.2026.
 
 ## Схема потоков данных
 
