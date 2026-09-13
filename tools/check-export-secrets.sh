@@ -58,35 +58,69 @@ report "паттерн токена Telegram" '[0-9]{6,12}:[A-Za-z0-9_-]{30,}'
 #    от него защищает пункт 3, а не этот.
 report "hex-строки >=32 символов" '\b[0-9a-fA-F]{32,}\b'
 
-# 3. Позитивный контроль: `{{variables['...']}}` обязаны присутствовать
-#    ССЫЛКОЙ. Если ссылок не стало — форма экспорта изменилась, и «ноль
-#    совпадений» выше больше ничего не доказывает: ноль бывает и оттого,
-#    что секрет подставлен значением, которое наши паттерны не описывают.
-if grep -qE "\{\{variables\['(BOT_TOKEN|QR_SIGNING_KEY)'\]\}\}" "${FILES[@]}" 2>/dev/null; then
-  echo "ok: переменные проекта присутствуют ссылкой {{variables['...']}}"
-else
-  echo "ПРОВАЛ: в экспорте нет ни одной ссылки {{variables['BOT_TOKEN'|'QR_SIGNING_KEY']}}"
-  echo "        — форма экспорта изменилась, и пункты 1-2 больше не доказывают"
-  echo "        отсутствие секретов. Разобраться руками."
-  fail=1
-fi
+# 3. Позитивный контроль: ссылка на КАЖДОЕ ожидаемое имя переменной.
+#    Раньше здесь стояла альтернатива (BOT_TOKEN|QR_SIGNING_KEY), и хватало
+#    одной ссылки любого из двух: QR_SIGNING_KEY можно было подставить
+#    значением (32 символа, не hex — пункт 2 его не видит), а проверка
+#    рапортовала «чисто». Поэтому имена проверяются поимённо и по счёту.
+#
+#    EXPECTED_* — сколько ссылок ожидается сейчас. Меньше ожидаемого =
+#    ПРОВАЛ: ссылка пропала, и неважно, на что её заменили. Больше — норма
+#    (в проекте прибавилось шагов), печатается для сведения.
+EXPECTED_BOT_TOKEN=2
+EXPECTED_QR_SIGNING_KEY=2
+
+for var in BOT_TOKEN QR_SIGNING_KEY; do
+  eval "want=\$EXPECTED_$var"
+  got="$(grep -oh "{{variables\['$var'\]}}" "${FILES[@]}" 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "$got" -lt "$want" ]]; then
+    echo "ПРОВАЛ: ссылок {{variables['$var']}} — $got, ожидалось не меньше $want."
+    echo "        Ссылка пропала. Это может значить, что вместо неё подставлено"
+    echo "        ЗНАЧЕНИЕ, которого пункты 1-2 не описывают. Разобраться руками."
+    fail=1
+  elif [[ "$got" -gt "$want" ]]; then
+    echo "ok: ссылок {{variables['$var']}} — $got (ожидалось $want; больше — норма,"
+    echo "    но обновите EXPECTED_$var, чтобы проверка снова ловила пропажу)"
+  else
+    echo "ok: ссылок {{variables['$var']}} — $got, как ожидалось"
+  fi
+done
 
 # 4. Connections. Эндпоинт /flows/:id?versionId= отдаёт их ССЫЛКОЙ
-#    {{connections['<externalId>']}} — это норма и то самое, что Q38 признал
+#    {{connections['<externalId>']}} — это норма и то, что Q38 признал
 #    безопасным: externalId connection'а публичен и уже лежит в catalog/.
-#    Блокер — если хоть одно значение `auth` НЕ такой формы: значит вместо
-#    ссылки подставили данные connection'а.
-AUTH_ANY='"auth"[[:space:]]*:[[:space:]]*"[^"]*"'
-AUTH_OK='"auth"[[:space:]]*:[[:space:]]*"\{\{connections\['"'"'[A-Za-z0-9_-]+'"'"'\]\}\}"'
-bad_auth="$(grep -hoE "$AUTH_ANY" "${FILES[@]}" 2>/dev/null | grep -vE "$AUTH_OK" || true)"
-if [[ -z "$bad_auth" ]]; then
-  n_auth="$(grep -hoE "$AUTH_OK" "${FILES[@]}" 2>/dev/null | wc -l | tr -d ' ')"
-  echo "ok: все $n_auth полей auth — ссылки {{connections['...']}}, значений нет"
-else
-  echo "ПРОВАЛ: поле auth не в форме {{connections['...']}} — возможно, значение."
-  echo "        Файлы:"
-  grep -lE "$AUTH_ANY" "${FILES[@]}" 2>/dev/null | sed 's|^|    |'
-  fail=1
+#    Блокер — любая ДРУГАЯ форма значения `auth`.
+#
+#    Проверяется через jq, а не grep: резолвнутый connection приезжает
+#    ОБЪЕКТОМ ({"access_token": ...}), а регулярка описывала только строку
+#    и молчала ровно в том сценарии, ради которого поставлена.
+# Regex записан через классы символов, а не обратные слэши: при передаче
+# из bash в jq экранирование съедалось, и проверка ложно валилась на всём.
+AUTH_RE="^[{][{]connections[[]'[A-Za-z0-9_-]+'[]][}][}]$"
+auth_total=0
+auth_bad=0
+for f in "${FILES[@]}"; do
+  [[ -f "$f" ]] || continue
+  if ! out="$(jq -r --arg re "$AUTH_RE" '
+        [ .. | objects | select(has("auth")) | .auth ] as $a
+        | [ ($a | length),
+            ([ $a[] | select((type != "string") or (test($re) | not)) ] | length) ]
+        | @tsv' "$f" 2>/dev/null)"; then
+    echo "ПРОВАЛ: $f — не разбирается как JSON, проверить auth невозможно"
+    fail=1
+    continue
+  fi
+  auth_total=$(( auth_total + $(cut -f1 <<<"$out") ))
+  n_bad=$(cut -f2 <<<"$out")
+  if [[ "$n_bad" -gt 0 ]]; then
+    echo "ПРОВАЛ: $f — полей auth не в форме {{connections['...']}}: $n_bad"
+    echo "        (объект, массив, null или строка иного вида = возможно ЗНАЧЕНИЕ)"
+    auth_bad=$(( auth_bad + n_bad ))
+    fail=1
+  fi
+done
+if [[ "$auth_bad" -eq 0 ]]; then
+  echo "ok: все $auth_total полей auth — строки {{connections['...']}}, значений нет"
 fi
 
 echo

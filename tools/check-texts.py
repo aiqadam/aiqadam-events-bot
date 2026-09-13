@@ -5,14 +5,18 @@
 `i18n/ru.json` и вход `texts` CODE-шага. В журнале W24 было написано, что
 расхождение «не ловится ничем» — ревью показало, что ловится, и вот чем.
 
-Как пользоваться. Скрипт НЕ ходит в сеть: он читает JSON-экспорты флоу,
-которые снимает ревьюер (ADR-0006 разрешает ему GET /flows/<id>/template).
+Как пользоваться. Скрипт НЕ ходит в сеть: он читает закоммиченный экспорт
+флоу, который снимает `tools/export-flows.sh` (ADR-0018 разрешает GET всем).
 
-    python3 tools/check-texts.py i18n/ru.json export1.json export2.json ...
+    python3 tools/check-texts.py i18n/ru.json flows/*.json
 
-Владельцу пакета REST не разрешён, поэтому экспорт для него — не путь.
-Ему остаётся `ap_read_step_code` по каждому шагу; формат входа тот же,
-и функцию check_texts можно позвать на собранном вручную словаре.
+`flows/_manifest.json` можно не исключать — он пропускается сам.
+
+Понимает три формы корня, потому что формат экспорта в проекте менялся:
+`.version` (текущая, `GET /flows/:id?versionId=`), `SharedTemplate`
+с массивом `flows` (прежняя, `GET /flows/:id/template`) и голый шаг с
+`trigger` в корне. Форма, которой не узнал, — это ошибка, а не «0
+расхождений»: скрипт, молча не нашедший шагов, хуже отсутствующего.
 
 Выход: строка на каждое расхождение, код возврата 1 если они есть.
 """
@@ -55,21 +59,68 @@ def check_texts(ru, flows):
     return checked, problems
 
 
+def roots(data, path):
+    """Достаёт (имя, дерево шагов) из любой известной формы экспорта.
+
+    Возвращает пустой список для файлов, которые флоу не описывают
+    (например flows/_manifest.json — это массив).
+    """
+    if not isinstance(data, dict):
+        return []
+    tpl = data.get("template", data)
+    if not isinstance(tpl, dict):
+        return []
+    # SharedTemplate: массив flows.
+    if isinstance(tpl.get("flows"), list):
+        return [
+            (f.get("displayName", path), f.get("trigger"))
+            for f in tpl["flows"]
+            if isinstance(f, dict) and f.get("trigger")
+        ]
+    # Ответ /flows/:id — версия лежит под .version.
+    if isinstance(tpl.get("version"), dict):
+        ver = tpl["version"]
+        if ver.get("trigger"):
+            return [(ver.get("displayName", path), ver["trigger"])]
+        return []
+    # Текущая форма экспорта: нормализованная .version, trigger в корне.
+    if tpl.get("trigger"):
+        return [(tpl.get("displayName", path), tpl["trigger"])]
+    return []
+
+
 def main(argv):
     if len(argv) < 3:
         print(__doc__)
         return 2
     ru = json.load(open(argv[1], encoding="utf-8"))
     flows = []
+    skipped = []
     for path in argv[2:]:
         data = json.load(open(path, encoding="utf-8"))
-        tpl = data.get("template", data)
-        flows.append((tpl.get("displayName", path), tpl.get("trigger")))
+        found = roots(data, path)
+        if found:
+            flows.extend(found)
+        else:
+            skipped.append(path)
+
+    if not flows:
+        print("НЕ НАЙДЕНО НИ ОДНОГО ФЛОУ в: %s" % ", ".join(argv[2:]))
+        print("Форма экспорта не распознана — это ошибка, а не «0 расхождений».")
+        return 2
 
     checked, problems = check_texts(ru, flows)
     for p in problems:
         print(p)
-    print("сверено пар ключ-значение: %d, расхождений: %d" % (checked, len(problems)))
+    print(
+        "флоу: %d, сверено пар ключ-значение: %d, расхождений: %d"
+        % (len(flows), checked, len(problems))
+    )
+    if skipped:
+        print("пропущено (не флоу): %s" % ", ".join(skipped))
+    if checked == 0:
+        print("ВНИМАНИЕ: не сверено ни одной пары — во входах шагов нет `texts`.")
+        return 2
     return 1 if problems else 0
 
 

@@ -12,170 +12,239 @@
     "displayName": "callableFlow",
     "name": "trigger",
     "nextAction": {
-      "displayName": "захват ключа послесловия (один раз на чекин)",
-      "name": "step_1",
+      "displayName": "read registration (пришёл ли вообще)",
+      "name": "step_2",
       "nextAction": {
-        "displayName": "read registration (пришёл ли вообще)",
-        "name": "step_2",
+        "displayName": "пришёл ли гость на самом деле",
+        "name": "step_1",
         "nextAction": {
-          "displayName": "read published events (для следующего)",
-          "name": "step_3",
-          "nextAction": {
-            "displayName": "decide: слать ли и что",
-            "name": "step_4",
-            "nextAction": {
-              "children": [
-                {
-                  "displayName": "send послесловие",
-                  "name": "step_6",
-                  "settings": {
-                    "actionName": "send_text_message",
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {
-                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
-                      "chat_id": "{{trigger['output'].data.chatId}}",
-                      "disable_notification": false,
-                      "format": "MarkdownV2",
-                      "message": "{{step_4['output'].text}}",
-                      "protect_content": false,
-                      "reply_markup": "{{step_4['output'].replyMarkup}}",
-                      "web_page_preview": false
-                    },
-                    "propertySettings": {},
-                    "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
-                  },
-                  "type": "PIECE",
-                  "valid": true
-                },
-                {
-                  "displayName": "послесловие не отправлено — почему",
-                  "name": "step_7",
-                  "settings": {
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {
-                      "acquired": "{{step_4['output'].acquired}}",
-                      "attended": "{{step_4['output'].attended}}"
-                    },
-                    "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  const b = (v) => v === true || v === 'true';\n  // Две причины молчания, и их надо различать в логе прогона:\n  // ключ уже занят (послесловие ушло раньше) против «не приходил».\n  const reason = !b(inputs.acquired) ? 'already_sent' : (!b(inputs.attended) ? 'not_attended' : 'unknown');\n  return { skipped: true, reason: reason, now: new Date().toISOString() };\n};",
-                      "packageJson": "{}"
-                    }
-                  },
-                  "type": "CODE",
-                  "valid": true
-                }
-              ],
-              "displayName": "слать или нет",
-              "name": "step_5",
-              "settings": {
-                "branches": [
+          "children": [
+            {
+              "displayName": "захват ключа послесловия (только для пришедших)",
+              "name": "step_4",
+              "nextAction": {
+                "children": [
                   {
-                    "branchName": "send",
-                    "branchType": "CONDITION",
-                    "conditions": [
-                      [
-                        {
-                          "firstValue": "{{step_4['output'].shouldSend}}",
-                          "operator": "BOOLEAN_IS_TRUE"
+                    "displayName": "read published events (для следующего)",
+                    "name": "step_7",
+                    "nextAction": {
+                      "displayName": "текст послесловия + ближайший ивент",
+                      "name": "step_9",
+                      "nextAction": {
+                        "displayName": "send послесловие",
+                        "name": "step_10",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "MarkdownV2",
+                            "message": "{{step_9['output'].text}}",
+                            "protect_content": false,
+                            "reply_markup": "{{step_9['output'].replyMarkup}}",
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "botUsername": "{{variables['BOT_USERNAME']}}",
+                          "eventId": "{{trigger['output'].data.eventId}}",
+                          "events": "{{step_7['output']}}",
+                          "texts": {
+                            "afterword.btn_next": "Зарегистрироваться",
+                            "afterword.next_header": "Ближайшее, куда стоит прийти:",
+                            "afterword.no_next": "Следующий ивент пока не назначен — как появится, расскажем.",
+                            "afterword.thanks": "Спасибо, что были. Надеемся, было не зря."
+                          }
+                        },
+                        "sourceCode": {
+                          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const parse = (iso) => {\n    if (!iso) return NaN;\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    return Date.parse(s);\n  };\n\n  const thisEventId = str(inputs.eventId);\n  const now = Date.now();\n  // Сортировки у tables-find-records нет — ближайший выбирается здесь.\n  const upcoming = arr(inputs.events).map(flat)\n    .filter((e) => str(e.id) !== thisEventId)\n    .filter((e) => str(e.cancelled_at) === '' && str(e.finished_at) === '')\n    .map((e) => ({ e: e, ts: parse(e.starts_at) }))\n    .filter((x) => isFinite(x.ts) && x.ts > now)\n    .sort((a, b) => a.ts - b.ts);\n  const next = upcoming.length ? upcoming[0] : null;\n\n  const lines = [esc(t('afterword.thanks'))];\n  const buttons = [];\n  if (next) {\n    lines.push(esc(t('afterword.next_header')));\n    const card = ['*' + esc(str(next.e.title)) + '*', '📅 ' + esc(dateFmt.format(new Date(next.ts)))];\n    if (str(next.e.address)) card.push('📍 ' + esc(str(next.e.address)));\n    lines.push(card.join('\\n'));\n    buttons.push([{ text: t('afterword.btn_next'), url: 'https://t.me/' + str(inputs.botUsername) + '?start=e' + str(next.e.id) + '-afterword' }]);\n  } else {\n    lines.push(esc(t('afterword.no_next')));\n  }\n\n  return {\n    hasNext: !!next,\n    nextEventId: next ? str(next.e.id) : '',\n    text: lines.join('\\n\\n'),\n    replyMarkup: buttons.length ? { inline_keyboard: buttons } : null,\n    now: new Date().toISOString()\n  };\n};",
+                          "packageJson": "{}"
                         }
-                      ]
-                    ]
+                      },
+                      "type": "CODE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-find-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "columns": [
+                          "39qJ4o2MYyNYsT2VtxfcK",
+                          "tQEzfGR3hYG0ztG50Po00",
+                          "kSRM3ouou0Owj2yDYk92W",
+                          "8me4o2U2wj6cyrv8lfJv9",
+                          "9bwuaZzPNqmutUMLVIpOO",
+                          "Xtzz8LHOpBTVk2hTDYJvL"
+                        ],
+                        "filters": {
+                          "filters": [
+                            {
+                              "field": "status",
+                              "operator": "eq",
+                              "value": "published"
+                            }
+                          ]
+                        },
+                        "record_ids": [],
+                        "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
+                    },
+                    "type": "PIECE",
+                    "valid": true
                   },
                   {
-                    "branchName": "Otherwise",
-                    "branchType": "FALLBACK"
+                    "displayName": "послесловие уже отправляли",
+                    "name": "step_8",
+                    "settings": {
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {},
+                      "sourceCode": {
+                        "code": "export const code = async () => {\n  return { skipped: true, reason: 'already_sent', now: new Date().toISOString() };\n};",
+                        "packageJson": "{}"
+                      }
+                    },
+                    "type": "CODE",
+                    "valid": true
                   }
                 ],
-                "executionType": "EXECUTE_FIRST_MATCH"
+                "displayName": "первый раз?",
+                "name": "step_6",
+                "settings": {
+                  "branches": [
+                    {
+                      "branchName": "first",
+                      "branchType": "CONDITION",
+                      "conditions": [
+                        [
+                          {
+                            "firstValue": "{{step_4['output'].stored}}",
+                            "operator": "BOOLEAN_IS_TRUE"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "branchName": "Otherwise",
+                      "branchType": "FALLBACK"
+                    }
+                  ],
+                  "executionType": "EXECUTE_FIRST_MATCH"
+                },
+                "type": "ROUTER",
+                "valid": true
               },
-              "type": "ROUTER",
+              "settings": {
+                "actionName": "put_if_absent",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "key": "afterword:{{trigger['output'].data.eventId}}-{{trigger['output'].data.telegramId}}",
+                  "store_scope": "COLLECTION",
+                  "value": "sent"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-store",
+                "qadamVersion": "0.7.0"
+              },
+              "type": "PIECE",
               "valid": true
             },
-            "settings": {
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "acquired": "{{step_1['output'].stored}}",
-                "botUsername": "{{variables['BOT_USERNAME']}}",
-                "eventId": "{{trigger['output'].data.eventId}}",
-                "events": "{{step_3['output']}}",
-                "registration": "{{step_2['output']}}",
-                "texts": {
-                  "afterword.btn_next": "Зарегистрироваться",
-                  "afterword.next_header": "Ближайшее, куда стоит прийти:",
-                  "afterword.no_next": "Следующий ивент пока не назначен — как появится, расскажем.",
-                  "afterword.thanks": "Спасибо, что были. Надеемся, было не зря."
-                }
-              },
-              "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const acquired = inputs.acquired === true || inputs.acquired === 'true';\n  const reg = arr(inputs.registration).map(flat)[0] || {};\n  // «Не уходит тому, кто не приходил»: единственное доказательство присутствия —\n  // проставленный checked_in_at, а не статус регистрации.\n  const attended = str(reg.checked_in_at) !== '' && str(reg.checked_in_at) !== '-';\n\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const parse = (iso) => {\n    if (!iso) return NaN;\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    return Date.parse(s);\n  };\n\n  const thisEventId = str(inputs.eventId);\n  const now = Date.now();\n  const upcoming = arr(inputs.events).map(flat)\n    .filter((e) => str(e.id) !== thisEventId)\n    .filter((e) => str(e.cancelled_at) === '' && str(e.finished_at) === '')\n    .map((e) => ({ e: e, ts: parse(e.starts_at) }))\n    .filter((x) => isFinite(x.ts) && x.ts > now)\n    .sort((a, b) => a.ts - b.ts);\n  const next = upcoming.length ? upcoming[0] : null;\n\n  const shouldSend = acquired && attended;\n\n  const lines = [esc(t('afterword.thanks'))];\n  const buttons = [];\n  if (next) {\n    lines.push(esc(t('afterword.next_header')));\n    const card = ['*' + esc(str(next.e.title)) + '*', '📅 ' + esc(dateFmt.format(new Date(next.ts)))];\n    if (str(next.e.address)) card.push('📍 ' + esc(str(next.e.address)));\n    lines.push(card.join('\\n'));\n    buttons.push([{ text: t('afterword.btn_next'), url: 'https://t.me/' + str(inputs.botUsername) + '?start=e' + str(next.e.id) + '-afterword' }]);\n  } else {\n    lines.push(esc(t('afterword.no_next')));\n  }\n\n  return {\n    shouldSend: shouldSend,\n    acquired: acquired,\n    attended: attended,\n    hasNext: !!next,\n    nextEventId: next ? str(next.e.id) : '',\n    text: lines.join('\\n\\n'),\n    replyMarkup: buttons.length ? { inline_keyboard: buttons } : null,\n    now: new Date().toISOString()\n  };\n};",
-                "packageJson": "{}"
-              }
-            },
-            "type": "CODE",
-            "valid": true
-          },
-          "settings": {
-            "actionName": "tables-find-records",
-            "errorHandlingOptions": {
-              "continueOnFailure": {
-                "value": false
-              },
-              "retryOnFailure": {
-                "value": false
-              }
-            },
-            "input": {
-              "columns": [
-                "39qJ4o2MYyNYsT2VtxfcK",
-                "tQEzfGR3hYG0ztG50Po00",
-                "kSRM3ouou0Owj2yDYk92W",
-                "8me4o2U2wj6cyrv8lfJv9",
-                "9bwuaZzPNqmutUMLVIpOO",
-                "Xtzz8LHOpBTVk2hTDYJvL"
-              ],
-              "filters": {
-                "filters": [
-                  {
-                    "field": "status",
-                    "operator": "eq",
-                    "value": "published"
+            {
+              "displayName": "не приходил — молчим",
+              "name": "step_5",
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
                   }
+                },
+                "input": {},
+                "sourceCode": {
+                  "code": "export const code = async () => {\n  return { skipped: true, reason: 'not_attended', now: new Date().toISOString() };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            }
+          ],
+          "displayName": "пришёл?",
+          "name": "step_3",
+          "settings": {
+            "branches": [
+              {
+                "branchName": "attended",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_1['output'].attended}}",
+                      "operator": "BOOLEAN_IS_TRUE"
+                    }
+                  ]
                 ]
               },
-              "record_ids": [],
-              "table_id": "R4aSQpLZvw7d3u6DVOSjH"
-            },
-            "propertySettings": {},
-            "qadamName": "@aiqadam/qadam-tables",
-            "qadamVersion": "0.4.5"
+              {
+                "branchName": "Otherwise",
+                "branchType": "FALLBACK"
+              }
+            ],
+            "executionType": "EXECUTE_FIRST_MATCH"
           },
-          "type": "PIECE",
+          "type": "ROUTER",
           "valid": true
         },
         "settings": {
-          "actionName": "tables-find-records",
           "errorHandlingOptions": {
             "continueOnFailure": {
               "value": false
@@ -185,33 +254,18 @@
             }
           },
           "input": {
-            "columns": [
-              "BGTxyxBZqagpqUB3UqXta",
-              "TZyqC63UAWrPbzxuf2q4w",
-              "uCnpOj11sJLaX4Rqu6TUG"
-            ],
-            "filters": {
-              "filters": [
-                {
-                  "field": "id",
-                  "operator": "eq",
-                  "value": "{{trigger['output'].data.eventId}}-{{trigger['output'].data.telegramId}}"
-                }
-              ]
-            },
-            "limit": 1,
-            "record_ids": [],
-            "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+            "registration": "{{step_2['output']}}"
           },
-          "propertySettings": {},
-          "qadamName": "@aiqadam/qadam-tables",
-          "qadamVersion": "0.4.5"
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const reg = arr(inputs.registration).map(flat)[0] || {};\n  // Доказательство присутствия — непустой checked_in_at. Статус `registered`\n  // означает «записался», а не «пришёл».\n  const v = str(reg.checked_in_at);\n  return { attended: v !== '' && v !== '-', now: new Date().toISOString() };\n};",
+            "packageJson": "{}"
+          }
         },
-        "type": "PIECE",
+        "type": "CODE",
         "valid": true
       },
       "settings": {
-        "actionName": "put_if_absent",
+        "actionName": "tables-find-records",
         "errorHandlingOptions": {
           "continueOnFailure": {
             "value": false
@@ -221,13 +275,27 @@
           }
         },
         "input": {
-          "key": "afterword:{{trigger['output'].data.eventId}}-{{trigger['output'].data.telegramId}}",
-          "store_scope": "COLLECTION",
-          "value": "sent"
+          "columns": [
+            "BGTxyxBZqagpqUB3UqXta",
+            "TZyqC63UAWrPbzxuf2q4w",
+            "uCnpOj11sJLaX4Rqu6TUG"
+          ],
+          "filters": {
+            "filters": [
+              {
+                "field": "id",
+                "operator": "eq",
+                "value": "{{trigger['output'].data.eventId}}-{{trigger['output'].data.telegramId}}"
+              }
+            ]
+          },
+          "limit": 1,
+          "record_ids": [],
+          "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
         },
         "propertySettings": {},
-        "qadamName": "@aiqadam/qadam-store",
-        "qadamVersion": "0.7.0"
+        "qadamName": "@aiqadam/qadam-tables",
+        "qadamVersion": "0.4.5"
       },
       "type": "PIECE",
       "valid": true
