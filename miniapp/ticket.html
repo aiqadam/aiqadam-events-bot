@@ -18,12 +18,13 @@
        подложке читается сканером и при системной тёмной. Тёмный QR не сканируется.
 
        `padding: 32px` — зона покоя кода, а не воздух: QR требует вокруг себя
-       ≥ 4 модулей светлого поля. На реальных payload'ах вида
-       `c<eventId>-<userId>-<sig>` (15–40 знаков) и уровне коррекции H,
-       который ставит qrcode.js по умолчанию, код выходит 29–33 модуля.
-       Худший случай — самый крупный модуль, то есть самый короткий payload
-       на самом большом размере: 224/29 ≈ 7,7 px, зона покоя 32/7,7 ≈ 4,15
-       модуля. Прежние 16 px давали вдвое меньше нормы. */
+       ≥ 4 модулей светлого поля. Реальный payload — `c<eventId>-<userId>-<sig>`,
+       где `eventId` это record id платформы в 21 знак: около 44 знаков, что
+       при уровне коррекции H (умолчание qrcode.js) даёт 41 модуль, то есть
+       модуль 224/41 ≈ 5,5 px и зону покоя ≈ 5,9 модуля. Худший случай —
+       самый крупный модуль, то есть теоретический минимальный payload
+       в 29 модулей: 224/29 ≈ 7,7 px, зона покоя ≈ 4,15 модуля — всё ещё
+       норма. Прежние 16 px давали вдвое меньше. */
     .qr-plate {
       /* Тянется во всю ширину карточки: иначе плита сжимается по картинке,
          и «доступная ширина» для размера кода считать неоткуда. */
@@ -87,18 +88,41 @@
       // экране (320 px) фиксированные 224 не помещаются в карточку вместе
       // с зоной покоя, и плита вылезала за её рамку. Код перерисовывается
       // под размер, а не масштабируется картинкой: модули остаются резкими.
-      // Зона покоя от этого только растёт в модулях — padding постоянный,
-      // а модуль при меньшем размере мельче.
+      //
+      // Пересчёт обязателен не только при первом показе. Ширина плиты меняется
+      // после рендера — поворот экрана, смена высоты вьюпорта Telegram, первый
+      // замер в ещё не разложенном поддереве (тогда clientWidth == 0). Код,
+      // посчитанный один раз, в этих случаях остаётся крупнее плиты, и зона
+      // покоя падает ниже нормы, ради которой всё и делалось.
       var QR_MAX = 224;
+      var qrPayload = '';
+      var qrDrawn = 0;
+
       function qrSize() {
         var inner = qrEl.clientWidth - 64; // 2 × padding плиты
-        if (!(inner > 0)) { return QR_MAX; }
+        if (!(inner > 0)) { return QR_MAX; } // ещё нечего мерить — исправит пересчёт
         return Math.min(QR_MAX, Math.floor(inner));
       }
 
-      function renderQr(payload) {
+      function drawQr() {
+        if (!qrPayload) { return; }
         var size = qrSize();
-        new QRCode(qrEl, { text: payload, width: size, height: size });
+        if (size === qrDrawn) { return; }
+        qrDrawn = size;
+        // Без innerHTML: страница ничего не собирает разметкой из данных.
+        while (qrEl.firstChild) { qrEl.removeChild(qrEl.firstChild); }
+        new QRCode(qrEl, { text: qrPayload, width: size, height: size });
+      }
+
+      function renderQr(payload) {
+        qrPayload = payload;
+        drawQr();
+        if (window.ResizeObserver) {
+          new ResizeObserver(drawQr).observe(qrEl);
+        } else {
+          window.addEventListener('resize', drawQr);
+          window.addEventListener('orientationchange', drawQr);
+        }
       }
 
       if (tg) {
