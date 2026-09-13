@@ -469,7 +469,7 @@ before/after на опубликованной версии, а не оценк�
 - **Аудит `{{VAR}}`.** Пройти все флоу на короткую форму ссылки на переменную,
   начиная с `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr`. CODE-шаги —
   через `ap_read_step_code`; PIECE-шаги MCP не отдаёт ([#102](https://github.com/aiqadam/qadam-flow/issues/102)),
-  здесь применимо read-only REST исключение ревьюера ([ADR-0006](adr/0006-rest-read-only-for-review.md)).
+  берутся `GET`-экспортом REST ([ADR-0018](adr/0018-rest-read-for-everyone.md)).
 - **Пункт в чек-лист ревьюера.** В блок AppSec
   [REVIEW-CHECKLIST.md](work/REVIEW-CHECKLIST.md): «ни одной ссылки на
   переменную проекта в короткой форме `{{VAR}}` — только `{{variables['NAME']}}`»,
