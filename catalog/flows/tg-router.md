@@ -28,8 +28,11 @@
    (`title`/`description`/`address`/`starts_at`/`ends_at`/`reg_deadline_at`) →
    `wiz_field` — один флоу на все шесть текстовых полей (ADR-0016).
 4. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
-   `scenario/step` не `-`) со `scenario='registration'`: по `step`
-   (`await_pdn`/`await_marketing`/`await_phone`) → соответствующее касание.
+   `scenario/step` не `-`) со `scenario='registration'`:
+   - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
+     любой другой `reg:*` → **ничего** (не угадываем обработчик);
+   - сообщение без колбэка при `step='await_phone'` → `reg_phone`
+     (телефон — единственное касание регистрации, отвечающее сообщением).
 5. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
@@ -44,7 +47,7 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` | |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч | |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload | `flowProps.payload.start` |
-| step_10 | CODE «routing decision» | вычисляет `route` (см. выше; W06 добавил `callbackData`-вход и маршруты `events_list`/`my_regs`/`my_reg_cancel`) | |
+| step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` | |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`Otherwise` | | |
 | step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации | все четыре получают `sessionDraft`; `reg-phone` дополнительно `userMessageId` |
 | step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда | |
@@ -94,3 +97,11 @@
   отдаёт `ap_resolve_property_options`.** Добавили поле в схему триггера
   callee — обновите и `exampleData` у вызова, иначе форма вызова и форма
   приёма разъезжаются (CLAUDE.md, Gotchas, п. 7).
+- **Колбэки регистрации маршрутизируются по префиксу, а не по `sessions.step`.**
+  Гость может держать в ленте несколько живых карточек (два входа по deep
+  link), и кнопка старой карточки обязана попасть в свой обработчик.
+  Маршрутизация по шагу давала чужому колбэку побочный эффект: `reg:pdn:yes`
+  при `await_marketing` уходил в `reg-consent-mkt` и записывал
+  `consent_marketing`, которого гость не видел и на который не отвечал —
+  прямое нарушение PAR-2. Зеркальные случаи того же класса: `reg:mkt:*`
+  при `await_phone` завершал диалог и выдавал билет без вопроса о телефоне.

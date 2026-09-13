@@ -33,6 +33,7 @@
 | `MINIAPP_URL` | [reg-phone](flows/reg-phone.md) | кнопка `web_app` на `ticket.html` (ADR-0007) |
 | `MINIAPP_URL` | [my-regs](flows/my-regs.md) | вход `miniappUrl` у CODE «render my regs» — кнопка QR в каждой активной регистрации |
 | `BOT_USERNAME` | [event-wizard-publish](flows/event-wizard-publish.md) | сборка `registrationUrl` (OWN-6), владельцу при создании ивента |
+| `BOT_USERNAME` | [reg-afterword](flows/reg-afterword.md) | deep link на следующий ивент в послесловии (`?start=e<id>-afterword`) |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —
 секрет читает и передаёт вызывающий флоу (`{{variables['NAME']}}`), функция

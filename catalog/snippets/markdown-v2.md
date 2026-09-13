@@ -28,6 +28,7 @@ const esc = (v) => String(v === undefined || v === null ? '' : v)
 | `reg-consent-pdn` | CODE «card text: зарегистрирован + вопрос о рассылке», CODE «card text: отказ от ПД» |
 | `reg-consent-mkt` | CODE «card text: рассылка учтена, остался телефон» |
 | `reg-phone` | CODE «тексты: финальная карточка и билет» |
+| `reg-afterword` | CODE «текст послесловия + ближайший ивент» |
 
 ## Где НЕ используется и почему
 
