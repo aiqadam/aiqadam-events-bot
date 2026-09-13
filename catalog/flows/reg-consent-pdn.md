@@ -2,45 +2,56 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`,
-  когда `session.step = await_pdn` (ADR-0015: касание = один вопрос со всеми
-  ответами на него, `reg:pdn:yes`/`reg:pdn:no` — один флоу)
-- **Назначение**: согласие на обработку данных (PAR-1, обязательное). При
-  согласии — создаёт/реактивирует регистрацию (IDM-1) и открывает вопрос
-  о рассылке.
+  когда `session.step = await_pdn`
+- **Назначение**: согласие на обработку ПД (PAR-1). При `yes` создаёт регистрацию
+  и **редактирует карточку** в подтверждение + вопрос о рассылке; при `no` —
+  редактирует её же в отказ и закрывает сессию.
 - **Flow ID (MCP)**: `vQJDQ8NecB1PleIFrq07O` · **externalId**: `PUf09unvIwSpobPr1u3kh`
 
 ## Шаги
 
-| Step | Piece / Action | Назначение | Ключевые inputs / refs |
-|------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId`, `sessionDraft` (JSON `{eventId,utm}`) | — |
-| step_1 | `answer_callback_query` (`continueOnFailure`) | ack — падает на синтетических `callback_query_id` в тестах, это ожидаемо | `{{trigger['output'].data.callbackQueryId}}` |
-| step_2 | CODE «parse draft + decide» | `isYes` = `callbackData === 'reg:pdn:yes'` (любой другой ответ — отказ), разбор `sessionDraft`, `regId = eventId + '-' + telegramId` | `{{trigger['output'].data...}}` |
-| step_3 | ROUTER: branch 0 = `no`, branch 1 = `yes`, `Otherwise` — заглушка (`step_13`) | | `{{step_2['output'].isYes}}` |
-| step_4 (`yes`) | `tables-upsert-records users` | `consent_pdn=true` | |
-| step_6 (`yes`) | `tables-find-records events` | `title` для текста подтверждения | |
-| step_5 (`yes`) | `tables-upsert-records registrations` | ключ `event_id+telegram_id` — создаёт или реактивирует (IDM-1) | |
-| step_7→8 (`yes`) | CODE `reg.done` → `send_text_message` | подтверждение регистрации | |
-| step_9 (`yes`) | `tables-upsert-records sessions` | `step=await_marketing` | |
-| step_15→10 (`yes`) | CODE «marketing question text» → `send_text_message` | вопрос о рассылке с кнопками (`reg:mkt:yes` / иное) | |
-| step_14→11 (`no`) | CODE `reg.consent_pdn.declined` → `send_text_message` | регистрация **не создаётся** (PAR-1) | |
-| step_12 (`no`) | `tables-upsert-records sessions` | `scenario='-'`, `step='-'` | |
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId`, `sessionDraft` |
+| step_1 | `answer_callback_query` (`continueOnFailure`) | ack |
+| step_2 | CODE «parse draft + decide» | `isYes`, `eventId`, `utm`, `cardMessageId`, готовый `draftJson` |
+| step_3 | ROUTER | `no` / `yes` / `Otherwise` |
+| step_14 (`no`) | CODE «card text: отказ от ПД» | отказ с объяснением причины и следующим шагом |
+| step_12 (`no`) | `tables-upsert-records sessions` | сессия закрыта сентинелом `-` |
+| step_11 (`no`) | `edit_message_text` (`continueOnFailure`) | карточка → отказ, **кнопки сняты** |
+| step_17 (`no`, On failure) | `send_text_message` | фолбэк: отказ отдельным сообщением |
+| step_4 (`yes`) | `tables-upsert-records users` | `consent_pdn = true` + отметка времени |
+| step_6 (`yes`) | `tables-find-records events` | название, дата и адрес для подтверждения |
+| step_5 (`yes`) | `tables-upsert-records registrations` | создание или реактивация регистрации |
+| step_9 (`yes`) | `tables-upsert-records sessions` | `step = await_marketing`, черновик сохраняется |
+| step_7 (`yes`) | CODE «card text: зарегистрирован + вопрос о рассылке» | кульминация с датой и местом + кнопки `reg:mkt:yes` / `reg:mkt:no` |
+| step_8 (`yes`) | `edit_message_text` (`continueOnFailure`) | карточка → подтверждение и следующий вопрос |
+| step_10→15→16 (`yes`, On failure) | `send_text_message` → CODE → `tables-upsert-records sessions` | фолбэк: новая карточка, её id переписывается в черновик |
 
 ## Зависимости
 
-- **Таблицы**: `users`, `registrations` (запись через `tables-upsert-records`, ключ `(event_id, telegram_id)`), `events` (чтение title), `sessions`
+- **Таблицы**: `users`, `registrations`, `sessions` (запись), `events` (чтение)
 - **Переменные**: —
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 
 ## Заметки
 
-- **Тексты — через `inputs.texts`**, не литералом в коде (ADR-0014); значения сверены с `i18n/ru.json`, механизм — [`ru-texts.md`](../snippets/ru-texts.md).
-- **`tables-upsert-records registrations` заменяет create-or-reactivate ROUTER**:
-  `yes` и на новую, и на ранее отменённую (`cancelled`) регистрацию даёт
-  один и тот же шаг и тот же `record id` (IDM-1, дублей не плодит).
-- **Сессию нельзя «очистить» пустой строкой**: `tables-upsert-records` (как и
-  `tables-update-record`) молча игнорирует пустую строку в TEXT-поле, значение
-  остаётся прежним (не только в DATE-полях — см. [tables/README.md](../tables/README.md)).
-  Используется сентинел `-` (тот же приём, что и в `fn-find-registration` для
-  фильтров) — `tg-router` обязан трактовать `scenario/step = '-'` как «нет
-  активной сессии».
+- **Регистрация создаётся здесь, а не в `reg-start`** — это и держит PAR-1:
+  без явного согласия строки в `registrations` не появляется.
+- **`consent_marketing` этот флоу не трогает ни при `yes`, ни при `no`**
+  (PAR-1/PAR-2). Слияние двух вопросов в одну карточку ничего в этом не меняет:
+  два тапа остаются двумя раздельными актами.
+- **Состояние пишется раньше, чем рисуется экран.** Согласие, регистрация
+  и сессия записаны до `edit_message_text`, поэтому упавшее редактирование
+  не может потерять регистрацию — и после ветки On failure ничему не нужно
+  «сходиться» обратно.
+- **Фолбэк построен на ветках `continueOnFailure`, а не на ROUTER'е.**
+  Ветка On failure **сходится обратно** в основную цепочку — этим она
+  отличается от веток ROUTER'а, которые не сходятся. Побочная выгода:
+  не нужно вставлять ROUTER в собранную цепочку (CLAUDE.md, Gotchas, п. 10).
+- **`cardMessageId = 0` — штатный вход в фолбэк.** Редактирование
+  несуществующего сообщения даёт `400 «message to edit not found»`, ветка
+  On failure шлёт новую карточку. Отдельной проверки «а есть ли карточка»
+  в коде нет и не нужно.
+- **Редактирование без `reply_markup` снимает клавиатуру** — в ветке `no`
+  на это опираются, чтобы у отказа не осталось живых кнопок.
