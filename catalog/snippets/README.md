@@ -19,39 +19,41 @@ subflow'ах — она **встраивается** в тела флоу CODE-�
 4. Это единственное место в `catalog/`, которое **предписывает**, а не
    описывает. Остальной каталог по-прежнему отражает реальность.
 
-## Почему так, а не subflow — ⚠️ обоснование устарело
+## Почему так — до и после [ADR-0015](../../docs/adr/0015-one-touch-one-flow.md)
 
-> **Читать с поправкой (13.09.2026, [ADR-0015](../../docs/adr/0015-one-touch-one-flow.md)).**
-> Числа ниже сняты **12.09.2026**, за день до апстрим-фиксов
-> [#412](https://github.com/aiqadam/qadam-flow/issues/412) и
-> [#417](https://github.com/aiqadam/qadam-flow/issues/417). Цифра для CODE-шага
-> (≈0,06 с) после них расходится с замеренной (2–5 мс) **в 12–30 раз** — то есть
-> обоснование преувеличивает выигрыш от встраивания. Цену `callFlow` на текущем
-> образе никто не перемерял; это заведено как
-> [Q35](../../docs/OPEN-QUESTIONS.md#q35) и блокирует пункт 5 ADR-0015.
+[Q35](../../docs/OPEN-QUESTIONS.md#q35) закрыт (W26, 13.09.2026) числом с
+прогретого инстанса: `callFlow` в режиме `inline` стоит ≈96 мс/хоп, не
+≈1,0–1,2 с, как считалось до апстрим-фиксов
+[#412](https://github.com/aiqadam/qadam-flow/issues/412)/[#417](https://github.com/aiqadam/qadam-flow/issues/417).
+Вызов дешёвый — это разблокировало ADR-0015 п. 5: криптография и общие
+чтения вернулись в subflow-функции.
 
-Вызов `callFlow` стоит ≈1,0–1,2 с даже в режиме `inline`, CODE-шаг — ≈0,06 с
-(замеры [Q28](../../docs/OPEN-QUESTIONS.md#q28)). На горячем пути вызовы
-занимали 70 % прогона. Цена решения — дублирование и риск дрейфа — названа
-в ADR-0012 прямо.
+## Что изменилось (W26)
 
-## Что меняет ADR-0015
+Четыре эталона перестали быть копипастой и стали subflow-функциями
+(вызываются через `callFlow`, правила 1–3 выше на них **не действуют** —
+копий не будет, будет одна реализация):
 
-Четыре эталона перестают быть копипастой и становятся subflow-функциями
-(ADR-0015 п. 5) — **после** того, как Q35 подтвердит, что вызов дёшев:
+| Эталон | Стал | Кто вызывает |
+|---|---|---|
+| [hmac-init-data](hmac-init-data.md) | [`fn-hmac-init-data`](../flows/fn-hmac-init-data.md) | `checkin-api`, `my-qr-api` |
+| [hmac-qr](hmac-qr.md) | [`fn-sign-qr`](../flows/fn-sign-qr.md) / [`fn-verify-qr`](../flows/fn-verify-qr.md) — **`fn-verify-qr` пересчитывает HMAC инлайн, не зовёт `fn-sign-qr`** (ADR-0015 п. 5, латентность одного хопа на скан) | `my-qr-api` / `checkin-api` |
+| [parse-start](parse-start.md) | [`fn-parse-start`](../flows/fn-parse-start.md) | `tg-router`, `checkin-api` |
+| [find-registration](find-registration.md) | [`fn-find-registration`](../flows/fn-find-registration.md) | `checkin-api`, `my-qr-api` |
 
-| Эталон | Станет |
-|---|---|
-| [hmac-init-data](hmac-init-data.md) | `fn-hmac-init-data` |
-| [hmac-qr](hmac-qr.md) | `fn-sign-qr` / `fn-verify-qr` |
-| [parse-start](parse-start.md) | `fn-parse-start` |
-| [find-registration](find-registration.md) | `fn-find-registration` |
+Для остальных эталонов правила 1–3 остаются в силе, но состав изменился:
 
-Для них правила 1–3 выше (**«копия обязана совпадать с эталоном побайтово»**)
-отменяются: копий не будет, будет одна реализация. Для остальных эталонов —
-[fmt-time](fmt-time.md), [event-card](event-card.md), [ru-texts](ru-texts.md),
-[resolve-segment](resolve-segment.md), [i18n-resolve](i18n-resolve.md) —
-правила остаются в силе без изменений.
-
-Пока Q35 не закрыт, ни один `fn-*` не собирается: порядок зафиксирован в ADR-0015 —
-**сначала перемер, потом сборка**.
+- [ru-texts](ru-texts.md) — инвариант («текст во входе `texts`, не литералом»)
+  сохранён, но W26 использует более лёгкий вариант без отдельного
+  шага-резолвера; байтовая сверка копий друг с другом больше не требуется
+  (см. файл).
+- [fmt-time](fmt-time.md) — многоязычный батч-эталон устарел
+  ([ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md));
+  W26 форматирует время инлайн в каждом нуждающемся CODE-шаге, набор правил
+  (`ru-RU`, `Asia/Tashkent`, `h23`, дополнение `Z`) общий, байтовая копия — нет.
+- [event-card](event-card.md) — эталон не встраивает никто; `reg-start`
+  строит карточку проще, без batch/резолвера.
+- [resolve-segment](resolve-segment.md) — по-прежнему не встроен никем,
+  ждёт W14.
+- [i18n-resolve](i18n-resolve.md) — по-прежнему история для воскрешения i18n,
+  не текущая спека.

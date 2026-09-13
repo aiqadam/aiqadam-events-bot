@@ -1,29 +1,18 @@
-> # ⛔ ТАБЛИЦА НЕ СУЩЕСТВУЕТ
->
-> Инстанс `events-dev` очищен владельцем проекта **13.09.2026**: таблиц в проекте
-> ноль. Все идентификаторы ниже — и `externalId`, и внутренний `id`, и id полей —
-> **мертвы**; при пересборке платформа выдаст новые
-> ([tables/README.md](README.md#два-namespaceа-идентификаторов--главная-ловушка)).
->
-> **Схема полей ниже актуальна и есть спека для пересборки.** Идентификаторы —
-> нет. Пересборка идёт пакетом
-> [W26](../../docs/work/W26-rebuild-on-one-touch.md).
-
 # Table: sessions
 
 - **Назначение**: состояние визардов (создание/правка ивента, составление рассылки).
   Памяти процесса у флоу нет.
-- **externalId таблицы**: `tL4fbi1GisDwA8UJ9zSod` · **внутренний id**: `1ffo6zKnrUPJDXSB1Oduz`
+- **externalId таблицы**: `toTKgngMTqDNJWDpQMh4d` · **внутренний id**: `tzixKefYefWplc5n5Omz2`
 
 ## Поля
 
 | Field | Type | externalId | field id | Назначение |
 |-------|------|-----------|----------|-----------|
-| telegram_id | TEXT | `74TuBqW5EdFq2VZo7Da81` | `RtikPovQ4yekuyyx95n0q` | одна активная сессия на человека |
-| scenario | TEXT | `uNx8kOWIpa6ZZguE9hfuf` | `vlKI7py7SBTcCKEmokSwB` | `event_create` / `event_edit` / `broadcast` / `registration` (W5) |
-| step | TEXT | `XbSpXk0XD4Ixf4dt9zsnJ` | `p1HQ0Rww4Yyw1gkn7ZF9y` | текущий шаг визарда |
-| draft | TEXT | `x29VFvZnmmaMm5E2T0Iap` | `67Nx2qs4APWZ22tcv0tS0` | **JSON строкой** — своего типа нет |
-| updated_at | DATE | `6Waw1f9cqNQ7j30QBG0XA` | `26R7kSdsQbjjWF8mLsHN7` | сессии старше 24ч протухли |
+| telegram_id | TEXT | `N8CdPxcdxLX9vFCINvZbL` | `NQCV96F1iQgOSQi7ntlzl` | одна активная сессия на человека |
+| scenario | TEXT | `ESthrMwpn29JLvE2BNIj4` | `FpAsiafLe6APhBXurlKJx` | `event_create` / `event_edit` / `broadcast` / `registration` (W5) |
+| step | TEXT | `IdGimBh539UlGSz6L0Pyo` | `pfFyCjoe7not79rhQHEdC` | текущий шаг визарда |
+| draft | TEXT | `sctBFEsMf10UobeFgzsVt` | `aaZyIkqW6yOoblRu30hQx` | **JSON строкой** — своего типа нет |
+| updated_at | DATE | `U9P3zTZHcFdAAtzLVVSYn` | `fMTYEUr2NmK4YOehfJLx3` | сессии старше 24ч протухли |
 
 ## Заметки
 

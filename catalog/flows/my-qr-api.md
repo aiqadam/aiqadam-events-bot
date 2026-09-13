@@ -1,173 +1,63 @@
-> # ⛔ ФЛОУ НЕ СУЩЕСТВУЕТ
->
-> Инстанс `events-dev` очищен владельцем проекта **13.09.2026**: `ap_list_flows`
-> и `ap_list_tables` отдают пустой список. Описанный ниже флоу **удалён вместе
-> со всеми своими прогонами**, а его `flowId` и `externalId` мертвы.
->
-> **По этому файлу нельзя пересобирать.** Он описывает схему «сценарий целиком —
-> один флоу», которую [ADR-0015](../../docs/adr/0015-one-touch-one-flow.md)
-> запретил: единица флоу теперь — одно касание пользователя с системой.
-> Пересборка идёт пакетом [W26](../../docs/work/W26-rebuild-on-one-touch.md)
-> по новой схеме, и он же заменит эту карточку.
->
-> Файл сохранён до закрытия W26 как **история**: из него берут смысл шагов
-> и найденные ловушки, но не структуру и не идентификаторы.
-
 # Flow: my-qr-api
 
-> **W24 (2026-09-13): локализация снята, только русский.**
-> [ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md). Чтения
-> таблицы `strings` удалены, тексты пришли во вход CODE-шагов, которые их
-> формируют — эталон [`ru-texts`](../snippets/ru-texts.md). Форма ответа этих
-> шагов не изменилась ни на байт, поэтому шаги отправки не трогались.
-> Ушли `step_8` и `step_26` (чтения `strings`), а также `step_15`/`step_16` (чтение и разбор языка пользователя — выбирать больше не из чего); флоу **26 → 22 шага**.
-> Ниже по тексту упоминания `strings`, `i18n-resolve` и «перевода» относятся к
-> состоянию **до** этой даты и сохранены как история.
-
 - **Статус**: ENABLED (published)
-- **Триггер**: `@aiqadam/qadam-webhook / catch_webhook`, `authType: none`. Синхронный ответ —
-  вызывается по `POST /api/v1/webhooks/I5nd8ggKH4wkQLaww9Dkl/sync` (суффикс `/sync`).
-- **Назначение**: выдаёт участнику подписанный `payload` QR (PAR-6) для рендера
-  в браузере — [ADR-0007](../../docs/adr/0007-qr-rendered-in-miniapp.md). Вызывается
-  страницей `miniapp/ticket.html`, не другими флоу.
-- **Flow ID (MCP)**: `I5nd8ggKH4wkQLaww9Dkl`
+- **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
+  `POST /api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync`
+- **Назначение**: отдаёт подписанный QR-`payload` участнику для клиентского
+  рендеринга в `miniapp/ticket.html` (ADR-0007 — QR не шлётся файлом).
+- **Flow ID (MCP)**: `WYmnxVM4xPAWZA1IvNZok`
 
-## Контракт
+## Вход
 
-**Вход:** `{ initData: string, eventId: string }` — тело POST-запроса от Mini App.
-
-**Выход:** всегда `HTTP 200`, тело:
-
-| Ситуация | Тело ответа |
-| --- | --- |
-| Успех | `{ ok: true, payload: "c<eventId>-<userId>-<sig>" }` |
-| `initData` невалиден/просрочен или `eventId` не проходит форму | `{ ok: false, error: "invalid_init_data", reason, text }` |
-| Нет активной регистрации на этот `eventId` у этого `telegram_id` | `{ ok: false, error: "not_registered", text }` |
-
-`text` — **уже локализованный** текст ошибки для экрана (язык участника из
-`users.lang`; для `invalid_init_data` — `ru`, т.к. пользователь не проверен).
-Ключи `checkin.not_registered` / `checkin.unauthorized` из таблицы `strings`
-разрешаются CODE-шагом по эталону [`i18n-resolve`](../snippets/i18n-resolve.md)
-(ключи общие с `checkin-api` — семантика совпадает; Q19). `ticket.html`
-показывает серверный `text`, свой словарь для этих исходов не держит.
-
-`telegram_id` берётся **только** из проверенного `initData` (аналог STF-2) — тело
-запроса не может задать чужой `telegram_id`, только `eventId`.
+`POST` тела: `{ initData, eventId }` — `initData` берётся `ticket.html` из
+`Telegram.WebApp.initData`, `eventId` — из query-параметра страницы.
 
 ## Шаги
 
-> Снято `ap_flow_structure` + `ap_read_step_code` после публикации (W7).
+**ROUTER сразу после проверки `initData`** (`step_2`), тот же приём, что и в
+`checkin-api`: невалидный `initData` отвечает `401` немедленно, без обращения
+к `fn-find-registration`/`fn-sign-qr`.
 
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
-| trigger | `@aiqadam/qadam-webhook : catch_webhook` | вход Mini App | — |
-| step_1 | CODE «parse + validate input» | форма `eventId` (`[A-Za-z0-9_]{1,12}`) | `{{trigger['output'].body}}` |
-| step_19 | CODE «parse initData» | разбор `initData`, `data_check_string` | `{{step_1['output'].initData}}` |
-| step_20 | CODE «hmac initData (эталон)» | HMAC-цепочка Telegram, `node:crypto` | `{{variables['BOT_TOKEN']}}` · эталон [`hmac-init-data`](../snippets/hmac-init-data.md) |
-| step_21 | CODE «verify initData» | constant-time сравнение + свежесть | `expected` = `{{step_20['output']}}`, `maxAgeSeconds: 86400` |
-| step_3 | CODE «combine validity» | `valid`, `telegramId`, `reason` | `{{step_21['output']}}`, `{{step_1['output'].eventIdValid}}` |
-| step_4 | ROUTER «initData+eventId валидны?» | `valid` (0) / `Otherwise` (1 → `invalid_init_data`) | `{{step_3['output'].valid}}` |
-| step_27 (branch 1) | CODE «текст unauthorized (ru)» | `checkin.unauthorized` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
-| step_13/14 (branch 1) | CODE + `return_response` | `{ ok:false, error:"invalid_init_data", reason, text }`, статус `200` | `{{step_27['output']}}`, `{{step_3['output'].reason}}` |
-| step_2 (branch 0) | CODE «normalize registration keys» | сентинел `-` вместо пустого фильтра | `{{step_1['output'].eventId}}`, `{{step_3['output'].telegramId}}` |
-| step_22 | `tables-find-records registrations` | два `eq`, **без `limit`** | `table_id = PNuChoFG0tIBTND86yzDL` |
-| step_23 | CODE «pick earliest registration (ADR-0003)» | каноническая строка | `{{step_22['output']}}` |
-| step_6 | CODE «decide outcome» | `ok` только если `registered` | `{{step_23['output']}}` |
-| step_7 | ROUTER «outcome?» | `ok` (0) / `Otherwise` (1 → `not_registered`) | `{{step_6['output'].outcome}}` |
-| step_5 (branch `ok`) | CODE «canonical msg (эталон)» | `'c:' + eventId + ':' + userId`, **падает** на мусорном входе | `{{step_1['output'].eventId}}`, `{{step_3['output'].telegramId}}` · эталон [`hmac-qr`](../snippets/hmac-qr.md) |
-| step_24 (branch `ok`) | CODE «sign QR (эталон)» | HMAC → base64url → первые 10, сборка `payload` | `{{variables['QR_SIGNING_KEY']}}` |
-| step_9/10 (branch `ok`) | CODE + `return_response` | `{ ok: true, payload }`, статус `200` | `{{step_24['output']}}` |
-| step_25 (branch `not_registered`) | CODE «текст not_registered (ru)» | `checkin.not_registered` из входа `texts` | эталон [`ru-texts`](../snippets/ru-texts.md) |
-| step_11/12 (branch `not_registered`) | CODE + `return_response` | `{ ok:false, error:"not_registered", text }`, статус `200` | `{{step_25['output']}}` |
+| trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём POST | — |
+| step_1 | `callFlow fn-hmac-init-data` | проверка `initData` участника | `payload: {initData, botToken: {{variables['BOT_TOKEN']}}, maxAgeSeconds}` |
+| step_2 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` | |
+| step_7 (Otherwise) | CODE «invalid init data response» | `texts['checkin.unauthorized']`, `httpStatus: 401` | |
+| step_8 (Otherwise) | `return_response` | ответ `401` немедленно | `status/body` из `step_7` |
+| step_3 (valid) | `callFlow fn-find-registration` | своя регистрация на `eventId` | `payload: {eventId, telegramId: step_1.data.telegramId}` |
+| step_4 (valid) | `callFlow fn-sign-qr` (`continueOnFailure`) | подпись `(eventId, userId)` | `payload: {eventId, userId: step_1.data.telegramId, qrSigningKey: {{variables['QR_SIGNING_KEY']}}}` |
+| step_5 (valid) | CODE «decide result» | `not_registered` / `ok`, тексты — `inputs.texts` (ADR-0014) | |
+| step_6 (valid) | `return_response` | JSON: `{ok, error, text, payload, eventId, userId}` — форма, которую ждёт `ticket.html` | |
+
+### Контракт ответа (согласован с `miniapp/ticket.html`)
+
+| Ситуация | Тело |
+|---|---|
+| успех | `{ok: true, payload: "c<eventId>-<userId>-<sig>"}` |
+| `initData` невалиден/просрочен | `{ok: false, error: "invalid_init_data", text}`, HTTP 401 |
+| нет активной регистрации | `{ok: false, error: "not_registered", text}` |
+
 ## Зависимости
 
-- **Subflow'ы**: **нет ни одного** (W21, [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md))
-- **Таблицы**: `registrations` (чтение) — и всё. С W24 флоу **не читает ни `users`,
-  ни `strings`**: чтение языка участника (`step_15`/`step_16`) и оба чтения `strings`
-  удалены, тексты лежат во входах `step_25`/`step_27`
-- **Переменные**: `BOT_TOKEN` (`step_20`), `QR_SIGNING_KEY` (`step_24`) — обе в длинной форме
+- **Таблицы**: `registrations` (чтение через `fn-find-registration`)
+- **Флоу**: `fn-hmac-init-data`, `fn-find-registration`, `fn-sign-qr`
+- **Переменные**: `BOT_TOKEN`, `QR_SIGNING_KEY`
 - **Connections**: —
 
 ## Заметки
 
-- **W21 (2026-09-12) — пять `callFlow` убраны, subflow'ов не осталось.** 19 → 26 шагов.
-  `fn-verify-init-data` → `step_19`/`step_20`/`step_21`, `fn-find-registration` →
-  `step_2`/`step_22`/`step_23`, `fn-sign-qr` → `step_5`/`step_24`, два вызова `fn-t` →
-  по чтению `strings` плюс CODE-шагу разрешения в каждой ветке ошибки.
-  - **Здесь чтения `strings` разнесены по веткам намеренно, в отличие от
-    `checkin-api`.** Там общее чтение до ветвления выгодно: все ветки после
-    аутентификации нуждаются в строках. Здесь строки нужны **только** веткам
-    ошибок, а `ok` — горячий путь — не читает `strings` вовсе. Общее чтение до
-    `step_4` добавило бы запрос именно туда, где его быть не должно.
-- **Сквозная совместимость подписи проверена и сошлась (обязательный пункт W21).**
-  `my-qr-api/step_24` выдал `aIxmwbnzb_` для `(demo, 322876545)` — ровно ту
-  подпись, которую независимо посчитала и приняла встроенная проверка
-  `checkin-api/step_38`. Две независимые копии HMAC, разнесённые по разным флоу,
-  сошлись на одном значении. Прогоны `JMAC4mcduVJjKONyTQC2g` и
-  `G05GjI12dsGeWssBAwAAt`.
-- **Как проверялось перед публикацией (W21).** Тем же приёмом, что и `checkin-api`:
-  `initData` синтезировать нельзя ([Q16](../../docs/OPEN-QUESTIONS.md#q16)), поэтому
-  ветки за `step_4` прогонялись при временно замкнутом сравнении в черновике
-  (`step_21.expected` ← `{{step_19['output'].hash}}`). Замыкание снято до публикации,
-  возврат подтверждён различающим прогоном `YlnVABOpteQfT6klKeBFi`: тот же вход,
-  что проходил при замыкании, дал `bad_hash`.
-
-  | Исход | Прогон | Ответ | Время |
-  |---|---|---|---|
-  | `invalid_init_data` | `dAahWRGwDhy9YKkoqf9RG` | `ok:false`, `malformed` | 1,8 с |
-  | `ok` | `JMAC4mcduVJjKONyTQC2g` | `payload: cdemo-322876545-aIxmwbnzb_` | 1,7 с |
-  | `not_registered` | `vSRdG9HZ7IMlpuIyQCMH4` | `ok:false`, «Нет регистрации» | 2,8 с |
-
-  Ingress после публикации проверен `curl`'ом — `{"ok":false,"error":"invalid_init_data"}`.
-
-- ~~**Все `callFlow`-шаги — `executionMode: inline`** (W20, 2026-09-12).~~
-  **Неактуально с W21: `callFlow`-шагов не осталось.** Запись сохранена, потому
-  что на ней стоит замер, от которого считается выигрыш.
-  Исходный текст: W17
-  перевёл на inline `checkin-api`, `registration` и `fn-event-card`, но
-  `my-qr-api` тогда не тронул. Проверено прогоном `IkrsFXyLwEoE9m4wvUwX0`
-  (ветка `invalid_init_data`, 4,7 с).
-
-- **Всегда `HTTP 200`, ошибка — в теле.** Страница сама разбирает `ok`/`error`,
-  а не HTTP-статус — проще для `fetch()` без обвязки на 4xx/5xx.
-- **Текст ошибок собирается на сервере (Q19, W7), и он всегда русский.**
-  С W24 ([ADR-0014](../../docs/adr/0014-russian-only-until-platform-i18n.md))
-  строки лежат во входах `step_25`/`step_27` (эталон
-  [`ru-texts`](../snippets/ru-texts.md)), выбора языка нет.
-- **Чтения `users` в этом флоу больше нет вовсе.** Раньше `step_15`/`step_16`
-  резолвили `users.lang` по `telegram_id` из проверенного `initData`, и по
-  замечанию ревью W7 №2 это было убрано с `ok`-пути внутрь ветки
-  `not_registered` — чтобы полные данные пользователя (`phone`, `consent_*`)
-  не попадали в логи успешных запросов (Q17). W24 снял оба шага целиком:
-  язык один, резолвить нечего. Побочно это **полностью** закрывает тот же
-  риск Q17 для этого флоу — строка `users` не читается ни на одном пути.
-- **Не проверяет статус ивента** (`published`/`cancelled`/`finished`) — это
-  сознательно: показ уже выданного QR не должен зависеть от того, что случилось
-  с ивентом после регистрации. Актуальность на входе проверяет `checkin-api` (STF-2),
-  а не эта выдача.
-- **Проверено сквозным прогоном с настоящей криптографией в W5/W8.** В W7
-  (2026-09-09) повторно прогнаны **все ветки** на опубликованной версии напрямую
-  `curl` (Origin `https://miniapp.events.aiqadam.org`, `access-control-allow-origin: *`
-  в ответе): `ok` (зарегистрированный участник, `payload` совпал с `fn-sign-qr`),
-  `not_registered` с языком `ru` (`"Нет регистрации"`), `not_registered` с языком
-  `en` у другого пользователя (`users.lang = en`, `"Not registered"` — язык берётся
-  из `users`, не из `language_code` Telegram), `invalid_init_data` (`"Данные Mini App
-  устарели — переоткройте приложение"`). `initData` посчитан временным флоу с двумя
-  `crypto : hmac-signature` на реальном `variables['BOT_TOKEN']`; фикстуры удалены
-  после проверки, временный флоу удалён.
-
-## Изменения W22 (2026-09-13)
-
-Тела шагов не менялись, кроме одного: CODE-шаг эталона
-[`find-registration`](../snippets/find-registration.md) получил **отбор строк
-по паре `(event_id, telegram_id)` прямо в коде**, а не только в фильтре чтения.
-Это часть общей правки эталона (все копии обновлены одним текстом) и имеет
-двойной смысл: латентность (одно широкое чтение может кормить нескольких
-потребителей) и страховка от fail-open платформы
-([#382](https://github.com/aiqadam/qadam-flow/issues/382),
-[Q25](../../docs/OPEN-QUESTIONS.md#q25)) — выпавший фильтр чтения больше не
-превращается в выдачу чужой строки.
-
-Здесь читающие фильтры остались **узкими** (два `eq`), поэтому поведение шага
-не изменилось: отбор в коде отбрасывает ноль строк. Затронутые шаги:
-`step_23`.
+- **`fn-sign-qr` обязан вызываться с `continueOnFailure: true`.** Он
+  намеренно падает громко на невалидных `eventId`/`userId`
+  («подписать мусор хуже, чем упасть», `snippets/hmac-qr.md`) — если
+  `initData` невалиден и `telegramId` пуст, подпись пустого `userId` должна
+  быть отловлена, а не уронить весь `my-qr-api`.
+- **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** в обоих вызовах
+  внутри ветки `valid` (см. CLAUDE.md, Gotchas Qadam Flow, п. 7a).
+- **Контракт ответа `{ok,error,text,payload}` задан клиентом**: страница
+  `miniapp/ticket.html` проверяет `data.ok`/`data.error`, а не `{status,...}`
+  (как `checkin-api`) — форма ответа этого флоу подстроена под уже
+  задеплоенную статику, а не выбрана свободно.
+- **`ROUTER` вставлен через `ap_delete_step` + пересборку цепочки внутри
+  ветки** (тот же приём и та же причина, что в `checkin-api` — см. CLAUDE.md,
+  Gotchas Qadam Flow, п. 10).

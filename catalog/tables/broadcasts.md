@@ -1,37 +1,26 @@
-> # ⛔ ТАБЛИЦА НЕ СУЩЕСТВУЕТ
->
-> Инстанс `events-dev` очищен владельцем проекта **13.09.2026**: таблиц в проекте
-> ноль. Все идентификаторы ниже — и `externalId`, и внутренний `id`, и id полей —
-> **мертвы**; при пересборке платформа выдаст новые
-> ([tables/README.md](README.md#два-namespaceа-идентификаторов--главная-ловушка)).
->
-> **Схема полей ниже актуальна и есть спека для пересборки.** Идентификаторы —
-> нет. Пересборка идёт пакетом
-> [W26](../../docs/work/W26-rebuild-on-one-touch.md).
-
 # Table: broadcasts
 
 - **Назначение**: рассылки, их сегмент, прогресс и курсор возобновления (OWN-9…OWN-13).
-- **externalId таблицы**: `RtlPCu8KxBRPHCX62ifhc` · **внутренний id**: `2kSUjdfCLbymInDj2jiGM`
+- **externalId таблицы**: `XrygYF5Q4EUOKkaBFallb` · **внутренний id**: `DrFrwV10gtJzCP02ifz0I`
 
 ## Поля
 
 | Field | Type | externalId | field id | Назначение |
 |-------|------|-----------|----------|-----------|
-| id | TEXT | `VHGnWs1bQnpsYg2u3jOPU` | `iA7NYyZLgGdViGvs3vPQq` | |
-| event_id | TEXT | `mlqPt4PJtSUXrrXJMlql7` | `L9q811E7yX5kREHx2jScA` | пусто для сегмента «все с consent» |
-| segment | STATIC_DROPDOWN | `qd0jGIIvZ71Il3TF8QcML` | `cyaCW3EDm5fIRTwGyejWh` | `all_consent` / `registered` / `attended` / `no_show` |
-| body | TEXT | `try4C8vr2VkueZKMWrNGD` | `YWv8dHCUVeoDnVkpU6nTk` | текст сообщения |
-| parse_mode | TEXT | `JHbWl9KskyR4P1vYT5B7z` | `WqdlwCCMiXSXzLgm4EvY3` | |
-| created_by | TEXT | `H8sTv1DVQ3MWvE5YzzLNl` | `mVwX9v9Eh4FPJzmPTupa9` | |
-| test_sent_at | DATE | `Daaps4ZUUSZuEXxagJHXA` | `DOxchfsiB36RmW197n8I2` | **пусто → отправка запрещена** (OWN-10) |
-| status | STATIC_DROPDOWN | `9I5OuPrOmUqTSBDTLHxtW` | `ixhCBd5pMg3wqO319XPaS` | `draft` / `running` / `done` / `failed` |
-| total | NUMBER | `WQLce3wXHqJQfslXImxY1` | `rM9uh0MSkC6aD66n07JVk` | |
-| sent | NUMBER | `UJmeH1j5F5PsYzDVbnkDg` | `tS1n8pOi0IQbgLyXW3pkN` | |
-| failed_count | NUMBER | `4XRAiosauJmzCdICNEwCf` | `hqepUPMkN2EsvR84vsOLb` | |
-| cursor | NUMBER | `N6UMf1VPcFO8PZ5uf6wNf` | `i5xkl47y6KS7RgL3UGVJO` | индекс в списке получателей |
-| started_at | DATE | `gGBVW8PMn93CG3RS6uVVF` | `mOA0ZctTNdPAZUTdBcxwS` | UTC |
-| finished_at | DATE | `zWsgRJWsgINkK4ldcBy0p` | `g1MMIhn9cs1NqTfQJX35o` | UTC |
+| id | TEXT | `AXQRMe7knv8NFDCckziRD` | `8XG5IRicIHlg8a9Up2Fgd` | |
+| event_id | TEXT | `vGB2xSw6CWfuMilj0wAlH` | `0beSoF4qBuW2kb7cyrXnQ` | пусто для сегмента «все с consent» |
+| segment | STATIC_DROPDOWN | `6rmHz7Lc1djdjFpjAmO5V` | `VLW4nkzkcUnS5hRoCUuxu` | `all_consent` / `registered` / `attended` / `no_show` |
+| body | TEXT | `YF9ryxUV0d3RK74xPjZkq` | `GxrPGLmTZd5hFC8KMPaVx` | текст сообщения |
+| parse_mode | TEXT | `bU9nqeQ2wZo2bMr2kBnNj` | `hsG8r74WOjNE9W6FPYN0l` | |
+| created_by | TEXT | `AQs7BEfN0hZ3OjPZXZNsc` | `1ETU0y7eoYD0uNvs8WMUX` | |
+| test_sent_at | DATE | `7BP3OXd4mJxqrkodJMm3i` | `dZ94NSVx8WB6K5zabDTpe` | **пусто → отправка запрещена** (OWN-10) |
+| status | STATIC_DROPDOWN | `6ITY7K1B8OgqL0lm2Idbg` | `HjQnjB1rFQJx57V7En9El` | `draft` / `running` / `done` / `failed` |
+| total | NUMBER | `YGr4kZEcE1b8zdZE3eqcV` | `DYrvulwTq4HH2qwOcLRXa` | |
+| sent | NUMBER | `ltKozKZzGOMZegnWFHmPU` | `3mzc4WCBPo5dUcfSiWRiF` | |
+| failed_count | NUMBER | `zSTccFLKPqYSbEqrEL2Gl` | `GmATFUvwQScsa7GdT3PNg` | |
+| cursor | NUMBER | `MNy5oYhMX34dDj5x6JLd7` | `cVRqZm5ErYVDii1IRWG6y` | индекс в списке получателей |
+| started_at | DATE | `GEb4WuGSUofCWNtAz8uBs` | `pQpEcjvWDoZ3VIhmOJXfg` | UTC |
+| finished_at | DATE | `yevE4jElXPvczO4LTt2Yj` | `nr4uLO3Mz3F5tCznJNGXy` | UTC |
 
 ## Заметки
 
