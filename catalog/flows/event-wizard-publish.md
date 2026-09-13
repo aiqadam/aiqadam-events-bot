@@ -39,6 +39,7 @@
 
 ## Заметки
 
+- **Тексты — через `inputs.texts`**, не литералом в коде (ADR-0014); значения сверены с `i18n/ru.json`, механизм — [`ru-texts.md`](../snippets/ru-texts.md).
 - **`notifyFields = [title, address, starts_at, ends_at, reg_deadline_at, lat, lon]`** —
   ровно перечень [notify-on-change](../../docs/DATA-MODEL.md#notify-on-change);
   `description`/`photo_file_id` намеренно исключены — правка описания не

@@ -28,6 +28,7 @@
 
 ## Заметки
 
+- **Тексты — через `inputs.texts`**, не литералом в коде (ADR-0014); значения сверены с `i18n/ru.json`, механизм — [`ru-texts.md`](../snippets/ru-texts.md).
 - **`tables-upsert-records registrations` заменяет create-or-reactivate ROUTER**:
   `yes` и на новую, и на ранее отменённую (`cancelled`) регистрацию даёт
   один и тот же шаг и тот же `record id` (IDM-1, дублей не плодит).

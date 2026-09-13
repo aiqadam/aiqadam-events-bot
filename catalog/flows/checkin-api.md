@@ -15,35 +15,41 @@
 
 ## Шаги
 
-Флоу **линейный, без ROUTER**: все проверки читаются заранее, решение и HTTP-ответ
-считает один CODE-шаг. Это сознательный выбор — ROUTER-ветки в этом движке не
-сходятся обратно, а здесь после любого исхода нужен один и тот же ответ вебхука.
+**ROUTER сразу после проверки `initData`** (`step_10`): невалидный `initData`
+отвечает `401` немедленно, ветка `valid` — единственное место, где
+выполняются остальные проверки и обращения к таблицам. До этого флоу был
+линейным без ROUTER; переход понадобился, чтобы мусорный публичный запрос
+не тратил обращения к `event_staff`/`callFlow`-хопы впустую (см. журнал W26,
+замечание 1 второго ревью).
 
 | Step | Piece / Action | Назначение | Ключевые inputs / refs |
 |------|----------------|-----------|------------------------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём POST | — |
 | step_1 | `callFlow fn-hmac-init-data` | HMAC `initData` по `BOT_TOKEN` (STF-2, первая половина) | `payload: {initData, botToken: {{variables['BOT_TOKEN']}}, maxAgeSeconds}` |
-| step_2 | `callFlow fn-parse-start` | разбор QR-`payload` (`kind` должен быть `c`) | `payload: {start}` |
-| step_3 | `tables-find-records event_staff` | `(event_id, telegram_id контролёра)` + `revoked_at not_exists` — **вторая половина STF-2**: без фильтра по `event_id` любой участник отметит соседа | `event_id eq {{trigger.body.eventId}}`, `telegram_id eq {{step_1.data.telegramId}}` |
-| step_4 | `callFlow fn-verify-qr` | подпись QR по `QR_SIGNING_KEY` | `payload: {eventId, userId, sig, qrSigningKey}` из `step_2.data` |
-| step_5 | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса | `payload: {eventId, telegramId}` = `step_2.data.eventId/userId` |
-| step_6 | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) | `telegram_id eq {{step_2.data.userId}}` |
-| step_7 | CODE «decide result» | все шесть исходов STF-4 одним деревом `if/else` (см. ниже), время `already` — Asia/Tashkent | |
-| step_8 | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2 | `record_id` = реальный id при исходе `ok`, иначе `-` (гарантированно 404, безопасный no-op) |
-| step_9 | `return_response` | JSON-ответ Mini App | `status`/`text` из `step_7` |
+| step_10 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` | |
+| step_11 (Otherwise) | CODE «invalid init data response» | `texts['checkin.unauthorized']`, `httpStatus: 401` | |
+| step_12 (Otherwise) | `return_response` | ответ `401` немедленно, ветка `valid` не выполняется | `status/body` из `step_11` |
+| step_2 (valid) | `callFlow fn-parse-start` | разбор QR-`payload` (`kind` должен быть `c`) | `payload: {start}` |
+| step_3 (valid) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра)` + `revoked_at not_exists` — **вторая половина STF-2**: без фильтра по `event_id` любой участник отметит соседа | `event_id eq {{trigger.body.eventId}}`, `telegram_id eq {{step_1.data.telegramId}}` |
+| step_4 (valid) | `callFlow fn-verify-qr` | подпись QR по `QR_SIGNING_KEY` | `payload: {eventId, userId, sig, qrSigningKey}` из `step_2.data` |
+| step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса | `payload: {eventId, telegramId}` = `step_2.data.eventId/userId` |
+| step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) | `telegram_id eq {{step_2.data.userId}}` |
+| step_7 (valid) | CODE «decide result» | пять оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) | |
+| step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2 | `record_id` = реальный id при исходе `ok`, иначе `-` (гарантированно 404, безопасный no-op) |
+| step_9 (valid) | `return_response` | JSON-ответ Mini App | `status`/`text` из `step_7` |
 
-### Порядок проверок (`step_7`) и HTTP-статусы
+### Порядок проверок и HTTP-статусы
 
-| Условие | `status` | HTTP |
-|---|---|---|
-| `initData` невалиден | `invalid_init_data` | 401 |
-| контролёр не staff **этого** `eventId` (или отозван) | `forbidden` | 403 |
-| QR не `c`-payload / не распарсен | `invalid` | 200 |
-| `eventId` из QR ≠ запрошенный | `wrong_event` | 200 |
-| подпись QR не сошлась | `invalid` | 200 |
-| нет регистрации / `status ≠ registered` | `not_registered` | 200 |
-| `checked_in_at` уже стоит | `already` (+ время Tashkent) | 200 |
-| иначе | `ok` (+ имя) | 200 |
+| Условие | `status` | HTTP | Где решается |
+|---|---|---|---|
+| `initData` невалиден | `invalid_init_data` | 401 | `step_10` (ROUTER), до `step_7` не доходит |
+| контролёр не staff **этого** `eventId` (или отозван) | `forbidden` | 403 | `step_7` |
+| QR не `c`-payload / не распарсен | `invalid` | 200 | `step_7` |
+| `eventId` из QR ≠ запрошенный | `wrong_event` | 200 | `step_7` |
+| подпись QR не сошлась | `invalid` | 200 | `step_7` |
+| нет регистрации / `status ≠ registered` | `not_registered` | 200 | `step_7` |
+| `checked_in_at` уже стоит | `already` (+ время Tashkent) | 200 | `step_7` |
+| иначе | `ok` (+ имя) | 200 | `step_7` |
 
 ## Зависимости
 
@@ -59,10 +65,16 @@
   IDM-2**, не соглашение поверх non-atomic БД: платформа сама проверяет и
   пишет одним действием, при провале условия отдаёт `409
   RECORD_PRECONDITION_FAILED`. Сильнее, чем CAS-с-перечитыванием.
-- **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** во всех пяти
-  вызовах (см. CLAUDE.md, Gotchas Qadam Flow, п. 7a).
+- **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** во всех четырёх
+  вызовах внутри ветки `valid` (см. CLAUDE.md, Gotchas Qadam Flow, п. 7a).
 - **Контракт ответа согласован с `miniapp/index.html` (сканер)**: `{status,
   text}` плоско в теле, `status = invalid_init_data` на 401.
+- **Тексты (`step_7`, `step_11`) — через `inputs.texts`**, не литералом в коде
+  (ADR-0014); значения сверены с `i18n/ru.json`.
+- **`ROUTER` вставлен через `ap_delete_step` + пересборку цепочки внутри
+  ветки, а не через прямую вставку в существующее ребро** — `ap_add_step`
+  с `ROUTER` через `AFTER` на уже связанный шаг не гейтит старое продолжение,
+  обе цепочки выполняются параллельно (см. CLAUDE.md, Gotchas Qadam Flow, п. 10).
 - **В таблицах `events`/`registrations` намеренно оставлена фикстура
   `demo`** (ивент `id: demo`, регистрация `demo-322876545`, staff-запись
   в `event_staff` на того же контролёра) — нужна, чтобы STF-2 можно было

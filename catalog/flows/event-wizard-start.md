@@ -25,6 +25,7 @@
 
 ## Заметки
 
+- **Тексты — через `inputs.texts`**, не литералом в коде (ADR-0014); значения сверены с `i18n/ru.json`, механизм — [`ru-texts.md`](../snippets/ru-texts.md).
 - Не задаёт вопрос сам по себе, а только инициализирует `sessions.step='title'` —
   дальше все шесть однотипных полей (`title`/`description`/`address`/
   `starts_at`/`ends_at`/`reg_deadline_at`) ведёт один флоу `event-wizard-field`,
