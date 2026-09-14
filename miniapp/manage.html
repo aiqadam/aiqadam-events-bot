@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Qadam Events</title>
+  <link rel="preconnect" href="https://app.flow.aiqadam.org" crossorigin>
+  <link rel="stylesheet" href="vendor/aiqadam-brand-subset.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="i18n.js"></script>
+  <style>
+    /* Раскладка; цвет, шрифт и радиусы — только токенами бренда (ADR-0019 п. 2),
+       длины — по 4-пиксельной шкале бренда, ни одного литерала цвета и шрифта.
+
+       Веб-шрифты бренда и здесь не грузятся (ADR-0020 п. 3 — решение замером,
+       число в журнале W31): cyrillic+latin трёх семейств — 444 КиБ против
+       ~25 КиБ всей страницы с CSS. Организатор открывает форму с телефона,
+       и вторая типографика внутри одной Mini App стоила бы дороже, чем даёт. */
+    [hidden] { display: none !important; }
+    main { max-width: 480px; margin: 0 auto; padding: 16px; }
+    main > * + * { margin-top: 16px; }
+    .field + .field { margin-top: 16px; }
+    .row { display: flex; gap: 12px; }
+    .row > .field { flex: 1; min-width: 0; margin-top: 0; }
+    .actions { display: flex; flex-direction: column; gap: 12px; }
+    .actions .btn { width: 100%; }
+    /* Радио статуса — брендовый `.control-row`, по одной строке на вариант. */
+    .choices { display: flex; flex-direction: column; gap: 8px; }
+    /* Нативный select бренд не стилизует; берёт вид `.input`, чтобы стоять
+       в ряду с остальными полями. Значений цвета здесь нет — они из `.input`. */
+    select.input { appearance: auto; }
+    /* Итог сохранения — `.card` с рамкой и полосой тона, как вердикт на
+       сканере: тон несёт рамка, текст остаётся `--foreground` (W30, круг 5). */
+    .result.ok  { border-color: var(--success); box-shadow: inset 0 4px 0 var(--success); }
+    .result.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
+    .result .empty-heading { color: var(--foreground); }
+    .result > :last-child { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 class="empty-heading" id="title"></h1>
+    <p class="empty-desc" id="status" role="status"></p>
+
+    <!-- Загрузка не удалась: причина словами и выход — «Повторить». -->
+    <div class="card result bad" id="loadfail" hidden>
+      <p class="empty-heading" id="loadfailText"></p>
+      <button type="button" class="btn btn-secondary" id="retry"></button>
+    </div>
+
+    <form id="form" novalidate hidden>
+      <div class="field">
+        <label class="label" for="f-title" data-t="field.title"></label>
+        <input class="input" id="f-title" name="title" maxlength="200" autocomplete="off">
+        <p class="helper error" id="e-title" hidden></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="f-description" data-t="field.description"></label>
+        <textarea class="textarea" id="f-description" name="description" rows="4"></textarea>
+        <p class="helper" data-t="manage.hint.description"></p>
+        <p class="helper error" id="e-description" hidden></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="f-address" data-t="field.address"></label>
+        <input class="input" id="f-address" name="address" maxlength="300" autocomplete="street-address">
+        <p class="helper" data-t="manage.hint.address"></p>
+        <p class="helper error" id="e-address" hidden></p>
+      </div>
+
+      <div class="field">
+        <span class="label" data-t="field.geo"></span>
+        <div class="row">
+          <div class="field">
+            <label class="label" for="f-lat" data-t="field.lat"></label>
+            <input class="input" id="f-lat" name="lat" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label class="label" for="f-lon" data-t="field.lon"></label>
+            <input class="input" id="f-lon" name="lon" inputmode="decimal" autocomplete="off">
+          </div>
+        </div>
+        <p class="helper" data-t="manage.hint.geo"></p>
+        <p class="helper error" id="e-geo" hidden></p>
+        <p><button type="button" class="btn btn-outline btn-sm" id="locate" hidden></button></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="f-starts_at" data-t="field.starts_at"></label>
+        <input class="input" id="f-starts_at" name="starts_at" type="datetime-local" step="60">
+        <p class="helper" data-t="manage.hint.datetime"></p>
+        <p class="helper error" id="e-starts_at" hidden></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="f-ends_at" data-t="field.ends_at"></label>
+        <input class="input" id="f-ends_at" name="ends_at" type="datetime-local" step="60">
+        <p class="helper error" id="e-ends_at" hidden></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="f-reg_deadline_at" data-t="field.reg_deadline_at"></label>
+        <input class="input" id="f-reg_deadline_at" name="reg_deadline_at" type="datetime-local" step="60">
+        <p class="helper error" id="e-reg_deadline_at" hidden></p>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label class="label" for="f-capacity" data-t="field.capacity"></label>
+          <input class="input" id="f-capacity" name="capacity" inputmode="numeric" autocomplete="off">
+          <p class="helper" data-t="manage.hint.capacity"></p>
+          <p class="helper error" id="e-capacity" hidden></p>
+        </div>
+        <div class="field">
+          <label class="label" for="f-overbook_pct" data-t="field.overbook_pct"></label>
+          <input class="input" id="f-overbook_pct" name="overbook_pct" inputmode="numeric" autocomplete="off">
+          <p class="helper" data-t="manage.hint.overbook"></p>
+          <p class="helper error" id="e-overbook_pct" hidden></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" data-t="field.status"></span>
+        <div class="choices">
+          <label class="control-row"><input class="radio" type="radio" name="status" value="draft"><span data-t="status.draft"></span></label>
+          <label class="control-row"><input class="radio" type="radio" name="status" value="published" checked><span data-t="status.published"></span></label>
+          <label class="control-row" id="cancelRow" hidden><input class="radio" type="radio" name="status" value="cancelled"><span data-t="status.cancelled"></span></label>
+        </div>
+        <p class="helper error" id="e-status" hidden></p>
+      </div>
+
+      <p class="helper" id="photoHint" data-t="manage.hint.photo" hidden></p>
+
+      <div class="field actions">
+        <p class="helper error" id="e-form" hidden></p>
+        <button type="submit" class="btn btn-primary btn-lg" id="submit"></button>
+      </div>
+    </form>
+
+    <div class="card result" id="result" role="status" hidden>
+      <p class="empty-heading" id="resultText"></p>
+    </div>
+  </main>
+  <script>
+    (function () {
+      'use strict';
+      // ADR-0017 п. 3: форма ивента — экран Mini App, а не анкета в чате.
+      // Права решает сервер (manage-api): initData + events.owner_id этого event_id.
+      // Страница только собирает поля и показывает ответ.
+      var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/__MANAGE_API_FLOW_ID__/sync';
+      var FETCH_TIMEOUT_MS = 15000;
+      var TZ = 'Asia/Tashkent';
+      var FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'];
+
+      var tg = window.Telegram && window.Telegram.WebApp;
+      var dict = {};
+      var $ = function (id) { return document.getElementById(id); };
+      var titleEl = $('title');
+      var statusEl = $('status');
+      var formEl = $('form');
+      var loadfailEl = $('loadfail');
+      var loadfailTextEl = $('loadfailText');
+      var retryBtn = $('retry');
+      var submitBtn = $('submit');
+      var locateBtn = $('locate');
+      var resultEl = $('result');
+      var resultTextEl = $('resultText');
+
+      var eventId = '';
+      var initData = tg && tg.initData ? tg.initData : '';
+      var wasPublished = false;
+      var busy = false;
+
+      function t(key) { return dict[key] || key; }
+
+      // Тема — из Telegram, механизмом самого бренда ([data-theme]).
+      function applyTheme() {
+        var scheme = tg && tg.colorScheme === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', scheme);
+      }
+      applyTheme();
+
+      // Все подписи — через textContent из словаря; разметки из данных нет.
+      function applyTexts() {
+        var nodes = document.querySelectorAll('[data-t]');
+        for (var i = 0; i < nodes.length; i++) nodes[i].textContent = t(nodes[i].getAttribute('data-t'));
+        retryBtn.textContent = t('manage.btn.retry');
+        locateBtn.textContent = t('manage.btn.locate');
+        updateSubmitLabel();
+      }
+
+      function setStatus(text) { statusEl.textContent = text; }
+
+      function showResult(ok, text) {
+        resultEl.className = 'card result ' + (ok ? 'ok' : 'bad');
+        resultTextEl.textContent = text;
+        resultEl.hidden = false;
+        resultEl.scrollIntoView({ block: 'nearest' });
+      }
+      function hideResult() { resultEl.hidden = true; }
+
+      function showLoadFail(text) {
+        formEl.hidden = true;
+        loadfailTextEl.textContent = text;
+        loadfailEl.hidden = false;
+        setStatus('');
+      }
+
+      // --- сеть -------------------------------------------------------------
+      // Таймаут и разбор ответа отделяют три разных случая: нет соединения,
+      // сервер ответил не-JSON (5xx HTML), сервер ответил JSON с ошибкой.
+      function post(body) {
+        var ctrl = window.AbortController ? new AbortController() : null;
+        var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS) : 0;
+        return fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: ctrl ? ctrl.signal : undefined
+        }).then(function (r) {
+          return r.text().then(function (raw) {
+            var data = null;
+            try { data = JSON.parse(raw); } catch (e) { data = null; }
+            if (!data || typeof data !== 'object') return { kind: 'server', http: r.status };
+            return { kind: 'json', http: r.status, data: data };
+          });
+        }).catch(function () {
+          return { kind: 'network' };
+        }).then(function (res) {
+          if (timer) clearTimeout(timer);
+          return res;
+        });
+      }
+
+      function errorText(res) {
+        if (res.kind === 'network') return t('manage.err.network');
+        if (res.kind === 'server') return t('manage.err.server');
+        var d = res.data;
+        if (typeof d.text === 'string' && d.text) return d.text;
+        return t('manage.err.server');
+      }
+
+      // --- даты: UTC в хранении, Asia/Tashkent на экране (OWN-3) --------------
+      // Значение <input type=datetime-local> — «YYYY-MM-DDTHH:mm» без зоны.
+      // Страница отдаёт его серверу как есть; ташкентским его считает и в UTC
+      // переводит manage-api. Сюда, наоборот, UTC из таблицы раскладывается
+      // на ташкентские компоненты через Intl, а не через локальную зону
+      // телефона: организатор может быть в другой стране.
+      var partsFmt = new Intl.DateTimeFormat('en-GB', {
+        timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+      });
+      function utcToLocalInput(iso) {
+        if (!iso) return '';
+        var ms = Date.parse(/[Zz]$/.test(iso) || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z');
+        if (!isFinite(ms)) return '';
+        var p = {};
+        partsFmt.formatToParts(new Date(ms)).forEach(function (x) { p[x.type] = x.value; });
+        return p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute;
+      }
+
+      // --- форма ------------------------------------------------------------
+      function field(name) { return formEl.elements[name]; }
+
+      function statusValue() {
+        var r = formEl.querySelector('input[name=status]:checked');
+        return r ? r.value : 'draft';
+      }
+
+      function updateSubmitLabel() {
+        var publishNow = statusValue() === 'published' && !wasPublished;
+        submitBtn.textContent = t(publishNow ? 'manage.btn.publish' : 'manage.btn.save');
+      }
+
+      function clearErrors() {
+        var errs = formEl.querySelectorAll('.helper.error');
+        for (var i = 0; i < errs.length; i++) { errs[i].hidden = true; errs[i].textContent = ''; }
+        var inputs = formEl.querySelectorAll('.input, .textarea');
+        for (var j = 0; j < inputs.length; j++) inputs[j].classList.remove('error');
+      }
+
+      // Ошибки полей: сервер отдаёт {field: key}; страница переводит ключ по
+      // словарю. Неизвестное поле — в общую строку над кнопкой, не молча.
+      function showFieldErrors(fields) {
+        var any = false;
+        Object.keys(fields || {}).forEach(function (name) {
+          var el = $('e-' + name);
+          var text = t(String(fields[name]));
+          if (el) {
+            el.textContent = text; el.hidden = false; any = true;
+            var input = field(name);
+            if (input && input.classList) input.classList.add('error');
+            if (name === 'geo') { field('lat').classList.add('error'); field('lon').classList.add('error'); }
+          } else {
+            var f = $('e-form'); f.textContent = text; f.hidden = false; any = true;
+          }
+        });
+        if (any) {
+          var first = formEl.querySelector('.helper.error:not([hidden])');
+          if (first) first.scrollIntoView({ block: 'center' });
+        }
+      }
+
+      function fillForm(ev) {
+        ['title', 'description', 'address', 'lat', 'lon', 'capacity', 'overbook_pct'].forEach(function (n) {
+          field(n).value = ev[n] === undefined || ev[n] === null ? '' : String(ev[n]);
+        });
+        ['starts_at', 'ends_at', 'reg_deadline_at'].forEach(function (n) {
+          field(n).value = utcToLocalInput(String(ev[n] || ''));
+        });
+        var st = String(ev.status || 'draft');
+        wasPublished = st === 'published' || st === 'cancelled';
+        $('cancelRow').hidden = !wasPublished;
+        var radio = formEl.querySelector('input[name=status][value="' + st + '"]');
+        if (radio) radio.checked = true;
+        $('photoHint').hidden = !(ev.hasPhoto === true || ev.hasPhoto === 'true');
+        updateSubmitLabel();
+      }
+
+      function collect() {
+        var out = {};
+        FIELDS.forEach(function (n) { out[n] = String(field(n).value || '').trim(); });
+        out.status = statusValue();
+        return out;
+      }
+
+      function setBusy(on, statusKey) {
+        busy = on;
+        submitBtn.disabled = on;
+        setStatus(on && statusKey ? t(statusKey) : '');
+      }
+
+      // --- загрузка ивента для правки ----------------------------------------
+      function load() {
+        loadfailEl.hidden = true;
+        hideResult();
+        setStatus(t('manage.loading'));
+        post({ initData: initData, action: 'load', eventId: eventId }).then(function (res) {
+          if (res.kind !== 'json' || !res.data.ok || !res.data.event) {
+            showLoadFail(errorText(res));
+            return;
+          }
+          fillForm(res.data.event);
+          setStatus('');
+          formEl.hidden = false;
+        });
+      }
+
+      // --- сохранение --------------------------------------------------------
+      function save(e) {
+        e.preventDefault();
+        if (busy) return;
+        clearErrors();
+        hideResult();
+        var fields = collect();
+        setBusy(true, 'manage.saving');
+        post({ initData: initData, action: 'save', eventId: eventId, fields: fields }).then(function (res) {
+          setBusy(false);
+          if (res.kind !== 'json') { showResult(false, errorText(res)); return; }
+          var d = res.data;
+          if (d.ok) {
+            // Созданный ивент дальше правится как существующий: страница не
+            // переоткрывается, второй «Сохранить» уже не создаст дубль.
+            if (d.eventId) eventId = String(d.eventId);
+            wasPublished = fields.status === 'published' || fields.status === 'cancelled' || wasPublished;
+            $('cancelRow').hidden = !wasPublished;
+            titleEl.textContent = t('manage.title.edit');
+            updateSubmitLabel();
+            showResult(true, typeof d.text === 'string' && d.text ? d.text : t('manage.saved.updated'));
+            return;
+          }
+          if (d.error === 'validation') {
+            showFieldErrors(d.fields);
+            showResult(false, typeof d.text === 'string' && d.text ? d.text : t('manage.err.validation'));
+            return;
+          }
+          showResult(false, errorText(res));
+        });
+      }
+
+      // --- гео: точка с устройства -----------------------------------------
+      // Telegram LocationManager (Bot API 8.0) — первым; navigator.geolocation —
+      // если WebView его не даёт. Ни того ни другого — кнопки нет, координаты
+      // вводятся руками. Без подтверждения пользователя ничего не читается.
+      function setGeo(lat, lon) {
+        field('lat').value = String(Math.round(lat * 1e6) / 1e6);
+        field('lon').value = String(Math.round(lon * 1e6) / 1e6);
+      }
+      function setupLocate() {
+        var lm = tg && tg.LocationManager;
+        if (lm && typeof lm.init === 'function') {
+          locateBtn.hidden = false;
+          locateBtn.addEventListener('click', function () {
+            try {
+              lm.init(function () {
+                if (!lm.isLocationAvailable || !lm.isAccessGranted && lm.isAccessRequested) {
+                  if (typeof lm.openSettings === 'function') lm.openSettings();
+                  return;
+                }
+                lm.getLocation(function (loc) {
+                  if (loc && typeof loc.latitude === 'number') setGeo(loc.latitude, loc.longitude);
+                });
+              });
+            } catch (err) {}
+          });
+          return;
+        }
+        if (navigator.geolocation) {
+          locateBtn.hidden = false;
+          locateBtn.addEventListener('click', function () {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+              setGeo(pos.coords.latitude, pos.coords.longitude);
+            }, function () {}, { timeout: 10000 });
+          });
+        }
+      }
+
+      // --- старт -------------------------------------------------------------
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        if (tg.onEvent) tg.onEvent('themeChanged', applyTheme);
+      }
+      eventId = new URLSearchParams(window.location.search).get('event_id') || '';
+
+      MiniAppI18n.load(function (err, d) {
+        dict = d;
+        titleEl.textContent = t(eventId ? 'manage.title.edit' : 'manage.title.new');
+        document.title = titleEl.textContent;
+        applyTexts();
+
+        if (!tg || !initData) { showLoadFail(t('manage.err.not_in_telegram')); retryBtn.hidden = true; return; }
+
+        formEl.addEventListener('submit', save);
+        var radios = formEl.querySelectorAll('input[name=status]');
+        for (var i = 0; i < radios.length; i++) radios[i].addEventListener('change', updateSubmitLabel);
+        retryBtn.addEventListener('click', load);
+        setupLocate();
+
+        if (eventId) { load(); } else { formEl.hidden = false; }
+      });
+    })();
+  </script>
+</body>
+</html>
