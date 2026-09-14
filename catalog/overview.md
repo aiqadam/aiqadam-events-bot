@@ -15,8 +15,8 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 22 | [flows/](flows/) |
-| Таблицы | 10 | [tables/](tables/) |
+| Флоу | 24 | [flows/](flows/) |
+| Таблицы | 11 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 4 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL` | [variables.md](variables.md) |
 

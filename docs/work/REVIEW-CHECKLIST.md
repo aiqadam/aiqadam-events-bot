@@ -70,10 +70,14 @@ tools/check-export-secrets.sh      # обязательно перед любы�
 **`GET /flows/:id/template` для выгрузки не годится:** он молча игнорирует
 `versionId` и всегда отдаёт последнюю версию. Если встретите его в старых
 журналах как «отдаёт опубликованную» — это опровергнуто, см.
-[ARCHITECTURE](../ARCHITECTURE.md). **MCP-инструмент `ap_export_flow` —
-то же самое** (`state: DRAFT` в ответе, выбора версии нет,
-[Q44](../OPEN-QUESTIONS.md#q44)): им можно быстро посмотреть `settings.input`
-черновика, но снимок для `flows/` снимается только скриптом.
+[ARCHITECTURE](../ARCHITECTURE.md). **MCP-инструмент `ap_export_flow`**
+тоже отдаёт последнюю версию без выбора ([Q44](../OPEN-QUESTIONS.md#q44)),
+поэтому снимок им допустим только **сразу после `ap_lock_and_publish`**
+через `tools/export-flow-mcp.py` (проверяет `state: LOCKED`, в манифесте
+`source: "mcp"`; без `auth` в шагах —
+[ADR-0021](../adr/0021-repo-is-source-of-truth-migrations-table.md)).
+Такой снимок ревьюер сверяет с живым `ap_export_flow`: `flows[0].id`
+должен равняться `publishedVersionId` в манифесте.
 
 Ключа нет в keychain — попросите его у владельца проекта и положите туда
 ([как](../adr/0006-rest-read-only-for-review.md#где-лежит-ключ) — сам ADR-0006
@@ -105,7 +109,9 @@ tools/check-export-secrets.sh      # обязательно перед любы�
 - [ ] в каталоге **нет** флоу и таблиц, которых в проекте не существует;
 - [ ] **экспорт `flows/*.json` обновлён тем же коммитом**, что и правка флоу
       ([ADR-0018](../adr/0018-rest-read-for-everyone.md) п. 5) — снимается
-      `tools/export-flows.sh`. Пункт применим с того момента, как в `flows/`
+      `tools/export-flows.sh` или, без ключа, `tools/export-flow-mcp.py`
+      сразу после публикации ([ADR-0021](../adr/0021-repo-is-source-of-truth-migrations-table.md)).
+      Пункт применим с того момента, как в `flows/`
       появился экспорт ([W29](../BACKLOG.md#w29-экспорт-flowsjson-в-репозиторий));
       до этого отмечается «не относится». Формулировка та же в
       [ROADMAP](../ROADMAP.md), шаг 6 порядка работы — расходиться им нельзя;
