@@ -66,7 +66,7 @@
   RECORD_PRECONDITION_FAILED`. Сильнее, чем CAS-с-перечитыванием.
 - **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** во всех четырёх
   вызовах внутри ветки `valid` (см. CLAUDE.md, Gotchas Qadam Flow, п. 7a).
-- **Контракт ответа согласован с `miniapp/index.html` (сканер)**: `{status,
+- **Контракт ответа согласован с роут `#/scan` SPA (сканер)**: `{status,
   text}` плоско в теле, `status = invalid_init_data` на 401.
 - **Тексты (`step_7`, `step_11`) — через `inputs.texts`**, не литералом в коде
   (ADR-0014); значения сверены с `i18n/ru.json`.

@@ -58,6 +58,7 @@
                                       }
                                     },
                                     "input": {
+                                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                       "chat_id": "{{step_16['output'].item}}",
                                       "disable_notification": false,
                                       "format": "None",
@@ -90,6 +91,7 @@
                                   }
                                 },
                                 "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "chat_id": "{{step_1['output'].data.telegramId}}",
                                   "disable_notification": false,
                                   "format": "None",

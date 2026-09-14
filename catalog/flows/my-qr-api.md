@@ -4,12 +4,12 @@
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
   `POST /api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync`
 - **Назначение**: отдаёт подписанный QR-`payload` участнику для клиентского
-  рендеринга в `miniapp/ticket.html` (ADR-0007 — QR не шлётся файлом).
+  рендеринга в роут `#/ticket` SPA (`miniapp/src/routes/Ticket.tsx`) (ADR-0007 — QR не шлётся файлом).
 - **Flow ID (MCP)**: `WYmnxVM4xPAWZA1IvNZok`
 
 ## Вход
 
-`POST` тела: `{ initData, eventId }` — `initData` берётся `ticket.html` из
+`POST` тела: `{ initData, eventId }` — `initData` берётся роут `#/ticket` из
 `Telegram.WebApp.initData`, `eventId` — из query-параметра страницы.
 
 ## Шаги
@@ -28,9 +28,9 @@
 | step_3 (valid) | `callFlow fn-find-registration` | своя регистрация на `eventId` |
 | step_4 (valid) | `callFlow fn-sign-qr` (`continueOnFailure`) | подпись `(eventId, userId)` |
 | step_5 (valid) | CODE «decide result» | `not_registered` / `ok`, тексты — `inputs.texts` (ADR-0014) |
-| step_6 (valid) | `return_response` | JSON: `{ok, error, text, payload, eventId, userId}` — форма, которую ждёт `ticket.html` |
+| step_6 (valid) | `return_response` | JSON: `{ok, error, text, payload, eventId, userId}` — форма, которую ждёт `#/ticket` |
 
-### Контракт ответа (согласован с `miniapp/ticket.html`)
+### Контракт ответа (согласован с `#/ticket` SPA)
 
 | Ситуация | Тело |
 |---|---|
@@ -55,7 +55,7 @@
 - **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** в обоих вызовах
   внутри ветки `valid` (см. CLAUDE.md, Gotchas Qadam Flow, п. 7a).
 - **Контракт ответа `{ok,error,text,payload}` задан клиентом**: страница
-  `miniapp/ticket.html` проверяет `data.ok`/`data.error`, а не `{status,...}`
+  роут `#/ticket` проверяет `data.ok`/`data.error`, а не `{status,...}`
   (как `checkin-api`) — форма ответа этого флоу подстроена под уже
   задеплоенную статику, а не выбрана свободно.
 - **Менять ROUTER можно только пересборкой цепочки внутри ветки** — та же

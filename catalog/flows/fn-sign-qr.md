@@ -3,7 +3,7 @@
 - **Статус**: ENABLED
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается только из
   `my-qr-api` (`step_4`, ADR-0015 п. 5). Выдача QR участнику на подпись не
-  ходит: `reg-phone` шлёт кнопку `web_app` на `ticket.html`, а подписывает
+  ходит: `reg-phone` шлёт кнопку `web_app` на `#/ticket`, а подписывает
   уже `my-qr-api` при открытии страницы
 - **Назначение**: подписать QR-payload участника (`c<eventId>-<userId>-<sig>`).
 - **Flow ID (MCP)**: `9XXJu9hlSJC8nIfoYjMcV` · **externalId (для `callFlow`)**: `VvSckbBbWGJcq7MaNGbwm`

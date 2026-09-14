@@ -3,7 +3,7 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
   `POST /api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync`
-- **Назначение**: сервер формы ивента `miniapp/manage.html`
+- **Назначение**: сервер формы ивента роут `#/manage` SPA (`miniapp/src/routes/Manage.tsx`)
   ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): отдаёт
   owner'у его ивент для правки и принимает создание/правку (OWN-1…OWN-5,
   OWN-15). Права решаются здесь, страница их не решает.
@@ -49,7 +49,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_16 (save) | `LOOP_ON_ITEMS` по `{{step_14['output'].targets}}` | |
 | step_17 (в цикле) | `send_text_message` (`continueOnFailure`) | уведомление одному зарегистрированному (`format: None`) |
 
-### Контракт ответа (согласован с `miniapp/manage.html`)
+### Контракт ответа (согласован с `#/manage` SPA)
 
 | Ситуация | HTTP | Тело |
 |---|---|---|

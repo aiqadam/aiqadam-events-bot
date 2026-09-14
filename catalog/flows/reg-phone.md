@@ -20,7 +20,7 @@
 | step_6 | `tables-find-records events` | название, дата, адрес для финальной карточки |
 | step_7 | CODE «тексты: финальная карточка и билет» | два текста сразу |
 | step_8 | `edit_message_text` (`continueOnFailure`) | карточка → итог диалога, кнопок нет |
-| step_9 | `send_text_message` | **билет** + кнопка `web_app` на `ticket.html?event_id=…` |
+| step_9 | `send_text_message` | **билет** + кнопка `web_app` на `#/ticket?event_id=…` (SPA) |
 
 ## Зависимости
 

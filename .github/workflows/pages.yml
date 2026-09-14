@@ -8,6 +8,9 @@
 # i18n/*.json копируются в артефакт рядом со страницами (Q19): страницы сканера
 # и выдачи QR тянут собственные надписи словарём с того же GitHub Pages — без
 # CORS и без второго источника правды. Источник правды строк — i18n/ в репозитории.
+#
+# С 2026-09-14 (ADR-0022) Mini App — React SPA: сборка Vite (npm ci && npm run build)
+# в miniapp/dist/, hash-роутер не требует 404.html.
 name: pages
 
 on:
@@ -39,11 +42,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Assemble site (miniapp + i18n)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'miniapp/package-lock.json'
+      - name: Build SPA
+        working-directory: miniapp
+        run: |
+          npm ci
+          npm run build
+      - name: Assemble site (dist + i18n)
         run: |
           mkdir -p _site/i18n
-          cp -R miniapp/. _site/
+          cp -R miniapp/dist/. _site/
           cp -R i18n/. _site/i18n/
+          # CNAME — домен Pages (miniapp.events.aiqadam.org)
+          if [ -f miniapp/CNAME ]; then cp miniapp/CNAME _site/CNAME; fi
+          if [ -f miniapp/public/CNAME ]; then cp miniapp/public/CNAME _site/CNAME; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
