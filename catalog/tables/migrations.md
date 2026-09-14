@@ -13,7 +13,7 @@
 |-------|------|----------|-----------|
 | id | TEXT | `FCctWIUM83d63nhmt1xrf` | `YYYY-MM-DD-<пакет>-<NN>`, например `2026-09-14-w31-01` |
 | applied_at | DATE | `qdnTV29X4oi63UGWUNSDN` | когда изменение применено к инстансу (UTC) |
-| package | TEXT | `NdowHfcysxh78zS1vqga2` | пакет работ (`W31`) |
+| package | TEXT | `NdowHfcysxh78zS1vqga2` | пакет работ (`W31`); `owner` — изменение инстанса вне пакетов (решение владельца, 2026-09-15) |
 | object | TEXT | `KD4vFPxLFNndipPmxh4gf` | `flow:<name>` / `table:<name>` / `variable:<NAME>` |
 | object_id | TEXT | `qpFhH793jITIaorG1AX1r` | flowId / внутренний id таблицы |
 | action | STATIC_DROPDOWN | `gJdq91ajepkZJ64TcYBuY` | `create` / `update` / `publish` / `disable` / `delete` |
@@ -25,12 +25,18 @@
 
 - **Пишет тот, кто менял инстанс, тем же пакетом** — через `ap_insert_records`
   (MCP), не флоу. Ревьюер сверяет последнюю строку по объекту с
-  `flows/_manifest.json` (`publishedVersionId`) и `ap_list_flows`.
+  `flows/_manifest.json` (`publishedVersionId`) и `ap_list_flows`. Сверка
+  детерминирована скриптом `tools/check-migrations.py` (GET-only) —
+  обязательна после каждого изменения инстанса и на приёмке.
 - **Одна публикация — одна строка `publish`** с `version_id`; правки
   черновика между публикациями отдельными строками не пишутся — их состояние
   не видит пользователь.
 - **Удаление флоу — строка `delete`** до самого удаления: после него
   `ap_get_run` по его прогонам отвечает «not found», и строка — единственный
   след.
-- Пропущенная строка ничем не ловится, кроме ревью — это названная цена
-  ADR-0021.
+- **У дозаписанных задним числом строк** `applied_at` — либо время коммита
+  репозитория (конвенция BACKLOG W35), либо фактическое время применения,
+  если оно известно; выбор зафиксирован в журнале пакета-дозаписи. Инвариант
+  проверки `applied_at` не сверяет с временем коммита.
+- Пропущенная строка ничем не ловится, кроме ревью и
+  `tools/check-migrations.py` — это названная цена ADR-0021.
