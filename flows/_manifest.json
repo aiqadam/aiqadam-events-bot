@@ -67,17 +67,12 @@
   {
     "flow": "reg-consent-mkt",
     "flowId": "3gLF6TcbpFObHONATQ64N",
-    "publishedVersionId": "NFCUH1DydJkgHQmpBsD1n"
+    "publishedVersionId": "F5VziuEKMPNbZtKHYNgUL"
   },
   {
     "flow": "reg-consent-pdn",
     "flowId": "vQJDQ8NecB1PleIFrq07O",
     "publishedVersionId": "TuGN1UEqmawbsxZW7pmOf"
-  },
-  {
-    "flow": "reg-phone",
-    "flowId": "Cx7U4wKXLwmBCtb4FR5AW",
-    "publishedVersionId": "2ELV00Yin3Ef2yhrTJO2q"
   },
   {
     "flow": "reg-start",
@@ -87,6 +82,6 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "m3zS796BMjzxUpO9wRkI0"
+    "publishedVersionId": "E4sDxa5IYswA8RjDWpfWL"
   }
 ]

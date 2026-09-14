@@ -31,9 +31,8 @@
 4. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
    `scenario/step` не `-`) со `scenario='registration'`:
    - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
-     любой другой `reg:*` → **ничего** (не угадываем обработчик);
-   - сообщение без колбэка при `step='await_phone'` → `reg_phone`
-     (телефон — единственное касание регистрации, отвечающее сообщением).
+     любой другой `reg:*` → **ничего** (не угадываем обработчик).
+   Телефон как отдельное касание (`await_phone`, `reg_phone`) удалён 2026-09-14 — сообщений без колбэка в рамках `registration` больше нет.
 5. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
@@ -49,8 +48,8 @@
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
 | step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`Otherwise` | |
-| step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все четыре получают `sessionDraft`, `reg-phone` дополнительно `userMessageId` |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`Otherwise` | |
+| step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft` |
 | step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) |
 | step_26 | `callFlow manage-open` (`queue`, `waitForResponse: false`) | кнопка на страницу `manage` по `/newevent`, `/editevent`, `/manage`; получает `chatId`, `telegramId`, `commandArgs` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
@@ -59,7 +58,7 @@
 ## Зависимости
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
-- **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`,
+- **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
   `events-list`, `my-regs`, `my-reg-cancel`, `manage-open` — делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
@@ -75,7 +74,7 @@
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
-- **Все вызовы касаний (`step_12→15`, `step_23→26`) — `executionMode: queue`,
+- **Все вызовы касаний (`step_12→14`, `step_23→26`) — `executionMode: queue`,
   не `inline`.** `inline` синхронен независимо от `waitForResponse` — родитель
   ждёт всю длительность вызванного флоу, включая отправку сообщений Bot API
   (~0,7–0,9 с каждое). `queue` — единственный режим, дающий настоящий
@@ -85,12 +84,10 @@
 - **Апсерт `users` (`step_6`) не пропускает запись при отсутствии изменений** —
   упрощение ради читаемости флоу (ADR-0015); латентность записи в таблицу не
   в приоритете (дорогая статья — отправка сообщений, не запись в таблицу).
-- **`sessionDraft` уходит всем четырём касаниям регистрации, а не только
+- **`sessionDraft` уходит всем трём касаниям регистрации, а не только
   `reg-consent-pdn`.** В нём живёт `cardMessageId` — без него касание не знает,
   какое сообщение редактировать, и каждый шаг диалога начинал бы новую карточку
   ([ADR-0017](../../docs/adr/0017-screen-not-message.md)).
-- **`userMessageId` нужен только `reg-phone`** — чтобы убрать из ленты ответ
-  гостя на транзиентный вопрос о телефоне.
 - **`exampleData` в пропе `flow` у `callFlow` должен совпадать с тем, что
   отдаёт `ap_resolve_property_options`.** Добавили поле в схему триггера
   callee — обновите и `exampleData` у вызова, иначе форма вызова и форма
@@ -101,5 +98,4 @@
   Маршрутизация по шагу давала чужому колбэку побочный эффект: `reg:pdn:yes`
   при `await_marketing` уходил в `reg-consent-mkt` и записывал
   `consent_marketing`, которого гость не видел и на который не отвечал —
-  прямое нарушение PAR-2. Зеркальные случаи того же класса: `reg:mkt:*`
-  при `await_phone` завершал диалог и выдавал билет без вопроса о телефоне.
+  прямое нарушение PAR-2.

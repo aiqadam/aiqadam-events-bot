@@ -183,62 +183,6 @@
                               "valid": true
                             },
                             {
-                              "displayName": "call reg-phone",
-                              "name": "step_15",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "queue",
-                                  "flow": {
-                                    "exampleData": {
-                                      "chatId": "322876545",
-                                      "contactIsOwn": true,
-                                      "contactPhone": "+998901234567",
-                                      "eventId": "demo",
-                                      "kind": "contact",
-                                      "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0,\"promptMessageId\":0}",
-                                      "telegramId": "322876545",
-                                      "userMessageId": 0
-                                    },
-                                    "externalId": "vHduLOLdbcdT0wZDeexJx"
-                                  },
-                                  "flowProps": {
-                                    "chatId": "{{step_1['output'].chatId}}",
-                                    "contactIsOwn": "{{step_1['output'].contactIsOwn}}",
-                                    "contactPhone": "{{step_1['output'].contactPhone}}",
-                                    "eventId": "{{step_10['output'].draftEventId}}",
-                                    "kind": "{{step_10['output'].phoneKind}}",
-                                    "payload": {
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "contactIsOwn": "{{step_1['output'].contactIsOwn}}",
-                                      "contactPhone": "{{step_1['output'].contactPhone}}",
-                                      "eventId": "{{step_10['output'].draftEventId}}",
-                                      "kind": "{{step_10['output'].phoneKind}}",
-                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                      "telegramId": "{{step_1['output'].tgId}}",
-                                      "userMessageId": "{{step_1['output'].messageId}}"
-                                    },
-                                    "telegramId": "{{step_1['output'].tgId}}"
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
                               "displayName": "call events-list",
                               "name": "step_23",
                               "settings": {
@@ -473,19 +417,6 @@
                                 ]
                               },
                               {
-                                "branchName": "reg_phone",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "reg_phone"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
                                 "branchName": "events_list",
                                 "branchType": "CONDITION",
                                 "conditions": [
@@ -569,7 +500,7 @@
                             "sessionStep": "{{step_8['output'].step}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const commandArgs = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const hasContact = inputs.hasContact === true || inputs.hasContact === 'true';\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  let route = 'none';\n  if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'newevent' || command === 'editevent' || command === 'manage') {\n    // Ивент создаётся и правится формой в Mini App (SPA #/manage, W33, ранее manage.html W31):\n    // /newevent — пустая форма, /editevent <id> и /manage <id> — форма ивента.\n    // Чатовый визард event-wizard-* выведен из эксплуатации; сессии\n    // event_create/event_edit, оставшиеся в `sessions`, не обрабатываются\n    // (route = none), их сообщения молча уходят в «намерение без обработчика».\n    route = 'manage_open';\n  } else if (command === 'events') {\n    route = 'events_list';\n  } else if (command === 'myregs') {\n    route = 'my_regs';\n  } else if (callbackData === 'ev:list:upcoming' || callbackData === 'ev:list:past') {\n    route = 'events_list';\n  } else if (starts(callbackData, 'myreg:cancel:') || starts(callbackData, 'myreg:yes:') || callbackData === 'myreg:no') {\n    route = 'my_reg_cancel';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    // Колбэки регистрации маршрутизируются ПО СВОЕМУ ПРЕФИКСУ, а не по\n    // sessions.step. Гость может держать в ленте несколько живых карточек\n    // (два входа по deep link), и кнопка старой карточки обязана попасть\n    // в свой обработчик, а не в тот, который «сейчас по сценарию».\n    // Маршрутизация по шагу давала чужому колбэку побочный эффект:\n    // reg:pdn:yes при await_marketing уходил в reg-consent-mkt и писал\n    // consent_marketing, которого гость не видел (PAR-2).\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      // Неизвестный колбэк регистрации: молчим, а не угадываем обработчик.\n      route = 'none';\n    } else if (callbackData === '' && sessionStep === 'await_phone') {\n      // Телефон — единственное касание регистрации, отвечающее сообщением\n      // (контакт или любой текст = пропуск), а не нажатием кнопки.\n      route = 'reg_phone';\n    }\n  }\n\n  return {\n    route: route,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep, commandArgs: commandArgs,\n    phoneKind: hasContact ? 'contact' : 'text'\n  };\n};",
+                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const commandArgs = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  let route = 'none';\n  if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'newevent' || command === 'editevent' || command === 'manage') {\n    route = 'manage_open';\n  } else if (command === 'events') {\n    route = 'events_list';\n  } else if (command === 'myregs') {\n    route = 'my_regs';\n  } else if (callbackData === 'ev:list:upcoming' || callbackData === 'ev:list:past') {\n    route = 'events_list';\n  } else if (starts(callbackData, 'myreg:cancel:') || starts(callbackData, 'myreg:yes:') || callbackData === 'myreg:no') {\n    route = 'my_reg_cancel';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    }\n  }\n\n  return {\n    route: route,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep, commandArgs: commandArgs\n  };\n};",
                             "packageJson": "{}"
                           }
                         },

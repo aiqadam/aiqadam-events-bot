@@ -40,7 +40,7 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `first_name` | text | из апдейта, обновляется при каждом контакте |
 | `last_name` | text | может отсутствовать |
 | `username` | text | справочно, может отсутствовать и меняться |
-| `phone` | text | только из `request_contact` (DAT-2), иначе пусто |
+| `phone` | text | только из `request_contact` (DAT-2), иначе пусто; **с 2026-09-14 в регистрации не спрашивается** — остаётся в схеме на будущее |
 | `lang` | text | `ru` \| `uz` \| `en` |
 | `consent_pdn` | bool | согласие на обработку данных (PAR-1) |
 | `consent_pdn_at` | timestamp | когда дано |
