@@ -39,16 +39,37 @@ export default function Ticket({ eventId }: { eventId: string }) {
     const el = qrElRef.current;
     // Без innerHTML через разметку из данных — только DOM
     while (el.firstChild) el.removeChild(el.firstChild);
-    // lazy qrcode — только на ticket
-    const QRCode = await import('qrcode');
-    const canvas = document.createElement('canvas');
-    // margin 0 — зона покоя даёт CSS padding 32px, не QR; цвет по умолчанию чёрный на белом (бренд: Dark code on light ground)
-    await QRCode.toCanvas(canvas, payload, {
-      errorCorrectionLevel: 'H',
-      width: size,
-      margin: 0,
-    });
-    el.appendChild(canvas);
+    try {
+      // lazy qrcode — только на ticket; поддержка обоих форм экспорта (namespace vs default)
+      const mod: Record<string, unknown> = await import('qrcode');
+      const QRCode = (mod as { toCanvas?: unknown }).toCanvas
+        ? (mod as { toCanvas: (c: HTMLCanvasElement, t: string, o: unknown) => Promise<void> })
+        : ((mod as { default?: { toCanvas: (c: HTMLCanvasElement, t: string, o: unknown) => Promise<void> } }).default as { toCanvas: (c: HTMLCanvasElement, t: string, o: unknown) => Promise<void> });
+      if (!QRCode || typeof QRCode.toCanvas !== 'function') throw new Error('qrcode toCanvas missing: ' + Object.keys(mod).join(','));
+      const canvas = document.createElement('canvas');
+      // margin 0 — зона покоя даёт CSS padding 32px, не QR; цвет по умолчанию чёрный на белом (бренд: Dark code on light ground)
+      await QRCode.toCanvas(canvas, payload, {
+        errorCorrectionLevel: 'H',
+        width: size,
+        margin: 0,
+      });
+      el.appendChild(canvas);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // покажем ошибку прямо в плите, чтобы ревью в life было видно без devtools
+      const err = document.createElement('div');
+      err.style.fontSize = '12px';
+      err.style.wordBreak = 'break-all';
+      err.style.color = 'var(--destructive)';
+      err.textContent = 'QR render failed: ' + msg + ' payload=' + payload;
+      el.appendChild(err);
+      // также в статус
+      setErrorText('QR render failed: ' + msg);
+      setIsError(true);
+      setRetryable(true);
+      setShowRetry(true);
+      setStatusKey('');
+    }
   }, [qrSize]);
 
   const renderQr = useCallback(
