@@ -42,10 +42,30 @@
 
 ---
 
+## W33 — Mini App SPA: `ticket` / `scan` / `manage` на React (заменяет W31)
+
+> Возьми пакет **W33** из `docs/BACKLOG.md` и `docs/adr/0022-miniapp-react-spa.md`.
+> Прочитай `CLAUDE.md` целиком, затем `W30`/`W31` как спеки поведения (что сносить).
+>
+> Стек: Vite+React+TS, hash-роутер `#/ticket?event_id=` / `#/scan?event_id=` /
+> `#/manage`+`#/manage/:id`, Tailwind4+shadcn, бренд вендорится из
+> `aiqadam/brand.aiqadam.org` с `BRAND_COMMIT`. Без бэкенда — `my-qr-api`/
+> `checkin-api`/`manage-api` остаются как `POST /sync`. Без веб-шрифтов на
+> `ticket`/`scan` (ADR-0020), `manage` lazy, `qrcode` lazy, русский-онли.
+>
+> Снос полный: `miniapp/*.html` + `vendor/` удаляются. Поведение 1:1 —
+> `ticket` 32px quiet zone + `ResizeObserver`, `scan` луп без закрытия между
+> людьми, `manage` OWN-4/UTC Asia/Tashkent/`LocationManager` fallback/`newId`.
+> `pages.yml` → `dist/`.
+>
+> Ревью проверит: `BRAND_COMMIT` в шапке вендора, нет литералов цвета/шрифта,
+> `scan`/`ticket`/`manage` различающие прогоны, Pages без секретов.
+
 ## W31 — страница `manage`: визард ивента в Mini App
 
-> **Взят 2026-09-14**, на проверке — журнал [W31](W31-manage-page.md). Брифинг
-> снят, чтобы второй агент не взял пакет повторно.
+> **Готов 2026-09-14, заменён W33** ([ADR-0022](adr/0022-miniapp-react-spa.md)).
+> Ванильная реализация сдана (6 кругов ревью, «замечаний нет»), но сносится
+> пакетом W33. Работать по этой секции нельзя.
 
 ---
 
@@ -75,9 +95,10 @@
 | Пакет | Почему |
 | --- | --- |
 | W9 (fallback-чекин) | **не будет сделан** — решение владельца, [Q41](../OPEN-QUESTIONS.md#q41) |
-| визард ивента (`event-wizard-*`) | заменяется пакетом W31; до его приёмки не трогает никто, включая W31 |
+| визард ивента (`event-wizard-*`) | удалён в W31, заменён SPA-роутом W33; не трогать |
+| W31 ваниль | **заменён W33** ([ADR-0022](../adr/0022-miniapp-react-spa.md)); работать по W33 |
 | W14 до W13 и замера [Q13](../OPEN-QUESTIONS.md#q13) | самый опасный пакет проекта: ошибка уходит людям |
 | W25, W27 (i18n) | ждут [qadam-flow#420](https://github.com/aiqadam/qadam-flow/issues/420) |
 
-W10 и W12 свободны: лекало экрана известно с W28. Брифинги на них не
-написаны — собирать по BACKLOG и журналу W28.
+W10 и W12 свободны: лекало экрана известно с W28. W32 ждёт W33. Брифинги
+на них не написаны — собирать по BACKLOG и журналу W28.
