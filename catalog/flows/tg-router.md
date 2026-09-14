@@ -23,17 +23,20 @@
 2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06) — команды
    перекрывают активную сессию, как в пп. 1–2.
 2b. Колбэки `ev:list:upcoming` / `ev:list:past` → `events-list`;
-   `myreg:cancel:*` / `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) —
-   по префиксу `callbackData`, до проверок сессий.
-3. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
-   визарда в `sessions`) обработчика не имеют: их сообщения уходят в
-   `Otherwise` молча.
-4. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
-   `scenario/step` не `-`) со `scenario='registration'`:
-   - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
-     любой другой `reg:*` → **ничего** (не угадываем обработчик).
-   Сообщений без колбэка в рамках `registration` нет — все касания диалога кнопочные.
-5. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
+    `myreg:list` → `my-regs` (W34 — кнопка меню); `myreg:cancel:*` /
+    `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) — по `callbackData`
+    (`myreg:cancel:` / `myreg:yes:` — по префиксу), до проверок сессий.
+3. Голый `/start` (payload пустой или неразобранный), `/menu`, `/help`
+   → `menu` (W34) — меню-хаб с кнопками по ролям.
+4. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
+    визарда в `sessions`) обработчика не имеют: их сообщения уходят в
+    `Otherwise` молча.
+5. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
+    `scenario/step` не `-`) со `scenario='registration'`:
+    - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
+      любой другой `reg:*` → **ничего** (не угадываем обработчик).
+    Сообщений без колбэка в рамках `registration` нет — все касания диалога кнопочные.
+6. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
 
@@ -47,11 +50,12 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`Otherwise` | |
+| step_10 | CODE «routing decision» | вычисляет `route`; `my_regs` — по команде `/myregs` **и** по `callbackData === 'myreg:list'` (кнопка меню W34); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`menu`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft` |
 | step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) |
 | step_26 | `callFlow manage-open` (`queue`, `waitForResponse: false`) | кнопка на страницу `manage` по `/newevent`, `/editevent`, `/manage`; получает `chatId`, `telegramId`, `commandArgs` |
+| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб по голому `/start`, `/menu`, `/help`; получает `chatId`, `firstName`, `badPayload`, `telegramId` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
@@ -59,7 +63,7 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
-  `events-list`, `my-regs`, `my-reg-cancel`, `manage-open` — делегирование, не subflow-функции (ADR-0015 п. 4)
+  `events-list`, `my-regs`, `my-reg-cancel`, `manage-open`, `menu` — делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
@@ -74,7 +78,7 @@
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
-- **Все вызовы касаний (`step_12→14`, `step_23→26`) — `executionMode: queue`,
+- **Все вызовы касаний (`callFlow` из веток `step_11`) — `executionMode: queue`,
   не `inline`.** `inline` синхронен независимо от `waitForResponse` — родитель
   ждёт всю длительность вызванного флоу, включая отправку сообщений Bot API
   (~0,7–0,9 с каждое). `queue` — единственный режим, дающий настоящий
