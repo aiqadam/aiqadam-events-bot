@@ -5,13 +5,11 @@
 > Фундамент собран и принят, пилот ADR-0017 (W28) закрыт. Следующий пакет
 > по критическому пути — **[W13](BACKLOG.md#w13-список-участников-и-экспорт)**
 > (списки и экспорт), за ним W14 (начинается с замера
-> [Q13](OPEN-QUESTIONS.md#q13)). Параллельно свободны **W33** (Mini App SPA,
+> [Q13](OPEN-QUESTIONS.md#q13)). Параллельно свободны **W34** (меню на холостой
+> `/start`, 1 флоу), **W33** (Mini App SPA,
 > [ADR-0022](adr/0022-miniapp-react-spa.md) — снос ванили), W10, W12, W12b, W32.
 > W31 (ванильная `manage.html`) заменён W33 — работать по W33. Порядок и
 > параллельность — [ROADMAP.md](ROADMAP.md).
->
-> Готовые к передаче задания на свободные пакеты —
-> [work/HANDOFF.md](work/HANDOFF.md).
 >
 > Живое состояние проекта — всегда [catalog/overview.md](../catalog/overview.md),
 > а не этот файл: здесь состояние **работ**, там — состояние **системы**.
@@ -90,6 +88,7 @@
 | W31. Страница `manage`: визард ивента в Mini App ([Q43](OPEN-QUESTIONS.md#q43), [ADR-0017](adr/0017-screen-not-message.md) п. 3) | 8 | W30, W28 | **готов** 2026-09-14 — независимое ревью, шесть кругов, вердикт «замечаний нет»; `event-wizard-*` удалены, `/newevent`/`/editevent` → форма; фото — [Q46](OPEN-QUESTIONS.md#q46) — **заменён W33** ([ADR-0022](adr/0022-miniapp-react-spa.md): снос ванили → SPA) | агент W31 | [W31](work/W31-manage-page.md) |
 | W33. Mini App — React SPA: `ticket`/`scan`/`manage` ([ADR-0022](adr/0022-miniapp-react-spa.md)) | 8 | W30, W28 | **готов** 2026-09-14 — независимое ревью «замечаний нет»; платформа `fix(qadams): return_response without respond hangs sync` ([#441](https://github.com/aiqadam/qadam-flow/pull/441)) залит `ce05e65` `fe43020` на `pro-data-tech-qa` (закрыл [#440](https://github.com/aiqadam/qadam-flow/issues/440)) — `my-qr-api`/`checkin-api` `sync` теперь `401 2.3с` вместо `204 30с`, SPA `8854853` работает | агент | [W33](work/W33-react-spa.md) |
 | W32. Owner'ы по списку, `initData` 5 минут, афиша снята ([Q46](OPEN-QUESTIONS.md#q46), [Q47](OPEN-QUESTIONS.md#q47)) | 3 | W33 (ранее W31) | **свободен** — заведён 2026-09-14 по решениям владельца, зависимость уточнена ADR-0022 | — | — |
+| W34. Стартовое меню-хаб на холостой `/start` | вне волн | W28, W06, W33 | **в работе** — 2026-09-14 | muse-spark | [W34](work/W34-menu.md) |
 | W15. Приёмка | 9 | все `готов` на момент приёмки | не начат | — | — |
 
 Критический путь на 2026-09-14: **`W13 → W14 → W15`** — W28 пройден. W10,

@@ -30,7 +30,7 @@
 | `BOT_TOKEN` | [checkin-api](flows/checkin-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
 | `BOT_TOKEN` | [my-qr-api](flows/my-qr-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
 | `MINIAPP_URL` | [reg-start](flows/reg-start.md) | кнопка QR в ветке `existing` |
-| `MINIAPP_URL` | [reg-phone](flows/reg-phone.md) | кнопка `web_app` на `#/ticket?event_id=` (SPA) (ADR-0007) |
+| `MINIAPP_URL` | [reg-consent-mkt](flows/reg-consent-mkt.md) | кнопка `web_app` на `#/ticket?event_id=` (SPA) в сообщении с билетом (ADR-0007) |
 | `MINIAPP_URL` | [my-regs](flows/my-regs.md) | вход `miniappUrl` у CODE «render my regs» — кнопка QR в каждой активной регистрации |
 | `MINIAPP_URL` | [manage-open](flows/manage-open.md) | вход `miniappUrl` у CODE — кнопка `web_app` на `#/manage[/:id]` (SPA) |
 | `BOT_TOKEN` | [manage-api](flows/manage-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
