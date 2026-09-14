@@ -1,7 +1,7 @@
 // Общий fetch с таймаутом 15с и тремя исходами: network / server / json
 // Копия логики из ticket.html:166, index.html:175, manage.html:223 — теперь один модуль.
 
-export const FETCH_TIMEOUT_MS = 30000;
+export const FETCH_TIMEOUT_MS = 15000;
 
 export type ApiResult =
   | { kind: 'network'; message: string }
@@ -9,17 +9,12 @@ export type ApiResult =
   | { kind: 'json'; http: number; data: Record<string, unknown> };
 
 export async function postJson(url: string, body: unknown): Promise<ApiResult> {
-  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  let timedOut = false;
-  const timer = ctrl ? setTimeout(() => { timedOut = true; ctrl.abort(); }, FETCH_TIMEOUT_MS) : 0;
-
-  try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: ctrl ? ctrl.signal : undefined,
-    });
+  // Таймаут через Promise.race без AbortSignal — WebView iPhone виснет с signal, а text/plain ломает парсинг body на триггере.
+  const fetchPromise = fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(async (r) => {
     const raw = await r.text();
     let data: Record<string, unknown> | null = null;
     try {
@@ -28,15 +23,19 @@ export async function postJson(url: string, body: unknown): Promise<ApiResult> {
     } catch {
       data = null;
     }
-    if (timer) clearTimeout(timer);
-    if (!data) return { kind: 'server', http: r.status };
-    return { kind: 'json', http: r.status, data };
+    if (!data) return { kind: 'server', http: r.status } as ApiResult;
+    return { kind: 'json', http: r.status, data } as ApiResult;
+  });
+
+  const timeoutPromise = new Promise<ApiResult>((_, reject) =>
+    setTimeout(() => reject(new Error('timeout ' + FETCH_TIMEOUT_MS + 'ms')), FETCH_TIMEOUT_MS),
+  );
+
+  try {
+    return await Promise.race([fetchPromise, timeoutPromise]);
   } catch (e) {
-    if (timer) clearTimeout(timer);
     const msg = e instanceof Error ? e.message : String(e);
-    // AbortError + флаг таймаута → точный диагноз, иначе CORS/сеть
-    const detail = timedOut ? 'timeout ' + FETCH_TIMEOUT_MS + 'ms' : msg;
-    return { kind: 'network', message: detail };
+    return { kind: 'network', message: msg };
   }
 }
 
