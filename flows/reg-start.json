@@ -113,7 +113,7 @@
                             {
                               "text": "Показать QR",
                               "web_app": {
-                                "url": "{{variables['MINIAPP_URL']}}ticket.html?event_id={{trigger['output'].data.eventId}}"
+                                "url": "{{variables['MINIAPP_URL']}}#/ticket?event_id={{trigger['output'].data.eventId}}"
                               }
                             }
                           ]
@@ -265,12 +265,31 @@
                       "disable_notification": false,
                       "format": "None",
                       "media": {
+                        "photo": "",
                         "photoId": "{{step_3['output'].photoFileId}}"
                       },
                       "media_type": "photo",
                       "protect_content": false
                     },
-                    "propertySettings": {},
+                    "propertySettings": {
+                      "media": {
+                        "schema": {
+                          "photo": {
+                            "description": "The image to be uploaded as a file",
+                            "displayName": "Image",
+                            "required": false,
+                            "type": "FILE"
+                          },
+                          "photoId": {
+                            "description": "The image id previously uploaded to Telegram's servers",
+                            "displayName": "Image Id",
+                            "required": false,
+                            "type": "SHORT_TEXT"
+                          }
+                        },
+                        "type": "MANUAL"
+                      }
+                    },
                     "qadamName": "@aiqadam/qadam-telegram-bot",
                     "qadamVersion": "0.8.0"
                   },

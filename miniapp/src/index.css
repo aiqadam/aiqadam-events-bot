@@ -1,0 +1,34 @@
+@import "tailwindcss";
+@import "./vendor/brand/tokens.css";
+@import "./vendor/brand/components.css";
+
+/* Раскладка; цвет, шрифт и радиусы — только токенами бренда (ADR-0019 п. 2),
+   длины — по 4-пиксельной шкале бренда, ни одного литерала цвета и шрифта. */
+[hidden] { display: none !important; }
+
+/* Плита QR принудительно в светлой теме бренда. Правило бренда, тот же
+   раздел «Event stands → QR codes»: «Dark code on light ground. Never teal.»
+   padding 32px — зона покоя «four modules, always» — правило бренда, не наше. */
+.qr-plate {
+  align-self: stretch;
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  min-height: 224px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qr-plate img, .qr-plate canvas { display: block; }
+
+/* Вердикт — .card с рамкой и полосой тона, как на сканере: тон несёт рамка,
+   текст остаётся --foreground (W30, круг 5). */
+.result.ok { border-color: var(--success); box-shadow: inset 0 4px 0 var(--success); }
+.result.warn { border-color: var(--warning); box-shadow: inset 0 4px 0 var(--warning); }
+.result.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
+.result .empty-heading { color: var(--foreground); }
+
+/* Ticket card error — так же как result bad */
+.ticket-card.error { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
+.ticket-card.error .msg { color: var(--foreground); }

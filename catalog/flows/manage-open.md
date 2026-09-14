@@ -4,8 +4,8 @@
 - **Триггер**: `callableFlow` — вызывается только из `tg-router`
   (`route: manage_open`, команда `/manage` и `/manage <id>`)
 - **Назначение**: единственный вход на страницу `manage` из чата — одно
-  сообщение с кнопкой `web_app` на `manage.html` (создание) или
-  `manage.html?event_id=<id>` (правка). Сам ничего не проверяет и не пишет.
+  сообщение с кнопкой `web_app` на `#/manage` (создание) или
+  `#/manage/<id>` (правка, SPA) (правка). Сам ничего не проверяет и не пишет.
 - **Flow ID (MCP)**: `tMu8WwjrdqMpJYzuCHQcI` · **externalId**: `01jaqjCtzFMy0AlUXwY8C`
 
 ## Шаги

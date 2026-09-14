@@ -61,7 +61,7 @@
                                 {
                                   "text": "Открыть билет",
                                   "web_app": {
-                                    "url": "{{variables['MINIAPP_URL']}}ticket.html?event_id={{step_1['output'].eventId}}"
+                                    "url": "{{variables['MINIAPP_URL']}}#/ticket?event_id={{step_1['output'].eventId}}"
                                   }
                                 }
                               ]

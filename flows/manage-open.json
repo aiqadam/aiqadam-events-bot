@@ -28,6 +28,7 @@
             }
           },
           "input": {
+            "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
             "chat_id": "{{trigger['output'].data.chatId}}",
             "disable_notification": false,
             "format": "None",
@@ -62,7 +63,7 @@
           }
         },
         "sourceCode": {
-          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const args = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs).trim();\n  const miniappUrl = String(inputs.miniappUrl === undefined || inputs.miniappUrl === null ? '' : inputs.miniappUrl);\n  // Аргумент команды — только валидный slug ивента; всё остальное = новый ивент.\n  // Права на правку решает manage-api по initData и owner_id, не эта кнопка.\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const eventId = SLUG.test(args) ? args : '';\n  const url = miniappUrl + 'manage.html' + (eventId ? ('?event_id=' + eventId) : '');\n  return {\n    text: t(eventId ? 'manage.open.edit' : 'manage.open.new'),\n    replyMarkup: { inline_keyboard: [[{ text: t('manage.open.btn'), web_app: { url: url } }]] },\n    eventId: eventId, url: url\n  };\n};",
+          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const args = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs).trim();\n  const miniappUrl = String(inputs.miniappUrl === undefined || inputs.miniappUrl === null ? '' : inputs.miniappUrl);\n  // Аргумент команды — только валидный slug ивента; всё остальное = новый ивент.\n  // Права на правку решает manage-api по initData и owner_id, не эта кнопка.\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const eventId = SLUG.test(args) ? args : '';\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const url = base + '/#/manage' + (eventId ? '/' + eventId : '');\n  return {\n    text: t(eventId ? 'manage.open.edit' : 'manage.open.new'),\n    replyMarkup: { inline_keyboard: [[{ text: t('manage.open.btn'), web_app: { url: url } }]] },\n    eventId: eventId, url: url\n  };\n};",
           "packageJson": "{}"
         }
       },
