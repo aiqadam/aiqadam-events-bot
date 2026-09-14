@@ -30,9 +30,11 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 литералом в коде») соблюдён и проверяется тем же
 [`tools/check-texts.py`](../../tools/check-texts.py); механизм substitution
 и байтовая идентичность копий — нет, это сознательное упрощение, не
-задокументированное отдельным эталоном. Список шагов — во всех карточках
-`catalog/flows/*.md` (`reg-start`, `reg-consent-pdn`,
-`reg-consent-mkt`, `checkin-api`, `my-qr-api`).
+задокументированное отдельным эталоном. Шаги с `texts` есть у флоу:
+`checkin-api`, `events-list`, `manage-api`, `manage-open`, `menu`,
+`my-qr-api`, `my-reg-cancel`, `my-regs`, `reg-afterword`, `reg-consent-mkt`,
+`reg-consent-pdn`, `reg-start` (полнота — по закоммиченному экспорту
+`flows/*.json`); список шагов каждого — в его карточке `catalog/flows/*.md`.
 
 **До W26 (историческая привязка к удалённым флоу, не текущая спека):**
 

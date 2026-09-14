@@ -2,7 +2,9 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
-  на команду `/myregs` (ADR-0015: касание = один вход)
+  на команду `/myregs` и на колбэк `myreg:list` из меню (W34). `callbackData`
+  используется только для ack (`answer_callback_query`); список рендерится в
+  обоих случаях (ADR-0015: касание = один вход)
 - **Назначение**: мои регистрации (PAR-4) — список с QR-кнопками и кнопками
   отмены там, где отмена ещё доступна.
 - **Flow ID (MCP)**: `R3KaUIk4M9e01npCxeu3n` · **externalId**: `K4RS16MdhW0pf8UnYZueu`

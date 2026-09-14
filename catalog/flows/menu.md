@@ -13,7 +13,7 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `telegramId` |
-| step_1 | `tables-find-records events` | ивенты, где `owner_id` = пользователь (limit 1 — хватит одноgo факта) |
+| step_1 | `tables-find-records events` | ивенты, где `owner_id` = пользователь (limit 1 — хватит одного факта) |
 | step_2 | `tables-find-records event_staff` | все staff-строки пользователя (limit 50) |
 | step_3 | `tables-find-records events` | опубликованные ивенты (status = `published`, limit 50) |
 | step_4 | CODE «render menu» | сборка кнопок: guest (2) + owner (+1) + staff (+1); фильтр staff по `revoked_at` и будущим ивентам |
