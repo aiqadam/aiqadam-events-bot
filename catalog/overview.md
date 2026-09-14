@@ -38,8 +38,11 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Таблицы
 
-Все 10 из [DATA-MODEL.md](../docs/DATA-MODEL.md), схема и `externalId` —
-в [tables/](tables/), рецепт пересборки — [tables/README.md](tables/README.md).
+Все 10 доменных из [DATA-MODEL.md](../docs/DATA-MODEL.md) плюс служебная
+[`migrations`](tables/migrations.md) (журнал изменений инстанса,
+[ADR-0021](../docs/adr/0021-repo-is-source-of-truth-migrations-table.md));
+схема и `externalId` — в [tables/](tables/), рецепт пересборки —
+[tables/README.md](tables/README.md).
 `strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
 не построен (см. Flows выше); источник правды для строк —
 `i18n/*.json` в репозитории.
