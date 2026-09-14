@@ -1,0 +1,28 @@
+name: checks
+
+# Офлайн-проверки репозитория на каждый PR и push в main.
+# Без секретов: обе проверки читают только закоммиченные файлы.
+#
+# Чего здесь НЕТ и почему: tools/check-migrations.py нужен ключ
+# платформы и живой инстанс — в CI без секретов он не запускается.
+# Его прогоняют владелец пакета после изменений через MCP, ревьюер
+# (REVIEW-CHECKLIST п. 2) и приёмка W15 (BACKLOG, п. 0). Если решим
+# держать ключ в секретах Actions — это решение владельца, отдельным
+# коммитом.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  export-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Секреты в экспорте flows/*.json
+        run: tools/check-export-secrets.sh
+      - name: Тексты флоу == i18n/ru.json
+        run: python3 tools/check-texts.py i18n/ru.json flows/*.json
+      - name: Синтаксис python-инструментов
+        run: python3 -m py_compile tools/*.py
