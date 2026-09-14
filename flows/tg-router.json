@@ -58,8 +58,7 @@
                                     "exampleData": {
                                       "chatId": "322876545",
                                       "eventId": "demo",
-                                      "telegramId": "322876545",
-                                      "utm": ""
+                                      "telegramId": "322876545"
                                     },
                                     "externalId": "HGX7KPhFsyFrapBRvlIAT"
                                   },
@@ -196,12 +195,9 @@
                                   }
                                 },
                                 "input": {
-                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
-                                      "callbackData": "",
-                                      "callbackQueryId": "",
                                       "chatId": "322876545",
                                       "telegramId": "322876545"
                                     },
@@ -239,12 +235,9 @@
                                   }
                                 },
                                 "input": {
-                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
-                                      "callbackData": "",
-                                      "callbackQueryId": "",
                                       "chatId": "322876545",
                                       "telegramId": "322876545"
                                     },
@@ -282,7 +275,6 @@
                                   }
                                 },
                                 "input": {
-                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
@@ -338,6 +330,48 @@
                                     "payload": {
                                       "chatId": "{{step_1['output'].chatId}}",
                                       "commandArgs": "{{step_10['output'].commandArgs}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call menu",
+                              "name": "step_15",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "badPayload": "false",
+                                      "chatId": "322876545",
+                                      "firstName": "Тест",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "BOLkFV1GreF8r7opvDCVo"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "badPayload": "{{step_10['output'].badPayload}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
                                       "telegramId": "{{step_1['output'].tgId}}"
                                     }
                                   },
@@ -469,6 +503,19 @@
                                 ]
                               },
                               {
+                                "branchName": "menu",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "menu"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
                                 "branchName": "Otherwise",
                                 "branchType": "FALLBACK"
                               }
@@ -497,10 +544,11 @@
                             "sessionActive": "{{step_8['output'].active}}",
                             "sessionDraft": "{{step_8['output'].draft}}",
                             "sessionScenario": "{{step_8['output'].scenario}}",
-                            "sessionStep": "{{step_8['output'].step}}"
+                            "sessionStep": "{{step_8['output'].step}}",
+                            "startPayload": "{{step_1['output'].startPayload}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const commandArgs = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  let route = 'none';\n  if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'newevent' || command === 'editevent' || command === 'manage') {\n    route = 'manage_open';\n  } else if (command === 'events') {\n    route = 'events_list';\n  } else if (command === 'myregs') {\n    route = 'my_regs';\n  } else if (callbackData === 'ev:list:upcoming' || callbackData === 'ev:list:past') {\n    route = 'events_list';\n  } else if (starts(callbackData, 'myreg:cancel:') || starts(callbackData, 'myreg:yes:') || callbackData === 'myreg:no') {\n    route = 'my_reg_cancel';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    }\n  }\n\n  return {\n    route: route,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep, commandArgs: commandArgs\n  };\n};",
+                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const commandArgs = String(inputs.commandArgs === undefined || inputs.commandArgs === null ? '' : inputs.commandArgs);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s остаются в Otherwise: чекин — только сканером (Q41).\n  let badPayload = false;\n  if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'menu' || command === 'help') {\n    route = 'menu';\n  } else if (command === 'newevent' || command === 'editevent' || command === 'manage') {\n    route = 'manage_open';\n  } else if (command === 'events') {\n    route = 'events_list';\n  } else if (command === 'myregs' || callbackData === 'myreg:list') {\n    route = 'my_regs';\n  } else if (callbackData === 'ev:list:upcoming' || callbackData === 'ev:list:past') {\n    route = 'events_list';\n  } else if (starts(callbackData, 'myreg:cancel:') || starts(callbackData, 'myreg:yes:') || callbackData === 'myreg:no') {\n    route = 'my_reg_cancel';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    }\n  }\n\n  return {\n    route: route, badPayload: badPayload,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep, commandArgs: commandArgs\n  };\n};",
                             "packageJson": "{}"
                           }
                         },
@@ -761,7 +809,6 @@
     },
     "settings": {
       "input": {
-        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
         "update_types": [
           "message",
           "callback_query"

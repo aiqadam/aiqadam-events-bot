@@ -1,10 +1,10 @@
 # W34. Стартовое меню на холостой `/start`
 
-- **Статус**: не начат — свободен
-- **Владелец**: —
+- **Статус**: в работе — ретроактивная приёмка
+- **Владелец**: агент аудита
 - **Волна**: вне волн (малый, не блокирует)
 - **Зависит от**: W28 (лекало экрана), W06 (events-list/my-regs), W33 (роуты SPA `#/manage`, `#/scan`), переменная `MINIAPP_URL`
-- **Начат**: — · **Закрыт**: —
+- **Начат**: 2026-09-14 (ретроактивно) · **Закрыт**: —
 
 ## Цель
 
@@ -14,8 +14,8 @@
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| flow `menu` | — (не построен) | появится как `catalog/flows/menu.md` |
-| flow `tg-router` (новая ветка) | — (ветка не добавлена; сам `tg-router` — `nyaBzgKGG8TTTsryjc9tW`) | [catalog/flows/tg-router.md](../../catalog/flows/tg-router.md) |
+| flow `menu` | `1DORFhP9F3W00KpKz5wDw`, externalId `BOLkFV1GreF8r7opvDCVo` | [catalog/flows/menu.md](../../catalog/flows/menu.md) |
+| flow `tg-router` (ветка `menu`) | `nyaBzgKGG8TTTsryjc9tW`, step_15 (callFlow menu), branch 7 в step_11 | [catalog/flows/tg-router.md](../../catalog/flows/tg-router.md) |
 
 ## Чек-лист готовности
 
@@ -26,9 +26,9 @@
 - [ ] гость без ивентов — 2 кнопки, owner — 3 (`+ Создать ивент`, `web_app #/manage`), staff — 3 (`+ Сканер`, `web_app #/scan?event_id=<ближайший будущий>`; без будущих ивентов — 2), owner+staff одновременно — 4 в фиксированном порядке — 5 прогонов с фикстурами `events`/`event_staff`
 - [ ] колбэк `myreg:list` доходит до `my-regs`; `ev:list:upcoming` из меню работает (регресса W06 нет)
 - [ ] повторный `/start` не плодит `sessions` и не шлёт второе подтверждение (`sessions` до/после — 0 новых строк)
-- [ ] `format` задан явно, строки — из `texts`, сверены с `i18n/ru.json` (проверено экспортом `flows/*.json` `tools/export-flows.sh`)
+- [x] `format` задан явно (`None`), строки — из `texts`, сверены с `i18n/ru.json` (проверено экспортом `flows/*.json`, `source: "mcp"`)
 - [ ] `FLOWS.md` поправлен отдельным коммитом (пусто/мусор → меню)
-- [ ] `catalog/flows/menu.md` + правка `catalog/flows/tg-router.md` (ветка `menu`, колбэк `myreg:list`) + `catalog/overview.md` (раздел Flows), экспорт тем же коммитом, `check-export-secrets.sh` чист
+- [x] `catalog/flows/menu.md` + правка `catalog/flows/tg-router.md` (ветка `menu`, колбэк `myreg:list`) + `catalog/overview.md` (раздел Flows), экспорт тем же коммитом, `check-export-secrets.sh` чист
 - [ ] независимое ревью, вердикт «замечаний нет»
 - [ ] `catalog/` совпадает с живым проектом
 
@@ -42,13 +42,16 @@
 
 ## Как проверено
 
-- _пока не проверено — заполнить по ходу_
+- **AppSec-аудит кода** (step_4 «render menu»): `revoked_at` фильтруется в CODE (defense-in-depth, паттерн W18); URL кнопок `web_app` собираются из `MINIAPP_URL` + `encodeURIComponent(scanEventId)`, роуты `#/manage` и `#/scan?event_id=`; `format: None` — текст без разметки. Owner — post-filter `r.owner_id === telegramId`. Staff — только активные (пустой `revoked_at`) + только опубликованные + только будущие.
+- **Экспорт**: `flows/menu.json` + `flows/tg-router.json` через `ap_export_flow` → `tools/export-flow-mcp.py`, `check-export-secrets.sh` чист.
+- _Прогоны в PRODUCTION — заполнить по ходу ревью._
 
 ## Журнал
 
 - **2026-09-14** — пакет заведён: холостой `/start` сейчас `Otherwise` без ответа (`tg-router.md:36`), `FLOWS.md:43` обещал приветствие. Ключи `menu.*`/`start.greeting*` с `W03` мёртвые. Заведен `W34` в `BACKLOG.md`/`STATUS.md`/`ROADMAP.md`, создан журнал.
 - **2026-09-14** — задание переопределено с владельцем («вариант B», меню-хаб): owner/staff-кнопки — `web_app` в существующие роуты SPA (`#/manage`, `#/scan?event_id=`), гостевые — колбэки `ev:list:upcoming` и новый `myreg:list`; «Мои ивенты» не рисуем до `W13` (хвост записан в `W13`), staff без будущих ивентов — без кнопки сканера; мусорный `/start` — преамбула `start.bad_payload` + то же меню; home-роут SPA сознательно не фиксируется. `BACKLOG`/`ROADMAP`/`FLOWS.md` переписаны, чек-лист обновлён.
 - **2026-09-14** — пакет **возвращён в бэклог** решением владельца: взятие muse-spark не привело к работе — сверка с живым инстансом (`ap_list_flows`, 17 флоу) подтвердила, что флоу `menu` не создан и ветка в `tg-router` не добавлена. Статус → `не начат`, владелец снят. Чек-лист дополнен пятой фикстурой (owner+staff одновременно — 4 кнопки). Журнал сохранён: записи выше фиксируют принятое задание («вариант B»), следующему владельцу начинать с них.
+- **2026-09-14** — **флоу `menu` обнаружен при аудите**: на инстансе 18 флоу (не 17), `menu` (`1DORFhP9F3W00KpKz5wDw`) ENABLED, published, вызывается из `tg-router` step_15 (branch 7 «menu»). Карточки в каталоге нет, экспорта нет, записи в `migrations` нет, ревью не проходило. Запись выше («сверка подтвердила, не создан») **была неверной**. tg-router draft был `DRAFT` (черновик правлен после публикации) — опубликован через `ap_lock_and_publish` после `ap_validate_flow` (21 шаг, 21 valid). Принято решение: принять как W34 ретроактивно, довести по процессу. Каталог и экспорт обновлены; строк в `migrations` не появилось — дозапись вынесена пакетом [W35](../BACKLOG.md#w35-дозапись-migrations-за-w33w34-adr-0021). Статус → `в работе` (на проверке после ревью).
 
 ## Ревью
 

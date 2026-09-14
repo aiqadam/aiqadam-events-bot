@@ -45,6 +45,12 @@
     "publishedVersionId": "nGCZkvjp1NpZfNcOWGDqE"
   },
   {
+    "flow": "menu",
+    "flowId": "1DORFhP9F3W00KpKz5wDw",
+    "publishedVersionId": "42flU3b7ZmTUFbR7OWRpk",
+    "source": "mcp"
+  },
+  {
     "flow": "my-qr-api",
     "flowId": "WYmnxVM4xPAWZA1IvNZok",
     "publishedVersionId": "8GQyVsMWkDbG93zk1FtdT"
@@ -82,6 +88,7 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "E4sDxa5IYswA8RjDWpfWL"
+    "publishedVersionId": "1LNpRakfrf9CPzl7SXKi9",
+    "source": "mcp"
   }
 ]
