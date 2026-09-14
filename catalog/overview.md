@@ -15,8 +15,8 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 22 | [flows/](flows/) |
-| Таблицы | 10 | [tables/](tables/) |
+| Флоу | 18 | [flows/](flows/) |
+| Таблицы | 11 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 4 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL` | [variables.md](variables.md) |
 
@@ -28,8 +28,8 @@ W26 закрыт («готов», независимое ревью, три кр
 | Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md), [reg-phone](flows/reg-phone.md) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
 | Списки и отмена участника (W06) | [events-list](flows/events-list.md), [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
-| Визард ивента (создание/правка, ADR-0016) | [event-wizard-start](flows/event-wizard-start.md), [event-wizard-edit-start](flows/event-wizard-edit-start.md), [event-wizard-field](flows/event-wizard-field.md), [event-wizard-photo](flows/event-wizard-photo.md), [event-wizard-geo](flows/event-wizard-geo.md), [event-wizard-publish](flows/event-wizard-publish.md) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md) |
+| Вход на страницу `manage` из чата | [manage-open](flows/manage-open.md) — кнопка `web_app` по `/newevent`, `/editevent <id>`, `/manage [<id>]`; ивент создаётся и правится только формой (ADR-0017 п. 3) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -37,8 +37,11 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Таблицы
 
-Все 10 из [DATA-MODEL.md](../docs/DATA-MODEL.md), схема и `externalId` —
-в [tables/](tables/), рецепт пересборки — [tables/README.md](tables/README.md).
+Все 10 доменных из [DATA-MODEL.md](../docs/DATA-MODEL.md) плюс служебная
+[`migrations`](tables/migrations.md) (журнал изменений инстанса,
+[ADR-0021](../docs/adr/0021-repo-is-source-of-truth-migrations-table.md));
+схема и `externalId` — в [tables/](tables/), рецепт пересборки —
+[tables/README.md](tables/README.md).
 `strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
 не построен (см. Flows выше); источник правды для строк —
 `i18n/*.json` в репозитории.
@@ -54,23 +57,32 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Mini App
 
-Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. Страниц две из
-трёх разрешённых [ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3
-(`manage` не построена — [Q43](../docs/OPEN-QUESTIONS.md#q43)).
+Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. Страниц три —
+все, что разрешены [ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3;
+четвёртой не будет без нового ADR.
 
 | Страница | Файл | Роль | API |
 |---|---|---|---|
 | билет | `miniapp/ticket.html` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | сканер | `miniapp/index.html` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
+| форма ивента | `miniapp/manage.html` | owner создаёт и правит ивент (OWN-1…OWN-5, OWN-15) | [manage-api](flows/manage-api.md) |
 
-Обе страницы опираются на два общих файла: `i18n.js` тянет надписи словарём
+Страница `manage` открывается кнопкой из [manage-open](flows/manage-open.md)
+(`/newevent`, `/editevent <id>`, `/manage [<id>]`); права на правку решает `manage-api` по `initData`
+и `events.owner_id`, страница ничего не решает. Фото афиши форма не трогает
+([Q46](../docs/OPEN-QUESTIONS.md#q46)); гео — координаты руками или кнопкой
+через `Telegram.WebApp.LocationManager` (фолбэк `navigator.geolocation`).
+Даты вводятся как Asia/Tashkent (`datetime-local`) и уходят серверу строкой
+без зоны; в UTC переводит `manage-api`.
+
+Все страницы опираются на два общих файла: `i18n.js` тянет надписи словарём
 `i18n/ru.json` с того же Pages (русский-онли, [ADR-0014](../docs/adr/0014-russian-only-until-platform-i18n.md);
 словарь не доехал — на экране сырые ключи, а не пустота), а `ticket` — ещё и
 на `vendor/qrcode.min.js`, которым QR рисуется на клиенте
 ([ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md): файл картинкой не шлётся).
 Оба вендоренных файла лежат с лицензиями рядом.
 
-Обе страницы собраны на брендовых токенах и компонентах
+Все три страницы собраны на брендовых токенах и компонентах
 ([ADR-0019](../docs/adr/0019-design-system-from-brand-repo.md)); своих цветов,
 кнопок и типографики в них нет. Собственный CSS страниц — раскладка плюс
 цвет **только через семантические токены бренда** (`--destructive`,
@@ -81,7 +93,7 @@ W26 закрыт («готов», независимое ревью, три кр
   (`.empty-heading` / `.empty-desc`) вне самого компонента — у бренда нет
   продуктовых классов заголовка страницы (`.section-title` и
   `.subsection-title` — docs-шапки). Это компромисс: изменение `EmptyState`
-  у бренда молча поменяет заголовки обеих страниц.
+  у бренда молча поменяет заголовки всех трёх страниц.
 - **Шапка Telegram WebView не перекрашивается**: `themeParams` не читаются,
   `setHeaderColor` / `setBackgroundColor` не вызываются — фон страницы
   брендовый, шапка клиента своя, шов между ними виден. Это следствие
@@ -90,11 +102,15 @@ W26 закрыт («готов», независимое ревью, три кр
 
 - **`vendor/aiqadam-brand-subset.css`** — дословные блоки `tokens.css` и
   `components.css` бренда с зафиксированным в шапке коммитом: токены, база,
-  Buttons, Cards, `.sr`, EmptyState. 10,2 КиБ (3,6 КиБ gzip).
+  Buttons, Cards, `.sr`, EmptyState, Inputs, Checkbox/Radio/Switch. 14,3 КиБ
+  (4,5 КиБ gzip); Inputs и Controls нужны только форме `manage`.
   Правится только переснятием с бренда, не редактированием на месте.
-- **Веб-шрифтов нет ни на одной из двух страниц.** Три брендовых семейства —
-  444 КиБ, и обе страницы открываются на площадке ивента, где связь плохая
-  ([Q40](../docs/OPEN-QUESTIONS.md#q40)). Работают системные фолбэки, объявленные
+- **Веб-шрифтов нет ни на одной из трёх страниц.** Три брендовых семейства —
+  444 КиБ, и `ticket`/`scan` открываются на площадке ивента, где связь плохая
+  ([Q40](../docs/OPEN-QUESTIONS.md#q40), [ADR-0020](../docs/adr/0020-no-web-fonts-on-venue-pages.md)).
+  Для `manage` решение принято отдельно и тем же замером (ADR-0020 п. 3):
+  444 КиБ шрифтов против ~35 КиБ страницы с CSS, и вторая типографика внутри
+  одной Mini App — цена, названная в ADR-0020, которую платить незачем. Работают системные фолбэки, объявленные
   в самих брендовых токенах `--font-*`. Вся палитра бренда — OKLCH: на
   движке без его поддержки токены цвета невалидны, и страница откатывается
   к умолчаниям браузера. Она остаётся читаемой, а QR — сканируемым, но
@@ -137,6 +153,13 @@ W26 закрыт («готов», независимое ревью, три кр
   буквами на `--card` даёт в светлой теме 2,1–2,4:1, а эту строку контролёр
   читает в дверях ярко освещённого холла. Новый исход красится так же —
   красить буквы значит вернуть ту же проблему.
+  Тем же способом оформлен отказ на `ticket` (рамка и полоса карточки
+  билета, текст `--foreground`) и итог сохранения на `manage`.
+- **У «Загрузка…» на `ticket` и `manage` есть выход**: `fetch` с таймаутом
+  15 с, три различимых исхода — нет соединения/таймаут, сервер ответил
+  не-JSON (5xx-страница), сервер ответил JSON с ошибкой — и кнопка
+  «Повторить» там, где повтор имеет смысл (не у `not_registered` и не вне
+  Telegram).
 - **QR запрашивается, не дожидаясь словаря** `i18n/ru.json`: на плохой связи
   это единственное, ради чего страницу открыли. Словарь не доехал — подписи
   будут сырыми ключами, QR будет.

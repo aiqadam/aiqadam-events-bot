@@ -1,8 +1,11 @@
 # Экспорт флоу
 
-Здесь лежат **опубликованные** версии флоу проекта, снятые
-`GET /api/v1/flows/:id?versionId=<publishedVersionId>` —
-[ADR-0018](../docs/adr/0018-rest-read-for-everyone.md) п. 3. Смысл один:
+Здесь лежат **опубликованные** версии флоу проекта. Два способа снять
+снимок: `GET /api/v1/flows/:id?versionId=<publishedVersionId>`
+([ADR-0018](../docs/adr/0018-rest-read-for-everyone.md) п. 3,
+`tools/export-flows.sh`) или `ap_export_flow` через MCP **сразу после
+`ap_lock_and_publish`** ([ADR-0021](../docs/adr/0021-repo-is-source-of-truth-migrations-table.md),
+`tools/export-flow-mcp.py`, в манифесте `source: "mcp"`). Смысл один:
 `settings.input` PIECE-шагов (URL, cron, таймзоны, `format`, порядок
 аргументов `hmac-signature`) виден в диффе PR, а не только тому, кто
 специально сходил в REST.
@@ -22,6 +25,18 @@
 подтверждается `_manifest.json`, где записан `publishedVersionId` каждого
 флоу; сверять его с `ap_list_flows` — отдельный пункт чек-листа ревьюера.
 Из самого файла версию узнать нельзя: нормализация выбрасывает `.id`.
+
+## Снимок через MCP (ADR-0021)
+
+Когда ключа платформы нет, снимок снимается `ap_export_flow` **сразу после
+`ap_lock_and_publish`**, до любой правки черновика, и кладётся сюда
+`tools/export-flow-mcp.py` в той же нормализованной форме. В `_manifest.json`
+такая запись несёт `source: "mcp"`. Отличия от REST-снимка, которые видны
+диффом и не являются изменением конфигурации: **нет полей `auth` в шагах**
+(`connectionIds` на уровне флоу сохранён) и **нет пустых строк в
+`exampleData`**. Перевыгрузка REST-скриптом возвращает полную форму.
+Факт «инстанс равен репозиторию» записывается в таблицу `migrations`
+([catalog/tables/migrations.md](../catalog/tables/migrations.md)).
 
 ## Правила
 
@@ -74,18 +89,18 @@ tools/check-export-secrets.sh      # ОБЯЗАТЕЛЬНО перед комм�
 откатывается удалением файла — он откатывается ротацией `BOT_TOKEN`
 и `QR_SIGNING_KEY`.
 
-## Чем это снимается — REST-скриптом, и почему не `ap_export_flow`
+## Два пути выгрузки: REST-скрипт и `ap_export_flow`
 
 С qadam-flow PR #439 у платформы есть MCP-путь `ap_export_flow` той же формы
-`SharedTemplate`. **Для выгрузки он не годится** так же, как `/template`:
-отдаёт **последнюю** версию флоу, а не опубликованную — в ответе
-`flows[0].state` равен `DRAFT`, а `flows[0].id` не совпадает с
-`publishedVersionId` из `_manifest.json`. Параметра версии у инструмента
-нет вовсе. Пока это так, штатный путь — `tools/export-flows.sh`, который
-проверяет `version.id` и `state == LOCKED` фактом ([Q44](../docs/OPEN-QUESTIONS.md#q44)).
-Пересматривать — когда у `ap_export_flow` появится выбор версии, и это будет
-доказано различающей проверкой (draft ≠ published на одном флоу), а не
-названием параметра.
+`SharedTemplate`. Он отдаёт **последнюю** версию флоу, выбора версии у него
+нет ([Q44](../docs/OPEN-QUESTIONS.md#q44)); поэтому он годится **только с
+условием «сразу после `ap_lock_and_publish`, без правок черновика»** — тогда
+последняя версия и есть опубликованная, `flows[0].id` равен
+`publishedVersionId`, `state: LOCKED`, и `tools/export-flow-mcp.py` это
+проверяет и отказывается писать иначе (ADR-0021, раздел выше). Снимок беднее
+REST-снимка: без `auth` в шагах и без пустых строк `exampleData`.
+С ключом платформы предпочтителен `tools/export-flows.sh`: он снимает любую
+опубликованную версию в любой момент и в полной форме.
 
 ## Ключ платформы
 

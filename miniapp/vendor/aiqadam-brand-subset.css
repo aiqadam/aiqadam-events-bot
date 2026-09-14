@@ -16,13 +16,16 @@
    которые и работают.
 
    Взяты целиком, дословно, без единой правки значений — только эти блоки:
-   токены, база, Buttons, Cards, .sr, EmptyState.
+   токены, база, Buttons, Cards, .sr, EmptyState, Inputs, Checkbox/Radio/Switch.
    EmptyState нужен страницам не рамкой, а типографикой `.empty-heading` /
    `.empty-desc`: вердикт чекина — это `.card`, а пунктирная рамка у бренда
    означает «данных нет».
-   Не взяты: Badges, Inputs, Avatars, Checkbox/Radio/Switch, Tooltip, Skeleton, Tag,
-   docs-* , Header, EventCard, SpeakerCard, Leaderboard, Badges showcase,
-   StatCard, ActivityFeed, Layout chrome — на этих двух страницах их нет.
+   Inputs (`.input`, `.textarea`, `.label`, `.helper`) и Checkbox/Radio/Switch
+   (`.radio`, `.control-row`) нужны только странице `manage` — форме ивента;
+   `ticket` и `scan` их не используют, но файл один на все три страницы.
+   Не взяты: Badges, Avatars, Tooltip, Skeleton, Tag, docs-*, Header,
+   EventCard, SpeakerCard, Leaderboard, Badges showcase, StatCard,
+   ActivityFeed, Layout chrome — на этих трёх страницах их нет.
 
    Как обновить: склонировать бренд, взять те же именованные блоки заново
    (границы помечены комментариями «——— <блок> · <файл>:<строки> ———»),
@@ -278,4 +281,136 @@ code, pre, .mono { font-family: var(--font-mono); }
   color: var(--muted-foreground);
   margin: 0 0 20px 0;
   max-width: 380px;
+}
+
+/* ——— Inputs · tokens.css:204-253 ——— */
+/* =========================================================
+   Inputs
+   ========================================================= */
+.input, .textarea {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+.textarea { height: auto; min-height: 96px; padding: 10px 12px; resize: vertical; line-height: 1.5; }
+.input::placeholder, .textarea::placeholder { color: var(--muted-foreground); }
+.input:hover, .textarea:hover {
+  border-color: color-mix(in oklch, var(--primary) 40%, transparent);
+}
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 30%, transparent);
+}
+.input.error, .textarea.error { border-color: var(--destructive); }
+.input.error:focus, .textarea.error:focus {
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--destructive) 30%, transparent);
+}
+.input-wrap { position: relative; }
+.input-wrap > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.input-wrap > .input { padding-left: 36px; }
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 6px;
+}
+.helper { font-size: 12px; color: var(--muted-foreground); margin-top: 6px; }
+.helper.error { color: var(--destructive); }
+
+/* ——— Checkbox, Radio, Switch · tokens.css:358-435 ——— */
+/* =========================================================
+   Checkbox, Radio, Switch
+   ========================================================= */
+.checkbox, .radio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: all 150ms var(--ease-out);
+  flex-shrink: 0;
+}
+.checkbox { border-radius: 4px; }
+.radio    { border-radius: 50%; }
+.checkbox:hover, .radio:hover { border-color: color-mix(in oklch, var(--primary) 60%, transparent); }
+.checkbox:checked, .radio:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.checkbox:checked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='3.5 8 6.5 11 12.5 5'/></svg>") center/12px no-repeat;
+}
+.radio:checked::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--primary-foreground);
+}
+.checkbox:focus-visible, .radio:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 36px; height: 20px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: all 150ms var(--ease-out);
+  flex-shrink: 0;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 1px; left: 1px;
+  width: 16px; height: 16px;
+  background: var(--foreground);
+  border-radius: 50%;
+  transition: transform 150ms var(--ease-out), background 150ms var(--ease-out);
+}
+.switch:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.switch:checked::after {
+  transform: translateX(16px);
+  background: var(--primary-foreground);
+}
+.switch:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
 }

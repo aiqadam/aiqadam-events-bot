@@ -12,6 +12,9 @@
   <style>
     /* Раскладка; цвет, шрифт и радиусы — только токенами бренда (ADR-0019 п. 2),
        длины — по 4-пиксельной шкале бренда, ни одного литерала цвета и шрифта. */
+    /* Без этого `.btn { display: inline-flex }` бренда перебивает UA-правило
+       для [hidden], и скрытая кнопка «Повторить» остаётся на экране. */
+    [hidden] { display: none !important; }
     main { max-width: 384px; margin: 0 auto; padding: 16px; text-align: center; }
     .ticket-card { display: flex; flex-direction: column; align-items: center; gap: 16px; }
     /* Плита QR принудительно в светлой теме бренда. Правило бренда, тот же
@@ -46,7 +49,12 @@
     }
     .qr-plate img, .qr-plate canvas { display: block; }
     .msg { margin: 16px 0 0; }
-    .msg.error { color: var(--destructive); }
+    /* Отказ оформлен так же, как вердикт на сканере: тон несёт рамка и полоса
+       карточки, текст остаётся `--foreground`. Акцентный токен текстом на
+       `--card` давал 4,65:1 — впритык к порогу для 14 px (W30, круг 5 и 7). */
+    .ticket-card.error { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
+    .ticket-card.error .msg { color: var(--foreground); }
+    .ticket-card > .btn { margin-top: 0; }
   </style>
 </head>
 <body>
@@ -55,6 +63,7 @@
       <h1 class="empty-heading" id="title"></h1>
       <div class="qr-plate" data-theme="light" id="qr"></div>
       <p class="empty-desc msg" id="status" role="status"></p>
+      <button type="button" class="btn btn-secondary" id="retry" hidden></button>
     </div>
   </main>
   <script>
@@ -62,12 +71,15 @@
       'use strict';
       // ADR-0007: QR рендерится здесь из payload'а my-qr-api, файл не отправляется.
       var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync';
+      var FETCH_TIMEOUT_MS = 15000;
 
       var tg = window.Telegram && window.Telegram.WebApp;
       var dict = {};
       var statusEl = document.getElementById('status');
       var qrEl = document.getElementById('qr');
       var titleEl = document.getElementById('title');
+      var cardEl = qrEl.parentNode;
+      var retryBtn = document.getElementById('retry');
 
       function t(key) {
         return dict[key] || key;
@@ -80,14 +92,16 @@
         document.documentElement.setAttribute('data-theme', scheme);
       }
 
-      function showError(text) {
+      function showError(text, retryable) {
         statusEl.textContent = text;
-        statusEl.className = 'empty-desc msg error';
+        cardEl.className = 'card ticket-card error';
+        retryBtn.hidden = !retryable;
       }
 
       function showStatus(key) {
         statusEl.textContent = t(key);
-        statusEl.className = 'empty-desc msg';
+        cardEl.className = 'card ticket-card';
+        retryBtn.hidden = true;
       }
 
       // Размер кода — по доступной ширине, но не крупнее 224 px. На узком
@@ -145,16 +159,57 @@
       var eventId = params.get('event_id') || '';
       var initData = tg && tg.initData ? tg.initData : '';
 
+      // Запрос QR с таймаутом. Три исхода различаются: нет соединения или
+      // таймаут (`network`), сервер ответил не-JSON — например, 5xx-страницей
+      // (`server`), сервер ответил JSON (`json`). Раньше все три показывались
+      // как «Нет соединения» и без выхода из «Загрузка…» (W30, круг 7, п. 4).
+      function requestQr() {
+        var ctrl = window.AbortController ? new AbortController() : null;
+        var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS) : 0;
+        return fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: initData, eventId: eventId }),
+          signal: ctrl ? ctrl.signal : undefined
+        }).then(function (r) {
+          return r.text().then(function (raw) {
+            var data = null;
+            try { data = JSON.parse(raw); } catch (e) { data = null; }
+            return (data && typeof data === 'object') ? { kind: 'json', data: data } : { kind: 'server' };
+          });
+        }).catch(function () {
+          return { kind: 'network' };
+        }).then(function (res) {
+          if (timer) clearTimeout(timer);
+          return res;
+        });
+      }
+
+      function handleQr(res) {
+        if (res.kind === 'network') { showError(t('ticket.error.network'), true); return; }
+        if (res.kind === 'server') { showError(t('ticket.error.server'), true); return; }
+        var data = res.data;
+        if (data.ok && data.payload) {
+          renderQr(data.payload);
+          showStatus('ticket.show_at_entrance');
+        } else if (data.error === 'not_registered' || data.error === 'invalid_init_data') {
+          showError(typeof data.text === 'string' && data.text ? data.text : t('ticket.error.unknown'), false);
+        } else {
+          showError(t('ticket.error.unknown'), true);
+        }
+      }
+
+      function retry() {
+        showStatus('ticket.loading');
+        requestQr().then(handleQr);
+      }
+
       // QR запрашивается сразу, не дожидаясь словаря: на плохой связи это
       // единственное, ради чего страницу открыли. Словарь приезжает параллельно
       // и только подставляет подписи — сырой ключ на экране заметен, пустой нет.
       var qrRequest = null;
       if (tg && initData && eventId) {
-        qrRequest = fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ initData: initData, eventId: eventId }),
-        }).then(function (r) { return r.json(); });
+        qrRequest = requestQr();
       }
 
       MiniAppI18n.load(function (err, d) {
@@ -172,22 +227,11 @@
         }
         // Словарь мог не доехать (err) — подписи будут сырыми ключами,
         // но QR всё равно запрошен и всё равно будет показан.
+        retryBtn.textContent = t('ticket.retry');
+        retryBtn.addEventListener('click', retry);
         showStatus('ticket.loading');
 
-        qrRequest
-          .then(function (data) {
-            if (data && data.ok && data.payload) {
-              renderQr(data.payload);
-              showStatus('ticket.show_at_entrance');
-            } else if (data && (data.error === 'not_registered' || data.error === 'invalid_init_data')) {
-              showError(typeof data.text === 'string' && data.text ? data.text : t('ticket.error.unknown'));
-            } else {
-              showError(t('ticket.error.unknown'));
-            }
-          })
-          .catch(function () {
-            showError(t('ticket.error.network'));
-          });
+        qrRequest.then(handleQr);
       });
     })();
   </script>
