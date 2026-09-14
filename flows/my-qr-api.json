@@ -49,6 +49,7 @@
                         "headers": {},
                         "status": "{{step_5['output'].httpStatus}}"
                       },
+                      "respond": "stop",
                       "responseType": "json"
                     },
                     "propertySettings": {},
@@ -182,6 +183,7 @@
                     "headers": {},
                     "status": "{{step_7['output'].httpStatus}}"
                   },
+                  "respond": "stop",
                   "responseType": "json"
                 },
                 "propertySettings": {},
