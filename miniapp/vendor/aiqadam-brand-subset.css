@@ -11,16 +11,16 @@
    и сторонний домен в этом пути стоит дороже, чем дисциплина обновления.
 
    Веб-шрифты (Geist / Inter / JetBrains Mono) сюда НЕ входят и страницами
-   не грузятся: 444 КиБ против 11,6 КиБ этого файла (3,8 КиБ gzip). Токены
+   не грузятся: 444 КиБ против 10,2 КиБ этого файла (3,6 КиБ gzip). Токены
    `--font-*` взяты у бренда как есть — вместе с их же системными фолбэками,
    которые и работают.
 
    Взяты целиком, дословно, без единой правки значений — только эти блоки:
-   токены, база, Buttons, Badges, Cards, .sr, EmptyState.
+   токены, база, Buttons, Cards, .sr, EmptyState.
    EmptyState нужен страницам не рамкой, а типографикой `.empty-heading` /
    `.empty-desc`: вердикт чекина — это `.card`, а пунктирная рамка у бренда
    означает «данных нет».
-   Не взяты: Inputs, Avatars, Checkbox/Radio/Switch, Tooltip, Skeleton, Tag,
+   Не взяты: Badges, Inputs, Avatars, Checkbox/Radio/Switch, Tooltip, Skeleton, Tag,
    docs-* , Header, EventCard, SpeakerCard, Leaderboard, Badges showcase,
    StatCard, ActivityFeed, Layout chrome — на этих двух страницах их нет.
 
@@ -213,52 +213,6 @@ code, pre, .mono { font-family: var(--font-mono); }
 .btn-destructive:hover {
   background: color-mix(in oklch, var(--destructive) 88%, white);
 }
-
-/* ——— Badges · tokens.css:255-298 ——— */
-/* =========================================================
-   Badges
-   ========================================================= */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 22px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  background: var(--muted);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  line-height: 1;
-}
-.badge .dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-.badge-primary {
-  background: color-mix(in oklch, var(--primary) 12%, transparent);
-  color: var(--primary);
-  border-color: color-mix(in oklch, var(--primary) 25%, transparent);
-}
-.badge-success {
-  background: color-mix(in oklch, var(--success) 12%, transparent);
-  color: var(--success);
-  border-color: color-mix(in oklch, var(--success) 25%, transparent);
-}
-.badge-warning {
-  background: color-mix(in oklch, var(--warning) 14%, transparent);
-  color: var(--warning);
-  border-color: color-mix(in oklch, var(--warning) 30%, transparent);
-}
-.badge-destructive {
-  background: color-mix(in oklch, var(--destructive) 12%, transparent);
-  color: var(--destructive);
-  border-color: color-mix(in oklch, var(--destructive) 25%, transparent);
-}
-.badge.mono { font-family: var(--font-mono); letter-spacing: 0.02em; font-size: 11px; text-transform: uppercase; }
 
 /* ——— Cards · tokens.css:482-496 ——— */
 /* =========================================================
