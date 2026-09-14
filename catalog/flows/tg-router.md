@@ -15,19 +15,19 @@
 1. `/start e<id>-<utm>` (валидный `fn-parse-start`, `kind='e'`) → `reg-start`,
    **независимо от активной сессии** — новый вход по deep link перекрывает
    недоведённый диалог.
-2. `/newevent` → `wiz_start`; `/editevent <id>` → `wiz_edit_start` —
+2. `/newevent`, `/editevent <id>`, `/manage [<id>]` → `manage_open` —
+   кнопка на страницу `manage` (форма ивента в Mini App, ADR-0017 п. 3),
    **независимо от активной сессии**, тем же принципом, что и `/start`.
-2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06);
-   `/manage [<id>]` → `manage-open` (вход на страницу `manage`, W31) — команды
+   `commandArgs` уходит в `manage-open` как есть: пусто — новый ивент,
+   иначе — id для правки.
+2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06) — команды
    перекрывают активную сессию, как в пп. 1–2.
 2b. Колбэки `ev:list:upcoming` / `ev:list:past` → `events-list`;
    `myreg:cancel:*` / `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) —
    по префиксу `callbackData`, до проверок сессий.
-3. Иначе, если активная сессия — визард (`scenario` = `event_create`/`event_edit`):
-   по `sessions.step` → `wiz_photo` (`step='photo'`), `wiz_geo` (`step='geo'`),
-   `wiz_publish` (`step='preview'`, обычно вместе с `callback_query`), иначе
-   (`title`/`description`/`address`/`starts_at`/`ends_at`/`reg_deadline_at`) →
-   `wiz_field` — один флоу на все шесть текстовых полей (ADR-0016).
+3. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
+   визарда в `sessions`) обработчика не имеют: их сообщения уходят в
+   `Otherwise` молча.
 4. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
    `scenario/step` не `-`) со `scenario='registration'`:
    - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
@@ -49,11 +49,10 @@
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
 | step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`Otherwise` | |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`Otherwise` | |
 | step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все четыре получают `sessionDraft`, `reg-phone` дополнительно `userMessageId` |
-| step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда |
 | step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) |
-| step_26 | `callFlow manage-open` (`queue`, `waitForResponse: false`) | кнопка на страницу `manage`; получает `chatId`, `telegramId`, `commandArgs` |
+| step_26 | `callFlow manage-open` (`queue`, `waitForResponse: false`) | кнопка на страницу `manage` по `/newevent`, `/editevent`, `/manage`; получает `chatId`, `telegramId`, `commandArgs` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
@@ -61,10 +60,7 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`,
-  `events-list`, `my-regs`, `my-reg-cancel`,
-  `event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
-  `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish`,
-  `manage-open` — делегирование, не subflow-функции (ADR-0015 п. 4)
+  `events-list`, `my-regs`, `my-reg-cancel`, `manage-open` — делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)

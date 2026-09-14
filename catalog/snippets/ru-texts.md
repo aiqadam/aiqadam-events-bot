@@ -32,8 +32,7 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 и байтовая идентичность копий — нет, это сознательное упрощение, не
 задокументированное отдельным эталоном. Список шагов — во всех карточках
 `catalog/flows/*.md` пакета W26 (`reg-start`, `reg-consent-pdn`,
-`reg-consent-mkt`, `reg-phone`, `checkin-api`, `my-qr-api`,
-`event-wizard-*`).
+`reg-consent-mkt`, `reg-phone`, `checkin-api`, `my-qr-api`).
 
 **До W26 (историческая привязка к удалённым флоу, не текущая спека):**
 

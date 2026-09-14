@@ -17,10 +17,8 @@
 |---|---|---|
 | [`checkin-api`](../flows/checkin-api.md) | `step_7` | только время (`ЧЧ:ММ`) — для «уже отмечен в …» |
 | [`reg-start`](../flows/reg-start.md) | `step_9` | дата + время, полный (карточка ивента) |
-| [`event-wizard-field`](../flows/event-wizard-field.md) | `step_1` | дата + время, полный (превью черновика) |
-| [`event-wizard-publish`](../flows/event-wizard-publish.md) | `step_7` | дата + время, полный (diff «было → стало») |
 
-Все четыре — `ru-RU`, `Asia/Tashkent`, `hourCycle: 'h23'`, вручную дополняют
+Оба — `ru-RU`, `Asia/Tashkent`, `hourCycle: 'h23'`, вручную дополняют
 строку без суффикса зоны `Z` (см. «Что нельзя трогать» ниже) — этот **набор
 правил** одинаков у всех и важен для OWN-3; сама реализация не идентична
 (разный набор опций `Intl.DateTimeFormat` под разный формат вывода), поэтому

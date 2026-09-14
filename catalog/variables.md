@@ -35,7 +35,6 @@
 | `MINIAPP_URL` | [manage-open](flows/manage-open.md) | вход `miniappUrl` у CODE — кнопка `web_app` на `manage.html[?event_id=]` |
 | `BOT_TOKEN` | [manage-api](flows/manage-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
 | `BOT_USERNAME` | [manage-api](flows/manage-api.md) | ссылка регистрации в подтверждении владельцу при публикации (OWN-6) |
-| `BOT_USERNAME` | [event-wizard-publish](flows/event-wizard-publish.md) | сборка `registrationUrl` (OWN-6), владельцу при создании ивента |
 | `BOT_USERNAME` | [reg-afterword](flows/reg-afterword.md) | deep link на следующий ивент в послесловии (`?start=e<id>-afterword`) |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —

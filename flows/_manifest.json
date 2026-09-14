@@ -5,36 +5,6 @@
     "publishedVersionId": "mJiJzLlX4mAV1AfcZuIkC"
   },
   {
-    "flow": "event-wizard-edit-start",
-    "flowId": "aPZHkBfShDwwjIcYKq6Tf",
-    "publishedVersionId": "c6kLhvmy2XKk3UQ9Ni62v"
-  },
-  {
-    "flow": "event-wizard-field",
-    "flowId": "iOtIXWIIX1lgtz6RQUPVN",
-    "publishedVersionId": "xRc309oisnlyV0P7vsXnl"
-  },
-  {
-    "flow": "event-wizard-geo",
-    "flowId": "sAJFoscopo3EgwQlDfaA7",
-    "publishedVersionId": "JKDpw2jKXOX6AE150mC08"
-  },
-  {
-    "flow": "event-wizard-photo",
-    "flowId": "mGUl0dCEyJQjjN3VtyjAN",
-    "publishedVersionId": "ylRMudodK7NOkcSSDSHmB"
-  },
-  {
-    "flow": "event-wizard-publish",
-    "flowId": "4nbqCqBrSRZXertysDp7v",
-    "publishedVersionId": "aImupL3cvLca9A1veKAE5"
-  },
-  {
-    "flow": "event-wizard-start",
-    "flowId": "hlteuRDfyahnfcHHip15E",
-    "publishedVersionId": "8EWMLVD6pFkiH7pJvsxv1"
-  },
-  {
     "flow": "events-list",
     "flowId": "UxuFOI7GvXaboDQZHHKSI",
     "publishedVersionId": "jnK8iWRsskrKmwCTVSN7W"
@@ -119,7 +89,7 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "1EAujVh7NkzkzGiufDv9n",
+    "publishedVersionId": "0YoGU8pbyTrQ4RadYS57z",
     "source": "mcp"
   }
 ]
