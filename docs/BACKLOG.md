@@ -28,8 +28,8 @@
 | [W28](#w28-пилот-adr-0017--гостевой-срез-одной-карточкой) | пилот ADR-0017: диалог одной редактируемой карточкой + послесловие | фундамент (собран) |
 | [W29](#w29-экспорт-flowsjson-в-репозиторий) | выгрузка `flows/*.json` в git (ADR-0018 п. 3) | ключ API у человека (шаг 0.7) |
 | [W30](#w30-бренд-mini-app-и-docsvoicemd) | брендирование Mini App и `docs/VOICE.md` как дельта (ADR-0019) | [Q40](OPEN-QUESTIONS.md#q40) |
-| [W31](#w31-страница-manage-визард-ивента-в-mini-app) | страница `manage`: визард ивента переезжает в Mini App ([Q43](OPEN-QUESTIONS.md#q43)) | W30 (бренд), W28 (лекало) |
-| [W32](#w32-owner-ы-по-списку-initdata-5-минут-афиша-снята) | owner'ы по таблице `owners`, `initData` 5 минут, афиша снята ([Q46](OPEN-QUESTIONS.md#q46), [Q47](OPEN-QUESTIONS.md#q47)) | W31 |
+| [W33](#w33-mini-app--react-spa-ticket-scan-manage) | Mini App SPA — `ticket`/`scan`/`manage` на React ([ADR-0022](adr/0022-miniapp-react-spa.md)), снос ванили | W30 (бренд), W28 (лекало) |
+| [W32](#w32-owner-ы-по-списку-initdata-5-минут-афиша-снята) | owner'ы по таблице `owners`, `initData` 5 минут, афиша снята ([Q46](OPEN-QUESTIONS.md#q46), [Q47](OPEN-QUESTIONS.md#q47)) | W33 (ранее W31) |
 | [W12b](#w12b-dedup-report--диагностика-дублей) | диагностика дублей строк — считать и сообщать, не удалять ([Q42](OPEN-QUESTIONS.md#q42)) | W1, W5 |
 | [W10](#w10-инвайты-и-отзыв-прав-контролёра) | инвайты и отзыв прав staff | W28 (лекало экрана) |
 | [W12](#w12-жизненный-цикл-и-напоминания) | lifecycle ивента и напоминания | W28, визард (собран) |
@@ -46,7 +46,7 @@
 
 **Выполнено или закрыто** (секции сохранены как история требований, работать
 по ним нельзя): W0, W1, W2, W3, W4, W5, W6, W7, W8, W9 (не будет сделан),
-W11, W16, W17, W18, W19, W20, W21, W22, W23, W24, W26, W28, W29, W30. Что из этого **существует в проекте сегодня** —
+W11, W16, W17, W18, W19, W20, W21, W22, W23, W24, W26, W28, W29, W30, W31 (заменён W33, см. ниже). Что из этого **существует в проекте сегодня** —
 только [catalog/overview.md](../catalog/overview.md).
 
 ---
@@ -1359,12 +1359,18 @@ CODE-шаги стали доминировать в горячем пути: 20
 
 ---
 
-## W31. Страница `manage`: визард ивента в Mini App
+## W31. Страница `manage`: визард ивента в Mini App — **заменён W33**
 
 **Заведён 2026-09-14** решением владельца по [Q43](OPEN-QUESTIONS.md#q43),
 вариант (1). Реализует [ADR-0017](adr/0017-screen-not-message.md) п. 3
 (длинный структурированный ввод — форма в Mini App) на третьей и последней
 из разрешённых страниц; четвёртой не будет без нового ADR.
+
+> **Статус 2026-09-14 (ADR-0022): заменён.** Реализация — ванильная
+> `miniapp/manage.html` — сдана и принята, но **сносится** пакетом
+> [W33](#w33-mini-app--react-spa-ticket-scan-manage) (React SPA). Требования
+> OWN-1…OWN-5 и поведение `manage-api` остаются, форма пересобирается как
+> роут `#/manage` SPA. Работать по этой секции нельзя — работать по W33.
 
 **Цель:** создание и правка ивента (OWN-1…OWN-5) — форма на странице
 `miniapp/manage.html`, а не анкета из одиннадцати вопросов в чате. Все поля
@@ -1481,3 +1487,74 @@ staff (W10).
 
 **Не входит:** роли `staff` (W10), allow-list для prod-инстанса (`events-prod`
 заполняет `owners` своими строками при развёртывании, W15).
+
+---
+
+## W33. Mini App — React SPA: `ticket` / `scan` / `manage`
+
+**Заведён 2026-09-14** по [ADR-0022](adr/0022-miniapp-react-spa.md). Заменяет
+реализацию [W31](#w31-страница-manage-визард-ивента-в-mini-app) (ванильная
+`manage.html` сдана, но сносится) и две другие ванильные страницы — одним SPA.
+
+**Цель:** снести `miniapp/ticket.html` + `index.html` + `manage.html` +
+`vendor/aiqadam-brand-subset.css` + `vendor/qrcode.min.js` + `i18n.js`-лоадер
+и пересобрать их как React SPA с теми же 3 роутами, на том же домене,
+без бэкенда для SPA. Поведение сохраняется, код — нет.
+
+**Зависит от:** W30 (бренд — токены/компоненты), W28 (лекало экрана),
+фундамент (webhook-флоу `my-qr-api`/`checkin-api`/`manage-api` уже есть).
+Не зависит от W13/W10/W12 — те станут следующими роутами этого же SPA
+отдельными пакетами.
+
+**Что делаем:**
+
+* **Стек:** Vite + React + TypeScript, hash-роутер (`#/ticket`, `#/scan`,
+  `#/manage`, `#/manage/:id`), Tailwind 4 + shadcn/ui компоненты,
+  скопированные из `aiqadam/brand.aiqadam.org` с фиксацией `BRAND_COMMIT`
+  в шапке вендоренных файлов. Своих цветов/кнопок/типографики нет.
+* **Версионирование бренда:** `miniapp/src/vendor/brand/*` + `BRAND_COMMIT`
+  (хэш коммита бренда) в комментарии; обновление — отдельным коммитом
+  с переснятием, не правкой на месте.
+* **Роуты 1:1:**
+  * `#/ticket?event_id=` — QR-плита 32px quiet zone, `qrcode` уровень H,
+    max 224px, `ResizeObserver` + `drawQr` (`ticket.html:37`/`ticket.html:120`),
+    `fetch` 15с три исхода `network`/`server`/`json` + «повторить»,
+    плита `data-theme=light`, тема из `Telegram.WebApp.colorScheme`,
+    русский-онли `i18n/ru.json` с того же Pages;
+  * `#/scan?event_id=` — `showScanQrPopup` луп без закрытия между людьми
+    (`index.html:144`), дедуп 1400мс, `TONE` → `.card.result` рамка/полоса,
+    `min-height` статуса, `scanQrPopupClosed` → `offerRescan`;
+  * `#/manage` и `#/manage/:id` — форма OWN-1…OWN-5, `ALLOWED` переходы
+    статуса (`manage.html:180`), даты `Asia/Tashkent → UTC` через `Intl`
+    (`manage.html:254`), `newId` 12 знаков идемпотентности, гео
+    `LocationManager` → `navigator.geolocation` (`manage.html:406`), валидация
+    в CODE-шаге `manage-api`, уведомление `notify-on-change` при правке
+    опубликованного.
+* **Сборка нативная для Pages:** `pages.yml` → `npm ci && npm run build` →
+  `dist/` + `i18n/` как артефакт; hash-роутер не требует `404.html` или сервера.
+  Никакого SSR/Next.
+* **Ограничения:** `ADR-0020` — веб-шрифты на `ticket`/`scan` не грузим,
+  системные фолбэки `--font-*`; code-split — `ticket`+`scan` один чанк,
+  `manage` lazy + `qrcode` lazy только на `ticket`.
+* **Вход из чата:** `manage-open` → кнопка `web_app` на `#/manage` вместо
+  `/manage.html`; `tg-router` правится по одному пакету.
+
+**Готово, когда:**
+
+* [ ] ванильные файлы удалены, SPA отдаёт 3 роута на том же `MINIAPP_URL`
+  (проверено на `https://miniapp.events.aiqadam.org/#/...`);
+* [ ] бренд вендорен с `BRAND_COMMIT`, своих литералов цвета/шрифта нет
+  (`grep` из чек-листа п. 3a молчит), токены — OKLCH как у бренда;
+* [ ] `ticket` quiet zone 4,1+ модуля на 224px, `ResizeObserver` пересчёт,
+  QR читается декодером в светлой/тёмной теме даже без брендового CSS;
+* [ ] `scan` луп без ручного переоткрытия между людьми, различающие прогоны
+  STF-4 (`ok`/`already`/`wrong_event`/`not_registered`/`forbidden` + `invalid_init_data`);
+* [ ] `manage` — различающие прогоны: не-владелец → `403`, владелец → `200`,
+  даты на границе суток `Asia/Tashkent`, гео оба пути, `newId` идемпотентность;
+* [ ] `pages.yml` собирает `dist/`, `preview` на PR зелёный, Pages без секретов;
+* [ ] `catalog/overview.md` — раздел Mini App про SPA, `catalog/flows/manage-api.md`
+  без привязки к `manage.html`; экспорт `flows/` тем же коммитом;
+* [ ] независимое ревью, вердикт «замечаний нет».
+
+**Не входит:** `W13`/`W10`/`W12` — следующие роуты того же SPA, отдельные пакеты;
+`W32` (owners/`initData` 5м) — следующий пакет после `W33`.
