@@ -70,7 +70,10 @@ tools/check-export-secrets.sh      # обязательно перед любы�
 **`GET /flows/:id/template` для выгрузки не годится:** он молча игнорирует
 `versionId` и всегда отдаёт последнюю версию. Если встретите его в старых
 журналах как «отдаёт опубликованную» — это опровергнуто, см.
-[ARCHITECTURE](../ARCHITECTURE.md).
+[ARCHITECTURE](../ARCHITECTURE.md). **MCP-инструмент `ap_export_flow` —
+то же самое** (`state: DRAFT` в ответе, выбора версии нет,
+[Q44](../OPEN-QUESTIONS.md#q44)): им можно быстро посмотреть `settings.input`
+черновика, но снимок для `flows/` снимается только скриптом.
 
 Ключа нет в keychain — попросите его у владельца проекта и положите туда
 ([как](../adr/0006-rest-read-only-for-review.md#где-лежит-ключ) — сам ADR-0006
