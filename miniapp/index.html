@@ -27,13 +27,17 @@
     /* Строка состояния держит свою высоту пустой: без этого вердикт прыгает
        по вертикали в момент показа — на экране контролёра, сканирующего очередь. */
     #status { min-height: 1.5em; }
-    /* Исход чекина — семантическими токенами бренда, а не своей палитрой:
-       успех / предупреждение / отказ у бренда уже названы.
-       Вердикт — это `.card`, а не `EmptyState`: пунктирная рамка «здесь пусто»
-       у бренда значит отсутствие данных, а тут данные как раз есть. */
-    .result.ok .empty-heading { color: var(--success); }
-    .result.warn .empty-heading { color: var(--warning); }
-    .result.bad .empty-heading { color: var(--destructive); }
+    /* Вердикт — это `.card`, а не `EmptyState`: пунктирная рамка «здесь пусто»
+       у бренда значит отсутствие данных, а тут данные как раз есть.
+
+       Тон несёт полоса и рамка, а НЕ буквы. Акцентный токен текстом на `--card`
+       даёт в светлой теме 2,1–2,4:1 — ниже порога 3:1, который называет сам
+       бренд в разделе про QR, и это строка, которую контролёр читает в дверях
+       ярко освещённого холла. Сам текст поэтому `--foreground`: 15–16:1. */
+    .result .empty-heading { color: var(--foreground); }
+    .result.ok { border-color: var(--success); box-shadow: inset 0 4px 0 var(--success); }
+    .result.warn { border-color: var(--warning); box-shadow: inset 0 4px 0 var(--warning); }
+    .result.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
     .result > :last-child { margin-bottom: 0; }
   </style>
 </head>

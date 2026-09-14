@@ -14,8 +14,11 @@
        длины — по 4-пиксельной шкале бренда, своих значений тут нет. */
     main { max-width: 384px; margin: 0 auto; padding: 16px; text-align: center; }
     .ticket-card { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    /* Плита QR принудительно в светлой теме бренда: чёрный код на светлой
-       подложке читается сканером и при системной тёмной. Тёмный QR не сканируется.
+    /* Плита QR принудительно в светлой теме бренда. Правило бренда, тот же
+       раздел «Event stands → QR codes»: «Dark code on light ground. Never teal.»
+       (https://brand.aiqadam.org/brand.html#stands). Сам код у qrcode.js всегда
+       чёрный на белом — тёмной в системной тёмной теме стала бы подложка вокруг
+       него, то есть зона покоя, а с ней и сканируемость.
 
        `padding: 32px` — зона покоя. Правило не наше: бренд формулирует его
        в разделе «Event stands → QR codes» — «Quiet zone: four modules, always.
