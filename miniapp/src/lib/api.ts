@@ -1,7 +1,7 @@
 // Общий fetch с таймаутом 15с и тремя исходами: network / server / json
 // Копия логики из ticket.html:166, index.html:175, manage.html:223 — теперь один модуль.
 
-export const FETCH_TIMEOUT_MS = 15000;
+export const FETCH_TIMEOUT_MS = 30000;
 
 export type ApiResult =
   | { kind: 'network'; message: string }
