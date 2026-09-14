@@ -160,7 +160,9 @@ W28 (пилот ADR-0017, готов) → W13 → W14 → W15
 чтобы увидеть, что уже построено. Если пакет трогает то, что видит
 пользователь, — ещё [ADR-0017](adr/0017-screen-not-message.md),
 [ADR-0019](adr/0019-design-system-from-brand-repo.md), [ADR-0022](adr/0022-miniapp-react-spa.md)
-и `docs/VOICE.md` (есть с W30).
+и `docs/VOICE.md` (есть с W30). Пакет с правками Mini App — ещё
+`docs/MINIAPP-UX.md` (платформенные ограничения среды: навигация,
+жизненный цикл WebView, Safe Area).
 
 **Взять пакет:** проверить по [STATUS.md](STATUS.md), что он `не начат`, а его
 зависимости `готов`; завести журнал `docs/work/WNN-*.md` по
