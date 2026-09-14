@@ -17,7 +17,8 @@
    недоведённый диалог.
 2. `/newevent` → `wiz_start`; `/editevent <id>` → `wiz_edit_start` —
    **независимо от активной сессии**, тем же принципом, что и `/start`.
-2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06) — команды
+2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06);
+   `/manage [<id>]` → `manage-open` (вход на страницу `manage`, W31) — команды
    перекрывают активную сессию, как в пп. 1–2.
 2b. Колбэки `ev:list:upcoming` / `ev:list:past` → `events-list`;
    `myreg:cancel:*` / `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) —
@@ -48,10 +49,11 @@
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
 | step_10 | CODE «routing decision» | вычисляет `route`; колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`Otherwise` | |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_phone`/`wiz_start`/`wiz_edit_start`/`wiz_field`/`wiz_photo`/`wiz_geo`/`wiz_publish`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`Otherwise` | |
 | step_12→15 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt`/`reg-phone` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все четыре получают `sessionDraft`, `reg-phone` дополнительно `userMessageId` |
 | step_17→22 | `callFlow event-wizard-start`/`event-wizard-edit-start`/`event-wizard-field`/`event-wizard-photo`/`event-wizard-geo`/`event-wizard-publish` (`queue`, `waitForResponse: false`) | делегирование обработчику визарда |
 | step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) |
+| step_26 | `callFlow manage-open` (`queue`, `waitForResponse: false`) | кнопка на страницу `manage`; получает `chatId`, `telegramId`, `commandArgs` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
@@ -61,8 +63,8 @@
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`, `reg-phone`,
   `events-list`, `my-regs`, `my-reg-cancel`,
   `event-wizard-start`, `event-wizard-edit-start`, `event-wizard-field`,
-  `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish` — делегирование,
-  не subflow-функции (ADR-0015 п. 4)
+  `event-wizard-photo`, `event-wizard-geo`, `event-wizard-publish`,
+  `manage-open` — делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
@@ -77,7 +79,7 @@
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
-- **Все вызовы касаний (`step_12→15`, `step_17→22`) — `executionMode: queue`,
+- **Все вызовы касаний (`step_12→15`, `step_17→26`) — `executionMode: queue`,
   не `inline`.** `inline` синхронен независимо от `waitForResponse` — родитель
   ждёт всю длительность вызванного флоу, включая отправку сообщений Bot API
   (~0,7–0,9 с каждое). `queue` — единственный режим, дающий настоящий

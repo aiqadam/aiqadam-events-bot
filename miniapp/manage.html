@@ -26,9 +26,6 @@
     .actions .btn { width: 100%; }
     /* Радио статуса — брендовый `.control-row`, по одной строке на вариант. */
     .choices { display: flex; flex-direction: column; gap: 8px; }
-    /* Нативный select бренд не стилизует; берёт вид `.input`, чтобы стоять
-       в ряду с остальными полями. Значений цвета здесь нет — они из `.input`. */
-    select.input { appearance: auto; }
     /* Итог сохранения — `.card` с рамкой и полосой тона, как вердикт на
        сканере: тон несёт рамка, текст остаётся `--foreground` (W30, круг 5). */
     .result.ok  { border-color: var(--success); box-shadow: inset 0 4px 0 var(--success); }
@@ -148,7 +145,7 @@
       // ADR-0017 п. 3: форма ивента — экран Mini App, а не анкета в чате.
       // Права решает сервер (manage-api): initData + events.owner_id этого event_id.
       // Страница только собирает поля и показывает ответ.
-      var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/__MANAGE_API_FLOW_ID__/sync';
+      var API_URL = 'https://app.flow.aiqadam.org/api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync';
       var FETCH_TIMEOUT_MS = 15000;
       var TZ = 'Asia/Tashkent';
       var FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'];

@@ -29,7 +29,8 @@ W26 закрыт («готов», независимое ревью, три кр
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
 | Списки и отмена участника (W06) | [events-list](flows/events-list.md), [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
 | Визард ивента (создание/правка, ADR-0016) | [event-wizard-start](flows/event-wizard-start.md), [event-wizard-edit-start](flows/event-wizard-edit-start.md), [event-wizard-field](flows/event-wizard-field.md), [event-wizard-photo](flows/event-wizard-photo.md), [event-wizard-geo](flows/event-wizard-geo.md), [event-wizard-publish](flows/event-wizard-publish.md) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md) |
+| Вход на страницу `manage` из чата (W31) | [manage-open](flows/manage-open.md) — кнопка `web_app` по `/manage [<id>]`; `event-wizard-*` живут параллельно до приёмки `manage` |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -54,16 +55,25 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Mini App
 
-Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. Страниц две из
-трёх разрешённых [ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3
-(`manage` не построена — [Q43](../docs/OPEN-QUESTIONS.md#q43)).
+Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. Страниц три —
+все, что разрешены [ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3;
+четвёртой не будет без нового ADR.
 
 | Страница | Файл | Роль | API |
 |---|---|---|---|
 | билет | `miniapp/ticket.html` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | сканер | `miniapp/index.html` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
+| форма ивента | `miniapp/manage.html` | owner создаёт и правит ивент (OWN-1…OWN-5, OWN-15) | [manage-api](flows/manage-api.md) |
 
-Обе страницы опираются на два общих файла: `i18n.js` тянет надписи словарём
+Страница `manage` открывается кнопкой из [manage-open](flows/manage-open.md)
+(`/manage`, `/manage <id>`); права на правку решает `manage-api` по `initData`
+и `events.owner_id`, страница ничего не решает. Фото афиши форма не трогает
+([Q46](../docs/OPEN-QUESTIONS.md#q46)); гео — координаты руками или кнопкой
+через `Telegram.WebApp.LocationManager` (фолбэк `navigator.geolocation`).
+Даты вводятся как Asia/Tashkent (`datetime-local`) и уходят серверу строкой
+без зоны; в UTC переводит `manage-api`.
+
+Все страницы опираются на два общих файла: `i18n.js` тянет надписи словарём
 `i18n/ru.json` с того же Pages (русский-онли, [ADR-0014](../docs/adr/0014-russian-only-until-platform-i18n.md);
 словарь не доехал — на экране сырые ключи, а не пустота), а `ticket` — ещё и
 на `vendor/qrcode.min.js`, которым QR рисуется на клиенте
@@ -90,11 +100,15 @@ W26 закрыт («готов», независимое ревью, три кр
 
 - **`vendor/aiqadam-brand-subset.css`** — дословные блоки `tokens.css` и
   `components.css` бренда с зафиксированным в шапке коммитом: токены, база,
-  Buttons, Cards, `.sr`, EmptyState. 10,2 КиБ (3,6 КиБ gzip).
+  Buttons, Cards, `.sr`, EmptyState, Inputs, Checkbox/Radio/Switch. 14,3 КиБ
+  (4,5 КиБ gzip); Inputs и Controls нужны только форме `manage`.
   Правится только переснятием с бренда, не редактированием на месте.
-- **Веб-шрифтов нет ни на одной из двух страниц.** Три брендовых семейства —
-  444 КиБ, и обе страницы открываются на площадке ивента, где связь плохая
-  ([Q40](../docs/OPEN-QUESTIONS.md#q40)). Работают системные фолбэки, объявленные
+- **Веб-шрифтов нет ни на одной из трёх страниц.** Три брендовых семейства —
+  444 КиБ, и `ticket`/`scan` открываются на площадке ивента, где связь плохая
+  ([Q40](../docs/OPEN-QUESTIONS.md#q40), [ADR-0020](../docs/adr/0020-no-web-fonts-on-venue-pages.md)).
+  Для `manage` решение принято отдельно и тем же замером (ADR-0020 п. 3):
+  444 КиБ шрифтов против ~35 КиБ страницы с CSS, и вторая типографика внутри
+  одной Mini App — цена, названная в ADR-0020, которую платить незачем. Работают системные фолбэки, объявленные
   в самих брендовых токенах `--font-*`. Вся палитра бренда — OKLCH: на
   движке без его поддержки токены цвета невалидны, и страница откатывается
   к умолчаниям браузера. Она остаётся читаемой, а QR — сканируемым, но
