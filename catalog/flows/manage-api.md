@@ -17,7 +17,8 @@
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
 | `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить |
-| `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка) |
+| `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка и отказ) |
+| `newId` | только при создании: slug того же вида, который страница генерирует один раз на открытие формы — ключ идемпотентности (ADR-0003); ивент получает этот `id` |
 | `fields` | только при `save`: `title`, `description`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `capacity`, `overbook_pct`, `status` — строки как в форме; даты `YYYY-MM-DDTHH:mm` **ташкентские** |
 
 ## Шаги
@@ -34,7 +35,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_2 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` |
 | step_3 (Otherwise) | CODE «invalid init data response» | `checkin.unauthorized`, `httpStatus: 401` |
 | step_4 (Otherwise) | `return_response` (`stop`) | ответ `401` |
-| step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-`; `isNew`; `action`; `fields` |
+| step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action`; `fields` |
 | step_6 (valid) | `tables-find-records events` | ивент по `id`, `limit: 1` |
 | step_7 (valid) | CODE «decide: owner, validate, diff» | владелец, валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты; исход `outcome` = `load` / `save` / `error` |
 | step_8 (valid) | ROUTER: `save` / `load` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
@@ -53,7 +54,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | Ситуация | HTTP | Тело |
 |---|---|---|
 | `initData` невалиден/просрочен | 401 | `{ok:false, error:"invalid_init_data", text}` |
-| ивент не найден **или** не принадлежит вызывающему | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
+| ивент не найден **или** не принадлежит вызывающему; сентинел `-`; создание с `newId`, занятым чужой записью | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
 | `load` владельцем | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId}` |
 | `save` | 200 | `{ok:true, text, eventId}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем |
@@ -65,8 +66,15 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 ### Правила `step_7`
 
 - **Владелец** — `events.owner_id == telegramId` из `initData`, по **этому**
-  `id`. Проверяется до любой валидации; `load` и `save` на чужой/несуществующий
-  ивент — один и тот же `403`.
+  `id`. Запись выбирается в коде по `id`, а не как первая строка выборки —
+  отбор повторяется в коде и не зависит от фильтра `step_6`; сентинел `-`
+  отвергается до сравнения. Проверяется до любой валидации; `load` и `save`
+  на чужой/несуществующий ивент — один и тот же `403`. Доказано прогоном с
+  подменой входа на **всю** таблицу: не-владелец → 403, владелец → 200.
+- **Идемпотентность создания** — `id` нового ивента приходит со страницы
+  (`newId`, один на открытие формы): потерянный ответ и повторный
+  «Сохранить» апсертят ту же запись (второй раз — как правка, `published_at`
+  не перезаписывается). `newId`, уже занятый чужой записью, — `403`.
 - **Даты**: вход трактуется как Asia/Tashkent (UTC+5, без DST) и пишется
   UTC ISO (OWN-3). Обязательны только при `status='published'`; у черновика
   могут быть пустыми. `ends_at > starts_at`, `reg_deadline_at ≤ starts_at`.
@@ -77,11 +85,18 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 - **`capacity`** — целое ≥ 1 или пусто; **`overbook_pct`** — 0…100 или пусто.
   Пусто у `NUMBER`/`DATE` значит «не менять», не «очистить» (см. CLAUDE.md,
   лимиты Tables) — снять раз выставленную ёмкость формой нельзя.
-- **`status`**: `draft` / `published` / `cancelled`; `cancelled` принимается
-  только у уже опубликованного (или отменённого) ивента. `published_at`
-  ставится при первой публикации, `cancelled_at` — при первой отмене.
-- **`id` нового ивента** — 12 символов `[A-Za-z0-9_]`, без префикса `e`
-  (тот же контракт, что у `event-wizard-publish` и `fn-parse-start`).
+- **`status` — переходы ровно по OWN-4** (`draft → published → cancelled |
+  finished`): новый/`draft` → `draft`|`published`; `published` →
+  `published`|`cancelled`; `cancelled` и `finished` — только тот же статус
+  (поля править можно, статус — нет). Обратных переходов нет: снять
+  публикацию или «воскресить» ивент формой нельзя (`cancelled_at`/`finished_at`
+  очистить нечем — Q30). `published_at` ставится при первой публикации,
+  `cancelled_at` — при первой отмене. Та же таблица переходов стоит на
+  странице и решает, какие радио видны.
+- **`id` нового ивента** — `newId` страницы: 12 символов `[A-Za-z0-9_]`, без
+  префикса `e` (тот же контракт, что у `event-wizard-publish` и `fn-parse-start`).
+- **Даты проверяются обратным разбором компонент**: `2026-02-31` и `25:00`
+  отвергаются, а не переносятся `Date.UTC` на соседний день.
 - **Уведомление (OWN-5)** — только если ивент **был** `published` до правки:
   `status → cancelled` даёт `notify.event_cancelled`; иначе список
   «было → стало» по полям [notify-on-change](../../docs/DATA-MODEL.md#notify-on-change)

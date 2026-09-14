@@ -54,7 +54,7 @@
 
       <div class="field">
         <label class="label" for="f-description" data-t="field.description"></label>
-        <textarea class="textarea" id="f-description" name="description" rows="4"></textarea>
+        <textarea class="textarea" id="f-description" name="description" rows="4" maxlength="4000"></textarea>
         <p class="helper" data-t="manage.hint.description"></p>
         <p class="helper error" id="e-description" hidden></p>
       </div>
@@ -119,10 +119,13 @@
 
       <div class="field">
         <span class="label" data-t="field.status"></span>
-        <div class="choices">
-          <label class="control-row"><input class="radio" type="radio" name="status" value="draft"><span data-t="status.draft"></span></label>
-          <label class="control-row"><input class="radio" type="radio" name="status" value="published" checked><span data-t="status.published"></span></label>
-          <label class="control-row" id="cancelRow" hidden><input class="radio" type="radio" name="status" value="cancelled"><span data-t="status.cancelled"></span></label>
+        <!-- Показываются только переходы, разрешённые OWN-4 из текущего статуса
+             (draft → published → cancelled | finished); решает сервер, здесь — та же таблица. -->
+        <div class="choices" id="choices">
+          <label class="control-row" data-status="draft"><input class="radio" type="radio" name="status" value="draft"><span data-t="status.draft"></span></label>
+          <label class="control-row" data-status="published"><input class="radio" type="radio" name="status" value="published" checked><span data-t="status.published"></span></label>
+          <label class="control-row" data-status="cancelled" hidden><input class="radio" type="radio" name="status" value="cancelled"><span data-t="status.cancelled"></span></label>
+          <label class="control-row" data-status="finished" hidden><input class="radio" type="radio" name="status" value="finished"><span data-t="status.finished"></span></label>
         </div>
         <p class="helper error" id="e-status" hidden></p>
       </div>
@@ -166,8 +169,18 @@
 
       var eventId = '';
       var initData = tg && tg.initData ? tg.initData : '';
-      var wasPublished = false;
+      var origStatus = '';
       var busy = false;
+      // Ключ идемпотентности создания (ADR-0003): один id на открытие формы.
+      // Потерян ответ — повторный «Сохранить» апсертит ту же запись, а не
+      // создаёт вторую. 12 символов [A-Za-z0-9_], как у fn-parse-start.
+      var newId = (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)).slice(0, 12);
+
+      // Переходы статуса — ровно OWN-4; та же таблица стоит в manage-api.
+      var ALLOWED = {
+        '': ['draft', 'published'], draft: ['draft', 'published'],
+        published: ['published', 'cancelled'], cancelled: ['cancelled'], finished: ['finished']
+      };
 
       function t(key) { return dict[key] || key; }
 
@@ -266,8 +279,21 @@
       }
 
       function updateSubmitLabel() {
-        var publishNow = statusValue() === 'published' && !wasPublished;
+        var publishNow = statusValue() === 'published' && origStatus !== 'published';
         submitBtn.textContent = t(publishNow ? 'manage.btn.publish' : 'manage.btn.save');
+      }
+
+      // Радио статуса: видны только разрешённые переходы, отмечен текущий.
+      function applyStatus(st) {
+        origStatus = st;
+        var allowed = ALLOWED[st] || ALLOWED[''];
+        var rows = $('choices').querySelectorAll('[data-status]');
+        for (var i = 0; i < rows.length; i++) {
+          var name = rows[i].getAttribute('data-status');
+          rows[i].hidden = allowed.indexOf(name) < 0;
+          rows[i].querySelector('input').checked = (name === (st || 'published'));
+        }
+        updateSubmitLabel();
       }
 
       function clearErrors() {
@@ -306,13 +332,8 @@
         ['starts_at', 'ends_at', 'reg_deadline_at'].forEach(function (n) {
           field(n).value = utcToLocalInput(String(ev[n] || ''));
         });
-        var st = String(ev.status || 'draft');
-        wasPublished = st === 'published' || st === 'cancelled';
-        $('cancelRow').hidden = !wasPublished;
-        var radio = formEl.querySelector('input[name=status][value="' + st + '"]');
-        if (radio) radio.checked = true;
+        applyStatus(String(ev.status || 'draft'));
         $('photoHint').hidden = !(ev.hasPhoto === true || ev.hasPhoto === 'true');
-        updateSubmitLabel();
       }
 
       function collect() {
@@ -352,7 +373,7 @@
         hideResult();
         var fields = collect();
         setBusy(true, 'manage.saving');
-        post({ initData: initData, action: 'save', eventId: eventId, fields: fields }).then(function (res) {
+        post({ initData: initData, action: 'save', eventId: eventId, newId: eventId ? '' : newId, fields: fields }).then(function (res) {
           setBusy(false);
           if (res.kind !== 'json') { showResult(false, errorText(res)); return; }
           var d = res.data;
@@ -360,10 +381,8 @@
             // Созданный ивент дальше правится как существующий: страница не
             // переоткрывается, второй «Сохранить» уже не создаст дубль.
             if (d.eventId) eventId = String(d.eventId);
-            wasPublished = fields.status === 'published' || fields.status === 'cancelled' || wasPublished;
-            $('cancelRow').hidden = !wasPublished;
+            applyStatus(fields.status);
             titleEl.textContent = t('manage.title.edit');
-            updateSubmitLabel();
             showResult(true, typeof d.text === 'string' && d.text ? d.text : t('manage.saved.updated'));
             return;
           }
