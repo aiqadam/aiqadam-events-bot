@@ -4,13 +4,14 @@
 export const FETCH_TIMEOUT_MS = 15000;
 
 export type ApiResult =
-  | { kind: 'network' }
+  | { kind: 'network'; message: string }
   | { kind: 'server'; http: number }
   | { kind: 'json'; http: number; data: Record<string, unknown> };
 
 export async function postJson(url: string, body: unknown): Promise<ApiResult> {
   const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS) : 0;
+  let timedOut = false;
+  const timer = ctrl ? setTimeout(() => { timedOut = true; ctrl.abort(); }, FETCH_TIMEOUT_MS) : 0;
 
   try {
     const r = await fetch(url, {
@@ -30,9 +31,12 @@ export async function postJson(url: string, body: unknown): Promise<ApiResult> {
     if (timer) clearTimeout(timer);
     if (!data) return { kind: 'server', http: r.status };
     return { kind: 'json', http: r.status, data };
-  } catch {
+  } catch (e) {
     if (timer) clearTimeout(timer);
-    return { kind: 'network' };
+    const msg = e instanceof Error ? e.message : String(e);
+    // AbortError + флаг таймаута → точный диагноз, иначе CORS/сеть
+    const detail = timedOut ? 'timeout ' + FETCH_TIMEOUT_MS + 'ms' : msg;
+    return { kind: 'network', message: detail };
   }
 }
 

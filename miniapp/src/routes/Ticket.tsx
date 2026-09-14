@@ -107,9 +107,10 @@ export default function Ticket({ eventId }: { eventId: string }) {
   }, []);
 
   const handleQr = useCallback(
-    (res: { kind: string; data?: Record<string, unknown> }) => {
+    (res: { kind: string; message?: string; data?: Record<string, unknown> }) => {
       if (res.kind === 'network') {
-        showError(t('ticket.error.network'), true);
+        const det = (res as { message?: string }).message ? ' (' + (res as { message: string }).message + ')' : '';
+        showError(t('ticket.error.network') + det, true);
         return;
       }
       if (res.kind === 'server') {
