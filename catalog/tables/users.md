@@ -15,7 +15,7 @@
 | first_name | TEXT | `nWPJjEcVpqMUaMwdEpPX5` | `1Q944fmm16kJUSM9Aa6df` | из апдейта |
 | last_name | TEXT | `yd5CbkPctz2GXmBabZeVV` | `Q0Jc5p5zp4k3Za1FcBuDk` | может отсутствовать |
 | username | TEXT | `QCFLn2jRQPxB4RpMKxAKH` | `HeXQlTD8AgLnMvXAYtC4i` | справочно, связей по нему нет |
-| phone | TEXT | `U05XVnW62T9q9IkZw1W3N` | `uLDyHJxawdUNwKZnBUrKv` | только из `request_contact` (DAT-2) |
+| phone | TEXT | `U05XVnW62T9q9IkZw1W3N` | `uLDyHJxawdUNwKZnBUrKv` | не заполняется: телефон в регистрации не спрашивается, писателей нет (DAT-2); в старых строках значения могут оставаться |
 | lang | TEXT | `wW12TT5X2kFgLryWbnnm5` | `XzWbggBmUBAYSMxGkaTYs` | `ru` / `uz` / `en` |
 | consent_pdn | STATIC_DROPDOWN | `KtdV8plfevjdnKlLko08q` | `mtWROpZrIW5v1Aqv3dM5U` | `true` / `false` — согласие на обработку данных (PAR-1) |
 | consent_pdn_at | DATE | `LeY6BeUOzWIyEtUFfKNbI` | `tw8cz1KCjEp91HhCTvIGS` | когда дано, UTC |
