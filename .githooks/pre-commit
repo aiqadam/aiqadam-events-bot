@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# Pre-commit: офлайн-проверки репозитория на каждом коммите.
+#
+# Активация (один раз на машину):
+#   git config core.hooksPath .githooks
+#
+# В хук входит только то, что детерминировано и не зависит от сети:
+# коммит не должен падать из-за недоступности инстанса. Сетевая
+# сверка инстанса с репозиторием — tools/check-migrations.py (GET,
+# ключ платформы); она обязательна после каждого изменения через MCP,
+# на ревью (REVIEW-CHECKLIST п. 2) и на приёмке (BACKLOG W15, п. 0).
+#
+# set -e не используется: нужно прогнать обе проверки, а не первую.
+set -u
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+flows_changed="$(grep -c '^flows/.*\.json$' <<<"$staged")" || flows_changed=0
+i18n_changed="$(grep -c '^i18n/ru\.json$' <<<"$staged")" || i18n_changed=0
+
+if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 ]]; then
+  exit 0
+fi
+
+echo "pre-commit: изменились flows/i18n — экспортные проверки"
+status=0
+tools/check-export-secrets.sh || status=1
+tools/check-texts.py i18n/ru.json flows/*.json || status=1
+
+if [[ "$status" -ne 0 ]]; then
+  echo "pre-commit: КОММИТ ЗАБЛОКИРОВАН (обходить --no-verify нельзя:"
+  echo "секрет или расхождение текстов уедут в историю git навсегда)"
+fi
+exit "$status"
