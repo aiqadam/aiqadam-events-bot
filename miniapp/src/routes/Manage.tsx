@@ -3,7 +3,7 @@ import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MANAGE_API } from '../lib/api';
-import { utcToLocalInput } from '../lib/dates';
+import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
 const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
 
@@ -21,6 +21,7 @@ function genNewId(): string {
 
 type EventData = Record<string, unknown>;
 type StaffItem = { telegram_id: string; item: string };
+type ListItem = { id: string; title: string; starts_at: string; status: string; isAuthor: boolean };
 
 export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const tg = getTelegram();
@@ -63,6 +64,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [staffIdInput, setStaffIdInput] = useState('');
   const [staffFieldError, setStaffFieldError] = useState('');
   const [staffResult, setStaffResult] = useState('');
+
+  // W37: список ивентов чаптера (#/manage без :id) и ссылка регистрации,
+  // которая живёт на экране (сервер отдаёт её в `load` и `save`).
+  const [listItems, setListItems] = useState<ListItem[]>([]);
+  const [listLoaded, setListLoaded] = useState(false);
+  const [retryTarget, setRetryTarget] = useState<'list' | 'form'>('form');
+  const [inviteLink, setInviteLink] = useState<{ eventId: string; url: string } | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   // keep prop sync (when hash changes)
   useEffect(() => setEventId(propEventId), [propEventId]);
@@ -147,6 +156,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const load = useCallback(async () => {
     setShowLoadfail(false);
     setResult(null);
+    setRetryTarget('form');
     setStatusText(t('manage.loading'));
     const res = await postJson(MANAGE_API, { initData, action: 'load', eventId });
     if (res.kind !== 'json' || !res.data['ok'] || !res.data['event']) {
@@ -154,9 +164,43 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       return;
     }
     fillForm(res.data['event'] as EventData);
+    const inv = typeof res.data['inviteLink'] === 'string' ? String(res.data['inviteLink']) : '';
+    setInviteLink(inv ? { eventId, url: inv } : null);
+    setInviteCopied(false);
     setStatusText('');
     setShowForm(true);
   }, [eventId, initData, errorTextFor, fillForm, showLoadFail]);
+
+  // W37: список ивентов своего чаптера — вход в правку без команд (ADR-0025).
+  const loadList = useCallback(async () => {
+    setShowLoadfail(false);
+    setShowForm(false);
+    setResult(null);
+    setRetryTarget('list');
+    setStatusText(t('manage.loading'));
+    const res = await postJson(MANAGE_API, { initData, action: 'list' });
+    if (res.kind !== 'json' || !res.data['ok'] || !Array.isArray(res.data['events'])) {
+      showLoadFail(errorTextFor(res as never));
+      return;
+    }
+    setListItems(res.data['events'] as ListItem[]);
+    setListLoaded(true);
+    setStatusText('');
+  }, [initData, errorTextFor, showLoadFail]);
+
+  const backToList = useCallback(() => {
+    // Если форма открыта из списка, hash ведёт на ивент — возвращаем его
+    // на #/manage (App пересоберёт роут); после создания hash не менялся.
+    if (window.location.hash && window.location.hash !== '#/manage') {
+      window.location.hash = '#/manage';
+      return;
+    }
+    setEventId('');
+    setShowForm(false);
+    setResult(null);
+    setInviteLink(null);
+    void loadList();
+  }, [loadList]);
 
   const save = useCallback(
     async (e: React.FormEvent) => {
@@ -183,6 +227,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         if (d['eventId']) setEventId(String(d['eventId']));
         applyStatus(collecting['status']);
         setTitleText(t('manage.title.edit'));
+        const inv = typeof d['inviteLink'] === 'string' ? String(d['inviteLink']) : '';
+        setInviteCopied(false);
+        setInviteLink(inv ? { eventId: String(d['eventId'] || eventId), url: inv } : null);
         const txt = typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.saved.updated');
         setResult({ ok: true, text: txt });
         return;
@@ -335,8 +382,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     void loadI18n().then((d) => {
       setDictLoaded(true);
       const isEdit = Boolean(eventId);
-      const key = isEdit ? 'manage.title.edit' : 'manage.title.new';
-      const tt = d[key] || (isEdit ? 'Правка ивента' : 'Новый ивент');
+      const key = isEdit ? 'manage.title.edit' : 'manage.list.title';
+      const tt = d[key] || (isEdit ? 'Правка ивента' : 'Ивенты');
       setTitleText(tt);
       document.title = t(key);
 
@@ -347,8 +394,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       if (eventId) {
         void load();
       } else {
-        setShowForm(true);
-        applyStatus('');
+        // W37: без :id — список ивентов чаптера, форма создания — по кнопке.
+        setShowForm(false);
+        setListLoaded(false);
+        setListItems([]);
+        void loadList();
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -394,10 +444,70 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           <p className="empty-heading" id="loadfailText">
             {loadfailText}
           </p>
-          <button type="button" className="btn btn-secondary" id="retry" onClick={() => void load()}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            id="retry"
+            onClick={() => (retryTarget === 'list' ? void loadList() : void load())}
+          >
             {t('manage.btn.retry')}
           </button>
         </div>
+      )}
+
+      {dictLoaded && !eventId && !showForm && !showLoadfail && (
+        <section id="events">
+          <div className="field actions" style={{ marginBottom: 16 }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-lg"
+              id="new-event"
+              onClick={() => {
+                setShowForm(true);
+                setResult(null);
+                setTitleText(t('manage.title.new'));
+                applyStatus('');
+              }}
+            >
+              {t('manage.btn.new')}
+            </button>
+          </div>
+          {listLoaded && listItems.length === 0 && (
+            <p className="empty-desc" id="events-empty">
+              {t('manage.list.empty')}
+            </p>
+          )}
+          {listItems.length > 0 && (
+            <ul id="events-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {listItems.map((ev) => {
+                const plate = utcToPlate(ev.starts_at);
+                const ms = utcMs(ev.starts_at);
+                const past = isFinite(ms) && ms < Date.now();
+                return (
+                  <li key={ev.id}>
+                    <a className={`event-card${past ? ' past' : ''}`} href={`#/manage/${ev.id}`}>
+                      <div className="date-plate">
+                        <span className="month">{plate.month}</span>
+                        <span className="day">{plate.day}</span>
+                        <span className="weekday">{plate.weekday}</span>
+                      </div>
+                      <div className="event-body">
+                        <div className="event-top">
+                          <span className="event-status">{t(`status.${ev.status}`)}</span>
+                          {ev.isAuthor && <span className="badge mono">{t('manage.list.author')}</span>}
+                        </div>
+                        <h3 className="event-title">{ev.title}</h3>
+                        <div className="event-meta">
+                          <span className="meta-item">{utcToTime(ev.starts_at)}</span>
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       )}
 
       {showForm && (
@@ -561,8 +671,51 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             <button type="submit" className="btn btn-primary btn-lg" id="submit" disabled={busy}>
               {updateSubmitLabel()}
             </button>
+            {eventId && (
+              <button type="button" className="btn btn-outline" id="back-to-list" onClick={backToList}>
+                {t('manage.btn.back')}
+              </button>
+            )}
           </div>
         </form>
+      )}
+
+      {inviteLink && inviteLink.eventId === eventId && (
+        <section className="card" id="invite" style={{ marginTop: 16 }}>
+          <h2 className="empty-heading" id="invite-title">
+            {t('manage.invite.title')}
+          </h2>
+          <p className="empty-desc" id="invite-hint">
+            {t('manage.invite.hint')}
+          </p>
+          <p className="mono" id="invite-link" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
+            {inviteLink.url}
+          </p>
+          <div className="row" style={{ display: 'flex', gap: 12 }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              id="invite-copy"
+              onClick={() => {
+                void navigator.clipboard.writeText(inviteLink.url).then(
+                  () => setInviteCopied(true),
+                  () => setInviteCopied(false),
+                );
+              }}
+            >
+              {inviteCopied ? t('manage.btn.copied') : t('manage.btn.copy')}
+            </button>
+            <a
+              className="btn btn-outline btn-sm"
+              id="invite-share"
+              href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink.url)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('manage.btn.share')}
+            </a>
+          </div>
+        </section>
       )}
 
       {showForm && eventId && (

@@ -34,7 +34,7 @@
 | `MINIAPP_URL` | [my-regs](flows/my-regs.md) | вход `miniappUrl` у CODE «render my regs» — кнопка QR в каждой активной регистрации |
 | `MINIAPP_URL` | [menu](flows/menu.md) | вход `miniappUrl` у CODE — кнопка `web_app` на `#/manage` и `#/scan?event_id=` (SPA) |
 | `BOT_TOKEN` | [manage-api](flows/manage-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
-| `BOT_USERNAME` | [manage-api](flows/manage-api.md) | ссылка регистрации в подтверждении владельцу при публикации (OWN-6) |
+| `BOT_USERNAME` | [manage-api](flows/manage-api.md) | `inviteLink` в ответах `load`/`save` — ссылка на форме, не в чате (W37) |
 | `BOT_USERNAME` | [reg-afterword](flows/reg-afterword.md) | deep link на следующий ивент в послесловии (`?start=e<id>-afterword`) |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —

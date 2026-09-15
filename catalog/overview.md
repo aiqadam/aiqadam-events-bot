@@ -72,7 +72,7 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | staff чаптера создаёт и правит ивент (OWN-1…OWN-5, OWN-15) и ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`) | [manage-api](flows/manage-api.md) |
+| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37) | [manage-api](flows/manage-api.md) |
 
 Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
 (`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,
