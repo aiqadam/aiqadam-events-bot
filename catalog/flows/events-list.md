@@ -2,7 +2,7 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
-  на команду `/events` и на колбэки `ev:list:upcoming` / `ev:list:past`
+  на колбэки `ev:list:upcoming` / `ev:list:past`
   (ADR-0015: один вопрос со всеми ответами — один флоу)
 - **Назначение**: список ивентов (PAR-3) — будущие и прошедшие раздельно,
   с переключателем вкладок.

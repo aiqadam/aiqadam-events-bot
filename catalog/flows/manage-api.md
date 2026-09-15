@@ -5,7 +5,8 @@
   `POST /api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync`
 - **Назначение**: сервер формы ивента роут `#/manage` SPA (`miniapp/src/routes/Manage.tsx`)
   ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): отдаёт staff'у
-  ивент для правки и принимает создание/правку (OWN-1…OWN-5, OWN-15).
+  ивент для правки, принимает создание/правку (OWN-1…OWN-5, OWN-15) и ведёт
+  список контролёров ивента (W36 — ручной путь вместо инвайт-ссылок W10).
   Права решаются здесь, страница их не решает.
 - **Flow ID (MCP)**: `CcGPwuW4ws5hkcaOPerEG`
 
@@ -16,7 +17,8 @@
 | Поле | Что |
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
-| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить |
+| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав |
+| `staffTelegramId` | только при `staff_add`/`staff_remove`: `telegram_id` контролёра; формат (цифры 8–16) проверяет `step_20` |
 | `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка и отказ) |
 | `newId` | только при создании: slug того же вида, который страница генерирует один раз на открытие формы — ключ идемпотентности (ADR-0003); ивент получает этот `id` |
 | `fields` | только при `save`: `title`, `description`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `capacity`, `overbook_pct`, `status` — строки как в форме; даты `YYYY-MM-DDTHH:mm` **ташкентские** |
@@ -37,9 +39,21 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_4 (Otherwise) | `return_response` (`stop`) | ответ `401` |
 | step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action`; `fields` |
 | step_18 (valid) | `tables-find-records staff` | строка `staff` вызывающего по `telegram_id` (`limit: 1`) |
+| step_19 (staff) | `tables-find-records event_staff` | строки ивента (`event_id`, проекция, `limit: 200`) — список и поиск активной строки |
+| step_20 (staff) | CODE «staff: decide» | права повторно по полям, валидация `telegram_id`, идемпотентность add/remove, тексты и строки списка; `outcome` = `list` / `add` / `remove` / `error` |
+| step_21 (staff) | ROUTER: `add` / `remove` / `Otherwise` | по `{{step_20['output'].outcome}}` |
+| step_22 (add) | `tables-create-records event_staff` | `event_id`, `telegram_id`, `granted_by`, `granted_at` |
+| step_23 (add) | `return_response` (**`respond`**) | `200` странице **до** уведомления |
+| step_24 (add) | `tables-find-records users` | есть ли добавленный в `users` (`telegram_id`, `limit: 1`) |
+| step_25 (add) | CODE «staff: notify targets» | цели уведомления (`[]` или один id), текст и `web_app`-кнопка сканера |
+| step_26 (add) | `LOOP_ON_ITEMS` по `{{step_25['output'].targets}}` | пустой список — ни одной отправки |
+| step_27 (add, в цикле) | `send_text_message` (`continueOnFailure`) | уведомление новому контролёру; ошибка Bot API (403) не отменяет добавление |
+| step_28 (remove) | `tables-update-record event_staff` | `revoked_at = now (UTC)` |
+| step_29 (remove) | `return_response` (`stop`) | `200` с обновлённым списком |
+| step_30 (Otherwise) | `return_response` (`stop`) | `200` список / `422` валидация / `400` |
 | step_6 (valid) | `tables-find-records events` | ивент по `id`, `limit: 1` |
-| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты; исход `outcome` = `load` / `save` / `error` |
-| step_8 (valid) | ROUTER: `save` / `load` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
+| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты; исход `outcome` = `load` / `save` / `staff` / `error` |
+| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
 | step_9 (Otherwise) | `return_response` (`stop`) | `403` forbidden / `422` validation / `400` |
 | step_10 (load) | `return_response` (`stop`) | `200`, `event` — поля ивента для формы (+ `hasPhoto`) |
 | step_11 (save) | `tables-upsert-records events` | запись по ключу `id` (пишет `staff_id` и `chapter_id`) |
@@ -59,10 +73,13 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
 | `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId}` |
 | `save` | 200 | `{ok:true, text, eventId}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем |
+| `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки ивента, `item` отформатирован сервером |
+| `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
+| нечисловой `staffTelegramId` | 422 | `{ok:false, error:"validation", text, fields:{telegram_id:"manage.err.bad_telegram_id"}, staff:[...]}` — страница переводит ключ |
 
 Тело ответа во всех ветках имеет один набор ключей (`ok`, `error`, `text`,
-`fields`, `event`, `eventId`), потому что `return_response` ссылается на них
-из вывода `step_7`/`step_3` и не переживёт отсутствующего поля.
+`fields`, `event`, `eventId`, `staff`), потому что `return_response` ссылается
+на них из вывода `step_7`/`step_20`/`step_3` и не переживёт отсутствующего поля.
 
 ### Правила `step_7`
 
@@ -122,15 +139,48 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 - **Фото формой не трогается** — `photo_file_id` не входит в `values` upsert'а;
   создать афишу формой нельзя ([Q46](../../docs/OPEN-QUESTIONS.md#q46)).
 
+### Правила `step_20` (контролёры, W36)
+
+- **Права те же, что у правки ивента, и проверяются повторно по полям записи**
+  (defense in depth, Q25): любой `staff` с доступом к чаптеру ивента, **не
+  только автор** ([ADR-0024](../../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)).
+  «Не staff» / «чужой чаптер» / «нет ивента» / сентинел `-` — один `403`.
+- **`telegram_id` — только цифры 8–16**; username не принимается (DAT-1).
+  Нечисловой → `422 {fields:{telegram_id:…}}`, в `event_staff` ничего не пишется.
+- **Добавление идемпотентно:** активная строка (`revoked_at` пусто) для этого
+  `(event_id, telegram_id)` уже есть — вторая не создаётся, ответ «уже
+  контролёр» с текущим списком. Гонка двух одновременных добавлений остаётся
+  возможной — уникальности в БД нет (ADR-0003).
+- **Отзыв идемпотентен:** `revoked_at = now (UTC)`; отзывать нечего — `200` с
+  текстом «активных прав нет», не `404`. Возврат прав — **только новой
+  строкой** (Q30: очистить DATE нечем); чтения фильтруют `revoked_at === ''`,
+  дубли revoked+active допускаются и считаются [W12b](../../docs/BACKLOG.md#w12b-отчёт-о-дублях-dedup-report).
+- **Уведомление** — одно сообщение в DM и только тем, кто есть в `users`
+  (`telegram_id` — единственный ключ, DAT-1): цели уведомления — `[]` или один
+  id, цикл по пустому списку не отправляет ничего, поэтому отдельной ветки «нет
+  в users» нет. Кнопка — та же `web_app` на сканер этого ивента, что в меню;
+  переоткрыть меню колбэком нельзя, такого маршрута в `tg-router` нет.
+  Отправка `continueOnFailure` — ошибка Bot API (403, бот заблокирован) не
+  отменяет добавление.
+- **Строки списка собирает сервер** (`manage.staff.item`: `ID <id> — контролёр
+  с <когда>`, Asia/Tashkent): имён нет — их пришлось бы читать из `users`
+  вторым запросом, а контролёра staff добавляет по ID. Список и `text` приходят
+  и в ответах add/remove — страница не перезапрашивает.
+- **Запись**: `tables-create-records` (`event_id`, `telegram_id`, `granted_by` —
+  кто выдал, `granted_at` — UTC) и `tables-update-record` по `record_id` из
+  чтения `step_19` (`__recordId` — `id` записи, а не поле).
+
 ## Зависимости
 
 - **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение и upsert),
   `staff` (`PnDy6gw9tlLUqTGk2EOUn`, чтение), `registrations`
-  (`SM8tMxfQuQCHRDdAiNJyQ`, чтение)
+  (`SM8tMxfQuQCHRDdAiNJyQ`, чтение), `event_staff` (`t1g8Vae3iEoDk93D6Rle7`,
+  чтение / create / update), `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение)
 - **Флоу**: `fn-hmac-init-data`
 - **Переменные**: `BOT_TOKEN` (ADR-0008, передаётся в `fn-hmac-init-data`),
-  `BOT_USERNAME` (ссылка регистрации)
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — `step_15`, `step_17`
+  `BOT_USERNAME` (ссылка регистрации), `MINIAPP_URL` (кнопка сканера в
+  уведомлении)
+- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — `step_15`, `step_17`, `step_27`
 
 ## Заметки
 
@@ -150,9 +200,14 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   прогоны проекта, может повторить запрос от имени пользователя в это окно.
   Это свойство всех webhook-флоу с `initData` (`checkin-api`, `my-qr-api`),
   не только этого.
-- **Оба `send_text_message` — `continueOnFailure`**: заблокировавший бота
+- **Все три `send_text_message` — `continueOnFailure`**: заблокировавший бота
   получатель не должен прерывать ни цикл, ни ответ организатору; ответ странице
-  к этому моменту уже отдан.
+  к этому моменту уже отдан (у уведомления контролёру — ответ отдан в `step_23`).
+- **Контролёры (W36) — ручной путь вместо инвайт-ссылок W10** (v0.2): staff
+  вводит `telegram_id` руками, одноразовых токенов нет. Секция «Контролёры» —
+  внутри существующего роута `#/manage/:id`, четвёртой страницы Mini App не
+  заводится (ADR-0017 п. 3). Свой `telegram_id` staff добавить себе тоже может —
+  легальный случай (staff-организатор он же контролёр своего ивента).
 - **Событие `emtzwtmr32apl`** (13 символов) формой не открывается: `id` длиннее
   slug'а `fn-parse-start`, у него и deep link не работает. Это дефект данных
   старого визарда, не формы.

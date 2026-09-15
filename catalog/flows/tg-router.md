@@ -15,28 +15,28 @@
 1. `/start e<id>-<utm>` (валидный `fn-parse-start`, `kind='e'`) → `reg-start`,
    **независимо от активной сессии** — новый вход по deep link перекрывает
    недоведённый диалог.
-2. `/newevent`, `/editevent <id>`, `/manage [<id>]` → `manage_open` —
-   кнопка на страницу `manage` (форма ивента в Mini App, ADR-0017 п. 3),
-   **независимо от активной сессии**, тем же принципом, что и `/start`.
-   `commandArgs` уходит в `manage-open` как есть: пусто — новый ивент,
-   иначе — id для правки.
-2a. `/events` → `events-list`; `/myregs` → `my-regs` (W06) — команды
-   перекрывают активную сессию, как в пп. 1–2.
-2b. Колбэки `ev:list:upcoming` / `ev:list:past` → `events-list`;
-    `myreg:list` → `my-regs` (W34 — кнопка меню); `myreg:cancel:*` /
-    `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) — по `callbackData`
-    (`myreg:cancel:` / `myreg:yes:` — по префиксу), до проверок сессий.
-3. Голый `/start` (payload пустой или неразобранный), `/menu`, `/help`
-   → `menu` (W34) — меню-хаб с кнопками по ролям.
-4. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
+2. Голый `/start` (payload пустой или неразобранный, `kind` пуст) → `menu`;
+   `badPayload=true` доезжает до меню и меняет преамбулу.
+3. `/start` с валидным, но не `e` payload (`kind='c'`/`'s'`) → `Otherwise`
+   молча: чекин — только сканером (Q41).
+4. **Любая другая команда** (`/menu`, `/help`, `/events`, `/myregs`,
+   `/newevent`, `/editevent`, `/manage`, любое неизвестное) не исполняется
+   и отвечает `menu` ([ADR-0025](../../docs/adr/0025-start-only-commands-ban.md)).
+   Команд, кроме `/start`, у бота нет; правило держит
+   `tools/check-commands.py` (хук + CI).
+5. Колбэки `ev:list:upcoming` / `ev:list:past` → `events-list`;
+   `myreg:list` → `my-regs` (W34 — кнопка меню); `myreg:cancel:*` /
+   `myreg:yes:*` / `myreg:no` → `my-reg-cancel` (W06) — по `callbackData`
+   (`myreg:cancel:` / `myreg:yes:` — по префиксу), до проверок сессий.
+6. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
     визарда в `sessions`) обработчика не имеют: их сообщения уходят в
-    `Otherwise` молча.
-5. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
+   `Otherwise` молча.
+7. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
     `scenario/step` не `-`) со `scenario='registration'`:
     - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
       любой другой `reg:*` → **ничего** (не угадываем обработчик).
     Сообщений без колбэка в рамках `registration` нет — все касания диалога кнопочные.
-6. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
+8. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
 
@@ -50,12 +50,11 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route`; `my_regs` — по команде `/myregs` **и** по `callbackData === 'myreg:list'` (кнопка меню W34); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`events_list`/`my_regs`/`my_reg_cancel`/`manage_open`/`menu`/`Otherwise` | |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — три исхода (deep link / меню / молчание), любая другая команда — `menu` (ADR-0025); `my_regs` — по `callbackData === 'myreg:list'` (кнопка меню W34); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`events_list`/`my_regs`/`my_reg_cancel`/`menu`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft` |
 | step_23→25 | `callFlow events-list`/`my-regs`/`my-reg-cancel` (`queue`, `waitForResponse: false`) | делегирование спискам и отмене (W06) |
-| step_26 | `callFlow manage-open` (`queue`, `waitForResponse: false`) | кнопка на страницу `manage` по `/newevent`, `/editevent`, `/manage`; получает `chatId`, `telegramId`, `commandArgs` |
-| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб по голому `/start`, `/menu`, `/help`; получает `chatId`, `firstName`, `badPayload`, `telegramId` |
+| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start` и любая незнакомая команда (ADR-0025); получает `chatId`, `firstName`, `badPayload`, `telegramId` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
@@ -63,7 +62,7 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
-  `events-list`, `my-regs`, `my-reg-cancel`, `manage-open`, `menu` — делегирование, не subflow-функции (ADR-0015 п. 4)
+  `events-list`, `my-regs`, `my-reg-cancel`, `menu` — делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
@@ -103,3 +102,13 @@
   при `await_marketing` уходил в `reg-consent-mkt` и записывал
   `consent_marketing`, которого гость не видел и на который не отвечал —
   прямое нарушение PAR-2.
+- **Единственные команды — `/start` и `/start <payload>` из диплинка.**
+  По решению владельца ([ADR-0025](../../docs/adr/0025-start-only-commands-ban.md))
+  других команд у бота нет: незнакомая команда не исполняется, а отвечает
+  карточкой меню. Правило держит `tools/check-commands.py` (хук + CI):
+  он валит коммит при любой команде, кроме `start`, — в тексте, в коде
+  или в сравнении с командной переменной. Callback-кнопки (`ev:list:*`,
+  `myreg:*`, `reg:*`) — не команды и остаются.
+- **Вход в создание ивента — кнопка «Создать ивент» в карточке меню**
+  (`web_app` на `#/manage`), не команда. Правка существующего ивента
+  появится списком в `#/manage` (W37); до W37 её нет — цена ADR-0025.

@@ -10,7 +10,6 @@
   "common.value.none": "koʻrsatilmagan",
   "common.err.generic": "Nimadir xato ketdi. Birozdan soʻng yana urinib koʻring.",
   "common.err.forbidden": "Bu amal uchun huquq yetarli emas.",
-  "common.err.unknown_command": "Buyruqni tushunmadim. /start — boshiga qaytish.",
   "common.err.session_expired": "Suhbat uzildi. Qaytadan boshlaymiz: /start",
   "common.err.event_not_found": "Tadbir topilmadi.",
   "start.greeting": "Salom, {name}! Bu AI Qadam tadbirlar boti.",
