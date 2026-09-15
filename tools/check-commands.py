@@ -19,15 +19,27 @@
 прочитанная из сообщения, не может быть ни с чем, кроме `'start'`:
 - сравниваться (`===`, `==`, `!==`, `!=`, `switch/case`) — с литералом
   в одинарных, двойных кавычках или шаблоне; сравнение с переменной,
-  конкатенацией или шаблоном с `${}` отвергается;
-- индексироваться (`MAP[command]`) — отвергается: по таблице не докажешь,
-  что ключей-команд нет;
-- искаться в контейнере (`LIST.includes(command)`) — элементы обязаны быть
-  литералами `'start'`; идентификаторы в массиве отвергаются;
+  конкатенацией или шаблоном с `${}` отвергается. Допустимы нормализация
+  перед сравнением (`command.trim() === 'start'`) и обёртки
+  (`String(command)`, `(command)`) — но литерал всё равно обязан быть
+  `'start'`;
+- индексироваться (`command[0]`, `command['endsWith']`, `MAP[command]`) —
+  отвергается: по частям и по таблице ключей не докажешь, что команд нет;
+- искаться в контейнере (`LIST.includes(command)`, `Object.keys(...).includes`,
+  `Set.has`, `Map.get`, `/re/.test`) — контейнер обязан быть объявлен
+  литеральным списком `'start'`; не-литералы, мутации (`push`, `concat`),
+  хвосты у литерала и неизвестные контейнеры отвергаются;
 - обрабатываться методами: `startsWith`/`endsWith`/`includes`/`indexOf`/
   `match`/`search`/`replace` — только с литералом `'start'`; `split('@')`,
   регистр/обрезка/срезы — без буквенных аргументов; любой другой метод —
   отвергается.
+
+**Предел честности.** Это не песочница и не тайнт-анализ общего вида: чекер
+ловит формы из реального кода и обходов независимого ревью (26 из 26
+подсаженных — включая нормализацию, контейнеры и optional chaining) и
+отказывает на недоказуемом. Сознательная обфускация (сборка строки из кодов,
+`eval`) не детектируется — такой код виден в диффе, последний рубеж
+остаётся за ревью, и это записано в ADR-0025.
 
 Плюс отдельная сеть: `/<команда>` в любой строке (тексты, код, notes) —
 разрешён только `start`; URL, hash-маршруты (`#/manage`), regex-флаги (`/g`)
@@ -185,25 +197,195 @@ def literal_of(text):
     return value, "${" in value
 
 
-def comparisons(src):
-    """Пары (левый операнд, правый операнд) для всех равенств/неравенств."""
-    i = 0
+def balanced(src, open_idx):
+    """Конец сбалансированной скобки, открытой в open_idx (учитывает кавычки)."""
+    pairs = {"(": ")", "[": "]", "{": "}"}
+    close = pairs.get(src[open_idx])
+    if not close:
+        return -1
+    depth = 0
+    i = open_idx
+    quote = ""
     while i < len(src):
-        op = next((o for o in EQ_OPS if src.startswith(o, i)), None)
-        if not op:
+        ch = src[i]
+        if quote:
+            if ch == "\\":
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+        elif ch in "'\"`":
+            quote = ch
+        elif ch == src[open_idx]:
+            depth += 1
+        elif ch == close:
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
+def operand_before(src, pos):
+    """Выражение слева от pos: с балансировкой скобок, до разделителя верхнего уровня."""
+    i = pos - 1
+    depth = 0
+    while i >= 0:
+        ch = src[i]
+        if ch in ")]}":
+            depth += 1
+        elif ch in "([{":
+            if depth == 0:
+                break
+            depth -= 1
+        elif depth == 0 and ch in ";,?:&|=\n":
+            break
+        i -= 1
+    return src[i + 1:pos].strip()
+
+
+def operand_after(src, pos):
+    """Выражение справа от pos до разделителя верхнего уровня (скобки парные)."""
+    i = pos
+    depth = 0
+    while i < len(src):
+        ch = src[i]
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            if depth == 0:
+                break
+            depth -= 1
+        elif depth == 0 and ch in ";,&|?:\n":
+            break
+        i += 1
+    return src[pos:i].strip()
+
+
+def strip_parens(text):
+    """Снимает сбалансированные внешние скобки: `(command)` → `command`."""
+    while text.startswith("(") and balanced(text, 0) == len(text) - 1:
+        text = text[1:-1].strip()
+    return text
+
+
+# Операнд допустим, если это командная переменная сама по себе, обёрнутая
+# в String()/скобки, с цепочкой методов без вложенных скобок. Аргументы
+# методов проверяются отдельно (CALL_RE).
+OPERAND_RE = re.compile(
+    r"^(?:String\s*\(\s*)?%s(?:\s*\))?(?:\s*(?:\?\.|\.)\s*[A-Za-z_$][\w$]*\s*\([^()]*\))*$" % IDENT
+)
+# Методы, применение которых к командной переменной разбирает её содержимое:
+# литеральные аргументы обязаны быть 'start'; всё недоказуемое — отказ.
+STRICT_LIT_METHODS = {"startsWith", "endsWith", "includes", "indexOf", "match", "search", "replace"}
+# Методы-нормализация: числа и 'start'/'@' безопасны, буквенные — нет.
+NEUTRAL_METHODS = {"toLowerCase", "toUpperCase", "trim", "slice", "substring", "charAt", "codePointAt", "split", "at"}
+LIT_ALLOWLIST = {"start", "@"}
+# Поиск команды в контейнере: контейнер обязан быть литеральным списком 'start'.
+DANGEROUS_CALLS = {"includes", "indexOf", "has", "get", "test", "match", "search", "exec",
+                   "find", "filter", "some", "every", "startsWith", "endsWith"}
+# Мутация массива делает его элементы недоказуемыми.
+ARRAY_MUTATORS = {"push", "splice", "unshift", "concat", "fill", "copyWithin", "pop",
+                  "shift", "sort", "reverse"}
+SAFE_OPERANDS = {"undefined", "null", "true", "false"}
+EQ_OPS = ("!==", "===", "!=", "==")
+
+
+def looks_seeded(expr, seeds):
+    """Содержит ли выражение командную переменную (по словам)."""
+    for name in re.findall(r"[A-Za-z_$][\w$]*", expr):
+        if name in seeds:
+            return True
+    return False
+
+
+TAIL_RE = re.compile(r"^(?:\s*(?:\?\.|\.)\s*[A-Za-z_$][\w$]*\s*\([^()]*\))*$")
+
+
+def operand_is_simple(expr, seeds):
+    """Операнд — командная переменная (возможно String()/скобки/цепочка методов)."""
+    text = strip_parens(expr.strip())
+    if not OPERAND_RE.fullmatch(text):
+        return False
+    body = text
+    if body.startswith("String"):
+        body = re.sub(r"^String\s*\(\s*", "", body)
+        if body.endswith(")"):
+            body = body[:-1].strip()
+    # Голова — часть до первой цепочки вызовов; перебираем разбиения по точкам,
+    # потому что жадный IDENT съел бы первый метод.
+    for i, ch in enumerate(body + "."):
+        if ch != ".":
+            continue
+        head, tail = body[:i], body[i:]
+        if head and IDENT_RE.fullmatch(head) and seeded(head, seeds) and TAIL_RE.fullmatch(tail):
+            return True
+    return False
+
+
+def literal_of(text):
+    """(значение, динамика) если текст — ровно один литерал, иначе (None, False)."""
+    text = strip_parens(text.strip())
+    m = LIT.fullmatch(text)
+    if not m:
+        return None, False
+    value = next(g for g in m.groups() if g is not None)
+    return value, "${" in value
+
+
+def array_literals(src):
+    """Имя → элементы массива; unsafe — имена, у литерала которых есть хвост.
+
+    `const L = ['start'].concat(['events'])` — литерал уже не весь контейнер,
+    элементы недоказуемы; такие имена уходят в unsafe и валят includes(command).
+    """
+    arrays = {}
+    unsafe = set()
+    for m in re.finditer(r"([A-Za-z_$][\w$]*)\s*=\s*\[", src):
+        open_idx = src.index("[", m.start())
+        end = balanced(src, open_idx)
+        if end < 0:
+            continue
+        name = m.group(1)
+        arrays[name] = split_top_level(src[open_idx + 1:end])
+        rest = src[end + 1:].lstrip()
+        if rest[:1] in (".", "("):
+            unsafe.add(name)
+    return arrays, unsafe
+
+
+def split_top_level(chunk):
+    """Элементы списка через запятую верхнего уровня (скобки/кавычки учтены)."""
+    out = []
+    depth = 0
+    quote = ""
+    cur = ""
+    i = 0
+    while i < len(chunk):
+        ch = chunk[i]
+        if quote:
+            if ch == "\\":
+                cur += chunk[i:i + 2]
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+        elif ch in "'\"`":
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            out.append(cur.strip())
+            cur = ""
             i += 1
             continue
-        j = i + len(op)
-        k = j
-        while k < len(src) and src[k] not in EQ_DELIMS:
-            k += 1
-        right = src[j:k].strip()
-        m = i - 1
-        while m >= 0 and src[m] not in EQ_DELIMS + "({":
-            m -= 1
-        left = src[m + 1:i].strip()
-        yield left, right
-        i = j
+        cur += ch
+        i += 1
+    if cur.strip():
+        out.append(cur.strip())
+    return out
 
 
 def check_source_code(src, where, problems):
@@ -229,24 +411,62 @@ def check_source_code(src, where, problems):
                 "%s: %s с %r — по ADR-0025 допустима только 'start'" % (where, context, lit)
             )
 
-    for left, right in comparisons(src):
-        left_seeded = bool(IDENT_RE.fullmatch(left)) and seeded(left, seeds)
-        right_seeded = bool(IDENT_RE.fullmatch(right)) and seeded(right, seeds)
-        if not left_seeded and not right_seeded:
-            continue
-        other = right if left_seeded else left
-        if other in SAFE_OPERANDS or re.fullmatch(r"-?\d+", other):
-            continue
+    def check_pair(cmd_side, other, context):
+        if not operand_is_simple(cmd_side, seeds):
+            fail("в %s выражение над командой %r недоказуемо" % (context, cmd_side))
+            return
+        if other in SAFE_OPERANDS or re.fullmatch(r"-?\d+", other or ""):
+            return
         lit, dynamic = literal_of(other)
         if lit is None and not dynamic:
-            fail("сравнение команды с не-литералом %r (недоказуемо)" % other)
-            continue
-        literal_ok(lit, dynamic, "сравнение команды")
+            fail("в %s сравнение команды с не-литералом %r (недоказуемо)" % (context, other))
+            return
+        literal_ok(lit, dynamic, context)
 
-    for m in SWITCH_RE.finditer(src):
-        if not seeded(m.group(1), seeds):
+    def check_container(elements, context):
+        if not elements:
+            fail("%s — контейнер пуст/недоказуем" % context)
+            return
+        for e in elements:
+            lit, dynamic = literal_of(e)
+            if lit is None and not dynamic:
+                fail("%s содержит не-литерал %r (недоказуемо)" % (context, e))
+                continue
+            if lit != "start":
+                fail("%s: элемент %r — допустим только 'start'" % (context, lit))
+
+    i = 0
+    while i < len(src):
+        op = next((o for o in EQ_OPS if src.startswith(o, i)), None)
+        if not op:
+            i += 1
             continue
-        body = block_after(src, m.end())
+        left = operand_before(src, i)
+        right = operand_after(src, i + len(op))
+        left_hit = looks_seeded(left, seeds)
+        right_hit = looks_seeded(right, seeds)
+        if left_hit and right_hit:
+            fail("сравнение команды с выражением над командой (%r %s %r)" % (left, op, right))
+        elif left_hit:
+            check_pair(left, right, "сравнение команды")
+        elif right_hit:
+            check_pair(right, left, "сравнение команды")
+        i += len(op)
+
+    for m in re.finditer(r"switch\s*\(", src):
+        open_idx = src.index("(", m.start())
+        close_idx = balanced(src, open_idx)
+        if close_idx < 0:
+            continue
+        scrutinee = src[open_idx + 1:close_idx].strip()
+        if not looks_seeded(scrutinee, seeds):
+            continue
+        if not operand_is_simple(scrutinee, seeds):
+            fail("switch по выражению над командой %r (недоказуемо)" % scrutinee)
+            continue
+        brace = src.find("{", close_idx)
+        body_end = balanced(src, brace) if brace >= 0 else -1
+        body = src[brace:body_end + 1] if body_end > brace else ""
         for case in CASE_RE.findall(body):
             lit, dynamic = literal_of(case)
             if lit is None and not dynamic:
@@ -254,43 +474,50 @@ def check_source_code(src, where, problems):
                 continue
             literal_ok(lit, dynamic, "switch по команде")
 
-    for container, ident in SUBSCRIPT_RE.findall(src):
-        if seeded(ident, seeds):
-            fail("выбор `%s[%s]` по команде (таблица ключей недоказуема)" % (container, ident))
-
-    arrays = {}
-    for name, chunk in ARRAY_RE.findall(src):
-        elements = [e.strip() for e in chunk.split(",") if e.strip()]
-        arrays[name] = elements
-
-    def container_elements_ok(elements, context):
-        for e in elements:
-            lit, dynamic = literal_of(e)
-            if lit is None and not dynamic:
-                fail("%s содержит не-литерал %r (недоказуемо)" % (context, e))
-                continue
-            literal_ok(lit, dynamic, context)
-
-    for container, method, ident in CONTAINER_RE.findall(src):
-        if not seeded(ident, seeds):
-            continue
-        if container not in arrays:
-            fail("`%s.%s(%s)` — контейнер не объявлен литералом рядом (недоказуемо)" % (container, method, ident))
-            continue
-        container_elements_ok(arrays[container], "%s.%s" % (container, method))
-
-    for m in re.finditer(r"\[([^\]]*)\]\.(?:includes|indexOf)\(\s*(%s)\s*\)" % IDENT, src):
-        chunk, ident = m.group(1), m.group(2)
-        if seeded(ident, seeds):
-            container_elements_ok(
-                [e.strip() for e in chunk.split(",") if e.strip()], "includes команды"
-            )
-
-    for m in IN_OP_RE.finditer(src):
+    for m in re.finditer(r"(?:^|[^\w.$])(%s)\s*\[" % IDENT, src):
+        head = m.group(1)
+        if seeded(head, seeds):
+            fail("обращение `%s[...]` к команде (по частям недоказуемо)" % head)
+    for m in re.finditer(r"\[\s*(%s)\s*\]" % IDENT, src):
+        if seeded(m.group(1), seeds):
+            fail("подстановка `[%s]` по команде (таблица ключей недоказуема)" % m.group(1))
+    for m in re.finditer(r"(?:^|[^\w.$])(%s)\s+in\s+" % IDENT, src):
         if seeded(m.group(1), seeds):
             fail("оператор `in` по команде (ключи недоказуемы)")
 
-    for m in CALL_RE.finditer(src):
+    arrays, unsafe = array_literals(src)
+    mutated = set(unsafe)
+    for name in arrays:
+        for mut in ARRAY_MUTATORS:
+            if re.search(r"\b%s\s*(?:\?\.|\.)\s*%s\s*\(" % (re.escape(name), mut), src):
+                mutated.add(name)
+
+    for m in re.finditer(r"(\?\.|\.)\s*(\w+)\s*\(\s*(%s)\s*\)" % IDENT, src):
+        method, ident = m.group(2), m.group(3)
+        if method not in DANGEROUS_CALLS or not seeded(ident, seeds):
+            continue
+        container = operand_before(src, m.start())
+        if container.split(".")[-1] in seeds:
+            continue  # метод на самой команде — проверяется ниже
+        if container.startswith("["):
+            open_idx = src.index("[", m.start() - len(container))
+            close_idx = balanced(src, open_idx)
+            rest = src[close_idx + 1:].lstrip() if close_idx >= 0 else ""
+            if rest[:1] in (".", "("):
+                fail("инлайн-контейнер с хвостом %r (элементы недоказуемы)" % rest[:20])
+                continue
+            check_container(split_top_level(src[open_idx + 1:close_idx]), "инлайн-контейнер")
+            continue
+        if container in arrays:
+            if container in mutated:
+                fail("контейнер `%s` мутируется в этом же шаге — элементы недоказуемы" % container)
+                continue
+            check_container(arrays[container], "`%s.%s`" % (container, method))
+            continue
+        fail("`%s.%s(%s)` — контейнер не объявлен литеральным списком 'start' (недоказуемо)"
+             % (container, method, ident))
+
+    for m in re.finditer(r"(%s)\s*(?:\?\.|\.)\s*(\w+)\s*\(([^()]*)\)" % IDENT, src):
         ident, method, args = m.group(1), m.group(2), m.group(3).strip()
         if not seeded(ident, seeds):
             continue
@@ -456,6 +683,36 @@ def self_test():
             code = code + "\nconst clean = command.replace(/x/g, '');"
         elif src == "in-op":
             code = code + "\nif (command in MAP2) { route = 'x'; }"
+        elif src == "normalize-trim":
+            code = code.replace("if (command === 'start')", "if (command.trim() === 'events')")
+        elif src == "switch-normalized":
+            code = code + "\nconst t3 = () => { switch (command.toLowerCase()) { case 'events': return 1; } return 0; };"
+        elif src == "push":
+            code = code + "\nconst L1 = ['start'];\nL1.push('events');\nif (L1.includes(command)) { route = 'x'; }"
+        elif src == "concat-array":
+            code = code + "\nconst L2 = ['start'].concat(['events']);\nif (L2.includes(command)) { route = 'x'; }"
+        elif src == "objkeys":
+            code = code + "\nif (Object.keys({ events: 1 }).includes(command)) { route = 'x'; }"
+        elif src == "regex-test":
+            code = code + "\nif (/^ev/.test(command)) { route = 'x'; }"
+        elif src == "set-has":
+            code = code + "\nif (new Set(['events']).has(command)) { route = 'x'; }"
+        elif src == "map-get":
+            code = code + "\nif (M1.get(command)) { route = 'x'; }"
+        elif src == "optional-chain":
+            code = code + "\nif (command?.endsWith('vents')) { route = 'x'; }"
+        elif src == "bracket-method":
+            code = code + "\nif (command['endsWith']('vents')) { route = 'x'; }"
+        elif src == "char-index":
+            code = code + "\nif (command[0] === 'e') { route = 'x'; }"
+        elif src == "slice-compare":
+            code = code + "\nif (command.slice(0, 2) === 'ev') { route = 'x'; }"
+        elif src == "string-of-compare":
+            code = code + "\nif (String(command) === 'events') { route = 'x'; }"
+        elif src == "normalize-ok":
+            code = code.replace("if (command === 'start')", "if (command.trim() === 'start')")
+        elif src == "case-parens":
+            code = code + "\nconst t4 = () => { switch (command) { case ('start'): return 1; } return 0; };"
         elif src == "slash-text":
             f["nextAction"]["settings"]["input"]["texts"]["syn.hello"] = "Напишите /help"
         elif src == "slash-code":
@@ -497,6 +754,19 @@ def self_test():
         ("команда в коде", "slash-code"),
         ("switch", "switch"),
         ("switch с не-литералом", "switch-case-ident"),
+        ("нормализация перед сравнением", "normalize-trim"),
+        ("switch по нормализованной команде", "switch-normalized"),
+        ("push в контейнер", "push"),
+        ("concat у контейнера", "concat-array"),
+        ("Object.keys().includes", "objkeys"),
+        ("regex.test", "regex-test"),
+        ("Set.has", "set-has"),
+        ("Map.get", "map-get"),
+        ("optional chaining", "optional-chain"),
+        ("command['endsWith']", "bracket-method"),
+        ("command[0]", "char-index"),
+        ("slice-сравнение", "slice-compare"),
+        ("String(command) === чужая", "string-of-compare"),
     ):
         problems = []
         check_flow("syn", mutate(mutation), problems)
@@ -505,6 +775,8 @@ def self_test():
 
     problems = []
     check_flow("syn", mutate("startsWith-ok"), problems)
+    check_flow("syn", mutate("normalize-ok"), problems)
+    check_flow("syn", mutate("case-parens"), problems)
     check_flow("syn", mutate("no-entry"), problems)
     check_slash("https://app.flow.aiqadam.org/api/v1/webhooks/x/sync", "syn", problems)
     check_slash("#/manage/:id и фото/видео, 24/7, /\\+/gi", "syn", problems)
@@ -562,7 +834,7 @@ def main(argv):
         if found:
             flows.extend(found)
             continue
-        if isinstance(data, dict) and path.startswith("flows/"):
+        if path.endswith("_manifest.json") or (isinstance(data, dict) and path.startswith("flows/")):
             skipped.append(path)
             continue
         texts_files += 1
