@@ -91,7 +91,6 @@ IDENT_RE = re.compile(IDENT)
 # Литералы: одинарные, двойные кавычки, шаблон. Шаблон с `${` — динамика.
 LIT = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`")
 
-SWITCH_RE = re.compile(r"switch\s*\(\s*(%s)\s*\)" % IDENT)
 CASE_RE = re.compile(r"case\s+([^:]+):")
 
 # Методы на командной переменной: литеральные аргументы обязаны быть
@@ -184,10 +183,20 @@ def command_idents(src):
     for _ in range(4):
         grew = False
         for st in src.split(";"):
-            names = ASSIGN_RE.findall(st)
-            if not names:
-                continue
             if not any(re.search(r"\b%s\b" % re.escape(s), st) for s in seeds):
+                continue
+            names = ASSIGN_RE.findall(st)
+            for pat in re.finditer(r"\{([^{}]*)\}\s*=", st):
+                for prop in split_top_level(pat.group(1)):
+                    target = prop.split(":", 1)[1] if ":" in prop else prop
+                    target = target.strip().lstrip("...").strip()
+                    if target and IDENT_RE.fullmatch(target):
+                        if target not in seeds:
+                            seeds.add(target)
+                            grew = True
+                        origin.add(target)
+                        names.append(target)
+            if not names:
                 continue
             rhs = strip_parens((st.split("=", 1)[1] if "=" in st else "").strip())
             alias = bool(IDENT_RE.fullmatch(rhs)) and rhs in seeds
@@ -258,6 +267,9 @@ def operand_before(src, pos):
                 break
             depth -= 1
         elif depth == 0 and ch in ";,?:&|=\n":
+            if ch == "?" and src[i + 1:i + 2] == ".":
+                i -= 1
+                continue
             break
         i -= 1
     return src[i + 1:pos].strip()
@@ -276,6 +288,9 @@ def operand_after(src, pos):
                 break
             depth -= 1
         elif depth == 0 and ch in ";,&|?:\n":
+            if ch == "?" and src.startswith("?.", i):
+                i += 2
+                continue
             break
         i += 1
     return src[pos:i].strip()
@@ -338,6 +353,8 @@ def operand_is_simple(expr, seeds):
         if ch != ".":
             continue
         head, tail = body[:i], body[i:]
+        if head.endswith("?"):
+            head = head[:-1]
         if (
             head
             and IDENT_RE.fullmatch(head)
@@ -603,6 +620,15 @@ def check_source_code(src, where, problems):
             fail("обращение `%s[...]` к команде (по частям недоказуемо)" % before)
             break
 
+    for m in re.finditer(r"\)\s*\??\.?\s*\(", src):
+        open_idx = src.index("(", m.end() - 1)
+        close_idx = balanced(src, open_idx)
+        if close_idx < 0:
+            continue
+        args = src[open_idx + 1:close_idx]
+        if looks_seeded(args, seeds):
+            fail("передача команды в вызов выражения `(%s)` недоказуема" % args.strip())
+
     for m in re.finditer(r"\]\s*\??\s*\(", src):
         open_idx = src.index("(", m.end() - 1)
         close_idx = balanced(src, open_idx)
@@ -796,6 +822,14 @@ def self_test():
             code = code + "\nconst z9 = encodeURIComponent(command);"
         elif src == "length-ok":
             code = code + "\nif (command.length === 0) { route = 'none'; }"
+        elif src == "opt-chain-compare":
+            code = code.replace("if (command === 'start')", "if (command?.toLowerCase() === 'events')")
+        elif src == "iife":
+            code = code + "\nif (((c) => c === 'events')(command)) { route = 'x'; }"
+        elif src == "destructure":
+            code = code + "\nconst { c5 } = { c5: command };\nif (c5 === 'events') { route = 'x'; }"
+        elif src == "opt-chain-ok":
+            code = code.replace("if (command === 'start')", "if (command?.toLowerCase() === 'start')")
         elif src == "string-trim-ok":
             code = code + "\nif (String(command).trim() === 'start') { route = 'menu'; }"
         elif src == "spread-ok":
@@ -860,6 +894,9 @@ def self_test():
         ("вызов функции с командой", "helper-call"),
         ("голый вызов с командой", "bare-call"),
         ("encodeURIComponent", "encode-call"),
+        ("?. в сравнении", "opt-chain-compare"),
+        ("IIFE с командой", "iife"),
+        ("деструктуризация с командой", "destructure"),
         ("command['endsWith']", "bracket-method"),
         ("command[0]", "char-index"),
         ("slice-сравнение", "slice-compare"),
@@ -877,6 +914,7 @@ def self_test():
     check_flow("syn", mutate("length-ok"), problems)
     check_flow("syn", mutate("string-trim-ok"), problems)
     check_flow("syn", mutate("spread-ok"), problems)
+    check_flow("syn", mutate("opt-chain-ok"), problems)
     check_flow("syn", mutate("case-parens"), problems)
     check_flow("syn", mutate("no-entry"), problems)
     check_slash("https://app.flow.aiqadam.org/api/v1/webhooks/x/sync", "syn", problems)
