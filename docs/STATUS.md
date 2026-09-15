@@ -12,8 +12,9 @@
 > `#/events`, [ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md)).
 >
 > Порядок v0.1 при одном агенте: **W35** (дозапись `migrations`) → **W32**
-> (owner'ы по списку, окна `initData` по флоу — [Q49](OPEN-QUESTIONS.md#q49);
-> первая строка `owners` `322876545` подтверждена владельцем) → **W36**
+> (права `staff` по чаптеру — [ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md),
+> окна `initData` по флоу — [Q49](OPEN-QUESTIONS.md#q49); чаптер `1` и первая
+> строка `staff` `322876545` подтверждены владельцем) → **W36**
 > (staff-lite: права контролёра по
 > `telegram_id` в `#/manage/:id`) → **W37** (полировка трёх путей: ссылка
 > после создания, список своих ивентов в `#/manage`, замеры ADR-0009) →
@@ -61,7 +62,7 @@
 | 0.5 | `MINIAPP_URL` + Mini App URL в BotFather | **готов** 2026-09-08 | W7 |
 | 0.6 | Проект `events-prod` | **отложен** до W15 (решено 2026-09-08) | W15 |
 | 0.7 | Ключ платформенного API ревьюеру и владельцу пакета | **готов** (W29 закрыт) | — |
-| 0.8 | `telegram_id` владельца проекта — первая строка `owners` | **готов** 2026-09-15 — подтверждён `322876545` (`return_void_0`); строка заводится в W32 | W32 |
+| 0.8 | `telegram_id` владельца проекта — первая строка `staff` (чаптер `1`) | **готов** 2026-09-15 — подтверждён `322876545` (`return_void_0`); строка заводится в W32 | W32 |
 
 ## Пакеты работ
 
@@ -104,7 +105,7 @@
 | W30. Бренд Mini App и `docs/VOICE.md` ([ADR-0019](adr/0019-design-system-from-brand-repo.md)) | — | [Q40](OPEN-QUESTIONS.md#q40) — ✅ закрыт пакетом | **готов** 2026-09-14 — решением владельца после шести кругов ревью, без вердикта «замечаний нет» ([почему](work/W30-brand-and-voice.md#закрытие-2026-09-14--решением-владельца-проекта)) | агент W30 | [W30](work/W30-brand-and-voice.md) |
 | W31. Страница `manage`: визард ивента в Mini App ([Q43](OPEN-QUESTIONS.md#q43), [ADR-0017](adr/0017-screen-not-message.md) п. 3) | 8 | W30, W28 | **готов** 2026-09-14 — независимое ревью, шесть кругов, вердикт «замечаний нет»; `event-wizard-*` удалены, `/newevent`/`/editevent` → форма; фото — [Q46](OPEN-QUESTIONS.md#q46) — **заменён W33** ([ADR-0022](adr/0022-miniapp-react-spa.md): снос ванили → SPA) | агент W31 | [W31](work/W31-manage-page.md) |
 | W33. Mini App — React SPA: `ticket`/`scan`/`manage` ([ADR-0022](adr/0022-miniapp-react-spa.md)) | 8 | W30, W28 | **готов** 2026-09-14 — независимое ревью «замечаний нет»; платформа `fix(qadams): return_response without respond hangs sync` ([#441](https://github.com/aiqadam/qadam-flow/pull/441)) залит `ce05e65` `fe43020` на `pro-data-tech-qa` (закрыл [#440](https://github.com/aiqadam/qadam-flow/issues/440)) — `my-qr-api`/`checkin-api` `sync` теперь `401 2.3с` вместо `204 30с`, SPA `8854853` работает | агент | [W33](work/W33-react-spa.md) |
-| W32. Owner'ы по списку, окна `initData` по флоу, афиша выведена временно ([Q46](OPEN-QUESTIONS.md#q46), [Q47](OPEN-QUESTIONS.md#q47), [Q49](OPEN-QUESTIONS.md#q49), [Q50](OPEN-QUESTIONS.md#q50)) | 3 | W33 — ✅ сдан | **в работе** — взят 2026-09-15; вопросы вокруг пакета закрыты (Q49 решён, Q50 заведён), `owners` = `322876545` | агент | [W32](work/W32-owners-initdata.md) |
+| W32. Права `staff` по чаптеру, окна `initData` по флоу, афиша выведена временно ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q46](OPEN-QUESTIONS.md#q46), [Q47](OPEN-QUESTIONS.md#q47), [Q49](OPEN-QUESTIONS.md#q49), [Q50](OPEN-QUESTIONS.md#q50)) | 3 | W33 — ✅ сдан | **в работе** — взят 2026-09-15; модель прав пересмотрена ADR-0024, `staff` = `322876545`, чаптер `1` | агент | [W32](work/W32-owners-initdata.md) |
 | W34. Стартовое меню-хаб на холостой `/start` | вне волн | W28, W06, W33 | **готов** 2026-09-14 — решением владельца, после одного круга ревью: блокер (нет PRODUCTION-прогонов) закрыт прогонами по каждому входу, замечание 3 (каталог) исправлено; гость/staff-only — на TEST-прогонах, замечание 2 закрыто частично ([почему](work/W34-menu.md#закрытие-2026-09-14--решением-владельца-проекта)) | агент аудита | [W34](work/W34-menu.md) |
 | W35. Дозапись `migrations` за W33–W34 ([ADR-0021](adr/0021-repo-is-source-of-truth-migrations-table.md)) | вне волн | W34 — ✅ закрыт (`251d3f1`) | **готов** 2026-09-15 — 12 строк вставлены, детерминированная проверка `tools/check-migrations.py` + pre-commit хук + CI; независимое ревью, три круга, вердикт «замечаний нет» | агент | [W35](work/W35-migrations-backfill.md) |
 | W15. Приёмка | 9 | все `готов` на момент приёмки | не начат | — | — |
@@ -120,10 +121,13 @@ W10, W12b, W38 — v0.2 (решение владельца 2026-09-15). Полн
 идеальных опыта + W35/W32/W36/W37/W15; W13/W14/W12/W10/W12b отложены в v0.2;
 headline-UX рассылок — «овнер переслал боту готовое сообщение, бот разослал»
 (записан в секции W14 BACKLOG). Перед взятием W32 закрыты вопросы вокруг пакета:
+[ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md) — права пересмотрены:
+глобальная таблица `staff` по чаптеру (создание **и** правка), `events.owner_id`
+→ `staff_id` (авторство), чекин остаётся `event_staff`;
 [Q49](OPEN-QUESTIONS.md#q49) — окна `initData` **по флоу** (`manage`/`ticket`
 300 c, `checkin` 12 ч), [Q50](OPEN-QUESTIONS.md#q50) — афиша возвращается
 в v0.2 (пакет [W39](BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка)),
-`owners` заводится строкой `322876545`. Тогда же согласовано **расширение Mini App**
+чаптер `1` и `staff` заводится строкой `322876545`. Тогда же согласовано **расширение Mini App**
 ([ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md)): четвёртая страница
 `#/events` — каталог ивентов, перенос PAR-3 из чата `events-list` на экран
 (пакет **W38**, v0.2); v0.1 по функционалу не растёт — в нём трогается только
