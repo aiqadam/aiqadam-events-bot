@@ -223,6 +223,91 @@
   нет; `catalog/flows/manage-api.md` в ветке — из evidence-коммита `137e854`,
   не из правки чекера.
 
+### Круг 3 — повторное ревью после второй починки (коммит `918148d`)
+
+- **Ревьюер**: агент-ревьюер (независимый) · **Дата**: 2026-09-15 · **Вердикт**: есть замечания
+
+#### Замечания
+
+1. **блокер** — все обходы круга 2 закрыты (34 из 34, см. «Проверено»), но
+   командная переменная по-прежнему опознаётся только в форме голого
+   идентификатора: обёртка в аргументе или цепочка из двух вызовов проходит.
+   Проверка — на копии **реального** `flows/tg-router.json` (правка только
+   в temp); каждый пример даёт `нарушений: 0`, код возврата 0:
+   - `const KNOWN = ['start', 'events']; if (KNOWN.includes(command.trim())) route = 'events_list';` —
+     цикл `DANGEROUS_CALLS` ищет аргумент ровно как `IDENT`, `command.trim()`
+     — вызов, и контейнер не проверяется вообще. Тот же класс:
+     `KNOWN.includes(command.toLowerCase())`, `KNOWN.includes(String(command))`,
+     `Object.keys({events:1}).includes(command.trim())`,
+     `new Set(['start','events']).has(command.trim())`, `Map.get(command.trim())`,
+     `/^ev/.test(command.trim())`;
+   - `if (command.toLowerCase().startsWith('ev')) route = 'events_list';` —
+     цикл методов связывает вызов со всей цепочкой `command.toLowerCase`,
+     `seeded()` смотрит последний сегмент (`toLowerCase`) и пропускает. Тот же
+     класс: `command.trim().endsWith('vents')`, `command.trim().match(/even/)`,
+     `command.trim().replace('start','events')`,
+     `command.trim().indexOf('ev') === 0`, `command.trim().includes('event')`;
+   - `MAP[command.trim()]`, `command.trim() in MAP` — регексы подстановки и
+     `in` требуют голый `IDENT`;
+   - менее вероятная форма того же класса: `R['get'](command)`,
+     `command.match?.(/events/)`.
+   Почему блокер: `KNOWN.includes(command.trim())` — обычная строка, а не
+   обфускация; докстринг и ADR-0025 называют вне детекции только осознанную
+   обфускацию (`eval`, сборка из кодов — туда же `command.codePointAt(0) === 101`),
+   этот класс в названный предел не входит, а «fail-closed: разрешено только
+   доказуемое» на нём не выполняется. Куда смотреть (чинит владелец, не
+   ревьюер): (а) в цикле `DANGEROUS_CALLS` принимать аргумент, если это
+   `operand_is_simple(arg)` или `looks_seeded(arg)`, и падать, когда контейнер
+   не литеральный список `'start'`; (б) в цикле методов смотреть голову
+   цепочки (до первого вызова), а не требовать `seeded()` от всей строки;
+   (в) те же головы — для `[...]` и `in`; (г) добавить формы в `--self-test`.
+
+2. **на будущее** — ложное срабатывание: инлайн-литеральный контейнер
+   `if (['start'].includes(command))` и `if ([...['start']].includes(command))`
+   валится как «инлайн-контейнер с хвостом», хотя содержит только `start`.
+   Ветка `check_container` для инлайн-контейнеров недостижима: `rest`
+   берётся сразу после `]` и всегда начинается с `.includes(...)`, который и
+   породил срабатывание; мёртвые `ARRAY_RE`, `CONTAINER_RE`, `EQ_DELIMS`
+   определены и не используются. Не блокирует (fail-closed), но неверный
+   отказ и мёртвый код в гейте — на чистку. Заодно: докстринг и ADR говорят
+   «26 фикстур», фактически в `self_test()` их 30, а перечень «что обязана
+   ловить» не покрывает найденный класс (часть замечания 1).
+
+#### Проверено
+
+- Все 34 формы круга 2 валят проверку (exit 1, с адресом
+  `tg-router/step_10`): двойные кавычки, шаблон и `${}`, конкатенация,
+  `MAP[command]`, `endsWith`/`startsWith`/`includes`/`match`/`search`/`replace`
+  с чужим литералом, `command.trim()/toLowerCase()/slice` в сравнении,
+  `(command)`, `String(command)`, `switch (command.toLowerCase())` с
+  `case 'events'`, `push`/`concat`-массив, `Object.keys(...).includes`,
+  `/re/.test`, `Set.has`, `Map.get`, `({...})[command]`, `command?.endsWith`,
+  `command['endsWith']`, `command[0]`, `in`, `switch` с не-литеральным case,
+  `'events' === command`, `'events' + ''`, `A + B`, spread,
+  `command === String('events')`, `charCodeAt`.
+- Формы из задания: `command["ev"+"ents"]`,
+  `[...['events']].includes(command)`, `Array.from('events').includes(command)`,
+  `[['start'],['events']].flat().includes(command)`, `'sta' + 'rt'`,
+  `replace('start','events')`, `(0).toString()`, `JSON.parse('"events"')`,
+  `['events'].join('').includes(command)` — все exit 1 (часть ловится грубым
+  «контейнер не объявлен»/«выражение недоказуемо» — это ожидаемый
+  fail-closed, не замечание).
+- Легальные формы из задания проходят (exit 0): `command.trim() === 'start'`,
+  `command.toLowerCase() === 'start'`, `case ('start')`,
+  `String(command) === 'start'`, `(command) === 'start'`; сверх списка —
+  `inputs.command === 'start'`, `switch (command) case 'start'`,
+  `const L = ['start']; L.includes(command)`, `command.trim().startsWith('start')`.
+- `--self-test` — ok; чистое дерево (`i18n/*.json flows/*.json`) — 17 флоу,
+  telegram: 1, 0 нарушений; живой код `step_1`/`step_10` — без замечаний.
+- Инфраструктура: хук и CI на месте
+  (`tools/check-commands.py i18n/*.json flows/*.json`), бит `100755`;
+  коммит `918148d` трогает `tools/check-commands.py`, `docs/adr/0025` и
+  журнал; по `flows/` и `i18n/` относительно `main` — 0 изменений.
+- Докстринг/ADR-0025: предел честности назван (обфускация, `eval` — вне
+  детекции), `_manifest.json` теперь действительно пропускается; но
+  обещание покрытия неполно (замечание 1), а число фикстур расходится
+  (замечание 2).
+
 ## Хвосты и блокеры
 
 - **Живые прогоны ждут человека:** «старая команда отвечает меню» проверяется

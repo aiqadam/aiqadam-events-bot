@@ -92,11 +92,6 @@ LIT = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`")
 
 SWITCH_RE = re.compile(r"switch\s*\(\s*(%s)\s*\)" % IDENT)
 CASE_RE = re.compile(r"case\s+([^:]+):")
-ARRAY_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*=\s*\[([^\]]*)\]")
-CALL_RE = re.compile(r"(%s)\s*\.\s*(\w+)\s*\(([^()]*)\)" % IDENT)
-SUBSCRIPT_RE = re.compile(r"(\w+)\s*\[\s*(%s)\s*\]" % IDENT)
-CONTAINER_RE = re.compile(r"(\w+)\.(includes|indexOf)\(\s*(%s)\s*\)" % IDENT)
-IN_OP_RE = re.compile(r"(%s)\s+in\s+" % IDENT)
 
 # Методы на командной переменной: литеральные аргументы обязаны быть
 # в allowlist; числовые аргументы (индексы/срезы) безопасны.
@@ -150,37 +145,61 @@ def block_after(src, pos):
 
 
 def command_idents(src):
-    """Имена переменных, в которых лежит введённая пользователем команда."""
-    seeds = set()
-    statements = []
+    """Возвращает (origin, seeds): «сама команда» и она же с производными.
+
+    origin — имя `command`/`cmd`, имена из блока разбора и алиасы без вызовов.
+    seeds — origin плюс всё, куда команда попала присваиванием (производные:
+    `raw = command.split('@')`). Подстановка `X[...]` запрещена только для
+    origin: у производной индексация — часть уже проверенного преобразования.
+    """
+    origin = set()
+    PARSE_HINT = re.compile(r"\.(slice|substring|charAt|split|replace|toLowerCase|toUpperCase|trim)\s*\(")
+    parse_statements = []
     for m in GUARD_RE.finditer(src):
-        statements.append(src[max(0, src.rfind(";", 0, m.start())) : m.end()])
+        guard = m.group(0)
+        subject = re.match(r"([A-Za-z_$][\w$]*)\s*\.", guard)
+        subject = subject.group(1) if subject else ""
         block = block_after(src, m.end())
-        if block:
-            statements.append(block)
-    statements.extend(
-        st for st in src.split(";") if SPLIT_AT_RE.search(st) or "bot_command" in st
-    )
-    for st in statements:
+        parse_statements.append(block or src[max(0, src.rfind(";", 0, m.start())) : m.end()])
+        for st in re.split(r"[;{}]", block or ""):
+            if not PARSE_HINT.search(st):
+                continue
+            if subject and subject not in st and not SPLIT_AT_RE.search(st):
+                continue
+            for name in ASSIGN_RE.findall(st):
+                origin.add(name)
+    for st in parse_statements:
         for name in ASSIGN_RE.findall(st):
-            seeds.add(name)
+            if NAME_RE.match(name):
+                origin.add(name)
     for name in re.findall(r"[A-Za-z_$][\w$]*", src):
         if NAME_RE.match(name):
-            seeds.add(name)
+            origin.add(name)
+
+    split_seeded = set()
+    for st in src.split(";"):
+        if SPLIT_AT_RE.search(st) or "bot_command" in st:
+            split_seeded.update(ASSIGN_RE.findall(st))
+    seeds = set(origin) | split_seeded
     for _ in range(4):
         grew = False
         for st in src.split(";"):
             names = ASSIGN_RE.findall(st)
             if not names:
                 continue
-            if any(re.search(r"\b%s\b" % re.escape(s), st) for s in seeds):
-                for name in names:
-                    if name not in seeds:
-                        seeds.add(name)
-                        grew = True
+            if not any(re.search(r"\b%s\b" % re.escape(s), st) for s in seeds):
+                continue
+            rhs = strip_parens((st.split("=", 1)[1] if "=" in st else "").strip())
+            alias = bool(IDENT_RE.fullmatch(rhs)) and rhs in seeds
+            for name in names:
+                if name not in seeds:
+                    seeds.add(name)
+                    grew = True
+                if alias:
+                    origin.add(name)
         if not grew:
             break
-    return seeds
+    return origin, seeds
 
 
 def seeded(expr, seeds):
@@ -390,7 +409,7 @@ def split_top_level(chunk):
 
 def check_source_code(src, where, problems):
     """Сеть «доказуемости»: операции над командной переменной — только с 'start'."""
-    seeds = command_idents(src)
+    origin, seeds = command_idents(src)
     if not seeds:
         return 0
     hits = 0
@@ -474,17 +493,6 @@ def check_source_code(src, where, problems):
                 continue
             literal_ok(lit, dynamic, "switch по команде")
 
-    for m in re.finditer(r"(?:^|[^\w.$])(%s)\s*\[" % IDENT, src):
-        head = m.group(1)
-        if seeded(head, seeds):
-            fail("обращение `%s[...]` к команде (по частям недоказуемо)" % head)
-    for m in re.finditer(r"\[\s*(%s)\s*\]" % IDENT, src):
-        if seeded(m.group(1), seeds):
-            fail("подстановка `[%s]` по команде (таблица ключей недоказуема)" % m.group(1))
-    for m in re.finditer(r"(?:^|[^\w.$])(%s)\s+in\s+" % IDENT, src):
-        if seeded(m.group(1), seeds):
-            fail("оператор `in` по команде (ключи недоказуемы)")
-
     arrays, unsafe = array_literals(src)
     mutated = set(unsafe)
     for name in arrays:
@@ -492,61 +500,94 @@ def check_source_code(src, where, problems):
             if re.search(r"\b%s\s*(?:\?\.|\.)\s*%s\s*\(" % (re.escape(name), mut), src):
                 mutated.add(name)
 
-    for m in re.finditer(r"(\?\.|\.)\s*(\w+)\s*\(\s*(%s)\s*\)" % IDENT, src):
-        method, ident = m.group(2), m.group(3)
-        if method not in DANGEROUS_CALLS or not seeded(ident, seeds):
-            continue
-        container = operand_before(src, m.start())
-        if container.split(".")[-1] in seeds:
-            continue  # метод на самой команде — проверяется ниже
-        if container.startswith("["):
-            open_idx = src.index("[", m.start() - len(container))
-            close_idx = balanced(src, open_idx)
-            rest = src[close_idx + 1:].lstrip() if close_idx >= 0 else ""
-            if rest[:1] in (".", "("):
-                fail("инлайн-контейнер с хвостом %r (элементы недоказуемы)" % rest[:20])
-                continue
-            check_container(split_top_level(src[open_idx + 1:close_idx]), "инлайн-контейнер")
-            continue
-        if container in arrays:
-            if container in mutated:
-                fail("контейнер `%s` мутируется в этом же шаге — элементы недоказуемы" % container)
-                continue
-            check_container(arrays[container], "`%s.%s`" % (container, method))
-            continue
-        fail("`%s.%s(%s)` — контейнер не объявлен литеральным списком 'start' (недоказуемо)"
-             % (container, method, ident))
+    def container_elements(receiver, method, arg_text):
+        """Контейнерный поиск команды: получатель обязан быть литералом 'start'."""
+        if receiver.startswith("[") and balanced(receiver, 0) == len(receiver) - 1:
+            check_container(split_top_level(receiver[1:-1]), "инлайн-контейнер")
+            return
+        name = receiver.split(".")[-1]
+        if name in mutated:
+            fail("контейнер `%s` мутируется/имеет хвост — элементы недоказуемы" % name)
+            return
+        if name in arrays:
+            check_container(arrays[name], "`%s.%s`" % (name, method))
+            return
+        fail("`%s.%s(%s)` — контейнер не литеральный список 'start' (недоказуемо)"
+             % (receiver, method, arg_text))
 
-    for m in re.finditer(r"(%s)\s*(?:\?\.|\.)\s*(\w+)\s*\(([^()]*)\)" % IDENT, src):
-        ident, method, args = m.group(1), m.group(2), m.group(3).strip()
-        if not seeded(ident, seeds):
+    for m in re.finditer(r"(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)\s*\??\.?\s*\(", src):
+        dot_pos, method = m.start(), m.group(1)
+        open_idx = src.index("(", m.end() - 1)
+        close_idx = balanced(src, open_idx)
+        if close_idx < 0:
             continue
-        arg_list = [a.strip() for a in args.split(",") if a.strip()] if args else []
-        if method in STRICT_LIT_METHODS:
-            if not arg_list:
-                fail("`%s.%s()` без литерала" % (ident, method))
-                continue
-            for a in arg_list:
-                lit, dynamic = literal_of(a)
-                if lit is None and not dynamic:
-                    fail("`%s.%s(%s)` — аргумент недоказуем" % (ident, method, a))
+        args = src[open_idx + 1:close_idx]
+        receiver = operand_before(src, dot_pos)
+        recv_seeded = looks_seeded(receiver, seeds)
+        args_seeded = looks_seeded(args, seeds)
+        if recv_seeded:
+            arg_list = [a.strip() for a in split_top_level(args) if a.strip()]
+            if method in STRICT_LIT_METHODS:
+                if not arg_list:
+                    fail("`%s.%s()` без литерала" % (receiver, method))
                     continue
-                literal_ok(lit, dynamic, "`%s.%s`" % (ident, method))
-        elif method in NEUTRAL_METHODS:
-            for a in arg_list:
-                if re.fullmatch(r"-?\d+", a):
-                    continue
-                lit, dynamic = literal_of(a)
-                if lit is None and not dynamic:
-                    fail("`%s.%s(%s)` — аргумент недоказуем" % (ident, method, a))
-                    continue
-                if dynamic:
-                    fail("`%s.%s(%s)` — шаблон с ${} (недоказуемо)" % (ident, method, a))
-                    continue
-                if lit not in LIT_ALLOWLIST:
-                    fail("`%s.%s(%s)` — литерал вне {start, @}" % (ident, method, lit))
-        else:
-            fail("неизвестная операция `%s.%s()` над командой" % (ident, method))
+                for a in arg_list:
+                    lit, dynamic = literal_of(a)
+                    if lit is None and not dynamic:
+                        fail("`%s.%s(%s)` — аргумент недоказуем" % (receiver, method, a))
+                        continue
+                    literal_ok(lit, dynamic, "`%s.%s`" % (receiver, method))
+            elif method in NEUTRAL_METHODS:
+                for a in arg_list:
+                    if re.fullmatch(r"-?\d+", a):
+                        continue
+                    lit, dynamic = literal_of(a)
+                    if lit is None and not dynamic:
+                        fail("`%s.%s(%s)` — аргумент недоказуем" % (receiver, method, a))
+                        continue
+                    if dynamic:
+                        fail("`%s.%s(%s)` — шаблон с ${} (недоказуемо)" % (receiver, method, a))
+                        continue
+                    if lit not in LIT_ALLOWLIST:
+                        fail("`%s.%s(%s)` — литерал вне {start, @}" % (receiver, method, lit))
+            else:
+                fail("неизвестная операция `%s.%s()` над командой" % (receiver, method))
+        elif method in DANGEROUS_CALLS and args_seeded:
+            container_elements(receiver, method, args.strip())
+        elif method not in ("String",) and any(
+            IDENT_RE.fullmatch(a.strip()) and seeded(a.strip(), seeds)
+            for a in split_top_level(args)
+        ):
+            fail("передача команды в вызов `%s(%s)` недоказуема" % (method, args.strip()))
+
+    for m in re.finditer(r"\[", src):
+        close_idx = balanced(src, m.start())
+        if close_idx < 0:
+            continue
+        content = src[m.start() + 1:close_idx]
+        if looks_seeded(content, seeds):
+            fail("подстановка `[%s]` по команде (таблица ключей недоказуема)" % content.strip())
+            break
+        before = operand_before(src, m.start())
+        if IDENT_RE.fullmatch(before) and before in origin:
+            fail("обращение `%s[...]` к команде (по частям недоказуемо)" % before)
+            break
+
+    for m in re.finditer(r"\]\s*\??\s*\(", src):
+        open_idx = src.index("(", m.end() - 1)
+        close_idx = balanced(src, open_idx)
+        if close_idx < 0:
+            continue
+        args = src[open_idx + 1:close_idx]
+        if looks_seeded(args, seeds):
+            fail("вызов по подстановке с командой (недоказуемо)")
+
+    for m in re.finditer(r"\bin\b", src):
+        left = operand_before(src, m.start())
+        right = operand_after(src, m.end())
+        if looks_seeded(left, seeds) or looks_seeded(right, seeds):
+            fail("оператор `in` с командой (ключи недоказуемы)")
+
     return hits
 
 
@@ -701,6 +742,8 @@ def self_test():
             code = code + "\nif (M1.get(command)) { route = 'x'; }"
         elif src == "optional-chain":
             code = code + "\nif (command?.endsWith('vents')) { route = 'x'; }"
+        elif src == "optional-call":
+            code = code + "\nif (command.match?.(/events/)) { route = 'x'; }"
         elif src == "bracket-method":
             code = code + "\nif (command['endsWith']('vents')) { route = 'x'; }"
         elif src == "char-index":
@@ -709,6 +752,12 @@ def self_test():
             code = code + "\nif (command.slice(0, 2) === 'ev') { route = 'x'; }"
         elif src == "string-of-compare":
             code = code + "\nif (String(command) === 'events') { route = 'x'; }"
+        elif src == "chain-strict":
+            code = code + "\nif (command.toLowerCase().startsWith('ev')) { route = 'x'; }"
+        elif src == "container-transformed":
+            code = code.replace("if (command === 'start')", "if (KNOWN3.includes(command.trim()))")
+        elif src == "alias-subscript-ok":
+            code = code + "\nconst raw9 = command.split('@');\nroute = raw9[0];"
         elif src == "normalize-ok":
             code = code.replace("if (command === 'start')", "if (command.trim() === 'start')")
         elif src == "case-parens":
@@ -763,6 +812,9 @@ def self_test():
         ("Set.has", "set-has"),
         ("Map.get", "map-get"),
         ("optional chaining", "optional-chain"),
+        ("optional call", "optional-call"),
+        ("цепочка методов с чужим литералом", "chain-strict"),
+        ("контейнер с преобразованным аргументом", "container-transformed"),
         ("command['endsWith']", "bracket-method"),
         ("command[0]", "char-index"),
         ("slice-сравнение", "slice-compare"),
@@ -776,6 +828,7 @@ def self_test():
     problems = []
     check_flow("syn", mutate("startsWith-ok"), problems)
     check_flow("syn", mutate("normalize-ok"), problems)
+    check_flow("syn", mutate("alias-subscript-ok"), problems)
     check_flow("syn", mutate("case-parens"), problems)
     check_flow("syn", mutate("no-entry"), problems)
     check_slash("https://app.flow.aiqadam.org/api/v1/webhooks/x/sync", "syn", problems)
