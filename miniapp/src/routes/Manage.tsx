@@ -20,6 +20,7 @@ function genNewId(): string {
 }
 
 type EventData = Record<string, unknown>;
+type StaffItem = { telegram_id: string; item: string };
 
 export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const tg = getTelegram();
@@ -54,6 +55,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [hasPhoto, setHasPhoto] = useState(false);
   const [locateVisible, setLocateVisible] = useState(false);
+
+  // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
+  const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
+  const [staffLoaded, setStaffLoaded] = useState(false);
+  const [staffBusy, setStaffBusy] = useState(false);
+  const [staffIdInput, setStaffIdInput] = useState('');
+  const [staffFieldError, setStaffFieldError] = useState('');
+  const [staffResult, setStaffResult] = useState('');
 
   // keep prop sync (when hash changes)
   useEffect(() => setEventId(propEventId), [propEventId]);
@@ -189,10 +198,66 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [busy, clearErrors, collect, eventId, initData, applyStatus, errorTextFor, setBusyState, showFieldErrors],
   );
 
+  // W36: список контролёров ивента. Ответ staff_* всегда несёт `staff`
+  // (готовые строки для показа) — им и обновляем состояние, без перезапроса.
+  const loadStaff = useCallback(async () => {
+    const res = await postJson(MANAGE_API, { initData, action: 'staff_list', eventId });
+    if (res.kind === 'json' && res.data['ok'] && Array.isArray(res.data['staff'])) {
+      setStaffItems(res.data['staff'] as StaffItem[]);
+    }
+  }, [eventId, initData]);
+
+  const addStaff = useCallback(async () => {
+    if (staffBusy) return;
+    setStaffFieldError('');
+    setStaffResult('');
+    setStaffBusy(true);
+    const res = await postJson(MANAGE_API, { initData, action: 'staff_add', eventId, staffTelegramId: staffIdInput.trim() });
+    setStaffBusy(false);
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok']) {
+        if (Array.isArray(d['staff'])) setStaffItems(d['staff'] as StaffItem[]);
+        setStaffIdInput('');
+        setStaffResult(typeof d['text'] === 'string' ? String(d['text']) : '');
+        return;
+      }
+      if (d['error'] === 'validation') {
+        const errs = (d['fields'] as Record<string, unknown>) || {};
+        const key = errs['telegram_id'] ? String(errs['telegram_id']) : 'manage.err.bad_telegram_id';
+        setStaffFieldError(t(key));
+        return;
+      }
+    }
+    setStaffResult(errorTextFor(res as never));
+  }, [eventId, initData, staffBusy, staffIdInput, errorTextFor]);
+
+  const revokeStaff = useCallback(
+    async (id: string) => {
+      if (staffBusy) return;
+      setStaffFieldError('');
+      setStaffResult('');
+      setStaffBusy(true);
+      const res = await postJson(MANAGE_API, { initData, action: 'staff_remove', eventId, staffTelegramId: id });
+      setStaffBusy(false);
+      if (res.kind === 'json') {
+        const d = res.data as Record<string, unknown>;
+        if (d['ok']) {
+          if (Array.isArray(d['staff'])) setStaffItems(d['staff'] as StaffItem[]);
+          setStaffResult(typeof d['text'] === 'string' ? String(d['text']) : '');
+          return;
+        }
+      }
+      setStaffResult(errorTextFor(res as never));
+    },
+    [eventId, initData, staffBusy, errorTextFor],
+  );
+
   const updateSubmitLabel = useCallback(() => {
     const publishNow = statusValue === 'published' && origStatus !== 'published';
     return t(publishNow ? 'manage.btn.publish' : 'manage.btn.save');
   }, [statusValue, origStatus]);
+
 
   // locate setup
   useEffect(() => {
@@ -299,6 +364,17 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       // So we keep titleText as is; but initial load sets correctly
     }
   }, [dictLoaded, eventId]);
+
+  // W36: список контролёров — один раз на ивент: после загрузки формы и после
+  // создания (eventId появляется из ответа save). Ошибка загрузки списка форму
+  // не трогает — секция останется пустой.
+  useEffect(() => {
+    setStaffItems([]);
+    setStaffIdInput('');
+    setStaffFieldError('');
+    setStaffResult('');
+    if (showForm && eventId && initData) void loadStaff();
+  }, [showForm, eventId, initData, loadStaff]);
 
   const allowed = ALLOWED[origStatus] || ALLOWED[''];
 
@@ -487,6 +563,60 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             </button>
           </div>
         </form>
+      )}
+
+      {showForm && eventId && (
+        <section className="card" id="staff" style={{ marginTop: 16 }}>
+          <h2 className="empty-heading" id="staff-title">
+            {t('manage.staff.title')}
+          </h2>
+          {staffItems.length === 0 ? (
+            <p className="empty-desc" id="staff-empty">
+              {t('manage.staff.empty')}
+            </p>
+          ) : (
+            <ul id="staff-list" style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {staffItems.map((s) => (
+                <li key={s.telegram_id} data-telegram-id={s.telegram_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <span>{s.item}</span>
+                  <button type="button" className="btn btn-outline btn-sm" disabled={staffBusy} onClick={() => void revokeStaff(s.telegram_id)}>
+                    {t('manage.staff.btn.revoke')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="field">
+            <label className="label" htmlFor="f-staff-id">
+              {t('manage.staff.add_label')}
+            </label>
+            <div className="row" style={{ display: 'flex', gap: 12 }}>
+              <input
+                className={`input ${staffFieldError ? 'error' : ''}`}
+                id="f-staff-id"
+                name="staff_telegram_id"
+                inputMode="numeric"
+                maxLength={16}
+                autoComplete="off"
+                value={staffIdInput}
+                onChange={(e) => setStaffIdInput(e.target.value)}
+              />
+              <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
+                {t('manage.staff.btn.add')}
+              </button>
+            </div>
+            {staffFieldError && (
+              <p className="helper error" id="e-staff-id">
+                {staffFieldError}
+              </p>
+            )}
+            {staffResult && (
+              <p className="helper" id="staff-result" role="status">
+                {staffResult}
+              </p>
+            )}
+          </div>
+        </section>
       )}
 
       {result && (
