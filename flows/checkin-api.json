@@ -442,7 +442,7 @@
             "payload": {
               "botToken": "{{variables['BOT_TOKEN']}}",
               "initData": "{{trigger['output'].body.initData}}",
-              "maxAgeSeconds": 86400
+              "maxAgeSeconds": 43200
             }
           },
           "mode": "simple",

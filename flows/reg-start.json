@@ -155,52 +155,16 @@
                 "displayName": "build card: ивент + вопрос ПД",
                 "name": "step_9",
                 "nextAction": {
-                  "displayName": "афиша отдельным сообщением (если есть)",
-                  "name": "step_12",
+                  "displayName": "send card (единственная отправка)",
+                  "name": "step_10",
                   "nextAction": {
-                    "displayName": "send card (единственная отправка)",
-                    "name": "step_10",
+                    "displayName": "draft JSON + cardMessageId",
+                    "name": "step_15",
                     "nextAction": {
-                      "displayName": "draft JSON + cardMessageId",
-                      "name": "step_15",
-                      "nextAction": {
-                        "displayName": "start session await_pdn (+ cardMessageId)",
-                        "name": "step_11",
-                        "settings": {
-                          "actionName": "tables-upsert-records",
-                          "errorHandlingOptions": {
-                            "continueOnFailure": {
-                              "value": false
-                            },
-                            "retryOnFailure": {
-                              "value": false
-                            }
-                          },
-                          "input": {
-                            "key_columns": [
-                              "N8CdPxcdxLX9vFCINvZbL"
-                            ],
-                            "table_id": "toTKgngMTqDNJWDpQMh4d",
-                            "values": {
-                              "values": [
-                                {
-                                  "ESthrMwpn29JLvE2BNIj4": "registration",
-                                  "IdGimBh539UlGSz6L0Pyo": "await_pdn",
-                                  "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
-                                  "U9P3zTZHcFdAAtzLVVSYn": "{{step_9['output'].now}}",
-                                  "sctBFEsMf10UobeFgzsVt": "{{step_15['output'].draft}}"
-                                }
-                              ]
-                            }
-                          },
-                          "propertySettings": {},
-                          "qadamName": "@aiqadam/qadam-tables",
-                          "qadamVersion": "0.4.5"
-                        },
-                        "type": "PIECE",
-                        "valid": true
-                      },
+                      "displayName": "start session await_pdn (+ cardMessageId)",
+                      "name": "step_11",
                       "settings": {
+                        "actionName": "tables-upsert-records",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": false
@@ -210,20 +174,30 @@
                           }
                         },
                         "input": {
-                          "cardMessageId": "{{step_10['output'].body.result.message_id}}",
-                          "eventId": "{{trigger['output'].data.eventId}}",
-                          "utm": "{{trigger['output'].data.utm}}"
+                          "key_columns": [
+                            "N8CdPxcdxLX9vFCINvZbL"
+                          ],
+                          "table_id": "toTKgngMTqDNJWDpQMh4d",
+                          "values": {
+                            "values": [
+                              {
+                                "ESthrMwpn29JLvE2BNIj4": "registration",
+                                "IdGimBh539UlGSz6L0Pyo": "await_pdn",
+                                "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                "U9P3zTZHcFdAAtzLVVSYn": "{{step_9['output'].now}}",
+                                "sctBFEsMf10UobeFgzsVt": "{{step_15['output'].draft}}"
+                              }
+                            ]
+                          }
                         },
-                        "sourceCode": {
-                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // cardMessageId живёт в JSON внутри sessions.draft, а не отдельной колонкой:\n  // схема таблиц заморожена с W1, а срок жизни поля равен сроку жизни сессии.\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
-                          "packageJson": "{}"
-                        }
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-tables",
+                        "qadamVersion": "0.4.5"
                       },
-                      "type": "CODE",
+                      "type": "PIECE",
                       "valid": true
                     },
                     "settings": {
-                      "actionName": "send_text_message",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -233,27 +207,23 @@
                         }
                       },
                       "input": {
-                        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
-                        "chat_id": "{{trigger['output'].data.chatId}}",
-                        "disable_notification": false,
-                        "format": "MarkdownV2",
-                        "message": "{{step_9['output'].text}}",
-                        "protect_content": false,
-                        "reply_markup": "{{step_9['output'].replyMarkup}}",
-                        "web_page_preview": false
+                        "cardMessageId": "{{step_10['output'].body.result.message_id}}",
+                        "eventId": "{{trigger['output'].data.eventId}}",
+                        "utm": "{{trigger['output'].data.utm}}"
                       },
-                      "propertySettings": {},
-                      "qadamName": "@aiqadam/qadam-telegram-bot",
-                      "qadamVersion": "0.8.0"
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // cardMessageId живёт в JSON внутри sessions.draft, а не отдельной колонкой:\n  // схема таблиц заморожена с W1, а срок жизни поля равен сроку жизни сессии.\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                        "packageJson": "{}"
+                      }
                     },
-                    "type": "PIECE",
+                    "type": "CODE",
                     "valid": true
                   },
                   "settings": {
-                    "actionName": "send_media",
+                    "actionName": "send_text_message",
                     "errorHandlingOptions": {
                       "continueOnFailure": {
-                        "value": true
+                        "value": false
                       },
                       "retryOnFailure": {
                         "value": false
@@ -263,33 +233,13 @@
                       "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                       "chat_id": "{{trigger['output'].data.chatId}}",
                       "disable_notification": false,
-                      "format": "None",
-                      "media": {
-                        "photo": "",
-                        "photoId": "{{step_3['output'].photoFileId}}"
-                      },
-                      "media_type": "photo",
-                      "protect_content": false
+                      "format": "MarkdownV2",
+                      "message": "{{step_9['output'].text}}",
+                      "protect_content": false,
+                      "reply_markup": "{{step_9['output'].replyMarkup}}",
+                      "web_page_preview": false
                     },
-                    "propertySettings": {
-                      "media": {
-                        "schema": {
-                          "photo": {
-                            "description": "The image to be uploaded as a file",
-                            "displayName": "Image",
-                            "required": false,
-                            "type": "FILE"
-                          },
-                          "photoId": {
-                            "description": "The image id previously uploaded to Telegram's servers",
-                            "displayName": "Image Id",
-                            "required": false,
-                            "type": "SHORT_TEXT"
-                          }
-                        },
-                        "type": "MANUAL"
-                      }
-                    },
+                    "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-telegram-bot",
                     "qadamVersion": "0.8.0"
                   },

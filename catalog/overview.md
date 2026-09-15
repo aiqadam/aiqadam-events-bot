@@ -16,7 +16,7 @@ W26 закрыт («готов», независимое ревью, три кр
 | Что | Сколько | Карточки |
 |---|---|---|
 | Флоу | 18 | [flows/](flows/) |
-| Таблицы | 11 | [tables/](tables/) |
+| Таблицы | 12 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 4 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL` | [variables.md](variables.md) |
 
@@ -38,11 +38,13 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Таблицы
 
-Все 10 доменных из [DATA-MODEL.md](../docs/DATA-MODEL.md) плюс служебная
+Все 11 доменных из [DATA-MODEL.md](../docs/DATA-MODEL.md) плюс служебная
 [`migrations`](tables/migrations.md) (журнал изменений инстанса,
 [ADR-0021](../docs/adr/0021-repo-is-source-of-truth-migrations-table.md));
 схема и `externalId` — в [tables/](tables/), рецепт пересборки —
 [tables/README.md](tables/README.md).
+`staff` — глобальные права организаторов по чаптеру
+([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
 `strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
 не построен (см. Flows выше); источник правды для строк —
 `i18n/*.json` в репозитории.
@@ -71,13 +73,15 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | owner создаёт и правит ивент (OWN-1…OWN-5, OWN-15) | [manage-api](flows/manage-api.md) |
+| `#/manage` и `#/manage/:id` | staff чаптера создаёт и правит ивент (OWN-1…OWN-5, OWN-15) | [manage-api](flows/manage-api.md) |
 
 Роут `manage` открывается кнопкой из [manage-open](flows/manage-open.md)
 (`/newevent`, `/editevent <id>`, `/manage [<id>]` → `web_app` на `#/manage` или
-`#/manage/:id`); права на правку решает `manage-api` по `initData`
-и `events.owner_id`, страница ничего не решает. Фото афиши форма не трогает
-([Q46](../docs/OPEN-QUESTIONS.md#q46)); гео — координаты руками или кнопкой
+`#/manage/:id`); права на создание **и** правку решает `manage-api` по `initData`,
+таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
+([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)). Фото афиши
+форма не трогает ([Q46](../docs/OPEN-QUESTIONS.md#q46), временно снято из OWN-1);
+гео — координаты руками или кнопкой
 через `Telegram.WebApp.LocationManager` (фолбэк `navigator.geolocation`).
 Даты вводятся как Asia/Tashkent (`datetime-local`) и уходят серверу строкой
 без зоны; в UTC переводит `manage-api`.

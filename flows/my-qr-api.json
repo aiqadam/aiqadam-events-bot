@@ -265,7 +265,7 @@
             "payload": {
               "botToken": "{{variables['BOT_TOKEN']}}",
               "initData": "{{trigger['output'].body.initData}}",
-              "maxAgeSeconds": 86400
+              "maxAgeSeconds": 300
             }
           },
           "mode": "simple",

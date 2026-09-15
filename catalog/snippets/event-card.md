@@ -46,9 +46,9 @@ export const code = async (inputs) => {
   const blank = {
     found: false, eventOk: eventOk, eventId: eventId, lang: lang,
     recordId: '', title: '', description: '', address: '', photoFileId: '', status: '',
-    // ownerId нужен вызывающему для гейта по владельцу (W6/W11): карточка сама
-    // никого не авторизует, но обязана дать чем проверить.
-    ownerId: '', chapterId: '',
+    // staffId — автор ивента (не гейт прав, ADR-0024); chapterId — чаптер.
+    // Карточка сама никого не авторизует, но отдаёт вызывающему чем проверить.
+    staffId: '', chapterId: '',
     startsAt: '', endsAt: '', regDeadlineAt: '', lat: '', lon: '', hasGeo: false,
     mapsUrl: '', registerDeepLink: '', capacity: '', overbookPct: ''
   };
@@ -84,7 +84,7 @@ export const code = async (inputs) => {
     address: ev.address || '',
     photoFileId: ev.photo_file_id || '',
     status: ev.status || '',
-    ownerId: ev.owner_id || '',
+    staffId: ev.staff_id || '',
     chapterId: ev.chapter_id || '',
     startsAt: ev.starts_at || '',
     endsAt: ev.ends_at || '',
@@ -159,7 +159,7 @@ export const code = async (inputs) => {
         found: false, lang: lang, eventId: String(ev.eventId || ''),
         text: t('event.card.not_found'), lines: [], buttons: [], labels: {},
         venue: null, mapsUrl: '', photoFileId: '', registerDeepLink: '',
-        status: '', ownerId: '', chapterId: '',
+        status: '', staffId: '', chapterId: '',
         startsAt: '', endsAt: '', regDeadlineAt: '', startsAtFmt: '', endsAtFmt: '', regDeadlineAtFmt: '',
         capacity: '', overbookPct: '', parseMode: '', missing: missing
       };
@@ -209,9 +209,10 @@ export const code = async (inputs) => {
       mapsUrl: String(ev.mapsUrl || ''),
       photoFileId: String(ev.photoFileId || ''),
       registerDeepLink: String(ev.registerDeepLink || ''),
-      // status + ownerId — то, чем вызывающий делает гейт (карточка сама не авторизует)
+      // status + staffId + chapterId — то, чем вызывающий решает доступ
+      // (карточка сама не авторизует)
       status: String(ev.status || ''),
-      ownerId: String(ev.ownerId || ''),
+      staffId: String(ev.staffId || ''),
       chapterId: String(ev.chapterId || ''),
       startsAt: String(ev.startsAt || ''),
       endsAt: String(ev.endsAt || ''),
@@ -241,7 +242,7 @@ export const code = async (inputs) => {
   Сырой ключ на **кнопке** недопустим — кнопка без перевода просто не рисуется.
 - **`mapsUrl` собирается из `lat`/`lon`** и только при валидных координатах
   (`hasGeo`), иначе пустая строка и никакой кнопки карты.
-- **`ownerId` и `status` отдаются наружу** — карточка сама никого не авторизует,
+- **`staffId` и `status` отдаются наружу** — карточка сама никого не авторизует,
   но обязана дать вызывающему, чем проверить.
 
 ## Оптимизация при встраивании

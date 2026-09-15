@@ -12,7 +12,7 @@
     "displayName": "callableFlow",
     "name": "trigger",
     "nextAction": {
-      "displayName": "read my events (owner?)",
+      "displayName": "read staff row (organizer?)",
       "name": "step_1",
       "nextAction": {
         "displayName": "read my staff rows",
@@ -65,9 +65,9 @@
                 "badPayload": "{{trigger['output'].data.badPayload}}",
                 "firstName": "{{trigger['output'].data.firstName}}",
                 "miniappUrl": "{{variables['MINIAPP_URL']}}",
-                "ownerRecords": "{{step_1['output']}}",
                 "publishedRecords": "{{step_3['output']}}",
                 "staffRecords": "{{step_2['output']}}",
+                "staffRoleRecords": "{{step_1['output']}}",
                 "telegramId": "{{trigger['output'].data.telegramId}}",
                 "texts": {
                   "menu.btn.events": "Ивенты",
@@ -81,7 +81,7 @@
                 }
               },
               "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n\n  const telegramId = str(inputs.telegramId);\n  const firstName = str(inputs.firstName).trim();\n  const badPayload = inputs.badPayload === true || str(inputs.badPayload) === 'true';\n  const miniappUrl = str(inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const nowMs = Date.now();\n\n  // Owner — есть хоть один ивент с owner_id = telegramId (любой статус).\n  // Постфильтр по owner_id повторяет фильтр шага (defense in depth, Q25).\n  const isOwner = arr(inputs.ownerRecords).map(flat).some((r) => r.owner_id === telegramId);\n\n  // Staff — активная строка event_staff (пустой revoked_at) на ещё не\n  // закончившийся опубликованный ивент; кнопка ведёт в ближайший по starts_at.\n  const published = arr(inputs.publishedRecords).map(flat).filter((r) => r.status === 'published');\n  const byId = {};\n  published.forEach((r) => { byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const staffEvents = arr(inputs.staffRecords).map(flat)\n    .filter((r) => r.telegram_id === telegramId && r.revoked_at === '' && byId[r.event_id])\n    .map((r) => byId[r.event_id])\n    .filter(notPast)\n    .sort((a, b) => parseIso(a.starts_at) - parseIso(b.starts_at));\n  const scanEventId = staffEvents.length > 0 ? staffEvents[0].id : '';\n\n  const preamble = badPayload\n    ? t('start.bad_payload')\n    : (firstName ? t('start.greeting', { name: firstName }) : t('start.greeting_anon'));\n\n  // Порядок кнопок фиксирован: гостевые → owner → staff, по одной в ряд.\n  const rows = [\n    [{ text: t('menu.btn.events'), callback_data: 'ev:list:upcoming' }],\n    [{ text: t('menu.btn.my_registrations'), callback_data: 'myreg:list' }]\n  ];\n  if (isOwner) rows.push([{ text: t('menu.btn.new_event'), web_app: { url: base + '/#/manage' } }]);\n  if (scanEventId) rows.push([{ text: t('menu.btn.scanner'), web_app: { url: base + '/#/scan?event_id=' + encodeURIComponent(scanEventId) } }]);\n\n  return {\n    text: preamble + '\\n\\n' + t('menu.title'),\n    reply_markup: { inline_keyboard: rows },\n    isOwner: isOwner, scanEventId: scanEventId, badPayload: badPayload, buttons: rows.length\n  };\n};",
+                "code": "export const code = async (inputs) => {\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n\n  const telegramId = str(inputs.telegramId);\n  const firstName = str(inputs.firstName).trim();\n  const badPayload = inputs.badPayload === true || str(inputs.badPayload) === 'true';\n  const miniappUrl = str(inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const nowMs = Date.now();\n\n  // Организатор — есть строка в `staff` с telegram_id = пользователь (ADR-0024).\n  // Это видимость, а не авторизация: правило прав решает manage-api.\n  // Постфильтр по telegram_id повторяет фильтр шага (defense in depth, Q25).\n  const isOwner = arr(inputs.staffRoleRecords).map(flat).some((r) => r.telegram_id === telegramId);\n\n  // Staff — активная строка event_staff (пустой revoked_at) на ещё не\n  // закончившийся опубликованный ивент; кнопка ведёт в ближайший по starts_at.\n  const published = arr(inputs.publishedRecords).map(flat).filter((r) => r.status === 'published');\n  const byId = {};\n  published.forEach((r) => { byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const staffEvents = arr(inputs.staffRecords).map(flat)\n    .filter((r) => r.telegram_id === telegramId && r.revoked_at === '' && byId[r.event_id])\n    .map((r) => byId[r.event_id])\n    .filter(notPast)\n    .sort((a, b) => parseIso(a.starts_at) - parseIso(b.starts_at));\n  const scanEventId = staffEvents.length > 0 ? staffEvents[0].id : '';\n\n  const preamble = badPayload\n    ? t('start.bad_payload')\n    : (firstName ? t('start.greeting', { name: firstName }) : t('start.greeting_anon'));\n\n  // Порядок кнопок фиксирован: гостевые → owner → staff, по одной в ряд.\n  const rows = [\n    [{ text: t('menu.btn.events'), callback_data: 'ev:list:upcoming' }],\n    [{ text: t('menu.btn.my_registrations'), callback_data: 'myreg:list' }]\n  ];\n  if (isOwner) rows.push([{ text: t('menu.btn.new_event'), web_app: { url: base + '/#/manage' } }]);\n  if (scanEventId) rows.push([{ text: t('menu.btn.scanner'), web_app: { url: base + '/#/scan?event_id=' + encodeURIComponent(scanEventId) } }]);\n\n  return {\n    text: preamble + '\\n\\n' + t('menu.title'),\n    reply_markup: { inline_keyboard: rows },\n    isOwner: isOwner, scanEventId: scanEventId, badPayload: badPayload, buttons: rows.length\n  };\n};\n",
                 "packageJson": "{}"
               }
             },
@@ -181,15 +181,15 @@
         },
         "input": {
           "columns": [
-            "39qJ4o2MYyNYsT2VtxfcK",
-            "6KqxIPre6r76ycWhCX8uU"
+            "ecOXPzqTqu2ktJ2Uj330k",
+            "GJtF4zTRpzLjZWhM3cmMd"
           ],
           "filters": {
             "filters": [
               {
                 "field": {
-                  "id": "6KqxIPre6r76ycWhCX8uU",
-                  "name": "owner_id",
+                  "id": "ecOXPzqTqu2ktJ2Uj330k",
+                  "name": "telegram_id",
                   "type": "TEXT"
                 },
                 "operator": "eq",
@@ -199,7 +199,7 @@
           },
           "limit": 1,
           "record_ids": [],
-          "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+          "table_id": "PnDy6gw9tlLUqTGk2EOUn"
         },
         "propertySettings": {},
         "qadamName": "@aiqadam/qadam-tables",

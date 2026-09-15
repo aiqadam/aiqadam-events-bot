@@ -13,7 +13,7 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `telegramId` |
-| step_1 | `tables-find-records events` | ивенты, где `owner_id` = пользователь (limit 1 — хватит одного факта) |
+| step_1 | `tables-find-records staff` | строка `staff` пользователя (limit 1) — «Создать ивент» виден организатору |
 | step_2 | `tables-find-records event_staff` | все staff-строки пользователя (limit 50) |
 | step_3 | `tables-find-records events` | опубликованные ивенты (status = `published`, limit 50) |
 | step_4 | CODE «render menu» | сборка кнопок: guest (2) + owner (+1) + staff (+1); фильтр staff по `revoked_at` и будущим ивентам |
@@ -21,7 +21,8 @@
 
 ## Зависимости
 
-- **Таблицы**: `events` (чтение, 2 запроса), `event_staff` (чтение)
+- **Таблицы**: `staff` (чтение, видимость), `events` (чтение, 2 запроса),
+  `event_staff` (чтение)
 - **Флоу**: вызывается из `tg-router` (`queue`, `flowProps.payload`)
 - **Переменные**: `MINIAPP_URL` (URL для кнопок `web_app`)
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
@@ -41,6 +42,10 @@
   → owner (`Создать ивент`, `web_app #/manage`) → staff (`Сканер`, `web_app
   #/scan?event_id=`). Owner+staff → 4 кнопки. Staff без будущих ивентов →
   без кнопки сканера (2 кнопки). Гость → 2 кнопки.
+- **«Создать ивент» — видимость, а не авторизация** ([ADR-0024](../../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)):
+  кнопка показывается по строке в [`staff`](../tables/staff.md), даже если у
+  организатора ещё нет ивентов. Само правило прав живёт в одном месте —
+  `manage-api`; кнопка на чужой чаптер всё равно упрётся в `403`.
 - **`badPayload`** — флаг из `tg-router` (`/start` с неразобранным payload):
   меняет преамбулу с приветствия на `start.bad_payload`.
 - **Тексты — через `inputs.texts`** (ADR-0014), ключи `menu.*` и `start.*`.

@@ -2,7 +2,7 @@
   {
     "flow": "checkin-api",
     "flowId": "rKoDYtiIVdbzlW59b57uH",
-    "publishedVersionId": "fDaunx1V01lEBbWVMEDDI"
+    "publishedVersionId": "bxBSUZ32kAPEgxjwTG3C0"
   },
   {
     "flow": "events-list",
@@ -17,7 +17,7 @@
   {
     "flow": "fn-hmac-init-data",
     "flowId": "3iQO67hpGHq1HNGt1T84X",
-    "publishedVersionId": "EoYZsOD1IXgkJl6Ty87Ac"
+    "publishedVersionId": "Nt4oXK8lqDCvGaqjtLumi"
   },
   {
     "flow": "fn-parse-start",
@@ -37,7 +37,7 @@
   {
     "flow": "manage-api",
     "flowId": "CcGPwuW4ws5hkcaOPerEG",
-    "publishedVersionId": "nAFSNKFTqepLCWx43kKLP"
+    "publishedVersionId": "FbZcXQZVYmtfiUxfZs2SP"
   },
   {
     "flow": "manage-open",
@@ -47,13 +47,13 @@
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "42flU3b7ZmTUFbR7OWRpk",
+    "publishedVersionId": "UCE56SHNoeEGOiqcGoYjH",
     "source": "mcp"
   },
   {
     "flow": "my-qr-api",
     "flowId": "WYmnxVM4xPAWZA1IvNZok",
-    "publishedVersionId": "8GQyVsMWkDbG93zk1FtdT"
+    "publishedVersionId": "TTGweXrUUJZpntWXiWuO2"
   },
   {
     "flow": "my-reg-cancel",
@@ -83,7 +83,7 @@
   {
     "flow": "reg-start",
     "flowId": "FkxtgayOK5QubyqqMd9q4",
-    "publishedVersionId": "NoBSyRW3qQtL4LspOhb8G"
+    "publishedVersionId": "At1crVKm99wzBhhJkDPi3"
   },
   {
     "flow": "tg-router",

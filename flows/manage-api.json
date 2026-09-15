@@ -20,93 +20,125 @@
             "displayName": "normalize request",
             "name": "step_5",
             "nextAction": {
-              "displayName": "read event by id",
-              "name": "step_6",
+              "displayName": "read my staff row",
+              "name": "step_18",
               "nextAction": {
-                "displayName": "decide: owner, validate, diff",
-                "name": "step_7",
+                "displayName": "read event by id",
+                "name": "step_6",
                 "nextAction": {
-                  "children": [
-                    {
-                      "displayName": "write event",
-                      "name": "step_11",
-                      "nextAction": {
-                        "displayName": "respond (saved) and continue",
-                        "name": "step_12",
+                  "displayName": "decide: staff, validate, diff",
+                  "name": "step_7",
+                  "nextAction": {
+                    "children": [
+                      {
+                        "displayName": "write event",
+                        "name": "step_11",
                         "nextAction": {
-                          "displayName": "read registrations of event",
-                          "name": "step_13",
+                          "displayName": "respond (saved) and continue",
+                          "name": "step_12",
                           "nextAction": {
-                            "displayName": "notify targets + owner text",
-                            "name": "step_14",
+                            "displayName": "read registrations of event",
+                            "name": "step_13",
                             "nextAction": {
-                              "displayName": "confirm to owner (chat)",
-                              "name": "step_15",
+                              "displayName": "notify targets + owner text",
+                              "name": "step_14",
                               "nextAction": {
-                                "displayName": "notify loop",
-                                "firstLoopAction": {
-                                  "displayName": "notify one registrant",
-                                  "name": "step_17",
-                                  "settings": {
-                                    "actionName": "send_text_message",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": true
+                                "displayName": "confirm to owner (chat)",
+                                "name": "step_15",
+                                "nextAction": {
+                                  "displayName": "notify loop",
+                                  "firstLoopAction": {
+                                    "displayName": "notify one registrant",
+                                    "name": "step_17",
+                                    "settings": {
+                                      "actionName": "send_text_message",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": true
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
                                       },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
+                                      "input": {
+                                        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                                        "chat_id": "{{step_16['output'].item}}",
+                                        "disable_notification": false,
+                                        "format": "None",
+                                        "message": "{{step_14['output'].notifyText}}",
+                                        "protect_content": false,
+                                        "web_page_preview": false
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                                      "qadamVersion": "0.8.0"
                                     },
-                                    "input": {
-                                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
-                                      "chat_id": "{{step_16['output'].item}}",
-                                      "disable_notification": false,
-                                      "format": "None",
-                                      "message": "{{step_14['output'].notifyText}}",
-                                      "protect_content": false,
-                                      "web_page_preview": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-telegram-bot",
-                                    "qadamVersion": "0.8.0"
+                                    "type": "PIECE",
+                                    "valid": true
                                   },
-                                  "type": "PIECE",
+                                  "name": "step_16",
+                                  "settings": {
+                                    "items": "{{step_14['output'].targets}}"
+                                  },
+                                  "type": "LOOP_ON_ITEMS",
                                   "valid": true
                                 },
-                                "name": "step_16",
                                 "settings": {
-                                  "items": "{{step_14['output'].targets}}"
+                                  "actionName": "send_text_message",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": true
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                                    "chat_id": "{{step_1['output'].data.telegramId}}",
+                                    "disable_notification": false,
+                                    "format": "None",
+                                    "message": "{{step_14['output'].ownerText}}",
+                                    "protect_content": false,
+                                    "web_page_preview": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                                  "qadamVersion": "0.8.0"
                                 },
-                                "type": "LOOP_ON_ITEMS",
+                                "type": "PIECE",
                                 "valid": true
                               },
                               "settings": {
-                                "actionName": "send_text_message",
                                 "errorHandlingOptions": {
                                   "continueOnFailure": {
-                                    "value": true
+                                    "value": false
                                   },
                                   "retryOnFailure": {
                                     "value": false
                                   }
                                 },
                                 "input": {
-                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
-                                  "chat_id": "{{step_1['output'].data.telegramId}}",
-                                  "disable_notification": false,
-                                  "format": "None",
-                                  "message": "{{step_14['output'].ownerText}}",
-                                  "protect_content": false,
-                                  "web_page_preview": false
+                                  "decision": "{{step_7['output']}}",
+                                  "records": "{{step_13['output']}}",
+                                  "texts": {
+                                    "manage.chat.cancelled": "Ивент «{title}» отменён. Уведомление ушло зарегистрированным: {count}.",
+                                    "manage.chat.draft_saved": "Черновик «{title}» сохранён. Участникам он пока не виден.",
+                                    "manage.chat.published": "Ивент «{title}» опубликован. Ссылка регистрации:\n{url}",
+                                    "manage.chat.updated": "Ивент «{title}» обновлён.",
+                                    "manage.chat.updated_notified": "Ивент «{title}» обновлён. Уведомление ушло зарегистрированным: {count}."
+                                  }
                                 },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-telegram-bot",
-                                "qadamVersion": "0.8.0"
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const decision = (inputs.decision && typeof inputs.decision === 'object') ? inputs.decision : {};\n  const notifyKind = String(decision.notifyKind || 'none');\n  const targets = [];\n  if (notifyKind !== 'none') {\n    const seen = {};\n    arr(inputs.records).map(flat).filter((r) => (r.status || '') === 'registered').forEach((r) => {\n      const id = r.telegram_id || '';\n      if (id && !seen[id]) { seen[id] = true; targets.push(id); }\n    });\n  }\n  const vars = Object.assign({}, decision.ownerVars || {}, { count: targets.length });\n  const ownerText = t(String(decision.ownerKey || 'manage.chat.updated'), vars);\n  return { targets: targets, count: targets.length, ownerText: ownerText, notifyText: String(decision.notifyText || '') };\n};",
+                                  "packageJson": "{}"
+                                }
                               },
-                              "type": "PIECE",
+                              "type": "CODE",
                               "valid": true
                             },
                             "settings": {
+                              "actionName": "tables-find-records",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -116,26 +148,35 @@
                                 }
                               },
                               "input": {
-                                "decision": "{{step_7['output']}}",
-                                "records": "{{step_13['output']}}",
-                                "texts": {
-                                  "manage.chat.cancelled": "Ивент «{title}» отменён. Уведомление ушло зарегистрированным: {count}.",
-                                  "manage.chat.draft_saved": "Черновик «{title}» сохранён. Участникам он пока не виден.",
-                                  "manage.chat.published": "Ивент «{title}» опубликован. Ссылка регистрации:\n{url}",
-                                  "manage.chat.updated": "Ивент «{title}» обновлён.",
-                                  "manage.chat.updated_notified": "Ивент «{title}» обновлён. Уведомление ушло зарегистрированным: {count}."
-                                }
+                                "columns": [
+                                  "mVfpZFCwAZskWXNT7iCuI",
+                                  "TZyqC63UAWrPbzxuf2q4w"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": {
+                                        "id": "qQPYl9c0ew6n8w2CGYZII",
+                                        "name": "event_id",
+                                        "type": "TEXT"
+                                      },
+                                      "operator": "eq",
+                                      "value": "{{step_7['output'].id}}"
+                                    }
+                                  ]
+                                },
+                                "record_ids": [],
+                                "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
                               },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const decision = (inputs.decision && typeof inputs.decision === 'object') ? inputs.decision : {};\n  const notifyKind = String(decision.notifyKind || 'none');\n  const targets = [];\n  if (notifyKind !== 'none') {\n    const seen = {};\n    arr(inputs.records).map(flat).filter((r) => (r.status || '') === 'registered').forEach((r) => {\n      const id = r.telegram_id || '';\n      if (id && !seen[id]) { seen[id] = true; targets.push(id); }\n    });\n  }\n  const vars = Object.assign({}, decision.ownerVars || {}, { count: targets.length });\n  const ownerText = t(String(decision.ownerKey || 'manage.chat.updated'), vars);\n  return { targets: targets, count: targets.length, ownerText: ownerText, notifyText: String(decision.notifyText || '') };\n};",
-                                "packageJson": "{}"
-                              }
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
                             },
-                            "type": "CODE",
+                            "type": "PIECE",
                             "valid": true
                           },
                           "settings": {
-                            "actionName": "tables-find-records",
+                            "actionName": "return_response",
                             "errorHandlingOptions": {
                               "continueOnFailure": {
                                 "value": false
@@ -145,33 +186,76 @@
                               }
                             },
                             "input": {
-                              "columns": [
-                                "mVfpZFCwAZskWXNT7iCuI",
-                                "TZyqC63UAWrPbzxuf2q4w"
-                              ],
-                              "filters": {
-                                "filters": [
-                                  {
-                                    "field": {
-                                      "id": "qQPYl9c0ew6n8w2CGYZII",
-                                      "name": "event_id",
-                                      "type": "TEXT"
-                                    },
-                                    "operator": "eq",
-                                    "value": "{{step_7['output'].id}}"
-                                  }
-                                ]
+                              "fields": {
+                                "body": {
+                                  "error": "{{step_7['output'].error}}",
+                                  "event": "{{step_7['output'].event}}",
+                                  "eventId": "{{step_7['output'].eventId}}",
+                                  "fields": "{{step_7['output'].fields}}",
+                                  "ok": "{{step_7['output'].ok}}",
+                                  "text": "{{step_7['output'].text}}"
+                                },
+                                "headers": {},
+                                "status": "{{step_7['output'].httpStatus}}"
                               },
-                              "record_ids": [],
-                              "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                              "respond": "respond",
+                              "responseType": "json"
                             },
                             "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.4.5"
+                            "qadamName": "@aiqadam/qadam-webhook",
+                            "qadamVersion": "0.1.34"
                           },
                           "type": "PIECE",
                           "valid": true
                         },
+                        "settings": {
+                          "actionName": "tables-upsert-records",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "key_columns": [
+                              "39qJ4o2MYyNYsT2VtxfcK"
+                            ],
+                            "table_id": "R4aSQpLZvw7d3u6DVOSjH",
+                            "values": {
+                              "values": [
+                                {
+                                  "39qJ4o2MYyNYsT2VtxfcK": "{{step_7['output'].id}}",
+                                  "6KqxIPre6r76ycWhCX8uU": "{{step_7['output'].staffId}}",
+                                  "8PdNUVtOvTuwRzJFQDgfy": "{{step_7['output'].description}}",
+                                  "8me4o2U2wj6cyrv8lfJv9": "{{step_7['output'].startsAt}}",
+                                  "9bwuaZzPNqmutUMLVIpOO": "{{step_7['output'].cancelledAt}}",
+                                  "Br2f0wjLugSGIS2kjfoFE": "{{step_7['output'].lon}}",
+                                  "EKEX5zyhKo3WChz5ZquY0": "{{step_7['output'].lat}}",
+                                  "Femtgz8bh7N8jSOMUHfRt": "{{step_7['output'].chapterId}}",
+                                  "SjLUFfn2RhsADnLE0wWw3": "{{step_7['output'].overbookPct}}",
+                                  "TH7QDW3lLW7KHUP4LE2ra": "{{step_7['output'].publishedAt}}",
+                                  "iUPI69WFE2B8w3BBHdrak": "{{step_7['output'].status}}",
+                                  "j4BZ0Z6VMwWbHc5RlTBfB": "{{step_7['output'].regDeadlineAt}}",
+                                  "kSRM3ouou0Owj2yDYk92W": "{{step_7['output'].address}}",
+                                  "tQEzfGR3hYG0ztG50Po00": "{{step_7['output'].title}}",
+                                  "tVHurK8WamXGJZNCzWHGE": "{{step_7['output'].capacity}}",
+                                  "zIA6xEHm7y1bwkajoYDQn": "{{step_7['output'].endsAt}}"
+                                }
+                              ]
+                            }
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.4.5"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      {
+                        "displayName": "respond (event for edit)",
+                        "name": "step_10",
                         "settings": {
                           "actionName": "return_response",
                           "errorHandlingOptions": {
@@ -195,7 +279,7 @@
                               "headers": {},
                               "status": "{{step_7['output'].httpStatus}}"
                             },
-                            "respond": "respond",
+                            "respond": "stop",
                             "responseType": "json"
                           },
                           "propertySettings": {},
@@ -205,164 +289,147 @@
                         "type": "PIECE",
                         "valid": true
                       },
-                      "settings": {
-                        "actionName": "tables-upsert-records",
-                        "errorHandlingOptions": {
-                          "continueOnFailure": {
-                            "value": false
-                          },
-                          "retryOnFailure": {
-                            "value": false
-                          }
-                        },
-                        "input": {
-                          "key_columns": [
-                            "39qJ4o2MYyNYsT2VtxfcK"
-                          ],
-                          "table_id": "R4aSQpLZvw7d3u6DVOSjH",
-                          "values": {
-                            "values": [
-                              {
-                                "39qJ4o2MYyNYsT2VtxfcK": "{{step_7['output'].id}}",
-                                "6KqxIPre6r76ycWhCX8uU": "{{step_7['output'].ownerId}}",
-                                "8PdNUVtOvTuwRzJFQDgfy": "{{step_7['output'].description}}",
-                                "8me4o2U2wj6cyrv8lfJv9": "{{step_7['output'].startsAt}}",
-                                "9bwuaZzPNqmutUMLVIpOO": "{{step_7['output'].cancelledAt}}",
-                                "Br2f0wjLugSGIS2kjfoFE": "{{step_7['output'].lon}}",
-                                "EKEX5zyhKo3WChz5ZquY0": "{{step_7['output'].lat}}",
-                                "SjLUFfn2RhsADnLE0wWw3": "{{step_7['output'].overbookPct}}",
-                                "TH7QDW3lLW7KHUP4LE2ra": "{{step_7['output'].publishedAt}}",
-                                "iUPI69WFE2B8w3BBHdrak": "{{step_7['output'].status}}",
-                                "j4BZ0Z6VMwWbHc5RlTBfB": "{{step_7['output'].regDeadlineAt}}",
-                                "kSRM3ouou0Owj2yDYk92W": "{{step_7['output'].address}}",
-                                "tQEzfGR3hYG0ztG50Po00": "{{step_7['output'].title}}",
-                                "tVHurK8WamXGJZNCzWHGE": "{{step_7['output'].capacity}}",
-                                "zIA6xEHm7y1bwkajoYDQn": "{{step_7['output'].endsAt}}"
-                              }
-                            ]
-                          }
-                        },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-tables",
-                        "qadamVersion": "0.4.5"
-                      },
-                      "type": "PIECE",
-                      "valid": true
-                    },
-                    {
-                      "displayName": "respond (event for edit)",
-                      "name": "step_10",
-                      "settings": {
-                        "actionName": "return_response",
-                        "errorHandlingOptions": {
-                          "continueOnFailure": {
-                            "value": false
-                          },
-                          "retryOnFailure": {
-                            "value": false
-                          }
-                        },
-                        "input": {
-                          "fields": {
-                            "body": {
-                              "error": "{{step_7['output'].error}}",
-                              "event": "{{step_7['output'].event}}",
-                              "eventId": "{{step_7['output'].eventId}}",
-                              "fields": "{{step_7['output'].fields}}",
-                              "ok": "{{step_7['output'].ok}}",
-                              "text": "{{step_7['output'].text}}"
+                      {
+                        "displayName": "respond (error)",
+                        "name": "step_9",
+                        "settings": {
+                          "actionName": "return_response",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
                             },
-                            "headers": {},
-                            "status": "{{step_7['output'].httpStatus}}"
+                            "retryOnFailure": {
+                              "value": false
+                            }
                           },
-                          "respond": "stop",
-                          "responseType": "json"
-                        },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-webhook",
-                        "qadamVersion": "0.1.34"
-                      },
-                      "type": "PIECE",
-                      "valid": true
-                    },
-                    {
-                      "displayName": "respond (error)",
-                      "name": "step_9",
-                      "settings": {
-                        "actionName": "return_response",
-                        "errorHandlingOptions": {
-                          "continueOnFailure": {
-                            "value": false
-                          },
-                          "retryOnFailure": {
-                            "value": false
-                          }
-                        },
-                        "input": {
-                          "fields": {
-                            "body": {
-                              "error": "{{step_7['output'].error}}",
-                              "event": "{{step_7['output'].event}}",
-                              "eventId": "{{step_7['output'].eventId}}",
-                              "fields": "{{step_7['output'].fields}}",
-                              "ok": "{{step_7['output'].ok}}",
-                              "text": "{{step_7['output'].text}}"
+                          "input": {
+                            "fields": {
+                              "body": {
+                                "error": "{{step_7['output'].error}}",
+                                "event": "{{step_7['output'].event}}",
+                                "eventId": "{{step_7['output'].eventId}}",
+                                "fields": "{{step_7['output'].fields}}",
+                                "ok": "{{step_7['output'].ok}}",
+                                "text": "{{step_7['output'].text}}"
+                              },
+                              "headers": {},
+                              "status": "{{step_7['output'].httpStatus}}"
                             },
-                            "headers": {},
-                            "status": "{{step_7['output'].httpStatus}}"
+                            "respond": "stop",
+                            "responseType": "json"
                           },
-                          "respond": "stop",
-                          "responseType": "json"
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-webhook",
+                          "qadamVersion": "0.1.34"
                         },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-webhook",
-                        "qadamVersion": "0.1.34"
-                      },
-                      "type": "PIECE",
-                      "valid": true
-                    }
-                  ],
-                  "displayName": "outcome",
-                  "name": "step_8",
-                  "settings": {
-                    "branches": [
-                      {
-                        "branchName": "save",
-                        "branchType": "CONDITION",
-                        "conditions": [
-                          [
-                            {
-                              "firstValue": "{{step_7['output'].outcome}}",
-                              "operator": "TEXT_EXACTLY_MATCHES",
-                              "secondValue": "save"
-                            }
-                          ]
-                        ]
-                      },
-                      {
-                        "branchName": "load",
-                        "branchType": "CONDITION",
-                        "conditions": [
-                          [
-                            {
-                              "firstValue": "{{step_7['output'].outcome}}",
-                              "operator": "TEXT_EXACTLY_MATCHES",
-                              "secondValue": "load"
-                            }
-                          ]
-                        ]
-                      },
-                      {
-                        "branchName": "Otherwise",
-                        "branchType": "FALLBACK"
+                        "type": "PIECE",
+                        "valid": true
                       }
                     ],
-                    "executionType": "EXECUTE_FIRST_MATCH"
+                    "displayName": "outcome",
+                    "name": "step_8",
+                    "settings": {
+                      "branches": [
+                        {
+                          "branchName": "save",
+                          "branchType": "CONDITION",
+                          "conditions": [
+                            [
+                              {
+                                "firstValue": "{{step_7['output'].outcome}}",
+                                "operator": "TEXT_EXACTLY_MATCHES",
+                                "secondValue": "save"
+                              }
+                            ]
+                          ]
+                        },
+                        {
+                          "branchName": "load",
+                          "branchType": "CONDITION",
+                          "conditions": [
+                            [
+                              {
+                                "firstValue": "{{step_7['output'].outcome}}",
+                                "operator": "TEXT_EXACTLY_MATCHES",
+                                "secondValue": "load"
+                              }
+                            ]
+                          ]
+                        },
+                        {
+                          "branchName": "Otherwise",
+                          "branchType": "FALLBACK"
+                        }
+                      ],
+                      "executionType": "EXECUTE_FIRST_MATCH"
+                    },
+                    "type": "ROUTER",
+                    "valid": true
                   },
-                  "type": "ROUTER",
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "botUsername": "{{variables['BOT_USERNAME']}}",
+                      "hmac": "{{step_1['output'].data}}",
+                      "records": "{{step_6['output']}}",
+                      "req": "{{step_5['output']}}",
+                      "staff": "{{step_18['output']}}",
+                      "texts": {
+                        "field.address": "Адрес",
+                        "field.ends_at": "Окончание",
+                        "field.geo": "Точка на карте",
+                        "field.reg_deadline_at": "Дедлайн регистрации",
+                        "field.starts_at": "Начало",
+                        "field.status": "Статус",
+                        "field.title": "Название",
+                        "manage.err.address_length": "Адрес — от 2 до 300 символов.",
+                        "manage.err.capacity": "Целое число от 1 или пусто.",
+                        "manage.err.datetime": "Укажите дату и время.",
+                        "manage.err.deadline_after_starts": "Дедлайн позже начала ивента.",
+                        "manage.err.deadline_past": "Дедлайн уже прошёл.",
+                        "manage.err.description_length": "Описание — до 4000 символов.",
+                        "manage.err.ends_before_starts": "Окончание раньше начала.",
+                        "manage.err.forbidden": "Нет прав на правку этого ивента",
+                        "manage.err.geo_pair": "Укажите обе координаты или ни одной.",
+                        "manage.err.geo_range": "Координаты вне диапазона: широта ±90, долгота ±180.",
+                        "manage.err.overbook": "Целое число от 0 до 100 или пусто.",
+                        "manage.err.required": "Заполните поле.",
+                        "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже.",
+                        "manage.err.starts_past": "Начало уже прошло.",
+                        "manage.err.status": "Такого статуса нет.",
+                        "manage.err.title_length": "Название — от 2 до 200 символов.",
+                        "manage.err.validation": "Проверьте отмеченные поля.",
+                        "manage.saved.cancelled": "Ивент отменён. Зарегистрированным ушло уведомление.",
+                        "manage.saved.created": "Ивент опубликован. Ссылка регистрации — в чате.",
+                        "manage.saved.draft": "Черновик сохранён. Участникам он пока не виден.",
+                        "manage.saved.updated": "Изменения сохранены.",
+                        "manage.saved.updated_notified": "Изменения сохранены. Зарегистрированным ушло уведомление.",
+                        "notify.changed.header": "В ивенте «{title}» изменения:",
+                        "notify.changed.line": "{field}: {old} → {new}",
+                        "notify.event_cancelled": "Ивент «{title}» отменён. Извините за неудобство.",
+                        "status.cancelled": "отменён",
+                        "status.draft": "черновик",
+                        "status.finished": "завершён",
+                        "status.published": "опубликован"
+                      }
+                    },
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const isNew = req.isNew === true || req.isNew === 'true';\n  const reqEventId = str(req.eventId);\n  const fields = (req.fields && typeof req.fields === 'object') ? req.fields : {};\n  const botUsername = str(inputs.botUsername);\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее.\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: '',\n    // запись\n    id: '-', staffId: telegramId, chapterId: '', title: '', description: '', address: '', lat: '', lon: '',\n    startsAt: '', endsAt: '', regDeadlineAt: '', status: '', capacity: '', overbookPct: '',\n    publishedAt: '', cancelledAt: '',\n    // уведомления\n    notifyKind: 'none', notifyText: '', ownerKey: '', ownerVars: {}\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- права: строка `staff` вызывающего + чаптер (ADR-0024) ------------------\n  // Создание И правка — один глобальный глагол. Нет строки `staff` — отказ.\n  // Scope — чаптер: staff.chapter_id === '' (все чаптеры) или === event.chapter_id.\n  // Строка выбирается по telegram_id, а не как rows[0] (defense in depth, Q25).\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n\n  // --- ивент: только по id из запроса ----------------------------------------\n  // Запись выбирается по id, а не как rows[0]: фильтр чтения может\n  // отсутствовать или разойтись — отбор повторяется в коде (catalog/flows/README.md).\n  const rows = arr(inputs.records).map(flat);\n  const ev = rows.filter((r) => str(r.id) === reqEventId)[0] || null;\n  // Сентинел '-' (не-slug на входе) — не ключ, отказ до любого сравнения.\n  if (reqEventId === '-' || reqEventId === '') return forbidden();\n  if (!isNew) {\n    // Правка/чтение: ивент обязан существовать и быть в чаптере вызывающего.\n    // «Не найден», «чужой чаптер» и «не staff» отвечают одинаково — нечего перечислять.\n    if (!ev || str(ev.id) !== reqEventId || !canAccess(ev.chapter_id)) return forbidden();\n  } else if (ev && !canAccess(ev.chapter_id)) {\n    // Создание с newId, занятым записью чужого чаптера: не перезаписываем.\n    return forbidden();\n  }\n  // Повтор создания своим же newId (потерянный ответ) — дальше идёт как\n  // правка существующей записи: orig есть, published_at не перезаписывается.\n\n  const TZ = 'Asia/Tashkent';\n  const TASHKENT_OFFSET_MIN = 300; // UTC+5, без DST\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  // «YYYY-MM-DDTHH:mm» с экрана — ташкентское время → UTC ISO (OWN-3).\n  const localToUtc = (s) => {\n    const m = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2})(?::(\\d{2}))?$/.exec(s);\n    if (!m) return '';\n    // Компоненты проверяются обратным разбором: Date.UTC молча переносит\n    // 31 февраля на март, а 25:00 — на следующий день.\n    const local = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], m[6] ? +m[6] : 0);\n    const chk = new Date(local);\n    if (!isFinite(local) || chk.getUTCFullYear() !== +m[1] || chk.getUTCMonth() !== +m[2] - 1 || chk.getUTCDate() !== +m[3] || chk.getUTCHours() !== +m[4] || chk.getUTCMinutes() !== +m[5]) return '';\n    return new Date(local - TASHKENT_OFFSET_MIN * 60000).toISOString();\n  };\n  const dispFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const dispDate = (iso) => { const ms = parseIso(iso); return isFinite(ms) ? dispFmt.format(new Date(ms)) : '—'; };\n\n  const pick = (o, keys) => { const out = {}; keys.forEach((k) => { out[k] = str(o[k]); }); return out; };\n  const EVENT_KEYS = ['id', 'title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'status', 'capacity', 'overbook_pct'];\n\n  if (action === 'load') {\n    if (isNew) return forbidden();\n    const out = pick(ev, EVENT_KEYS);\n    out.hasPhoto = str(ev.photo_file_id) !== '';\n    return respond('load', 200, { ok: true, event: out, eventId: str(ev.id) });\n  }\n  if (action !== 'save') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server') });\n\n  // --- валидация ------------------------------------------------------------\n  const f = {};\n  ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'status'].forEach((k) => { f[k] = str(fields[k]); });\n  const errors = {};\n  const orig = ev ? pick(ev, EVENT_KEYS.concat(['published_at', 'cancelled_at', 'staff_id', 'chapter_id'])) : null;\n  const origStatus = orig ? orig.status : '';\n  // Переходы статуса — ровно OWN-4: draft → published → cancelled | finished.\n  // Обратных нет: снять публикацию, «воскресить» отменённый или завершённый\n  // формой нельзя (cancelled_at/finished_at очистить нечем — Q30).\n  const ALLOWED = {\n    '': ['draft', 'published'], 'draft': ['draft', 'published'],\n    'published': ['published', 'cancelled'], 'cancelled': ['cancelled'], 'finished': ['finished']\n  };\n  const allowed = ALLOWED[origStatus] || [];\n  if (allowed.indexOf(f.status) < 0) errors.status = 'manage.err.status';\n\n  if (f.title.length < 2 || f.title.length > 200) errors.title = f.title ? 'manage.err.title_length' : 'manage.err.required';\n  if (f.description.length > 4000) errors.description = 'manage.err.description_length';\n\n  const strict = f.status === 'published' || f.status === 'finished';\n  if (f.address) { if (f.address.length < 2 || f.address.length > 300) errors.address = 'manage.err.address_length'; }\n  else if (strict) errors.address = 'manage.err.required';\n\n  const geoNum = (s, lim) => { if (s === '') return null; const n = Number(s.replace(',', '.')); return (isFinite(n) && Math.abs(n) <= lim) ? n : NaN; };\n  const lat = geoNum(f.lat, 90), lon = geoNum(f.lon, 180);\n  if ((lat === null) !== (lon === null)) errors.geo = 'manage.err.geo_pair';\n  else if ((lat !== null && isNaN(lat)) || (lon !== null && isNaN(lon))) errors.geo = 'manage.err.geo_range';\n\n  const dates = {};\n  ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n    if (f[k] === '') { dates[k] = ''; if (strict) errors[k] = 'manage.err.datetime'; return; }\n    const iso = localToUtc(f[k]);\n    if (!iso) { errors[k] = 'manage.err.datetime'; dates[k] = ''; return; }\n    dates[k] = iso;\n  });\n  const ms = (k) => parseIso(dates[k]);\n  const changed = (k) => !orig || !isFinite(parseIso(orig[k])) || parseIso(orig[k]) !== ms(k);\n  if (dates.starts_at && dates.ends_at && !errors.ends_at && ms('ends_at') <= ms('starts_at')) errors.ends_at = 'manage.err.ends_before_starts';\n  if (dates.starts_at && dates.reg_deadline_at && !errors.reg_deadline_at && ms('reg_deadline_at') > ms('starts_at')) errors.reg_deadline_at = 'manage.err.deadline_after_starts';\n  // «В будущем» — только для публикуемого и только для изменённой даты:\n  // иначе у идущего или прошедшего ивента нельзя было бы поправить адрес.\n  if (strict && dates.starts_at && !errors.starts_at && changed('starts_at') && ms('starts_at') <= now) errors.starts_at = 'manage.err.starts_past';\n  if (strict && dates.reg_deadline_at && !errors.reg_deadline_at && changed('reg_deadline_at') && ms('reg_deadline_at') <= now) errors.reg_deadline_at = 'manage.err.deadline_past';\n\n  const intOrEmpty = (s, min, max) => { if (s === '') return ''; if (!/^\\d+$/.test(s)) return NaN; const n = Number(s); return (n >= min && n <= max) ? String(n) : NaN; };\n  const capacity = intOrEmpty(f.capacity, 1, 1000000);\n  const overbook = intOrEmpty(f.overbook_pct, 0, 100);\n  if (typeof capacity === 'number') errors.capacity = 'manage.err.capacity';\n  if (typeof overbook === 'number') errors.overbook_pct = 'manage.err.overbook';\n\n  if (Object.keys(errors).length) return respond('error', 422, { error: 'validation', text: t('manage.err.validation'), fields: errors });\n\n  // --- запись ---------------------------------------------------------------\n  // id: при правке — из записи; при создании — newId страницы (уже проверен\n  // как slug ≤12 символов [A-Za-z0-9_] без префикса 'e' — контракт fn-parse-start).\n  const id = isNew ? reqEventId : str(ev.id);\n  // staff_id — автор (не гейт); chapter_id — чаптер ивента (ADR-0024).\n  const chapterId = isNew ? (staffChapter || '1') : str(ev.chapter_id);\n  const rec = {\n    id: id, staffId: telegramId, chapterId: chapterId,\n    title: f.title, description: f.description, address: f.address,\n    lat: lat === null ? '' : String(lat), lon: lon === null ? '' : String(lon),\n    startsAt: dates.starts_at, endsAt: dates.ends_at, regDeadlineAt: dates.reg_deadline_at,\n    status: f.status, capacity: capacity, overbookPct: overbook,\n    // DATE-поле пустой строкой не очищается — пусто здесь значит «не менять».\n    publishedAt: (f.status === 'published' && (!orig || !orig.published_at)) ? nowIso : '',\n    cancelledAt: (f.status === 'cancelled' && (!orig || !orig.cancelled_at)) ? nowIso : ''\n  };\n\n  // --- уведомление (OWN-5): только если ивент уже был опубликован -------------\n  let notifyKind = 'none';\n  let notifyText = '';\n  if (origStatus === 'published') {\n    if (f.status === 'cancelled') {\n      notifyKind = 'cancelled';\n      notifyText = t('notify.event_cancelled', { title: f.title });\n    } else {\n      const lines = [];\n      const line = (label, before, after) => lines.push(t('notify.changed.line', { field: t(label), old: before, new: after }));\n      if (orig.title !== f.title) line('field.title', orig.title || '—', f.title);\n      if (orig.address !== f.address) line('field.address', orig.address || '—', f.address || '—');\n      ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n        const b = parseIso(orig[k]), a = parseIso(dates[k]);\n        if ((isFinite(b) ? b : -1) !== (isFinite(a) ? a : -1)) line('field.' + k, dispDate(orig[k]), dispDate(dates[k]));\n      });\n      const geo = (la, lo) => (la !== '' && lo !== '') ? (la + ', ' + lo) : '—';\n      const gb = geo(orig.lat, orig.lon), ga = geo(rec.lat, rec.lon);\n      if (gb !== ga) line('field.geo', gb, ga);\n      if (orig.status !== f.status) line('field.status', t('status.' + orig.status), t('status.' + f.status));\n      if (lines.length) {\n        notifyKind = 'changed';\n        notifyText = t('notify.changed.header', { title: f.title }) + '\\n' + lines.join('\\n');\n      }\n    }\n  }\n\n  // --- ответ странице и текст владельцу в чат ----------------------------------\n  let text, ownerKey;\n  if (f.status === 'cancelled') { text = t(origStatus === 'cancelled' ? 'manage.saved.updated' : 'manage.saved.cancelled'); ownerKey = origStatus === 'cancelled' ? 'manage.chat.updated' : 'manage.chat.cancelled'; }\n  else if (f.status === 'draft') { text = t('manage.saved.draft'); ownerKey = 'manage.chat.draft_saved'; }\n  else if (f.status === 'finished') { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  else if (origStatus !== 'published') { text = t('manage.saved.created'); ownerKey = 'manage.chat.published'; }\n  else if (notifyKind === 'changed') { text = t('manage.saved.updated_notified'); ownerKey = 'manage.chat.updated_notified'; }\n  else { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  const registrationUrl = botUsername ? ('https://t.me/' + botUsername + '?start=e' + id) : '';\n\n  return respond('save', 200, Object.assign({ ok: true, text: text, eventId: id, notifyKind: notifyKind, notifyText: notifyText, ownerKey: ownerKey, ownerVars: { title: f.title, url: registrationUrl } }, rec));\n};\n",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
                   "valid": true
                 },
                 "settings": {
+                  "actionName": "tables-find-records",
                   "errorHandlingOptions": {
                     "continueOnFailure": {
                       "value": false
@@ -372,55 +439,28 @@
                     }
                   },
                   "input": {
-                    "botUsername": "{{variables['BOT_USERNAME']}}",
-                    "hmac": "{{step_1['output'].data}}",
-                    "records": "{{step_6['output']}}",
-                    "req": "{{step_5['output']}}",
-                    "texts": {
-                      "field.address": "Адрес",
-                      "field.ends_at": "Окончание",
-                      "field.geo": "Точка на карте",
-                      "field.reg_deadline_at": "Дедлайн регистрации",
-                      "field.starts_at": "Начало",
-                      "field.status": "Статус",
-                      "field.title": "Название",
-                      "manage.err.address_length": "Адрес — от 2 до 300 символов.",
-                      "manage.err.capacity": "Целое число от 1 или пусто.",
-                      "manage.err.datetime": "Укажите дату и время.",
-                      "manage.err.deadline_after_starts": "Дедлайн позже начала ивента.",
-                      "manage.err.deadline_past": "Дедлайн уже прошёл.",
-                      "manage.err.description_length": "Описание — до 4000 символов.",
-                      "manage.err.ends_before_starts": "Окончание раньше начала.",
-                      "manage.err.forbidden": "Нет прав на правку этого ивента",
-                      "manage.err.geo_pair": "Укажите обе координаты или ни одной.",
-                      "manage.err.geo_range": "Координаты вне диапазона: широта ±90, долгота ±180.",
-                      "manage.err.overbook": "Целое число от 0 до 100 или пусто.",
-                      "manage.err.required": "Заполните поле.",
-                      "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже.",
-                      "manage.err.starts_past": "Начало уже прошло.",
-                      "manage.err.status": "Такого статуса нет.",
-                      "manage.err.title_length": "Название — от 2 до 200 символов.",
-                      "manage.err.validation": "Проверьте отмеченные поля.",
-                      "manage.saved.cancelled": "Ивент отменён. Зарегистрированным ушло уведомление.",
-                      "manage.saved.created": "Ивент опубликован. Ссылка регистрации — в чате.",
-                      "manage.saved.draft": "Черновик сохранён. Участникам он пока не виден.",
-                      "manage.saved.updated": "Изменения сохранены.",
-                      "manage.saved.updated_notified": "Изменения сохранены. Зарегистрированным ушло уведомление.",
-                      "notify.changed.header": "В ивенте «{title}» изменения:",
-                      "notify.changed.line": "{field}: {old} → {new}",
-                      "notify.event_cancelled": "Ивент «{title}» отменён. Извините за неудобство.",
-                      "status.cancelled": "отменён",
-                      "status.draft": "черновик",
-                      "status.finished": "завершён",
-                      "status.published": "опубликован"
-                    }
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": {
+                            "id": "39qJ4o2MYyNYsT2VtxfcK",
+                            "name": "id",
+                            "type": "TEXT"
+                          },
+                          "operator": "eq",
+                          "value": "{{step_5['output'].eventId}}"
+                        }
+                      ]
+                    },
+                    "limit": 1,
+                    "record_ids": [],
+                    "table_id": "R4aSQpLZvw7d3u6DVOSjH"
                   },
-                  "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const isNew = req.isNew === true || req.isNew === 'true';\n  const reqEventId = str(req.eventId);\n  const fields = (req.fields && typeof req.fields === 'object') ? req.fields : {};\n  const botUsername = str(inputs.botUsername);\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее.\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: '',\n    // запись\n    id: '-', ownerId: telegramId, title: '', description: '', address: '', lat: '', lon: '',\n    startsAt: '', endsAt: '', regDeadlineAt: '', status: '', capacity: '', overbookPct: '',\n    publishedAt: '', cancelledAt: '',\n    // уведомления\n    notifyKind: 'none', notifyText: '', ownerKey: '', ownerVars: {}\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- владелец: только по events.owner_id ЭТОГО event_id ---------------------\n  // Запись выбирается по id, а не как rows[0]: фильтр чтения может\n  // отсутствовать или разойтись — отбор повторяется в коде (catalog/flows/README.md).\n  const rows = arr(inputs.records).map(flat);\n  const ev = rows.filter((r) => str(r.id) === reqEventId)[0] || null;\n  if (!telegramId) return forbidden();\n  // Сентинел '-' (не-slug на входе) — не ключ, отказ до любого сравнения.\n  if (reqEventId === '-' || reqEventId === '') return forbidden();\n  if (!isNew) {\n    // Правка/чтение: ивент обязан существовать и принадлежать вызывающему.\n    // «Не найден» и «не владелец» отвечают одинаково — нечего перечислять.\n    if (!ev || str(ev.id) !== reqEventId || str(ev.owner_id) !== telegramId) return forbidden();\n  } else if (ev && str(ev.owner_id) !== telegramId) {\n    // Создание с newId, который уже занят чужой записью: не перезаписываем.\n    return forbidden();\n  }\n  // Повтор создания своим же newId (потерянный ответ) — дальше идёт как\n  // правка существующей записи: orig есть, published_at не перезаписывается.\n\n  const TZ = 'Asia/Tashkent';\n  const TASHKENT_OFFSET_MIN = 300; // UTC+5, без DST\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  // «YYYY-MM-DDTHH:mm» с экрана — ташкентское время → UTC ISO (OWN-3).\n  const localToUtc = (s) => {\n    const m = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2})(?::(\\d{2}))?$/.exec(s);\n    if (!m) return '';\n    // Компоненты проверяются обратным разбором: Date.UTC молча переносит\n    // 31 февраля на март, а 25:00 — на следующий день.\n    const local = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], m[6] ? +m[6] : 0);\n    const chk = new Date(local);\n    if (!isFinite(local) || chk.getUTCFullYear() !== +m[1] || chk.getUTCMonth() !== +m[2] - 1 || chk.getUTCDate() !== +m[3] || chk.getUTCHours() !== +m[4] || chk.getUTCMinutes() !== +m[5]) return '';\n    return new Date(local - TASHKENT_OFFSET_MIN * 60000).toISOString();\n  };\n  const dispFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const dispDate = (iso) => { const ms = parseIso(iso); return isFinite(ms) ? dispFmt.format(new Date(ms)) : '—'; };\n\n  const pick = (o, keys) => { const out = {}; keys.forEach((k) => { out[k] = str(o[k]); }); return out; };\n  const EVENT_KEYS = ['id', 'title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'status', 'capacity', 'overbook_pct'];\n\n  if (action === 'load') {\n    if (isNew) return forbidden();\n    const out = pick(ev, EVENT_KEYS);\n    out.hasPhoto = str(ev.photo_file_id) !== '';\n    return respond('load', 200, { ok: true, event: out, eventId: str(ev.id) });\n  }\n  if (action !== 'save') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server') });\n\n  // --- валидация ------------------------------------------------------------\n  const f = {};\n  ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'status'].forEach((k) => { f[k] = str(fields[k]); });\n  const errors = {};\n  const orig = ev ? pick(ev, EVENT_KEYS.concat(['published_at', 'cancelled_at', 'owner_id'])) : null;\n  const origStatus = orig ? orig.status : '';\n  // Переходы статуса — ровно OWN-4: draft → published → cancelled | finished.\n  // Обратных нет: снять публикацию, «воскресить» отменённый или завершённый\n  // формой нельзя (cancelled_at/finished_at очистить нечем — Q30).\n  const ALLOWED = {\n    '': ['draft', 'published'], 'draft': ['draft', 'published'],\n    'published': ['published', 'cancelled'], 'cancelled': ['cancelled'], 'finished': ['finished']\n  };\n  const allowed = ALLOWED[origStatus] || [];\n  if (allowed.indexOf(f.status) < 0) errors.status = 'manage.err.status';\n\n  if (f.title.length < 2 || f.title.length > 200) errors.title = f.title ? 'manage.err.title_length' : 'manage.err.required';\n  if (f.description.length > 4000) errors.description = 'manage.err.description_length';\n\n  const strict = f.status === 'published' || f.status === 'finished';\n  if (f.address) { if (f.address.length < 2 || f.address.length > 300) errors.address = 'manage.err.address_length'; }\n  else if (strict) errors.address = 'manage.err.required';\n\n  const geoNum = (s, lim) => { if (s === '') return null; const n = Number(s.replace(',', '.')); return (isFinite(n) && Math.abs(n) <= lim) ? n : NaN; };\n  const lat = geoNum(f.lat, 90), lon = geoNum(f.lon, 180);\n  if ((lat === null) !== (lon === null)) errors.geo = 'manage.err.geo_pair';\n  else if ((lat !== null && isNaN(lat)) || (lon !== null && isNaN(lon))) errors.geo = 'manage.err.geo_range';\n\n  const dates = {};\n  ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n    if (f[k] === '') { dates[k] = ''; if (strict) errors[k] = 'manage.err.datetime'; return; }\n    const iso = localToUtc(f[k]);\n    if (!iso) { errors[k] = 'manage.err.datetime'; dates[k] = ''; return; }\n    dates[k] = iso;\n  });\n  const ms = (k) => parseIso(dates[k]);\n  const changed = (k) => !orig || !isFinite(parseIso(orig[k])) || parseIso(orig[k]) !== ms(k);\n  if (dates.starts_at && dates.ends_at && !errors.ends_at && ms('ends_at') <= ms('starts_at')) errors.ends_at = 'manage.err.ends_before_starts';\n  if (dates.starts_at && dates.reg_deadline_at && !errors.reg_deadline_at && ms('reg_deadline_at') > ms('starts_at')) errors.reg_deadline_at = 'manage.err.deadline_after_starts';\n  // «В будущем» — только для публикуемого и только для изменённой даты:\n  // иначе у идущего или прошедшего ивента нельзя было бы поправить адрес.\n  if (strict && dates.starts_at && !errors.starts_at && changed('starts_at') && ms('starts_at') <= now) errors.starts_at = 'manage.err.starts_past';\n  if (strict && dates.reg_deadline_at && !errors.reg_deadline_at && changed('reg_deadline_at') && ms('reg_deadline_at') <= now) errors.reg_deadline_at = 'manage.err.deadline_past';\n\n  const intOrEmpty = (s, min, max) => { if (s === '') return ''; if (!/^\\d+$/.test(s)) return NaN; const n = Number(s); return (n >= min && n <= max) ? String(n) : NaN; };\n  const capacity = intOrEmpty(f.capacity, 1, 1000000);\n  const overbook = intOrEmpty(f.overbook_pct, 0, 100);\n  if (typeof capacity === 'number') errors.capacity = 'manage.err.capacity';\n  if (typeof overbook === 'number') errors.overbook_pct = 'manage.err.overbook';\n\n  if (Object.keys(errors).length) return respond('error', 422, { error: 'validation', text: t('manage.err.validation'), fields: errors });\n\n  // --- запись ---------------------------------------------------------------\n  // id: при правке — из записи; при создании — newId страницы (уже проверен\n  // как slug ≤12 символов [A-Za-z0-9_] без префикса 'e' — контракт fn-parse-start).\n  const id = isNew ? reqEventId : str(ev.id);\n  const rec = {\n    id: id, ownerId: telegramId,\n    title: f.title, description: f.description, address: f.address,\n    lat: lat === null ? '' : String(lat), lon: lon === null ? '' : String(lon),\n    startsAt: dates.starts_at, endsAt: dates.ends_at, regDeadlineAt: dates.reg_deadline_at,\n    status: f.status, capacity: capacity, overbookPct: overbook,\n    // DATE-поле пустой строкой не очищается — пусто здесь значит «не менять».\n    publishedAt: (f.status === 'published' && (!orig || !orig.published_at)) ? nowIso : '',\n    cancelledAt: (f.status === 'cancelled' && (!orig || !orig.cancelled_at)) ? nowIso : ''\n  };\n\n  // --- уведомление (OWN-5): только если ивент уже был опубликован -------------\n  let notifyKind = 'none';\n  let notifyText = '';\n  if (origStatus === 'published') {\n    if (f.status === 'cancelled') {\n      notifyKind = 'cancelled';\n      notifyText = t('notify.event_cancelled', { title: f.title });\n    } else {\n      const lines = [];\n      const line = (label, before, after) => lines.push(t('notify.changed.line', { field: t(label), old: before, new: after }));\n      if (orig.title !== f.title) line('field.title', orig.title || '—', f.title);\n      if (orig.address !== f.address) line('field.address', orig.address || '—', f.address || '—');\n      ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n        const b = parseIso(orig[k]), a = parseIso(dates[k]);\n        if ((isFinite(b) ? b : -1) !== (isFinite(a) ? a : -1)) line('field.' + k, dispDate(orig[k]), dispDate(dates[k]));\n      });\n      const geo = (la, lo) => (la !== '' && lo !== '') ? (la + ', ' + lo) : '—';\n      const gb = geo(orig.lat, orig.lon), ga = geo(rec.lat, rec.lon);\n      if (gb !== ga) line('field.geo', gb, ga);\n      if (orig.status !== f.status) line('field.status', t('status.' + orig.status), t('status.' + f.status));\n      if (lines.length) {\n        notifyKind = 'changed';\n        notifyText = t('notify.changed.header', { title: f.title }) + '\\n' + lines.join('\\n');\n      }\n    }\n  }\n\n  // --- ответ странице и текст владельцу в чат ----------------------------------\n  let text, ownerKey;\n  if (f.status === 'cancelled') { text = t(origStatus === 'cancelled' ? 'manage.saved.updated' : 'manage.saved.cancelled'); ownerKey = origStatus === 'cancelled' ? 'manage.chat.updated' : 'manage.chat.cancelled'; }\n  else if (f.status === 'draft') { text = t('manage.saved.draft'); ownerKey = 'manage.chat.draft_saved'; }\n  else if (f.status === 'finished') { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  else if (origStatus !== 'published') { text = t('manage.saved.created'); ownerKey = 'manage.chat.published'; }\n  else if (notifyKind === 'changed') { text = t('manage.saved.updated_notified'); ownerKey = 'manage.chat.updated_notified'; }\n  else { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  const registrationUrl = botUsername ? ('https://t.me/' + botUsername + '?start=e' + id) : '';\n\n  return respond('save', 200, Object.assign({ ok: true, text: text, eventId: id, notifyKind: notifyKind, notifyText: notifyText, ownerKey: ownerKey, ownerVars: { title: f.title, url: registrationUrl } }, rec));\n};",
-                    "packageJson": "{}"
-                  }
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
                 },
-                "type": "CODE",
+                "type": "PIECE",
                 "valid": true
               },
               "settings": {
@@ -434,22 +474,26 @@
                   }
                 },
                 "input": {
+                  "columns": [
+                    "ecOXPzqTqu2ktJ2Uj330k",
+                    "GJtF4zTRpzLjZWhM3cmMd"
+                  ],
                   "filters": {
                     "filters": [
                       {
                         "field": {
-                          "id": "39qJ4o2MYyNYsT2VtxfcK",
-                          "name": "id",
+                          "id": "ecOXPzqTqu2ktJ2Uj330k",
+                          "name": "telegram_id",
                           "type": "TEXT"
                         },
                         "operator": "eq",
-                        "value": "{{step_5['output'].eventId}}"
+                        "value": "{{step_1['output'].data.telegramId}}"
                       }
                     ]
                   },
                   "limit": 1,
                   "record_ids": [],
-                  "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                  "table_id": "PnDy6gw9tlLUqTGk2EOUn"
                 },
                 "propertySettings": {},
                 "qadamName": "@aiqadam/qadam-tables",
@@ -589,7 +633,7 @@
             "payload": {
               "botToken": "{{variables['BOT_TOKEN']}}",
               "initData": "{{trigger['output'].body.initData}}",
-              "maxAgeSeconds": 86400
+              "maxAgeSeconds": 300
             }
           },
           "mode": "simple",
