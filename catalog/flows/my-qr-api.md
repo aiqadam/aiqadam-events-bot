@@ -54,6 +54,10 @@
   быть отловлена, а не уронить весь `my-qr-api`.
 - **`callFlow`'s `flowProps` — обёртка `{"payload": {...}}`** в обоих вызовах
   внутри ветки `valid` (см. CLAUDE.md, Gotchas Qadam Flow, п. 7a).
+- **Окно `initData` — 300 c** (`maxAgeSeconds: 300`, [Q49](../../docs/OPEN-QUESTIONS.md#q49)):
+  страница `#/ticket` читает `initData` один раз при открытии, короткого окна
+  достаточно; `MAX_AGE_CAP` у `fn-hmac-init-data` при этом 43200 — потолок
+  для `checkin-api`, не для этого флоу.
 - **Контракт ответа `{ok,error,text,payload}` задан клиентом**: страница
   роут `#/ticket` проверяет `data.ok`/`data.error`, а не `{status,...}`
   (как `checkin-api`) — форма ответа этого флоу подстроена под уже

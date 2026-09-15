@@ -119,6 +119,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const errorTextFor = useCallback((res: { kind: string; http?: number; data?: Record<string, unknown> }) => {
     if (res.kind === 'network') return t('manage.err.network');
     if (res.kind === 'server') return t('manage.err.server');
+    // 401 — initData протух (окно 300 c, Q49): сервер отвечает общим текстом,
+    // но пользователю нужно действие, а не диагноз — форма живёт только
+    // в памяти React и переоткрывается из чата.
+    if (res.http === 401) return t('manage.err.stale');
     const d = res.data as Record<string, unknown>;
     if (typeof d['text'] === 'string' && d['text']) return String(d['text']);
     return t('manage.err.server');
@@ -471,12 +475,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               </p>
             )}
           </div>
-
-          {hasPhoto && (
-            <p className="helper" id="photoHint">
-              {t('manage.hint.photo')}
-            </p>
-          )}
 
           <div className="field actions" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {fieldErrors['_form'] && (

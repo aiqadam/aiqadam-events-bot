@@ -52,7 +52,29 @@
                       "respond": "stop",
                       "responseType": "json"
                     },
-                    "propertySettings": {},
+                    "propertySettings": {
+                      "fields": {
+                        "schema": {
+                          "body": {
+                            "displayName": "JSON Body",
+                            "required": true,
+                            "type": "JSON"
+                          },
+                          "headers": {
+                            "displayName": "Headers",
+                            "required": false,
+                            "type": "OBJECT"
+                          },
+                          "status": {
+                            "defaultValue": 200,
+                            "displayName": "Status",
+                            "required": false,
+                            "type": "NUMBER"
+                          }
+                        },
+                        "type": "MANUAL"
+                      }
+                    },
                     "qadamName": "@aiqadam/qadam-webhook",
                     "qadamVersion": "0.1.34"
                   },
@@ -265,7 +287,7 @@
             "payload": {
               "botToken": "{{variables['BOT_TOKEN']}}",
               "initData": "{{trigger['output'].body.initData}}",
-              "maxAgeSeconds": 86400
+              "maxAgeSeconds": 300
             }
           },
           "mode": "simple",
@@ -280,9 +302,15 @@
     },
     "settings": {
       "input": {
+        "authFields": {},
         "authType": "none"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "authFields": {
+          "schema": {},
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-webhook",
       "qadamVersion": "0.1.34",
       "sampleData": {},

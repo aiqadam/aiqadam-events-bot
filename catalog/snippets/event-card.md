@@ -46,9 +46,9 @@ export const code = async (inputs) => {
   const blank = {
     found: false, eventOk: eventOk, eventId: eventId, lang: lang,
     recordId: '', title: '', description: '', address: '', photoFileId: '', status: '',
-    // ownerId нужен вызывающему для гейта по владельцу (W6/W11): карточка сама
-    // никого не авторизует, но обязана дать чем проверить.
-    ownerId: '', chapterId: '',
+    // staffId — автор ивента (не гейт прав, ADR-0024); chapterId — чаптер.
+    // Карточка сама никого не авторизует, но отдаёт вызывающему чем проверить.
+    staffId: '', chapterId: '',
     startsAt: '', endsAt: '', regDeadlineAt: '', lat: '', lon: '', hasGeo: false,
     mapsUrl: '', registerDeepLink: '', capacity: '', overbookPct: ''
   };
@@ -84,7 +84,7 @@ export const code = async (inputs) => {
     address: ev.address || '',
     photoFileId: ev.photo_file_id || '',
     status: ev.status || '',
-    ownerId: ev.owner_id || '',
+    staffId: ev.staff_id || '',
     chapterId: ev.chapter_id || '',
     startsAt: ev.starts_at || '',
     endsAt: ev.ends_at || '',
@@ -159,7 +159,7 @@ export const code = async (inputs) => {
         found: false, lang: lang, eventId: String(ev.eventId || ''),
         text: t('event.card.not_found'), lines: [], buttons: [], labels: {},
         venue: null, mapsUrl: '', photoFileId: '', registerDeepLink: '',
-        status: '', ownerId: '', chapterId: '',
+        status: '', staffId: '', chapterId: '',
         startsAt: '', endsAt: '', regDeadlineAt: '', startsAtFmt: '', endsAtFmt: '', regDeadlineAtFmt: '',
         capacity: '', overbookPct: '', parseMode: '', missing: missing
       };
@@ -198,7 +198,7 @@ export const code = async (inputs) => {
       found: true,
       lang: lang,
       eventId: String(ev.eventId || ''),
-      // Текст содержит ввод owner'а (title/description/address) — шлётся без parse_mode,
+      // Текст содержит ввод организатора (title/description/address) — шлётся без parse_mode,
       // иначе разметка в названии сломает сообщение или подделает его вид.
       parseMode: '',
       text: lines.join('\n\n'),
@@ -209,9 +209,10 @@ export const code = async (inputs) => {
       mapsUrl: String(ev.mapsUrl || ''),
       photoFileId: String(ev.photoFileId || ''),
       registerDeepLink: String(ev.registerDeepLink || ''),
-      // status + ownerId — то, чем вызывающий делает гейт (карточка сама не авторизует)
+      // status + staffId + chapterId — то, чем вызывающий решает доступ
+      // (карточка сама не авторизует)
       status: String(ev.status || ''),
-      ownerId: String(ev.ownerId || ''),
+      staffId: String(ev.staffId || ''),
       chapterId: String(ev.chapterId || ''),
       startsAt: String(ev.startsAt || ''),
       endsAt: String(ev.endsAt || ''),
@@ -235,13 +236,13 @@ export const code = async (inputs) => {
 
 ## Что нельзя трогать
 
-- **`parseMode: ''`.** Текст содержит ввод owner'а (`title`/`description`/`address`).
+- **`parseMode: ''`.** Текст содержит ввод организатора (`title`/`description`/`address`).
   С разметкой ввод либо сломает сообщение, либо подделает его вид.
 - **`has()` против `t()`.** `has()` отличает «перевод есть» от «виден сырой ключ».
   Сырой ключ на **кнопке** недопустим — кнопка без перевода просто не рисуется.
 - **`mapsUrl` собирается из `lat`/`lon`** и только при валидных координатах
   (`hasGeo`), иначе пустая строка и никакой кнопки карты.
-- **`ownerId` и `status` отдаются наружу** — карточка сама никого не авторизует,
+- **`staffId` и `status` отдаются наружу** — карточка сама никого не авторизует,
   но обязана дать вызывающему, чем проверить.
 
 ## Оптимизация при встраивании

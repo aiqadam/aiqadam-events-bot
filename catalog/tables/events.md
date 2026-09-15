@@ -8,11 +8,11 @@
 | Field | Type | externalId | field id | Назначение |
 |-------|------|-----------|----------|-----------|
 | id | TEXT | `39qJ4o2MYyNYsT2VtxfcK` | `fnvGRZ5dTFES29pqSCu3Q` | slug `A-Za-z0-9_`, влезает в deep link |
-| owner_id | TEXT | `6KqxIPre6r76ycWhCX8uU` | `C9RTZG5cBrYYzoiYlqPZR` | → `users.telegram_id`, роль owner (DAT-3) |
-| chapter_id | TEXT | `Femtgz8bh7N8jSOMUHfRt` | `FLG7wUpIdITkTd4wSUU5Y` | → `chapters.id`, логики пока нет (Q8) |
+| staff_id | TEXT | `6KqxIPre6r76ycWhCX8uU` | `C9RTZG5cBrYYzoiYlqPZR` | **автор** (кто создал) → `staff.telegram_id`; не гейт прав (ADR-0024) |
+| chapter_id | TEXT | `Femtgz8bh7N8jSOMUHfRt` | `FLG7wUpIdITkTd4wSUU5Y` | → `chapters.id`; по нему режется доступ `staff` (ADR-0024) |
 | title | TEXT | `tQEzfGR3hYG0ztG50Po00` | `GZkI8QmdKsUEaHAFzo3sh` | |
 | description | TEXT | `8PdNUVtOvTuwRzJFQDgfy` | `7WeqSNfx6MNzB8gIVPjN3` | |
-| photo_file_id | TEXT | `hfpenYm4IZ5apFOt6cIgD` | `cxblz5YPWPPMfXAadROMf` | Telegram `file_id`, не URL |
+| photo_file_id | TEXT | `hfpenYm4IZ5apFOt6cIgD` | `cxblz5YPWPPMfXAadROMf` | Telegram `file_id`, не URL; **временно не используется** ([Q46](../../docs/OPEN-QUESTIONS.md#q46), возврат — [W39](../../docs/BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка)) |
 | address | TEXT | `kSRM3ouou0Owj2yDYk92W` | `cS62NQgXQgmB5LNDuBFfE` | адрес текстом |
 | lat | NUMBER | `EKEX5zyhKo3WChz5ZquY0` | `1Q8tRDqMP8pT7q1Ssx6mS` | для `sendVenue` (OWN-2) |
 | lon | NUMBER | `Br2f0wjLugSGIS2kjfoFE` | `vUjQ80W4oqe2YQ8kByUUS` | |

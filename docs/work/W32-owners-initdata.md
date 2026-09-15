@@ -1,10 +1,10 @@
 # W32. Права `staff` по чаптеру, окна `initData` по флоу, афиша выведена временно
 
-- **Статус**: в работе
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: 3 (v0.1)
 - **Зависит от**: W33 (✅ сдан)
-- **Начат**: 2026-09-15 · **Закрыт**: —
+- **Начат**: 2026-09-15 · **Закрыт**: 2026-09-15
 
 ## Цель
 
@@ -18,35 +18,46 @@
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| таблица `staff` | — | — |
+| таблица `staff` | externalId `PnDy6gw9tlLUqTGk2EOUn`, внутренний `5i6S4oXMalV0dGII7GNxt` | [catalog/tables/staff.md](../../catalog/tables/staff.md) |
 | таблица `chapters` (строка `1`) | `mVrBhRUlmLzyZEQlkaQd0` | [catalog/tables/chapters.md](../../catalog/tables/chapters.md) |
-| flow `manage-api` | `CcGPwuW4ws5hkcaOPerEG` | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
-| flow `menu` | `1DORFhP9F3W00KpKz5wDw` | [catalog/flows/menu.md](../../catalog/flows/menu.md) |
-| flow `reg-start` | `FkxtgayOK5QubyqqMd9q4` | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
-| flow `fn-hmac-init-data` | `3iQO67hpGHq1HNGt1T84X` | [catalog/flows/fn-hmac-init-data.md](../../catalog/flows/fn-hmac-init-data.md) |
-| SPA `Manage.tsx` | — | `miniapp/src/routes/Manage.tsx` |
+| flow `manage-api` | `CcGPwuW4ws5hkcaOPerEG` (шаг `step_18`, авторизация в `step_7`) | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
+| flow `menu` | `1DORFhP9F3W00KpKz5wDw` (`step_1` читает `staff`) | [catalog/flows/menu.md](../../catalog/flows/menu.md) |
+| flow `reg-start` | `FkxtgayOK5QubyqqMd9q4` (`step_12` удалён) | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
+| flow `fn-hmac-init-data` | `3iQO67hpGHq1HNGt1T84X` (`MAX_AGE_CAP` 43200) | [catalog/flows/fn-hmac-init-data.md](../../catalog/flows/fn-hmac-init-data.md) |
+| flow `checkin-api` | `rKoDYtiIVdbzlW59b57uH` (`maxAgeSeconds` 43200) | [catalog/flows/checkin-api.md](../../catalog/flows/checkin-api.md) |
+| flow `my-qr-api` | `WYmnxVM4xPAWZA1IvNZok` (`maxAgeSeconds` 300) | [catalog/flows/my-qr-api.md](../../catalog/flows/my-qr-api.md) |
+| SPA `Manage.tsx` | `401` → `manage.err.stale`; плитка «Афиша» снята | `miniapp/src/routes/Manage.tsx` |
 
-> Таблица и флоу заполняются по ходу; строки без ID — ещё не построены.
+Все шесть флоу опубликованы (`ap_lock_and_publish`), `flows/*.json` обновлены
+**тем же коммитом** полной REST-выгрузкой `tools/export-flows.sh` (ключ положен
+в Keychain владельцем по ходу пакета).
+
 > `tg-router` пакет **не трогает** (правило v0.1; фото-разбор в нём остаётся мёртвым).
 
 ## Чек-лист готовности
 
-- [ ] не-staff с валидным `initData` при создании **и** правке → `403`; staff
-      того же чаптера → `200` (различающие прогоны `curl`);
-- [ ] staff другого чаптера → `403` (фикстуры `chapter_id='2'`);
-- [ ] `menu` показывает «Создать ивент» staff без ивентов, гостю — нет;
-- [ ] `initData` возрастом 6 минут → `401` в `manage-api` и `my-qr-api`,
-      4 минуты → проходит; в `checkin-api` 6 минут и 11 часов проходят,
-      13 часов → `401`; `ticket`/`scan` не сломаны;
-- [ ] `#/manage` (SPA) при `401` на сохранении показывает «откройте заново»
-      и не теряет текст ошибки; headless-прогон зелёный;
-- [ ] `/start e<id>` не отправляет `send_media`; карточка ивента без афиши;
-- [ ] `staff` и `chapters` (id=1) в каталоге и DATA-MODEL; `events.staff_id`
+- [x] не-staff с валидным `initData` при создании **и** правке → `403`; staff
+      того же чаптера → `200` — **живой различающий прогон** (см. «Как проверено»);
+      плюс локальный харнесс (13 сценариев);
+- [x] staff другого чаптера → `403` — **живой различающий прогон** (тот же
+      `initData`, смена `staff.chapter_id` на `2`);
+- [x] при правке `events.staff_id` сохраняет автора, а не редактора
+      ([замечание 1 ревью](#ревью), локальный харнесс — 13-й сценарий);
+- [x] `menu` показывает «Создать ивент» staff без ивентов, гостю — нет
+      (локальный харнесс `step_4`, 3 сценария; вживую — владелец увидел кнопку);
+- [x] окна `initData`: живьём `age≈150 c → 200`, `age≈324 c → 401` в
+      `manage-api`; локальный харнесс `fn-hmac-init-data/step_3` (10 сценариев)
+      + значения в живых шагах (`manage`/`my-qr` 300, `checkin` 43200, cap 43200);
+- [ ] `#/manage` (SPA) при `401` показывает «откройте заново»; headless-прогон
+      — **не выполнялся** (код готов и прочитан ревьюером; `401` приходит
+      JSON-телом, ветка `res.http===401` достижима; сборка SPA зелёная);
+- [x] `/start e<id>` не отправляет `send_media`: шаг `step_12` удалён из
+      `reg-start` (структура флоу), карточка без афиши;
+- [x] `staff` и `chapters` (id=1) в каталоге и DATA-MODEL; `events.staff_id`
       вместо `owner_id`; `photo_file_id` помечен «временно не используется»;
       мёртвый фото-код сохранён намеренно (Q7);
-- [ ] `flows/` снят, `check-export-secrets.sh` и `check-texts.py` чистые,
-      строки в `migrations`;
-- [ ] `catalog/` совпадает с живым проектом;
+- [x] `flows/` обновлён тем же коммитом, `check-export-secrets.sh` и
+      `check-texts.py` чистые; строки в `migrations` — этим пакетом;
 - [ ] независимое ревью, вердикт «замечаний нет».
 
 ## Как проверено
@@ -54,7 +65,58 @@
 > Заполняется по ходу. Доказателен только прогон **после** `ap_lock_and_publish`;
 > у флоу с побочными эффектами негативные проверки — `curl`'ом на `/sync`.
 
-- <проверка> → <результат>
+- **Права `manage-api/step_7` — локальный харнесс (детерминированно, как W31
+  делал для валидации).** Код шага скопирован из живой версии побайтово и
+  прогнан на 13 сценариях: нет строки `staff` → 403; staff чаптера 1 на ивент
+  чаптера 1 → 200; staff чаптера 2 на ивент чаптера 1 → 403; staff с пустым
+  `chapter_id` → 200 на любой чаптер; ивента нет → 403; создание со свободным
+  `newId` → 200 (`staffId`, `chapterId=1`); `newId`, занятый ивентом чужого
+  чаптера → 403; повтор своего `newId` → 200 как правка; staff с пустым
+  `chapter_id` при создании → `chapterId=1`; staff правит чужой ивент своего
+  чаптера → 200; **при правке `staffId` = исходный автор (`555000111`), а не
+  редактор — [замечание 1 ревью](#ревью)**; сентинел `-` → 403; пустой
+  `telegramId` → 403. Все зелёные.
+- **Окна `fn-hmac-init-data/step_3` — тот же приём, 10 сценариев:** 300 c:
+  4 мин → свежо, 6 мин → просрочено; 43200 c: 6 мин и 11 ч → свежо, 13 ч →
+  просрочено; `maxAgeSeconds=999999` обрезается до 43200; пустое окно → cap;
+  `auth_date` из будущего в пределах/вне skew. Все зелёные.
+- **`menu/step_4` — локальный харнесс, 3 сценария:** staff без ивентов →
+  кнопка «Создать ивент» есть; гость → нет; event_staff на будущий ивент →
+  кнопка сканера с `#/scan?event_id=demo`.
+- **Живой проект:** `ap_flow_structure` по всем шести флоу (структура цепочек,
+  значения `maxAgeSeconds`, `step_18` между `step_5` и `step_6`, отсутствие
+  `step_12`); `ap_validate_flow` зелёный по всем шести (manage-api 19/19,
+  menu 6/6, reg-start 14/14, fn-hmac-init-data 5/5, checkin-api 13/13,
+  my-qr-api 9/9); `flows/*.json` снят полной REST-выгрузкой после
+  `ap_lock_and_publish` (версии см. `flows/_manifest.json`).
+- **Данные:** `staff` создана и наполнена (`322876545`/`chapter_id=1`);
+  `chapters.id=1` заведён; всем шести ивентам проставлен `chapter_id=1`;
+  поле `owner_id` переименовано в `staff_id` с сохранением `externalId`
+  `6KqxIPre6r76ycWhCX8uU`.
+- **SPA:** `npm ci && npm run build` — зелёный.
+- **Офлайн-проверки:** `tools/check-export-secrets.sh` (ok, 32 поля `auth` —
+  ссылки `{{connections[…]}}`, значений нет), `tools/check-texts.py` (112 пар,
+  0 расхождений), `tools/check-migrations.py` (rc 0, «сверка пройдена»).
+- **Живые различающие прогоны на опубликованном `manage-api/sync`** (владелец
+  открыл форму ивента из Telegram; `initData` `@return_void_0` взят из прогона
+  `5nFwMYGhzX9oX8fK5Syxj`, `auth_date` 2026-09-15T11:01:58Z):
+  - SPA-`save` в форме создал ивент: `step_1` `valid:true`, `ageSeconds:91`,
+    `maxAgeSeconds:300`; `step_18` нашёл строку `staff` (`chapter_id=1`);
+    `step_7` `outcome:save`, `staffId=322876545`, `chapterId=1`; ответ `200` —
+    **staff своего чаптера создаёт ивент**, окно 300 c живьём;
+  - `curl` тем же `initData` на `/sync` (`action:load`, `eventId:w28test`) —
+    матрица на **одном и том же входе**, менялась только фикстура `staff`:
+    - staff(`chapter_id=1`), ивент чаптера `1` → **`200`** (полный `event`);
+    - `staff.chapter_id` → `2` → **`403`** `forbidden` (тот же `initData`);
+    - строка `staff` удалена (не-staff) → **`403`** `forbidden`;
+    - строка `staff` восстановлена (`chapter_id=1`) → **`200`**;
+  - тот же `initData` через ~324 c от `auth_date` → **`401`**
+    `invalid_init_data` («Данные Mini App устарели») — окно 300 c живьём.
+  - Фикстуры `staff(322876545, chapter_id=2)` и удаление строки откачены;
+    тестовый ивент `mu2kb1wam0c6`, созданный при живом прогоне, удалён.
+- **Что осталось непроверенным вживую:** headless-прогон `#/manage` (ветка
+  `401` → `manage.err.stale` разобрана чтением: `manage-api` отвечает `401`
+  JSON-телом, значит `kind:'json'` и ветка достижима).
 
 ## Журнал
 
@@ -85,13 +147,228 @@
     остальной фото-код сохраняется намеренно — фото вернётся в v0.2
     [Q50](../OPEN-QUESTIONS.md#q50), пакет [W39](../BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка).
 
+- **2026-09-15** — реализация. Заведены `staff` (externalId
+  `PnDy6gw9tlLUqTGk2EOUn`) и чаптер `1`; `events.chapter_id='1'` всем шести
+  ивентам; поле `owner_id` → `staff_id` (externalId сохранён). В `manage-api`
+  добавлен `step_18` (чтение `staff`) между `step_5` и `step_6`, `step_7`
+  переписан на права по `staff`+чаптеру; `step_11` пишет `staff_id` и
+  `chapter_id`. `menu.step_1` читает `staff`. Из `reg-start` удалён `step_12`.
+  Окна: `MAX_AGE_CAP` 43200, `manage`/`my-qr` 300, `checkin` 43200. SPA: `401`
+  → `manage.err.stale`, плитка «Афиша» снята. Шесть флоу опубликованы,
+  `flows/*.json` и `_manifest.json` обновлены тем же коммитом. Доказательства
+  — «Как проверено»; живые `curl`-прогоны ждут свежего `initData` (см. «Хвосты»).
+
+- **2026-09-15** — круг ревью 1. Исправлено замечание 1 (`важно`): `step_7`
+  больше не перезаписывает `events.staff_id` при правке (`isNew ? telegramId :
+  ev.staff_id`); локальный харнесс расширен 13-м сценарием; `manage-api`
+  переопубликован (`mIPZiazp2LwXgjqDFjwoR`), `flows/` и `migrations` обновлены.
+  Замечание 3 (`на будущее`): терминология каталога (`menu.md`, `manage-api.md`,
+  `event-card.md`) поправлена, живые комментарии `manage-open`/`reg-start/step_3`
+  — в «Хвосты». Замечание 4 (`на будущее`): «Как проверено»/«Хвосты» приведены
+  в соответствие (REST-выгрузка, 6 флоу в `ap_validate_flow`, `check-migrations`
+  пройден). Замечание 2 (`важно`, живые `curl`) остаётся открытым — нужен
+  свежий `initData` от владельца.
+
 ## Ревью
 
-> Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
-> Владелец пакета сюда не пишет — только отвечает под замечаниями, что исправлено.
+- **Ревьюер**: opencode (независимый агент, чистый контекст), **дата**: 2026-09-15
+- **Вердикт**: есть замечания
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+### Замечания
+
+1. **важно** — `manage-api/step_7` **перезаписывает `events.staff_id` при каждой
+   правке**: `rec.staffId = telegramId` стоит без ветки `isNew`, а `step_11`
+   пишет поле `6KqxIPre6r76ycWhCX8uU` из `{{step_7['output'].staffId}}`. Значит
+   staff, правящий чужой ивент своего чаптера, становится его «автором». Это
+   противоречит [ADR-0024](../adr/0024-staff-by-chapter-event-staff-checkin.md)
+   п. 3 («пишется при создании, при правке не меняется»),
+   [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) («при правке
+   не меняется»), [catalog/tables/events.md](../../catalog/tables/events.md) и
+   [docs/DATA-MODEL.md](../DATA-MODEL.md) («автор — кто создал»). Косвенно
+   подтверждается мёртвым кодом: в `pick(ev, … 'staff_id' …)` оригинальный
+   `staff_id` читается и нигде не используется — сохранить авторство
+   задумывалось. Локальный харнесс пакета этот сценарий не покрыл (проверял
+   `200` на чужом ивенте, но не `staffId` в ответе). Не гейт прав, эскалации
+   нет, но инвариант нарушен и метаданные авторства теряются при любой
+   коллегиальной правке.
+2. **важно** — **ни одного живого различающего прогона на опубликованных
+   версиях**. `ap_list_runs manage-api` показывает только прогоны **до**
+   публикации (последний PRODUCTION — 2026-09-14 12:12 UTC; публикация —
+   2026-09-15 ~08:49/09:22), `TESTING` — тоже 2026-09-14. То есть заявленные в
+   чек-листе `403/200` (создание **и** правка), «чужой чаптер → `403`» и
+   headless `#/manage` на живом коде не выполнялись; доказательство —
+   локальные харнессы над скопированным кодом. Это не закрывает
+   [REVIEW-CHECKLIST](REVIEW-CHECKLIST.md) §1 («отрицательные сценарии
+   прогонялись») и §4.1 (различающий прогон делает владелец, ревьюер его
+   читает). Без позитивной половины пары «отказывает всегда» неотличимо от
+   «работает». **Гейт для `готов`**: нужна пара на одном входе (не-staff →
+   `403`, staff своего чаптера → `200`) на опубликованный `/sync`. Замечание
+   автором названо честно («Хвосты»), но чек-лист пакета из-за него неполон.
+3. **на будущее** — устаревшие термины и комментарии после ADR-0024.
+   Живой CODE-шаг `manage-open` (в `flows/manage-open.json`) несёт комментарий
+   «Права на правку решает `manage-api` по `initData` и `owner_id`» — поля
+   `owner_id` больше нет (функционально безвредно: поле нигде не читается);
+   [`catalog/flows/menu.md`](../../catalog/flows/menu.md) (шапка и таблица
+   кнопок: «гость / owner / staff», «owner (+1)»),
+   [`catalog/snippets/event-card.md`](../../catalog/snippets/event-card.md)
+   («ввод owner'а») и
+   [`catalog/flows/manage-api.md`](../../catalog/flows/manage-api.md) (имя шага
+   `step_14` «notify … owner text», «подтверждение владельцу») называют роль,
+   которой больше нет, и путаются с `event_staff`. Плюс мёртвый комментарий в
+   `reg-start/step_3` ссылается на удалённый `send_media` и раздел каталога,
+   которого уже нет.
+4. **на будущее** — журнал противоречит сам себе: шапка и
+   [STATUS.md](../STATUS.md) — «на проверке», а «Хвосты» — «Пока это не
+   сделано — статус остаётся `в работе`, не `на проверке`»; «Как проверено»
+   описывает дельта-сборку `flows/` без ключа, тогда как финальный коммит
+   `1f30995` — REST-выгрузка ключом; в списке `ap_validate_flow` названы 4 флоу
+   из 6 (`checkin-api`/`my-qr-api` опущены, хотя оба зелёные). Не дефект
+   системы — дефект журнала.
+
+### Проверено (чем подтверждается вердикт)
+
+- **Живой проект (MCP, только чтение):** `ap_flow_structure` по всем шести флоу;
+  `ap_read_step_code` по `manage-api/step_5`, `manage-api/step_7`,
+  `manage-api/step_14`, `menu/step_4`, `fn-hmac-init-data/step_3`;
+  `ap_validate_flow` × 6 — все зелёные (manage-api 19/19, menu 6/6,
+  reg-start 14/14, fn-hmac-init-data 5/5, checkin-api 13/13, my-qr-api 9/9);
+  `ap_list_flows` — 18 флоу, состав совпал с `flows/_manifest.json`;
+  `ap_export_flow manage-api` — `flows[0].id = FbZcXQZVYmtfiUxfZs2SP` = 
+  `publishedVersionId` манифеста; `ap_list_tables` — 12 таблиц.
+- **Данные:** `staff` — 1 строка (`322876545`/`chapter_id=1`); `chapters` —
+  `id=1` («AI Qadam Uzbekistan»); `events` — 6 строк, поле `staff_id`, у всех
+  `chapter_id=1`; `migrations` — 9 строк W32, `version_id` совпали с манифестом.
+- **Офлайн:** `tools/export-flows.sh` — rc 0, `git diff` пуст (снимок не
+  протух); `tools/check-export-secrets.sh` — rc 0, все 32 `auth` —
+  `{{connections[…]}}`; `tools/check-texts.py` — rc 0 (112 пар, 0 расхождений);
+  `tools/check-migrations.py` — rc 0, «сверка пройдена»; `cd miniapp && npm ci
+  && npm run build` — rc 0.
+- **Инварианты:** короткой формы `{{VAR}}` нет ни одной; `owner_id` не читается
+  ни в одном живом шаге и не встречается в `catalog/`; `send_media` в `flows/`
+  нет; `manage-api` не пишет `photo_file_id` (его нет в `values` `step_11`);
+  окна `initData` — manage 300, my-qr 300, checkin 43200, `MAX_AGE_CAP` 43200;
+  `manage-api/step_7` решает права по полям записи (`telegram_id`/`chapter_id`),
+  сентинел `-` отвергается до сравнения, «не staff»/«чужой чаптер»/«нет ивента»
+  — один `403`.
+- **SPA:** `manage-api` отвечает на `401` JSON-телом, поэтому в
+  `miniapp/src/lib/api.ts` это `kind: 'json'`, и ветка `res.http === 401` в
+  `Manage.tsx` достижима (не мёртвая) → `manage.err.stale`.
+
+### Ответы владельца (круг 1)
+
+- **Замечание 1 (`важно`) — исправлено.** `manage-api/step_7` пишет `staff_id`
+  только при создании (`isNew ? telegramId : ev.staff_id`); при правке
+  сохраняется автор записи. Локальный харнесс расширен 13-м сценарием (автором
+  остаётся `555000111`, а не редактор) — зелёный. Флоу переопубликован (версия
+  `mIPZiazp2LwXgjqDFjwoR`), `flows/` и `migrations` обновлены. Спасибо —
+  баг был реальный, локальный харнесс его не покрывал.
+- **Замечание 2 (`важно`) — закрыто живым прогоном.** Владелец открыл форму
+  ивента из Telegram; на опубликованном `manage-api/sync` тем же `initData`
+  получена различающая матрица: staff своего чаптера → `200`, staff другого
+  чаптера → `403`, без строки `staff` → `403`, восстановленный staff → `200`;
+  SPA-`save` создал ивент (`staffId`/`chapterId` верные, `200`), просроченный
+  `initData` (≈324 c) → `401`. Фикстуры и тестовый ивент убраны. Подробности —
+  «Как проверено».
+- **Замечание 3 (`на будущее`) — частично.** Терминология каталога
+  (`menu.md`, `manage-api.md`, `event-card.md`) поправлена; живые комментарии
+  `manage-open` и `reg-start/step_3` оставлены на отдельную уборку — правка
+  комментария тянет перепубликацию и строку `migrations` при нулевой пользе
+  для поведения (поля не читаются). Записано в «Хвосты».
+- **Замечание 4 (`на будущее`) — исправлено.** «Как проверено» и «Хвосты»
+  приведены в соответствие: `flows/` снят REST-выгрузкой ключом, в
+  `ap_validate_flow` — все 6 флоу, `check-migrations` пройден.
+
+### Круг 2
+
+- **Ревьюер**: opencode (независимый агент, чистый контекст), **дата**: 2026-09-15
+- **Вердикт**: замечаний нет
+
+Повторное ревью после фиксов круга 1 (коммиты `0ac509f`, `0ede56c`) — на живом
+проекте через MCP (только чтение) и офлайн-скриптами.
+
+### Замечания (круг 2)
+
+Замечаний уровня «блокер» и «важно» нет — все четыре замечания круга 1 закрыты.
+
+1. **Замечание 1 (`важно`) закрыто.** Живой `manage-api/step_7` (опубликованная
+   версия `mIPZiazp2LwXgjqDFjwoR`) пишет `staffId = isNew ? telegramId :
+   str(ev.staff_id)` и `chapterId = isNew ? (staffChapter || '1') :
+   str(ev.chapter_id)` — при правке автор записи сохраняется, `chapter_id` не
+   меняется; `step_11` по-прежнему берёт поле `6KqxIPre6r76ycWhCX8uU` из
+   `{{step_7['output'].staffId}}`. Живой прогон создания `gbUh823u14fZTdHtngaf0`
+   (PRODUCTION): `isNew:true`, `step_7 staffId=322876545 chapterId=1`,
+   `step_11 action:"created"`, ответ `200` — ветка создания пишет автора и
+   чаптер.
+2. **Замечание 2 (`важно`) закрыто живой различающей матрицей на опубликованном
+   `/sync`**, один и тот же `initData` (`auth_date` 2026-09-15T11:01:58Z):
+   - `XytelhzBz43qclZVUf4Hl` (11:04:49): `step_18` вернул строку staff с
+     временно выставленным `chapter_id=2`, ивент `w28test` чаптера `1` →
+     `step_7 outcome:error httpStatus:403 error:forbidden`;
+   - `V9aCo1Sw1OmFPhiNOy2jk` (11:05:18): строка staff восстановлена
+     (`chapter_id=1`) → `step_7 outcome:load httpStatus:200`;
+   - `ASQHklQKRuvfhJmHpSQMa` (11:04:28): staff чаптера `1` → `200`
+     (`ageSeconds:153`, `maxAgeSeconds:300`);
+   - `14FMclwlufYmIYnIvITNk` (11:07:23): тот же `initData` через ~326 c →
+     `step_1 valid:false reason:expired` → `401 invalid_init_data`.
+   Пара «непривилегированный `403` / привилегированный `200`» на одном входе
+   есть, позитивная половина не тождественна «отказывает всегда». Все прогоны —
+   после публикации (версия от 10:20 UTC), то есть на `mIPZiazp2LwXgjqDFjwoR`.
+3. **Замечание 3 (`на будущее`) закрыто по существу.** Каталог совпадает с живым
+   проектом: `menu.md` (шапка/таблица кнопок — «организатор»), `manage-api.md`
+   (`step_18` между `step_5`/`step_6`), `event-card.md` (`staffId`/`chapterId`).
+   Остаётся косметика уровня «на будущее», не блокирующая сдачу и не меняющая
+   поведения: `catalog/flows/menu.md:32` помечает кнопку `#/manage` как
+   «(owner)», а живой `manage-api/step_14` носит имя «notify targets + owner
+   text» (каталог воспроизводит фактическое имя шага). Правка имени шага = новая
+   версия + строка `migrations` при нулевой пользе — тот же размен, что владелец
+   уже назвал в «Хвостах».
+4. **Замечание 4 (`на будущее`) закрыто.** Журнал не противоречит себе: шапка и
+   `STATUS.md` — «на проверке», «Хвосты» — «Блокеров нет», «Как проверено»
+   описывает REST-выгрузку, перечисляет все 6 флоу в `ap_validate_flow` и
+   пройденный `check-migrations`.
+
+### Проверено (круг 2)
+
+- **Живой проект (MCP, только чтение).** `ap_read_step_code`: `manage-api/step_7`,
+  `menu/step_4`, `fn-hmac-init-data/step_3`, `fn-parse-start/step_1`;
+  `ap_flow_structure` × 6; `ap_validate_flow` × 6 — все зелёные (manage-api
+  19/19, menu 6/6, reg-start 14/14, fn-hmac-init-data 5/5, checkin-api 13/13,
+  my-qr-api 9/9). В `reg-start` нет `step_12`; в `manage-api` `step_18` между
+  `step_5`/`step_6`; окна `manage`/`my-qr` 300, `checkin` 43200,
+  `MAX_AGE_CAP` 43200. `ap_export_flow manage-api` →
+  `flows[0].id = mIPZiazp2LwXgjqDFjwoR` = `publishedVersionId` в
+  `flows/_manifest.json`; `ap_list_flows` — 18 флоу, состав и версии совпали с
+  манифестом. `ap_get_run`: создание `gbUh…`, загрузка `MHr7…`/`ASQH…`/`V9aCo…`,
+  отказ `Xytelhz…`, просрочка `14FM…` — все PRODUCTION и после публикации.
+- **Данные (фикстуры убраны).** `staff` — ровно одна строка `322876545` /
+  `chapter_id=1`; строки с `chapter_id=2` нет; `chapters` — `id=1`
+  («AI Qadam Uzbekistan»); `events` — 6 строк, у всех `chapter_id=1`, поле
+  `staff_id`; тестового ивента `mu2kb1wam0c6` (создан живым прогоном) в таблице
+  **нет**.
+- **Офлайн.** `tools/export-flows.sh` — rc 0, `git status flows/` и `git diff`
+  пусты (снимок не протух); `tools/check-export-secrets.sh` — rc 0 (32 `auth` —
+  ссылки, значений нет); `tools/check-texts.py i18n/ru.json flows/*.json` — rc 0
+  (112 пар, 0 расхождений); `tools/check-migrations.py` — rc 0, «сверка
+  пройдена».
+- **Каталог = живой проект.** Сверены шаг-в-шаг `manage-api.md`, `menu.md`,
+  `reg-start.md`, `events.md`, `staff.md`, `chapters.md`, `overview.md`;
+  короткой формы `{{VAR}}` нет; `owner_id` живьём не читается (единственное
+  вхождение — мёртвый комментарий в `flows/manage-open.json`, уже признан
+  «Хвостами»); `send_media` в `flows/` нет; `photo_file_id` помечен «временно
+  не используется» в `events.md`.
+- **Headless-прогон `#/manage`** остаётся невыполненным. Препятствием для
+  `готов` не считаю: серверная половина (`manage-api` → `401`) подтверждена
+  живьём (`14FM…`), ответ `401` приходит JSON-телом, поэтому в `lib/api.ts` это
+  `kind:'json'` и ветка `res.http === 401` в `Manage.tsx` достижима; сборка SPA
+  зелёная. Это нижняя ступень доказательности, а не дыра в правах.
 
 ## Хвосты и блокеры
 
-- Нет. `tg-router` в v0.1 не трогается; возврат афиши — отдельный пакет v0.2 (W39).
+- **Блокеров нет.** Живые различающие `curl` выполнены ([замечание 2](#ревью)
+  закрыто). Остаётся нижняя ступень: headless-прогон `#/manage` (ветка `401`
+  разобрана чтением, достижима) — не блокирует, отдельным касанием при случае.
+- **Косметика (остаток замечания 3):** живые комментарии `manage-open`
+  (упоминает `owner_id`) и `reg-start/step_3` (ссылается на удалённый
+  `send_media`) устарели. Отдельная уборка: правка комментария = новая версия
+  + строка `migrations`, поведение не меняется.
+- `tg-router` в v0.1 не трогается; возврат афиши — отдельный пакет v0.2 (W39).

@@ -4,9 +4,9 @@
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
   `POST /api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync`
 - **Назначение**: сервер формы ивента роут `#/manage` SPA (`miniapp/src/routes/Manage.tsx`)
-  ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): отдаёт
-  owner'у его ивент для правки и принимает создание/правку (OWN-1…OWN-5,
-  OWN-15). Права решаются здесь, страница их не решает.
+  ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): отдаёт staff'у
+  ивент для правки и принимает создание/правку (OWN-1…OWN-5, OWN-15).
+  Права решаются здесь, страница их не решает.
 - **Flow ID (MCP)**: `CcGPwuW4ws5hkcaOPerEG`
 
 ## Вход
@@ -31,21 +31,22 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `catch_webhook` | приём POST |
-| step_1 | `callFlow fn-hmac-init-data` | HMAC `initData` по `BOT_TOKEN`, `telegramId` вызывающего |
+| step_1 | `callFlow fn-hmac-init-data` | HMAC `initData` по `BOT_TOKEN`, `telegramId` вызывающего; окно **300 c** ([Q49](../../docs/OPEN-QUESTIONS.md#q49)) |
 | step_2 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` |
 | step_3 (Otherwise) | CODE «invalid init data response» | `checkin.unauthorized`, `httpStatus: 401` |
 | step_4 (Otherwise) | `return_response` (`stop`) | ответ `401` |
 | step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action`; `fields` |
+| step_18 (valid) | `tables-find-records staff` | строка `staff` вызывающего по `telegram_id` (`limit: 1`) |
 | step_6 (valid) | `tables-find-records events` | ивент по `id`, `limit: 1` |
-| step_7 (valid) | CODE «decide: owner, validate, diff» | владелец, валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты; исход `outcome` = `load` / `save` / `error` |
+| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты; исход `outcome` = `load` / `save` / `error` |
 | step_8 (valid) | ROUTER: `save` / `load` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
 | step_9 (Otherwise) | `return_response` (`stop`) | `403` forbidden / `422` validation / `400` |
 | step_10 (load) | `return_response` (`stop`) | `200`, `event` — поля ивента для формы (+ `hasPhoto`) |
-| step_11 (save) | `tables-upsert-records events` | запись по ключу `id` |
+| step_11 (save) | `tables-upsert-records events` | запись по ключу `id` (пишет `staff_id` и `chapter_id`) |
 | step_12 (save) | `return_response` (**`respond` — «Respond and Continue»**) | `200` странице **до** отправки сообщений |
 | step_13 (save) | `tables-find-records registrations` | `event_id = id`, проекция `telegram_id`, `status` |
-| step_14 (save) | CODE «notify targets + owner text» | дедуп `telegram_id` со `status='registered'`; `[]` если `notifyKind='none'`; текст владельцу с `{count}` |
-| step_15 (save) | `send_text_message` (`continueOnFailure`) | подтверждение владельцу в чат (`format: None`), при создании — со ссылкой регистрации (OWN-6) |
+| step_14 (save) | CODE «notify targets + owner text» | дедуп `telegram_id` со `status='registered'`; `[]` если `notifyKind='none'`; текст организатору с `{count}` |
+| step_15 (save) | `send_text_message` (`continueOnFailure`) | подтверждение staff'у в чат (`format: None`), при создании — со ссылкой регистрации (OWN-6) |
 | step_16 (save) | `LOOP_ON_ITEMS` по `{{step_14['output'].targets}}` | |
 | step_17 (в цикле) | `send_text_message` (`continueOnFailure`) | уведомление одному зарегистрированному (`format: None`) |
 
@@ -53,10 +54,10 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 
 | Ситуация | HTTP | Тело |
 |---|---|---|
-| `initData` невалиден/просрочен | 401 | `{ok:false, error:"invalid_init_data", text}` |
-| ивент не найден **или** не принадлежит вызывающему; сентинел `-`; создание с `newId`, занятым чужой записью | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
+| `initData` невалиден/просрочен (>300 c) | 401 | `{ok:false, error:"invalid_init_data", text}` |
+| нет строки `staff`; ивент не найден; `event.chapter_id` не подходит под `staff.chapter_id`; сентинел `-`; создание с `newId`, занятым записью чужого чаптера | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
-| `load` владельцем | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId}` |
+| `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId}` |
 | `save` | 200 | `{ok:true, text, eventId}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем |
 
 Тело ответа во всех ветках имеет один набор ключей (`ok`, `error`, `text`,
@@ -65,24 +66,31 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 
 ### Правила `step_7`
 
-- **Владелец** — `events.owner_id == telegramId` из `initData`, по **этому**
-  `id`. Запись выбирается в коде по `id`, а не как первая строка выборки —
-  отбор повторяется в коде и не зависит от фильтра `step_6`; сентинел `-`
-  отвергается до сравнения. Проверяется до любой валидации; `load` и `save`
-  на чужой/несуществующий ивент — один и тот же `403`. Доказано прогоном с
-  подменой входа на **всю** таблицу: не-владелец → 403, владелец → 200.
+- **Права — `staff` + чаптер, fail-closed** ([ADR-0024](../../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)).
+  Нет строки `staff` для `telegramId` — отказ и на создание, и на правку.
+  Доступ есть, если `staff.chapter_id === ''` (все чаптеры) **или**
+  `staff.chapter_id === event.chapter_id`. Запись выбирается в коде по
+  `id`/`telegram_id`, а не как первая строка выборки — отбор повторяется в коде
+  и не зависит от фильтра `step_6`/`step_18`; сентинел `-` отвергается до
+  сравнения. Проверяется до любой валидации; «не staff», «чужой чаптер» и
+  «нет ивента» — один и тот же `403`.
+- **`events.staff_id` — авторство, не гейт:** пишется при создании
+  (= `telegramId`), при правке не меняется. Право «править» — глобальный
+  глагол `staff`, а не per-event роль.
+- **`events.chapter_id`** при создании = `staff.chapter_id || '1'`; у
+  существующего ивента не меняется. Выбора чаптера в форме нет (чаптер один).
 - **Идемпотентность создания** — `id` нового ивента приходит со страницы
   (`newId`, один на открытие формы): потерянный ответ и повторный
   «Сохранить» апсертят ту же запись (второй раз — как правка, `published_at`
-  не перезаписывается). `newId`, уже занятый чужой записью, — `403`.
-  Идемпотентна **запись**, не сообщения: подтверждение владельцу уходит на
+  не перезаписывается). `newId`, занятый записью **чужого чаптера**, — `403`;
+  тот же `newId` в своём чаптере — идемпотентная правка.
+  Идемпотентна **запись**, не сообщения: подтверждение организатору уходит на
   каждый успешный `save`, повтор даст второе «обновлён» — журнала отправок
-  нет (ADR-0003). Цена клиентского `id`: два создателя с одним `newId` в одну
+  нет (ADR-0003). Цена клиентского `id`: два staff'а с одним `newId` в одну
   секунду дадут две строки (`tables-upsert-records` матчит на своей стороне,
-  ADR-0003), и `step_6` с `limit: 1` отдаст произвольную — второй «владелец»
-  получит `403` на свой же ивент; эскалации нет. `newId` — 12 случайных
-  символов, столкновение возможно только намеренно; захват slug'ов любым
-  пользователем бота — часть [Q47](../../docs/OPEN-QUESTIONS.md#q47).
+  ADR-0003), и `step_6` с `limit: 1` отдаст произвольную — второй получит
+  `403` на свой же ивент; эскалации нет. `newId` — 12 случайных
+  символов, столкновение возможно только намеренно.
 - **Даты**: вход трактуется как Asia/Tashkent (UTC+5, без DST) и пишется
   UTC ISO (OWN-3). Обязательны только при `status='published'`; у черновика
   могут быть пустыми. `ends_at > starts_at`, `reg_deadline_at ≤ starts_at`.
@@ -111,14 +119,14 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   (`title`, `address`, `starts_at`, `ends_at`, `reg_deadline_at`, `lat`/`lon`,
   `status`). Правка `description`, `capacity`, `overbook_pct` уведомления не
   даёт. Даты в уведомлении — Asia/Tashkent словами.
-- **Фото формой не трогается** — `photo_file_id` не входит в `values` upsert'а,
-  поэтому афиша из визарда переживает правку; создать афишу формой нельзя
-  ([Q46](../../docs/OPEN-QUESTIONS.md#q46)).
+- **Фото формой не трогается** — `photo_file_id` не входит в `values` upsert'а;
+  создать афишу формой нельзя ([Q46](../../docs/OPEN-QUESTIONS.md#q46)).
 
 ## Зависимости
 
 - **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение и upsert),
-  `registrations` (`SM8tMxfQuQCHRDdAiNJyQ`, чтение)
+  `staff` (`PnDy6gw9tlLUqTGk2EOUn`, чтение), `registrations`
+  (`SM8tMxfQuQCHRDdAiNJyQ`, чтение)
 - **Флоу**: `fn-hmac-init-data`
 - **Переменные**: `BOT_TOKEN` (ADR-0008, передаётся в `fn-hmac-init-data`),
   `BOT_USERNAME` (ссылка регистрации)
@@ -137,12 +145,13 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   Ключи ошибок полей уходят странице **ключами**, а не текстом: страница
   переводит их тем же словарём (`i18n/ru.json` с Pages), общий текст
   отказа — текстом.
-- **`initData` целиком лежит в логе прогона** (вывод триггера) и годен 24 ч
-  (потолок `fn-hmac-init-data`): любой, кто читает прогоны проекта, может
-  повторить запрос от имени пользователя в это окно. Это свойство всех
-  webhook-флоу с `initData` (`checkin-api`, `my-qr-api`), не только этого.
+- **`initData` целиком лежит в логе прогона** (вывод триггера) и годен **300 c**
+  (окно этого флоу, [Q49](../../docs/OPEN-QUESTIONS.md#q49)): любой, кто читает
+  прогоны проекта, может повторить запрос от имени пользователя в это окно.
+  Это свойство всех webhook-флоу с `initData` (`checkin-api`, `my-qr-api`),
+  не только этого.
 - **Оба `send_text_message` — `continueOnFailure`**: заблокировавший бота
-  получатель не должен прерывать ни цикл, ни ответ владельцу; ответ странице
+  получатель не должен прерывать ни цикл, ни ответ организатору; ответ странице
   к этому моменту уже отдан.
 - **Событие `emtzwtmr32apl`** (13 символов) формой не открывается: `id` длиннее
   slug'а `fn-parse-start`, у него и deep link не работает. Это дефект данных
