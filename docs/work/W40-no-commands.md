@@ -308,6 +308,68 @@
   обещание покрытия неполно (замечание 1), а число фикстур расходится
   (замечание 2).
 
+### Круг 4 — повторное ревью после третьей починки (коммит `ef463d0`)
+
+- **Ревьюер**: агент-ревьюер (независимый) · **Дата**: 2026-09-15 · **Вердикт**: есть замечания
+- **Критерий вердикта**: блокер — только если форма проходит (exit 0) и
+  действительно распознаёт команду, отличную от `start`. Fail-closed отказ
+  (exit 1, пусть с грубым сообщением) на любой недоказуемой форме —
+  ожидаемое поведение, не замечание. Ложные срабатывания на осмысленных
+  формах, встречающихся в реальном коде проекта, — «важно/на будущее».
+
+#### Замечания
+
+1. **блокер** — голые вызовы (`f(command)`) чекер не смотрит вообще: цикл
+   разбора вызовов привязан к точке/`?.`, а ветка «передача команды в вызов»
+   живёт внутри него. На копии реального `flows/tg-router.json` (только
+   temp) проходят с `нарушений: 0`, exit 0 и правда распознают `/events`:
+   - `const known = ['start', 'events']; const isKnown = (c) => known.includes(c); if (isKnown(command)) route = 'events_list';`
+   - `const known2 = ['start', 'events']; const isKnown2 = (c) => known2.includes(c); const a = command; if (isKnown2(a)) …`
+   - `function isKnown3(c) { return known3.includes(c); } …` — то же самое.
+   Асимметрия доказывает, что это дефект, а не «предел тайнт-анализа»:
+   `obj.f(command)` валится (`передача команды в вызов `f(command)`
+   недоказуема`), а `f(command)` — нет; точка обходит проверку. Туда же
+   `encodeURIComponent(command)` и просто `if (f(command)) …` с неизвестной
+   `f`. Что закрывает дыру (чинит владелец): скан голых вызовов
+   `IDENT(args)`, где аргумент содержит seed, — отказ, кроме allowlist
+   (`String`/`Number`/`Boolean`); этого достаточно, чтобы helper-обёртка над
+   контейнером не проходила.
+
+2. **на будущее** — ложные срабатывания на осмысленных формах (все
+   fail-closed, не блокируют): `command.length === 0` → exit 1, хотя
+   `command.length > 0` проходит (несогласованность; в проекте стиль
+   `command !== ''`); `String(command).trim() === 'start'` → exit 1 (докстринг
+   разрешает и обёртку, и нормализацию, но не комбинацию);
+   `[...['start']].includes(command)` → exit 1 (спред литерала из одного
+   `start`). Мёртвый `EQ_DELIMS` и комментарий, ссылающийся на удалённый
+   `CALL_RE`; в докстринге и ADR по-прежнему «26 фикстур», фактически 33.
+   Ложное круга 3 (`['start'].includes(command)`) исправлено.
+
+#### Проверено
+
+- Все 17 форм круга 3 валят exit 1: `KNOWN.includes(command.trim())` (и
+  `toLowerCase`/`String`-варианты), `Object.keys(...).includes(command.trim())`,
+  `Set.has(command.trim())`, `Map.get(command.trim())`, `/re/.test(command.trim())`,
+  `command.toLowerCase().startsWith('ev')`, `trim().endsWith/match/replace/indexOf/includes`
+  с чужим литералом, `MAP[command.trim()]`, `command.trim() in MAP`,
+  `R['get'](command)`, `command.match?.(/events/)`.
+- Новые формы: алиасы `c = command.trim()` и цепочки `a = command; b = a`
+  в `KNOWN.includes(...)` — exit 1; `[command].includes(x)`,
+  `x = [...[command]]`, `String(command).includes('event')`,
+  `JSON.stringify(command)`, `command.concat/padEnd/split('')/repeat/normalize()`,
+  `arr.find((x) => x === command)`, `obj.f(command)` — exit 1 (часть с грубым
+  «контейнер недоказуем» — ожидаемый fail-closed). Проходят только
+  интерпроцедурные (замечание 1).
+- Легальные формы — exit 0: `command.trim() === 'start'`, `case ('start')`,
+  `String(command) === 'start'`, `(command) === 'start'`, `raw = command.split('@'); raw[0]`,
+  `['start'].includes(command)`, `const L = ['start']; L.includes(command)`,
+  `command.length > 0`, `command?.trim() === 'start'`, `Boolean(command)`,
+  `switch (command) default`.
+- `--self-test` — ok; чистый прогон (`i18n/*.json flows/*.json`) — 17 флоу,
+  0 нарушений; живой `step_1`/`step_10` — без замечаний; хук/CI и бит
+  `100755` на месте; по `flows/` и `i18n/` относительно `main` — 0 изменений;
+  коммит `ef463d0` трогает только `tools/check-commands.py` и журнал.
+
 ## Хвосты и блокеры
 
 - **Живые прогоны ждут человека:** «старая команда отвечает меню» проверяется

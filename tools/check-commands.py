@@ -35,9 +35,10 @@
   отвергается.
 
 **Предел честности.** Это не песочница и не тайнт-анализ общего вида: чекер
-ловит формы из реального кода и обходов независимого ревью (26 из 26
-подсаженных — включая нормализацию, контейнеры и optional chaining) и
-отказывает на недоказуемом. Сознательная обфускация (сборка строки из кодов,
+ловит формы из реального кода и обходов независимого ревью (накопленная
+батарея подсажек на копии живого экспорта — нормализация, контейнеры,
+цепочки методов, голые вызовы, optional chaining) и отказывает
+на недоказуемом. Сознательная обфускация (сборка строки из кодов,
 `eval`) не детектируется — такой код виден в диффе, последний рубеж
 остаётся за ревью, и это записано в ADR-0025.
 
@@ -102,7 +103,6 @@ LIT_ALLOWLIST = {"start", "@"}
 EQ_OPS = ("!==", "===", "!=", "==")
 # Сравнение командной переменной с этими константами — не разбор команды.
 SAFE_OPERANDS = {"undefined", "null", "true", "false"}
-EQ_DELIMS = ";&|,)]}\n?:"
 
 
 def walk(node, out):
@@ -290,7 +290,7 @@ def strip_parens(text):
 
 # Операнд допустим, если это командная переменная сама по себе, обёрнутая
 # в String()/скобки, с цепочкой методов без вложенных скобок. Аргументы
-# методов проверяются отдельно (CALL_RE).
+# методов проверяются отдельно (разбор вызовов ниже).
 OPERAND_RE = re.compile(
     r"^(?:String\s*\(\s*)?%s(?:\s*\))?(?:\s*(?:\?\.|\.)\s*[A-Za-z_$][\w$]*\s*\([^()]*\))*$" % IDENT
 )
@@ -327,19 +327,26 @@ def operand_is_simple(expr, seeds):
     if not OPERAND_RE.fullmatch(text):
         return False
     body = text
-    if body.startswith("String"):
-        body = re.sub(r"^String\s*\(\s*", "", body)
-        if body.endswith(")"):
-            body = body[:-1].strip()
+    wrap = re.match(r"^String\s*\(", body)
+    if wrap:
+        close_idx = balanced(body, body.index("("))
+        if close_idx > 0:
+            body = (body[wrap.end():close_idx] + body[close_idx + 1:]).strip()
     # Голова — часть до первой цепочки вызовов; перебираем разбиения по точкам,
     # потому что жадный IDENT съел бы первый метод.
     for i, ch in enumerate(body + "."):
         if ch != ".":
             continue
         head, tail = body[:i], body[i:]
-        if head and IDENT_RE.fullmatch(head) and seeded(head, seeds) and TAIL_RE.fullmatch(tail):
+        if (
+            head
+            and IDENT_RE.fullmatch(head)
+            and any(seg in seeds for seg in head.split("."))
+            and TAIL_RE.fullmatch(tail)
+        ):
             return True
-    return False
+    # без вызовов: member-выражение, где хоть один сегмент — команда
+    return bool(IDENT_RE.fullmatch(body)) and any(seg in seeds for seg in body.split("."))
 
 
 def literal_of(text):
@@ -447,6 +454,13 @@ def check_source_code(src, where, problems):
             fail("%s — контейнер пуст/недоказуем" % context)
             return
         for e in elements:
+            if e.startswith("..."):
+                inner = e[3:].strip()
+                if inner.startswith("[") and balanced(inner, 0) == len(inner) - 1:
+                    check_container(split_top_level(inner[1:-1]), context)
+                    continue
+                fail("%s: спред %r недоказуем" % (context, e))
+                continue
             lit, dynamic = literal_of(e)
             if lit is None and not dynamic:
                 fail("%s содержит не-литерал %r (недоказуемо)" % (context, e))
@@ -559,6 +573,22 @@ def check_source_code(src, where, problems):
             for a in split_top_level(args)
         ):
             fail("передача команды в вызов `%s(%s)` недоказуема" % (method, args.strip()))
+
+    for m in re.finditer(r"(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(", src):
+        callee = m.group(1)
+        if callee in ("String", "Number", "Boolean", "Array", "Object") or callee in (
+            "if", "else", "for", "while", "switch", "catch", "return", "typeof", "do",
+            "function", "new", "await", "delete", "void", "in", "of", "case", "break",
+            "continue", "throw", "try", "finally", "import", "super", "yield", "keyof", "instanceof",
+        ):
+            continue
+        open_idx = src.index("(", m.end() - 1)
+        close_idx = balanced(src, open_idx)
+        if close_idx < 0:
+            continue
+        args = src[open_idx + 1:close_idx]
+        if looks_seeded(args, seeds):
+            fail("передача команды в вызов `%s(%s)` недоказуема" % (callee, args.strip()))
 
     for m in re.finditer(r"\[", src):
         close_idx = balanced(src, m.start())
@@ -758,6 +788,18 @@ def self_test():
             code = code.replace("if (command === 'start')", "if (KNOWN3.includes(command.trim()))")
         elif src == "alias-subscript-ok":
             code = code + "\nconst raw9 = command.split('@');\nroute = raw9[0];"
+        elif src == "helper-call":
+            code = code + "\nconst known9 = ['start', 'events'];\nconst isKnown9 = (c) => known9.includes(c);\nif (isKnown9(command)) { route = 'x'; }"
+        elif src == "bare-call":
+            code = code + "\nconst f9 = (x) => x;\nif (f9(command)) { route = 'x'; }"
+        elif src == "encode-call":
+            code = code + "\nconst z9 = encodeURIComponent(command);"
+        elif src == "length-ok":
+            code = code + "\nif (command.length === 0) { route = 'none'; }"
+        elif src == "string-trim-ok":
+            code = code + "\nif (String(command).trim() === 'start') { route = 'menu'; }"
+        elif src == "spread-ok":
+            code = code + "\nif ([...['start']].includes(command)) { route = 'menu'; }"
         elif src == "normalize-ok":
             code = code.replace("if (command === 'start')", "if (command.trim() === 'start')")
         elif src == "case-parens":
@@ -815,6 +857,9 @@ def self_test():
         ("optional call", "optional-call"),
         ("цепочка методов с чужим литералом", "chain-strict"),
         ("контейнер с преобразованным аргументом", "container-transformed"),
+        ("вызов функции с командой", "helper-call"),
+        ("голый вызов с командой", "bare-call"),
+        ("encodeURIComponent", "encode-call"),
         ("command['endsWith']", "bracket-method"),
         ("command[0]", "char-index"),
         ("slice-сравнение", "slice-compare"),
@@ -829,6 +874,9 @@ def self_test():
     check_flow("syn", mutate("startsWith-ok"), problems)
     check_flow("syn", mutate("normalize-ok"), problems)
     check_flow("syn", mutate("alias-subscript-ok"), problems)
+    check_flow("syn", mutate("length-ok"), problems)
+    check_flow("syn", mutate("string-trim-ok"), problems)
+    check_flow("syn", mutate("spread-ok"), problems)
     check_flow("syn", mutate("case-parens"), problems)
     check_flow("syn", mutate("no-entry"), problems)
     check_slash("https://app.flow.aiqadam.org/api/v1/webhooks/x/sync", "syn", problems)
