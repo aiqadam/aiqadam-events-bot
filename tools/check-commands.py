@@ -190,12 +190,31 @@ def command_idents(src):
                 open_idx = matching_open(st, m2.start())
                 if open_idx < 0:
                     continue
+                rhs_end = min([x for x in (st.find(";", m2.end()), st.find("}", m2.end())) if x >= 0] or [len(st)])
+                rhs = st[m2.end():rhs_end].strip()
+                if not (rhs.startswith("{") or (IDENT_RE.fullmatch(rhs) and rhs in seeds)):
+                    continue
                 for target in pattern_targets(st[open_idx:m2.start() + 1]):
                     if target not in seeds:
                         seeds.add(target)
                         grew = True
                     origin.add(target)
                     names.append(target)
+            for m2 in re.finditer(r"catch\s*\(\s*([A-Za-z_$][\w$]*)\s*\)", src):
+                head = src[:m2.start()]
+                try_idx = head.rfind("try")
+                if try_idx < 0:
+                    continue
+                body_start = src.find("{", try_idx)
+                body_end = balanced(src, body_start) if body_start >= 0 else -1
+                if body_end < 0 or body_end > m2.start():
+                    continue
+                if looks_seeded(src[body_start:body_end], seeds):
+                    caught = m2.group(1)
+                    if caught not in seeds:
+                        seeds.add(caught)
+                        grew = True
+                    origin.add(caught)
             if not names:
                 continue
             rhs = strip_parens((st.split("=", 1)[1] if "=" in st else "").strip())
@@ -879,6 +898,10 @@ def self_test():
             code = code.replace("if (command === 'start')", "if (command?.toLowerCase() === 'events')")
         elif src == "iife":
             code = code + "\nif (((c) => c === 'events')(command)) { route = 'x'; }"
+        elif src == "catch-throw":
+            code = code + "\ntry { throw command; } catch (c7) { if (c7 === 'events') { route = 'x'; } }"
+        elif src == "destructure-nonseed":
+            code = code + "\nif (command === 'start') { const { eventId } = parsed9; }\nconst ok9 = eventId === 'e1';"
         elif src == "destructure-nested":
             code = code + "\nconst { a5: { c55 } } = { a5: { c55: command } };\nif (c55 === 'events') { route = 'x'; }"
         elif src == "destructure":
@@ -953,6 +976,7 @@ def self_test():
         ("IIFE с командой", "iife"),
         ("деструктуризация с командой", "destructure"),
         ("вложенная деструктуризация с командой", "destructure-nested"),
+        ("утечка через catch", "catch-throw"),
         ("command['endsWith']", "bracket-method"),
         ("command[0]", "char-index"),
         ("slice-сравнение", "slice-compare"),
@@ -971,6 +995,7 @@ def self_test():
     check_flow("syn", mutate("string-trim-ok"), problems)
     check_flow("syn", mutate("spread-ok"), problems)
     check_flow("syn", mutate("opt-chain-ok"), problems)
+    check_flow("syn", mutate("destructure-nonseed"), problems)
     check_flow("syn", mutate("case-parens"), problems)
     check_flow("syn", mutate("no-entry"), problems)
     check_slash("https://app.flow.aiqadam.org/api/v1/webhooks/x/sync", "syn", problems)
