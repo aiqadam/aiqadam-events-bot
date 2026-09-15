@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Qadam Events — прототип UI</title>
+    <!-- Бренд — из вендоренной копии miniapp/src/vendor/brand/ (деплой копирует в prototypes/vendor/, ADR-0026) -->
+    <link rel="stylesheet" href="vendor/tokens.css" />
+    <link rel="stylesheet" href="vendor/components.css" />
+    <link rel="stylesheet" href="proto.css" />
+  </head>
+  <body>
+    <main class="proto-page">
+      <header class="proto-top">
+        <h1>AI Qadam Events — UI-прототип</h1>
+        <span class="badge badge-warning">прототип, не продукт</span>
+      </header>
+      <p class="proto-note">
+        Кликабельный прототип двух поверхностей: мок чата Telegram и мок Mini App.
+        Сначала — построенное (v0.1: гость / овнер / контролёр), затем — предложения
+        v0.2 (W13/W14/W38/W39), помеченные бейджем «предложение». Инстанс не трогается,
+        данных на сервере нет (ADR-0026, пакет W41).
+      </p>
+
+      <nav class="proto-nav">
+        <a class="btn btn-secondary" href="chat.html">Мок чата</a>
+        <a class="btn btn-secondary" href="app.html">Мок Mini App</a>
+        <button type="button" class="btn btn-ghost" data-proto-theme-btn onclick="PROTO.toggleTheme()">Тёмная тема</button>
+      </nav>
+
+      <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 600;">Сквозные сценарии</h2>
+      <div class="proto-scenarios">
+        <a class="btn btn-primary" href="chat.html?s=guest">Сценарий: гость</a>
+        <a class="btn btn-primary" href="chat.html?s=owner">Сценарий: овнер</a>
+        <a class="btn btn-primary" href="chat.html?s=controller">Сценарий: контролёр</a>
+      </div>
+
+      <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-top: 28px;">
+        Матрица «роль × вход × функция»
+      </h2>
+      <div class="proto-grid">
+        <section class="proto-cell card" style="padding: 16px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong>Гость</strong><span class="req-badge built">PAR-1…PAR-6</span>
+          </div>
+          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
+            Вход — deep link <span class="mono" style="font-size:12px;">?start=e&lt;id&gt;</span> из ссылки регистрации.
+          </p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
+            <li>Карточка ивента + согласие на ПД — одним экраном (ADR-0017)</li>
+            <li>Согласие на рассылку — отдельный необязательный шаг (PAR-2)</li>
+            <li>Билет с QR в Mini App (<span class="mono" style="font-size:12px;">#/ticket</span>)</li>
+            <li>Напоминания 24ч / 2ч, послесловие — <span class="req-badge proposal">W12</span></li>
+          </ul>
+        </section>
+
+        <section class="proto-cell card" style="padding: 16px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong>Овнер (staff)</strong><span class="req-badge built">OWN-1…OWN-15</span>
+          </div>
+          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
+            Вход — карточка меню <span class="mono" style="font-size:12px;">/start</span> → «Создать ивент» (кнопка <span class="mono" style="font-size:12px;">web_app</span>).
+          </p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
+            <li>Создание и правка ивента в <span class="mono" style="font-size:12px;">#/manage</span> (OWN-1…OWN-5)</li>
+            <li>Ссылка-приглашение после публикации (OWN-6, W37)</li>
+            <li>Контролёры ивента по <span class="mono" style="font-size:12px;">telegram_id</span> (W36)</li>
+            <li>Участники, счётчики, экспорт — <span class="req-badge proposal">W13</span></li>
+            <li>Рассылка пересылкой — <span class="req-badge proposal">W14</span></li>
+          </ul>
+        </section>
+
+        <section class="proto-cell card" style="padding: 16px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong>Контролёр</strong><span class="req-badge built">STF-1…STF-4</span>
+          </div>
+          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
+            Вход — кнопка «Сканер чекина» в меню (ближайший будущий ивент) → <span class="mono" style="font-size:12px;">#/scan</span>.
+          </p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
+            <li>Сканер не закрывается между людьми (STF-1)</li>
+            <li>Четыре исхода: успех / уже отмечен / нет регистрации / другой ивент (STF-4)</li>
+            <li>Права проверяются по конкретному <span class="mono" style="font-size:12px;">event_id</span> (STF-2)</li>
+          </ul>
+        </section>
+
+        <section class="proto-cell card" style="padding: 16px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong>Staff + контролёр</strong><span class="req-badge built">совмещение ролей</span>
+          </div>
+          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
+            Одна строка в <span class="mono" style="font-size:12px;">staff</span> (чаптер) и строка в <span class="mono" style="font-size:12px;">event_staff</span> (ивент).
+          </p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
+            <li>Меню показывает все четыре кнопки (порядок фиксирован, W34)</li>
+            <li>Права на правку — по чаптеру, на чекин — по ивенту (ADR-0024)</li>
+          </ul>
+        </section>
+      </div>
+
+      <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-top: 28px;">Состояния, которые ломают экран</h2>
+      <div class="proto-grid">
+        <div class="proto-cell proto-state error">
+          <span class="proto-state-title">401 — устаревший initData</span>
+          <p class="empty-desc">«Данные Mini App устарели — переоткройте приложение» (окна по флоу, Q49)</p>
+        </div>
+        <div class="proto-cell proto-state error">
+          <span class="proto-state-title">403 — нет прав</span>
+          <p class="empty-desc">«Нет прав на чекин этого ивента» / «Нет прав на правку» (STF-2, ADR-0024)</p>
+        </div>
+        <div class="proto-cell proto-state">
+          <span class="proto-state-title">Нет связи</span>
+          <p class="empty-desc">«Нет соединения. Проверьте сеть и повторите.» + кнопка «Повторить»</p>
+        </div>
+        <div class="proto-cell proto-state">
+          <span class="proto-state-title">Сервер ответил не-JSON / ошибка в ответе</span>
+          <p class="empty-desc">«Сервер ответил неожиданно. Повторите чуть позже.» — различимо от нет-связи</p>
+        </div>
+        <div class="proto-cell proto-state">
+          <span class="proto-state-title">Светлая / тёмная тема</span>
+          <p class="empty-desc">Из <span class="mono" style="font-size:12px;">Telegram.WebApp.colorScheme</span>; переключатель справа внизу</p>
+        </div>
+        <div class="proto-cell proto-state">
+          <span class="proto-state-title">Safe Area (инсеты)</span>
+          <p class="empty-desc">Контент под шапкой/жестовой зоной — вариант с инсетами на экранах (Q48 живым девайсом не закрывается)</p>
+        </div>
+      </div>
+
+      <p class="proto-note" style="margin-top: 28px;">
+        Бейдж <span class="req-badge built">требование</span> — экран построен в v0.1;
+        <span class="req-badge proposal">предложение</span> — пакет v0.2 (W13/W14/W38/W39),
+        решения по нему ещё нет.
+      </p>
+    </main>
+    <script src="proto.js"></script>
+  </body>
+</html>

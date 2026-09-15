@@ -1,0 +1,267 @@
+/* Прототип W41 — мок-хром, пузыри чата, бейджи, состояния.
+   Цвет, шрифт и радиусы — только токенами бренда (ADR-0019 п. 2, ADR-0026).
+   Это прототип-артефакт, не продукт: файл не входит в бандл SPA и не линкуется
+   из бота (ADR-0026). Веб-шрифты не грузятся (ADR-0020). */
+
+/* ---------- Страница прототипа ---------- */
+.proto-page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  padding: 24px 16px 64px;
+}
+.proto-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.proto-top h1 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.proto-top .badge { flex-shrink: 0; }
+.proto-note {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  max-width: 640px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+.proto-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+@media (min-width: 900px) {
+  .proto-grid { grid-template-columns: 1fr 1fr; max-width: 1080px; }
+}
+.proto-cell { display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------- Сценарии ---------- */
+.proto-scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+/* ---------- Мок-хром телефона ---------- */
+.proto-phone {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: var(--shadow-md);
+}
+.proto-phone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.proto-phone-screen {
+  height: 640px;
+  overflow-y: auto;
+  background: var(--background);
+  position: relative;
+}
+.proto-phone-screen.inset {
+  /* Safe Area — прототип показывает inset-варианты (Q48 не закрывает) */
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+
+/* ---------- Мок чата ---------- */
+.proto-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  min-height: 100%;
+}
+.msg { max-width: 84%; line-height: 1.4; }
+.msg.bot {
+  align-self: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: 4px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.msg.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius-lg);
+  border-bottom-right-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.msg .time {
+  display: block;
+  text-align: right;
+  font-size: 10px;
+  opacity: 0.55;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+.msg-card {
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.msg-card .msg-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+}
+.msg-card .msg-card-label { color: var(--muted-foreground); }
+.msg-card .msg-card-row { display: flex; gap: 8px; align-items: baseline; }
+.msg-card .msg-card-row .msg-card-label { min-width: 72px; flex-shrink: 0; }
+.msg-card .actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.msg-card .actions .row { display: flex; gap: 8px; }
+.proto-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: flex-start;
+  width: 84%;
+}
+.proto-btn-row .proto-inline-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+  text-align: left;
+}
+.proto-btn-row .proto-inline-btn:hover { border-color: var(--ring); }
+.proto-btn-row .proto-inline-btn .arrow { color: var(--muted-foreground); }
+
+/* ---------- Мок Mini App ---------- */
+.proto-app {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  min-height: 100%;
+}
+.proto-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.proto-app-header h2 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.proto-app .card { display: flex; flex-direction: column; gap: 8px; }
+.proto-app .card p { margin: 0; font-size: 14px; line-height: 1.4; }
+.proto-app .card .meta { color: var(--muted-foreground); font-size: 13px; }
+
+/* ---------- Бейдж «прототип» и метки требований ---------- */
+.req-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.req-badge.proposal {
+  border-color: color-mix(in oklch, var(--warning) 40%, transparent);
+  background: color-mix(in oklch, var(--warning) 12%, transparent);
+  color: var(--warning);
+}
+.req-badge.built {
+  border-color: color-mix(in oklch, var(--success) 40%, transparent);
+  background: color-mix(in oklch, var(--success) 12%, transparent);
+  color: var(--success);
+}
+.proto-screen-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.proto-screen-tag .proto-title { font-size: 13px; font-weight: 500; }
+
+/* ---------- Состояния, которые ломают экран ---------- */
+.proto-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  background: var(--card);
+}
+.proto-state.error { border-color: var(--destructive); }
+.proto-state .proto-state-title { font-weight: 500; }
+.proto-state .empty-desc { margin: 0; }
+.proto-loading { color: var(--muted-foreground); font-size: 13px; }
+
+/* ---------- Тема-переключатель (мок; в продукте — Telegram) ---------- */
+.proto-theme-toggle {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 50;
+}
+
+/* ---------- Ссылки-навигация прототипа ---------- */
+.proto-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}

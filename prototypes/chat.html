@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Qadam Events — мок чата</title>
+    <link rel="stylesheet" href="vendor/tokens.css" />
+    <link rel="stylesheet" href="vendor/components.css" />
+    <link rel="stylesheet" href="proto.css" />
+  </head>
+  <body>
+    <main class="proto-page">
+      <header class="proto-top">
+        <h1>Мок чата Telegram</h1>
+        <span class="badge badge-warning">прототип, не продукт</span>
+      </header>
+      <nav class="proto-nav">
+        <a class="btn btn-secondary" href="index.html">На старт</a>
+        <a class="btn btn-primary" href="chat.html?s=guest">Гость</a>
+        <a class="btn btn-primary" href="chat.html?s=owner">Овнер</a>
+        <a class="btn btn-primary" href="chat.html?s=controller">Контролёр</a>
+        <a class="btn btn-ghost" href="app.html">Мок Mini App</a>
+      </nav>
+
+      <div class="proto-phone" style="max-width: 420px;">
+        <div class="proto-phone-bar">
+          <span>AI Qadam Events · бот</span>
+          <span data-proto-chat-role></span>
+        </div>
+        <div class="proto-phone-screen">
+          <div class="proto-chat" id="chat"></div>
+        </div>
+      </div>
+
+      <p class="proto-note" style="margin-top:16px;">
+        Карточка диалога редактируется на месте (ADR-0017 п. 1): одно сообщение
+        ведёт весь диалог. Кнопка <span class="mono" style="font-size:12px;">web_app</span>
+        переводит на мок Mini App. Тексты — из <span class="mono" style="font-size:12px;">i18n/ru.json</span>;
+        предложения v0.2 — словарём прототипа, с бейджем «предложение».
+      </p>
+    </main>
+    <script src="proto.js"></script>
+    <script src="scenarios.js"></script>
+    <script src="chat.js"></script>
+  </body>
+</html>

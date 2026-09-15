@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Qadam Events — мок Mini App</title>
+    <link rel="stylesheet" href="vendor/tokens.css" />
+    <link rel="stylesheet" href="vendor/components.css" />
+    <link rel="stylesheet" href="proto.css" />
+  </head>
+  <body>
+    <main class="proto-page">
+      <header class="proto-top">
+        <h1>Мок Mini App</h1>
+        <span class="badge badge-warning">прототип, не продукт</span>
+      </header>
+      <nav class="proto-nav">
+        <a class="btn btn-secondary" href="index.html">На старт</a>
+        <a class="btn btn-secondary" href="chat.html">Мок чата</a>
+        <a class="btn btn-secondary" href="app.html#/ticket?event_id=demo">Билет</a>
+        <a class="btn btn-secondary" href="app.html#/scan?event_id=demo">Сканер</a>
+        <a class="btn btn-secondary" href="app.html#/manage">Ивенты</a>
+        <button type="button" class="btn btn-ghost" data-proto-theme-btn onclick="PROTO.toggleTheme()">Тёмная тема</button>
+      </nav>
+
+      <div class="proto-phone" style="max-width: 420px;">
+        <div class="proto-phone-bar">
+          <span id="app-bar-title">Mini App</span>
+          <span>Telegram WebView</span>
+        </div>
+        <div class="proto-phone-screen" id="screen"></div>
+      </div>
+
+      <p class="proto-note" style="margin-top:16px;">
+        Экраны с фейковыми данными. Собрано — бейдж <span class="req-badge built">требование</span>;
+        предложения v0.2 (W13/W14/W38/W39) — <span class="req-badge proposal">предложение</span>.
+        Возврат в чат — ссылкой «← в чат» (переходы чат ↔ Mini App в прототипе).
+      </p>
+    </main>
+    <script src="proto.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
