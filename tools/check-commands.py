@@ -186,16 +186,16 @@ def command_idents(src):
             if not any(re.search(r"\b%s\b" % re.escape(s), st) for s in seeds):
                 continue
             names = ASSIGN_RE.findall(st)
-            for pat in re.finditer(r"\{([^{}]*)\}\s*=", st):
-                for prop in split_top_level(pat.group(1)):
-                    target = prop.split(":", 1)[1] if ":" in prop else prop
-                    target = target.strip().lstrip("...").strip()
-                    if target and IDENT_RE.fullmatch(target):
-                        if target not in seeds:
-                            seeds.add(target)
-                            grew = True
-                        origin.add(target)
-                        names.append(target)
+            for m2 in re.finditer(r"\}\s*=", st):
+                open_idx = matching_open(st, m2.start())
+                if open_idx < 0:
+                    continue
+                for target in pattern_targets(st[open_idx:m2.start() + 1]):
+                    if target not in seeds:
+                        seeds.add(target)
+                        grew = True
+                    origin.add(target)
+                    names.append(target)
             if not names:
                 continue
             rhs = strip_parens((st.split("=", 1)[1] if "=" in st else "").strip())
@@ -223,6 +223,59 @@ def literal_of(text):
         return None, False
     value = next(g for g in m.groups() if g is not None)
     return value, "${" in value
+
+
+
+def split_top_level_char(chunk, sep):
+    """Индексы sep на верхнем уровне (скобки/кавычки учтены)."""
+    out = []
+    depth = 0
+    quote = ""
+    i = 0
+    while i < len(chunk):
+        ch = chunk[i]
+        if quote:
+            if ch == "\\":
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+        elif ch in "'\"`":
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == sep and depth == 0:
+            out.append(i)
+        i += 1
+    return out
+
+
+def pattern_targets(text):
+    """Имена, которые принимает шаблон деструктуризации (рекурсивно)."""
+    text = strip_parens(text.strip())
+    if text.startswith("{") and balanced(text, 0) == len(text) - 1:
+        names = []
+        for part in split_top_level(text[1:-1]):
+            colons = split_top_level_char(part, ":")
+            if colons:
+                names.extend(pattern_targets(part[colons[0] + 1:]))
+                continue
+            name = part.split("=", 1)[0].strip().lstrip("...").strip()
+            if name and IDENT_RE.fullmatch(name):
+                names.append(name)
+        return names
+    name = text.split("=", 1)[0].strip().lstrip("...").strip()
+    return [name] if name and IDENT_RE.fullmatch(name) else []
+
+
+def matching_open(src, close_idx):
+    """Индекс `{`, чья сбалансированная пара — close_idx (`}`)."""
+    for m in re.finditer(r"\{", src[:close_idx]):
+        if balanced(src, m.start()) == close_idx:
+            return m.start()
+    return -1
 
 
 def balanced(src, open_idx):
@@ -826,6 +879,8 @@ def self_test():
             code = code.replace("if (command === 'start')", "if (command?.toLowerCase() === 'events')")
         elif src == "iife":
             code = code + "\nif (((c) => c === 'events')(command)) { route = 'x'; }"
+        elif src == "destructure-nested":
+            code = code + "\nconst { a5: { c55 } } = { a5: { c55: command } };\nif (c55 === 'events') { route = 'x'; }"
         elif src == "destructure":
             code = code + "\nconst { c5 } = { c5: command };\nif (c5 === 'events') { route = 'x'; }"
         elif src == "opt-chain-ok":
@@ -897,6 +952,7 @@ def self_test():
         ("?. в сравнении", "opt-chain-compare"),
         ("IIFE с командой", "iife"),
         ("деструктуризация с командой", "destructure"),
+        ("вложенная деструктуризация с командой", "destructure-nested"),
         ("command['endsWith']", "bracket-method"),
         ("command[0]", "char-index"),
         ("slice-сравнение", "slice-compare"),
