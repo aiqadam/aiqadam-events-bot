@@ -32,7 +32,7 @@ const esc = (v) => String(v === undefined || v === null ? '' : v)
 ## Где НЕ используется и почему
 
 Списки и служебные сообщения (`events-list`, `my-regs`, `my-reg-cancel`,
-`manage-open`, `manage-api`) идут с `format: "None"`: текст состоит из наших
+`manage-api`) идут с `format: "None"`: текст состоит из наших
 строк и подставленных значений без разметки, а `None` снимает весь класс
 ошибок экранирования.
 

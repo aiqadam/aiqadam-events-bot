@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 18 | [flows/](flows/) |
+| Флоу | 17 | [flows/](flows/) |
 | Таблицы | 12 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 4 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL` | [variables.md](variables.md) |
@@ -25,12 +25,11 @@ W26 закрыт («готов», независимое ревью, три кр
 | Группа | Флоу |
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
-| Меню-хаб | [menu](flows/menu.md) — холостой `/start`, `/menu`, `/help` |
+| Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
 | Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
 | Списки и отмена участника (W06) | [events-list](flows/events-list.md), [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
 | Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md) |
-| Вход на страницу `manage` из чата | [manage-open](flows/manage-open.md) — кнопка `web_app` по `/newevent`, `/editevent <id>`, `/manage [<id>]`; ивент создаётся и правится только формой (ADR-0017 п. 3) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -75,9 +74,8 @@ W26 закрыт («готов», независимое ревью, три кр
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
 | `#/manage` и `#/manage/:id` | staff чаптера создаёт и правит ивент (OWN-1…OWN-5, OWN-15) и ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`) | [manage-api](flows/manage-api.md) |
 
-Роут `manage` открывается кнопкой из [manage-open](flows/manage-open.md)
-(`/newevent`, `/editevent <id>`, `/manage [<id>]` → `web_app` на `#/manage` или
-`#/manage/:id`); права на создание **и** правку решает `manage-api` по `initData`,
+Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
+(`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,
 таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)). Фото афиши
 форма не трогает ([Q46](../docs/OPEN-QUESTIONS.md#q46), временно снято из OWN-1);

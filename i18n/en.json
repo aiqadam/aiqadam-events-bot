@@ -10,7 +10,6 @@
   "common.value.none": "not set",
   "common.err.generic": "Something went wrong. Please try again a bit later.",
   "common.err.forbidden": "You do not have permission for this action.",
-  "common.err.unknown_command": "I do not understand that command. /start to go back.",
   "common.err.session_expired": "The dialog was interrupted. Let us start over: /start",
   "common.err.event_not_found": "Event not found.",
   "start.greeting": "Hi {name}! This is the AI Qadam events bot.",

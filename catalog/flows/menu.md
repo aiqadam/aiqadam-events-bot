@@ -2,7 +2,8 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
-  (`route: menu`: голый `/start`, `/start` с неразобранным payload, `/menu`, `/help`)
+  (`route: menu`: голый `/start`, `/start` с неразобранным payload, любая
+  незнакомая команда — [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md))
 - **Назначение**: меню-хаб — одно сообщение с inline-кнопками, набор которых
   зависит от ролей пользователя (гость / организатор / контролёр). Заменяет молчание на
   холостой `/start` ([W34](../../docs/work/W34-menu.md)).

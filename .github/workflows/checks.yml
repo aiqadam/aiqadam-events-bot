@@ -1,7 +1,7 @@
 name: checks
 
 # Офлайн-проверки репозитория на каждый PR и push в main.
-# Без секретов: обе проверки читают только закоммиченные файлы.
+# Без секретов: все проверки читают только закоммиченные файлы.
 #
 # Чего здесь НЕТ и почему: tools/check-migrations.py нужен ключ
 # платформы и живой инстанс — в CI без секретов он не запускается.
@@ -24,5 +24,7 @@ jobs:
         run: tools/check-export-secrets.sh
       - name: Тексты флоу == i18n/ru.json
         run: python3 tools/check-texts.py i18n/ru.json flows/*.json
+      - name: Команд, кроме /start, нет (ADR-0025)
+        run: python3 tools/check-commands.py i18n/*.json flows/*.json
       - name: Синтаксис python-инструментов
         run: python3 -m py_compile tools/*.py
