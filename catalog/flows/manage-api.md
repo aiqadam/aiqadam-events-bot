@@ -4,10 +4,11 @@
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
   `POST /api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync`
 - **Назначение**: сервер формы ивента роут `#/manage` SPA (`miniapp/src/routes/Manage.tsx`)
-  ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): отдаёт staff'у
-  ивент для правки, принимает создание/правку (OWN-1…OWN-5, OWN-15) и ведёт
-  список контролёров ивента (W36 — ручной путь вместо инвайт-ссылок W10).
-  Права решаются здесь, страница их не решает.
+  ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): список ивентов
+  чаптера (W37 — вход в правку без команд, [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md)),
+  выдача staff'у ивент для правки, приём создания/правки (OWN-1…OWN-5, OWN-15),
+  ссылка регистрации и список контролёров ивента (W36 — ручной путь вместо
+  инвайт-ссылок W10). Права решаются здесь, страница их не решает.
 - **Flow ID (MCP)**: `CcGPwuW4ws5hkcaOPerEG`
 
 ## Вход
@@ -17,7 +18,7 @@
 | Поле | Что |
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
-| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав |
+| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `list` — ивенты чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав |
 | `staffTelegramId` | только при `staff_add`/`staff_remove`: `telegram_id` контролёра; формат (цифры 8–16) проверяет `step_20` |
 | `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка и отказ) |
 | `newId` | только при создании: slug того же вида, который страница генерирует один раз на открытие формы — ключ идемпотентности (ADR-0003); ивент получает этот `id` |
@@ -52,17 +53,20 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_29 (remove) | `return_response` (`stop`) | `200` с обновлённым списком |
 | step_30 (Otherwise) | `return_response` (`stop`) | `200` список / `422` валидация / `400` |
 | step_6 (valid) | `tables-find-records events` | ивент по `id`, `limit: 1` |
-| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты; исход `outcome` = `load` / `save` / `staff` / `error` |
-| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
+| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `error` |
+| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `events_list` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
 | step_9 (Otherwise) | `return_response` (`stop`) | `403` forbidden / `422` validation / `400` |
-| step_10 (load) | `return_response` (`stop`) | `200`, `event` — поля ивента для формы (+ `hasPhoto`) |
+| step_10 (load) | `return_response` (`stop`) | `200`, `event` — поля ивента для формы (+ `hasPhoto`, `inviteLink` для published) |
 | step_11 (save) | `tables-upsert-records events` | запись по ключу `id` (пишет `staff_id` и `chapter_id`) |
-| step_12 (save) | `return_response` (**`respond` — «Respond and Continue»**) | `200` странице **до** отправки сообщений |
+| step_12 (save) | `return_response` (**`respond` — «Respond and Continue»**) | `200` странице **до** отправки сообщений (+ `inviteLink`) |
 | step_13 (save) | `tables-find-records registrations` | `event_id = id`, проекция `telegram_id`, `status` |
 | step_14 (save) | CODE «notify targets + owner text» | дедуп `telegram_id` со `status='registered'`; `[]` если `notifyKind='none'`; текст организатору с `{count}` |
-| step_15 (save) | `send_text_message` (`continueOnFailure`) | подтверждение staff'у в чат (`format: None`), при создании — со ссылкой регистрации (OWN-6) |
+| step_15 (save) | `send_text_message` (`continueOnFailure`) | подтверждение staff'у в чат (`format: None`) — короткий факт; ссылка регистрации живёт на экране (W37, ADR-0017), не здесь |
 | step_16 (save) | `LOOP_ON_ITEMS` по `{{step_14['output'].targets}}` | |
 | step_17 (в цикле) | `send_text_message` (`continueOnFailure`) | уведомление одному зарегистрированному (`format: None`) |
+| step_31 (events_list) | `tables-find-records events` | ивенты чаптера: фильтр `chapter_id eq {{step_7['output'].chapterId}}`, `limit: 200` |
+| step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию |
+| step_33 (events_list) | `return_response` (`stop`) | `200 {ok:true, events:[…], count}` |
 
 ### Контракт ответа (согласован с `#/manage` SPA)
 
@@ -71,15 +75,17 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `initData` невалиден/просрочен (>300 c) | 401 | `{ok:false, error:"invalid_init_data", text}` |
 | нет строки `staff`; ивент не найден; `event.chapter_id` не подходит под `staff.chapter_id`; сентинел `-`; создание с `newId`, занятым записью чужого чаптера | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
-| `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId}` |
-| `save` | 200 | `{ok:true, text, eventId}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем |
+| `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId, inviteLink}` — `inviteLink` непустой только у `published` |
+| `list` staff'ом | 200 | `{ok:true, events:[{id,title,starts_at,status,isAuthor}], count}` — ивенты своего чаптера; не staff — `403`, как у `load` |
+| `save` | 200 | `{ok:true, text, eventId, inviteLink}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем; `inviteLink` — только у `published` |
 | `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки ивента, `item` отформатирован сервером |
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
 | нечисловой `staffTelegramId` | 422 | `{ok:false, error:"validation", text, fields:{telegram_id:"manage.err.bad_telegram_id"}, staff:[...]}` — страница переводит ключ |
 
 Тело ответа во всех ветках имеет один набор ключей (`ok`, `error`, `text`,
-`fields`, `event`, `eventId`, `staff`), потому что `return_response` ссылается
-на них из вывода `step_7`/`step_20`/`step_3` и не переживёт отсутствующего поля.
+`fields`, `event`, `eventId`, `inviteLink`, `staff`, `events`, `count`), потому
+что `return_response` ссылается на них из вывода `step_7`/`step_20`/`step_32`/
+`step_3` и не переживёт отсутствующего поля.
 
 ### Правила `step_7`
 
@@ -96,6 +102,18 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   глагол `staff`, а не per-event роль.
 - **`events.chapter_id`** при создании = `staff.chapter_id || '1'`; у
   существующего ивента не меняется. Выбора чаптера в форме нет (чаптер один).
+- **Список ивентов чаптера (W37, `action='list'`)** — вход в правку для
+  `#/manage` без `:id` (команд у бота нет, ADR-0025). Права те же, что у
+  правки: нет строки `staff` — `403`. Читается отдельной веткой
+  (`step_31`…`step_33`) по `chapter_id eq chapterId`, где
+  `chapterId = staff.chapter_id || '1'` — та же нормализация, что при создании
+  (отдельных чаптеров в проекте пока нет). Форма и порядок — в `step_32`:
+  будущие по возрастанию, затем прошедшие по убыванию; `isAuthor` по
+  `staff_id` (метка «Вы создали»); записи без `id` не показываются.
+- **Ссылка регистрации (`inviteLink`)** строится сервером из `BOT_USERNAME`
+  (`https://t.me/<bot>?start=e<id>`) и возвращается только для `published`
+  (`load` и `save`) — черновик участникам невидим (OWN-4). Формат — OWN-6;
+  страница её не собирает, username в SPA не запекается (ADR-0017).
 - **Идемпотентность создания** — `id` нового ивента приходит со страницы
   (`newId`, один на открытие формы): потерянный ответ и повторный
   «Сохранить» апсертят ту же запись (второй раз — как правка, `published_at`
@@ -178,8 +196,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   чтение / create / update), `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение)
 - **Флоу**: `fn-hmac-init-data`
 - **Переменные**: `BOT_TOKEN` (ADR-0008, передаётся в `fn-hmac-init-data`),
-  `BOT_USERNAME` (ссылка регистрации), `MINIAPP_URL` (кнопка сканера в
-  уведомлении)
+  `BOT_USERNAME` (`inviteLink` в ответах `load`/`save`, W37), `MINIAPP_URL`
+  (кнопка сканера в уведомлении)
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — `step_15`, `step_17`, `step_27`
 
 ## Заметки
@@ -208,6 +226,12 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   внутри существующего роута `#/manage/:id`, четвёртой страницы Mini App не
   заводится (ADR-0017 п. 3). Свой `telegram_id` staff добавить себе тоже может —
   легальный случай (staff-организатор он же контролёр своего ивента).
+- **Ссылка регистрации живёт на экране, а не в чате (W37).** Подтверждение
+  организатору (`step_15`) — короткий факт «ивент опубликован»; ссылка с
+  кнопками «Скопировать»/«Поделиться» — панель формы, данные — `inviteLink`
+  ответа. Граница сред ([ADR-0017](../../docs/adr/0017-screen-not-message.md)):
+  экран — редактируемое состояние, чат — факт; два места с одной ссылкой не
+  нужны, а список `#/manage` не даёт ей потеряться.
 - **Событие `emtzwtmr32apl`** (13 символов) формой не открывается: `id` длиннее
   slug'а `fn-parse-start`, у него и deep link не работает. Это дефект данных
   старого визарда, не формы.
