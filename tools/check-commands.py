@@ -15,24 +15,32 @@
 
 `flows/_manifest.json` можно не исключать — он пропускается сам.
 
-Две сети, обе детерминированные:
+Правило для кода — **fail-closed: разрешено только доказуемое.** Команда,
+прочитанная из сообщения, не может быть ни с чем, кроме `'start'`:
+- сравниваться (`===`, `==`, `!==`, `!=`, `switch/case`) — с литералом
+  в одинарных, двойных кавычках или шаблоне; сравнение с переменной,
+  конкатенацией или шаблоном с `${}` отвергается;
+- индексироваться (`MAP[command]`) — отвергается: по таблице не докажешь,
+  что ключей-команд нет;
+- искаться в контейнере (`LIST.includes(command)`) — элементы обязаны быть
+  литералами `'start'`; идентификаторы в массиве отвергаются;
+- обрабатываться методами: `startsWith`/`endsWith`/`includes`/`indexOf`/
+  `match`/`search`/`replace` — только с литералом `'start'`; `split('@')`,
+  регистр/обрезка/срезы — без буквенных аргументов; любой другой метод —
+  отвергается.
 
-1. `/<команда>` в любой строке (тексты, код): разрешён только `start`.
-   URL, hash-маршруты Mini App (`#/manage`), regex-флаги (`/g`) и пути
-   вида `/api/v1` командами не считаются — см. SLASH_RE и SKIP_TOKENS.
-2. Сравнение команды с литералом: собираются «командные» переменные
-   (имя `command`/`cmd`, присваивание рядом с проверкой `'/'`, `split('@')`,
-   `bot_command`) и любой литерал, с которым такая переменная сравнивается
-   (`===`, `switch`, `includes`, `indexOf`), обязан быть `start`.
-   Это ловит и подфлоу, которому `command` передали через пропы.
+Плюс отдельная сеть: `/<команда>` в любой строке (тексты, код, notes) —
+разрешён только `start`; URL, hash-маршруты (`#/manage`), regex-флаги (`/g`)
+и пути (`/api/v1`) командами не считаются (SLASH_RE, SKIP_TOKENS).
 
 Дополнительно требуется, чтобы вход `/start` существовал: ноль сравнений
-`<командная переменная> === 'start'` — ошибка (разбор мог переехать, и тогда
+«командной» переменной с `'start'` — ошибка (разбор мог переехать, и тогда
 человек должен осознанно обновить этот скрипт).
 
 Перед проверкой запускается встроенная самопроверка на синтетических
-фикстурах: чекер, который перестал кусаться, — это не «0 команд», а поломка.
-Её провал = код возврата 2, а не «всё чисто».
+фикстурах (включая обходы: двойные кавычки, конкатенация, `MAP[command]`,
+`endsWith`, массив через переменную): чекер, который перестал кусаться, —
+это не «0 команд», а поломка. Её провал = код возврата 2, а не «всё чисто».
 
 Выход: строка на каждое нарушение, код 1 если они есть, 2 если сломана
 самопроверка, не узнана форма экспорта или нет флоу.
@@ -65,23 +73,29 @@ GUARD_RE = re.compile(
 SPLIT_AT_RE = re.compile(r"split\('@'\)")
 ASSIGN_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*=(?!=)")
 IDENT = r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*"
-COMPARE_RE = re.compile(
-    r"(%s)\s*(?:===|==|!==|!=)\s*'([^']*)'"
-    r"|'([^']*)'\s*(?:===|==|!==|!=)\s*(%s)" % (IDENT, IDENT)
-)
+IDENT_RE = re.compile(IDENT)
+
+# Литералы: одинарные, двойные кавычки, шаблон. Шаблон с `${` — динамика.
+LIT = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`")
+
 SWITCH_RE = re.compile(r"switch\s*\(\s*(%s)\s*\)" % IDENT)
-CASE_RE = re.compile(r"case\s+'([^']*)'")
+CASE_RE = re.compile(r"case\s+([^:]+):")
 ARRAY_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*=\s*\[([^\]]*)\]")
-INLINE_ARRAY_RE = re.compile(r"\[([^\]]*)\]\.(?:includes|indexOf)\(\s*(%s)\s*\)" % IDENT)
-ARR_USE_RE = re.compile(
-    r"([A-Za-z_$][\w$]*)\.(?:includes|indexOf)\(\s*(%s)\s*\)" % IDENT
-)
+CALL_RE = re.compile(r"(%s)\s*\.\s*(\w+)\s*\(([^()]*)\)" % IDENT)
+SUBSCRIPT_RE = re.compile(r"(\w+)\s*\[\s*(%s)\s*\]" % IDENT)
+CONTAINER_RE = re.compile(r"(\w+)\.(includes|indexOf)\(\s*(%s)\s*\)" % IDENT)
+IN_OP_RE = re.compile(r"(%s)\s+in\s+" % IDENT)
 
+# Методы на командной переменной: литеральные аргументы обязаны быть
+# в allowlist; числовые аргументы (индексы/срезы) безопасны.
+STRICT_LIT_METHODS = {"startsWith", "endsWith", "includes", "indexOf", "match", "search", "replace"}
+NEUTRAL_METHODS = {"toLowerCase", "toUpperCase", "trim", "slice", "substring", "charAt", "codePointAt", "split", "at"}
+LIT_ALLOWLIST = {"start", "@"}
 
-def seeded(expr, seeds):
-    """`command` или `inputs.command` — сверяем по последнему сегменту."""
-    return expr.split(".")[-1] in seeds
-QUOTED_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"")
+EQ_OPS = ("!==", "===", "!=", "==")
+# Сравнение командной переменной с этими константами — не разбор команды.
+SAFE_OPERANDS = {"undefined", "null", "true", "false"}
+EQ_DELIMS = ";&|,)]}\n?:"
 
 
 def walk(node, out):
@@ -157,48 +171,155 @@ def command_idents(src):
     return seeds
 
 
+def seeded(expr, seeds):
+    """`command` или `inputs.command` — сверяем по последнему сегменту."""
+    return expr.split(".")[-1] in seeds
+
+
+def literal_of(text):
+    """(значение, динамика) если текст — ровно один литерал, иначе (None, False)."""
+    m = LIT.fullmatch(text.strip())
+    if not m:
+        return None, False
+    value = next(g for g in m.groups() if g is not None)
+    return value, "${" in value
+
+
+def comparisons(src):
+    """Пары (левый операнд, правый операнд) для всех равенств/неравенств."""
+    i = 0
+    while i < len(src):
+        op = next((o for o in EQ_OPS if src.startswith(o, i)), None)
+        if not op:
+            i += 1
+            continue
+        j = i + len(op)
+        k = j
+        while k < len(src) and src[k] not in EQ_DELIMS:
+            k += 1
+        right = src[j:k].strip()
+        m = i - 1
+        while m >= 0 and src[m] not in EQ_DELIMS + "({":
+            m -= 1
+        left = src[m + 1:i].strip()
+        yield left, right
+        i = j
+
+
 def check_source_code(src, where, problems):
-    """Сети 2: сравнения «командной» переменной с литералами."""
+    """Сеть «доказуемости»: операции над командной переменной — только с 'start'."""
     seeds = command_idents(src)
     if not seeds:
         return 0
     hits = 0
 
-    def literal_ok(lit, ident):
+    def fail(reason):
+        problems.append("%s: %s — по ADR-0025 допустим только 'start'" % (where, reason))
+
+    def literal_ok(lit, dynamic, context):
         nonlocal hits
+        if dynamic:
+            fail("в %s литерал собирается шаблоном с ${} (недоказуемо)" % context)
+            return
         if lit == "":
             return  # `command !== ''` — проверка «команды нет», не команда
         hits += 1
         if lit not in ALLOWED:
             problems.append(
-                "%s: сравнение команды `%s` с %r — по ADR-0025 допустима только 'start'"
-                % (where, ident, lit)
+                "%s: %s с %r — по ADR-0025 допустима только 'start'" % (where, context, lit)
             )
 
-    for m in COMPARE_RE.finditer(src):
-        ident = m.group(1) or m.group(4)
-        lit = m.group(2) if m.group(2) is not None else m.group(3)
-        if seeded(ident, seeds):
-            literal_ok(lit, ident)
+    for left, right in comparisons(src):
+        left_seeded = bool(IDENT_RE.fullmatch(left)) and seeded(left, seeds)
+        right_seeded = bool(IDENT_RE.fullmatch(right)) and seeded(right, seeds)
+        if not left_seeded and not right_seeded:
+            continue
+        other = right if left_seeded else left
+        if other in SAFE_OPERANDS or re.fullmatch(r"-?\d+", other):
+            continue
+        lit, dynamic = literal_of(other)
+        if lit is None and not dynamic:
+            fail("сравнение команды с не-литералом %r (недоказуемо)" % other)
+            continue
+        literal_ok(lit, dynamic, "сравнение команды")
+
     for m in SWITCH_RE.finditer(src):
         if not seeded(m.group(1), seeds):
             continue
         body = block_after(src, m.end())
-        for lit in CASE_RE.findall(body):
-            literal_ok(lit, m.group(1))
-    arrays = {name: QUOTED_RE.findall(chunk) for name, chunk in ARRAY_RE.findall(src)}
+        for case in CASE_RE.findall(body):
+            lit, dynamic = literal_of(case)
+            if lit is None and not dynamic:
+                fail("case с не-литералом %r в switch по команде" % case.strip())
+                continue
+            literal_ok(lit, dynamic, "switch по команде")
 
-    def elements_ok(chunk, ident):
-        for pair in QUOTED_RE.findall(chunk):
-            literal_ok(pair[0] if pair[0] != "" else pair[1], ident)
-
-    for chunk, ident in INLINE_ARRAY_RE.findall(src):
+    for container, ident in SUBSCRIPT_RE.findall(src):
         if seeded(ident, seeds):
-            elements_ok(chunk, ident)
-    for arr, ident in ARR_USE_RE.findall(src):
-        if seeded(ident, seeds) and arr in arrays:
-            for pair in arrays[arr]:
-                literal_ok(pair[0] if pair[0] != "" else pair[1], arr + ".includes")
+            fail("выбор `%s[%s]` по команде (таблица ключей недоказуема)" % (container, ident))
+
+    arrays = {}
+    for name, chunk in ARRAY_RE.findall(src):
+        elements = [e.strip() for e in chunk.split(",") if e.strip()]
+        arrays[name] = elements
+
+    def container_elements_ok(elements, context):
+        for e in elements:
+            lit, dynamic = literal_of(e)
+            if lit is None and not dynamic:
+                fail("%s содержит не-литерал %r (недоказуемо)" % (context, e))
+                continue
+            literal_ok(lit, dynamic, context)
+
+    for container, method, ident in CONTAINER_RE.findall(src):
+        if not seeded(ident, seeds):
+            continue
+        if container not in arrays:
+            fail("`%s.%s(%s)` — контейнер не объявлен литералом рядом (недоказуемо)" % (container, method, ident))
+            continue
+        container_elements_ok(arrays[container], "%s.%s" % (container, method))
+
+    for m in re.finditer(r"\[([^\]]*)\]\.(?:includes|indexOf)\(\s*(%s)\s*\)" % IDENT, src):
+        chunk, ident = m.group(1), m.group(2)
+        if seeded(ident, seeds):
+            container_elements_ok(
+                [e.strip() for e in chunk.split(",") if e.strip()], "includes команды"
+            )
+
+    for m in IN_OP_RE.finditer(src):
+        if seeded(m.group(1), seeds):
+            fail("оператор `in` по команде (ключи недоказуемы)")
+
+    for m in CALL_RE.finditer(src):
+        ident, method, args = m.group(1), m.group(2), m.group(3).strip()
+        if not seeded(ident, seeds):
+            continue
+        arg_list = [a.strip() for a in args.split(",") if a.strip()] if args else []
+        if method in STRICT_LIT_METHODS:
+            if not arg_list:
+                fail("`%s.%s()` без литерала" % (ident, method))
+                continue
+            for a in arg_list:
+                lit, dynamic = literal_of(a)
+                if lit is None and not dynamic:
+                    fail("`%s.%s(%s)` — аргумент недоказуем" % (ident, method, a))
+                    continue
+                literal_ok(lit, dynamic, "`%s.%s`" % (ident, method))
+        elif method in NEUTRAL_METHODS:
+            for a in arg_list:
+                if re.fullmatch(r"-?\d+", a):
+                    continue
+                lit, dynamic = literal_of(a)
+                if lit is None and not dynamic:
+                    fail("`%s.%s(%s)` — аргумент недоказуем" % (ident, method, a))
+                    continue
+                if dynamic:
+                    fail("`%s.%s(%s)` — шаблон с ${} (недоказуемо)" % (ident, method, a))
+                    continue
+                if lit not in LIT_ALLOWLIST:
+                    fail("`%s.%s(%s)` — литерал вне {start, @}" % (ident, method, lit))
+        else:
+            fail("неизвестная операция `%s.%s()` над командой" % (ident, method))
     return hits
 
 
@@ -248,7 +369,7 @@ def check_texts(ru, path, problems):
 
 
 def roots(data, path):
-    """Достаёт (имя, дерево шагов) из любой известной формы экспорта."""
+    """Достаёт (имя, дерево шагов, объект флоу) из любой известной формы экспорта."""
     if not isinstance(data, dict):
         return []
     tpl = data.get("template", data)
@@ -301,34 +422,55 @@ def self_test():
             },
         },
     }
-    # Ожидания: базовый флоу чист, каждая мутация — нарушение.
+
     def mutate(src):
         f = json.loads(json.dumps(ok_flow))
-        step = f["nextAction"]
+        code = f["nextAction"]["settings"]["sourceCode"]
         if src == "compare":
-            step["settings"]["sourceCode"] = step["settings"]["sourceCode"].replace(
-                "route = 'menu'", "route = 'events'"
-            ).replace(
+            code = code.replace("route = 'menu'", "route = 'events'").replace(
                 "if (command === 'start')", "if (command === 'events')"
             )
+        elif src == "double-quotes":
+            code = code.replace("if (command === 'start')", 'if (command === "events")')
+        elif src == "concat":
+            code = code.replace("if (command === 'start')", "if (command === ('ev' + 'ents'))")
+        elif src == "template":
+            code = code.replace("if (command === 'start')", "if (command === `events`)")
+        elif src == "template-dynamic":
+            code = code.replace("if (command === 'start')", "if (command === `ev${x}`)")
+        elif src == "ident":
+            code = code.replace("if (command === 'start')", "if (command === target)")
+        elif src == "subscript":
+            code = code + "\nconst MAP = { events: 1 };\nconst r2 = MAP[command];"
+        elif src == "includes-var":
+            code = code + "\nconst BAD = 'events';\nconst L = ['start', BAD];\nif (L.includes(command)) { route = 'x'; }"
+        elif src == "includes-literals":
+            code = code + "\nif (['start', 'myregs'].includes(command)) { route = 'x'; }"
+        elif src == "container-unknown":
+            code = code + "\nif (KNOWN.includes(command)) { route = 'x'; }"
+        elif src == "endsWith":
+            code = code + "\nif (command.endsWith('vents')) { route = 'x'; }"
+        elif src == "startsWith-ok":
+            code = code + "\nif (command.startsWith('start')) { route = 'x'; }"
+        elif src == "replace":
+            code = code + "\nconst clean = command.replace(/x/g, '');"
+        elif src == "in-op":
+            code = code + "\nif (command in MAP2) { route = 'x'; }"
         elif src == "slash-text":
-            step["settings"]["input"]["texts"]["syn.hello"] = "Напишите /help"
+            f["nextAction"]["settings"]["input"]["texts"]["syn.hello"] = "Напишите /help"
         elif src == "slash-code":
-            step["settings"]["sourceCode"] += "\n// if (command.startsWith('/myregs')) {}"
+            code = code + "\n// if (command.startsWith('/myregs')) {}"
         elif src == "switch":
-            step["settings"]["sourceCode"] += (
-                "\nconst t = () => { switch (command) { case 'start': return 1; case 'events': return 2; } return 0; };"
-            )
-        elif src == "includes":
-            step["settings"]["sourceCode"] += (
-                "\nconst K = ['start', 'myregs'];\nif (K.includes(command)) { route = 'x'; }"
-            )
-        elif src == "dotted":
-            step["settings"]["sourceCode"] += "\nif (inputs.command === 'admin') { route = 'x'; }"
+            code = code + "\nconst t = () => { switch (command) { case 'start': return 1; case 'events': return 2; } return 0; };"
+        elif src == "switch-case-ident":
+            code = code + "\nconst t2 = () => { switch (command) { case 'start': return 1; case BAD2: return 2; } return 0; };"
         elif src == "no-entry":
-            step["settings"]["sourceCode"] = (
+            f["nextAction"]["settings"]["sourceCode"] = (
                 "export const code = async (inputs) => ({ unhandled: true });"
             )
+        else:
+            raise AssertionError("неизвестная фикстура " + src)
+        f["nextAction"]["settings"]["sourceCode"] = code
         return f
 
     bad = []
@@ -336,25 +478,42 @@ def self_test():
     hits_ok = check_flow("syn", ok_flow, problems)
     if problems or hits_ok == 0:
         bad.append("базовый флоу: %r (hits=%d)" % (problems, hits_ok))
+
     for label, mutation in (
         ("сравнение", "compare"),
+        ("двойные кавычки", "double-quotes"),
+        ("конкатенация", "concat"),
+        ("шаблон", "template"),
+        ("шаблон с ${}", "template-dynamic"),
+        ("сравнение с переменной", "ident"),
+        ("подстановка MAP[command]", "subscript"),
+        ("массив через переменную", "includes-var"),
+        ("массив с чужой командой", "includes-literals"),
+        ("неизвестный контейнер", "container-unknown"),
+        ("endsWith", "endsWith"),
+        ("replace", "replace"),
+        ("оператор in", "in-op"),
         ("команда в тексте", "slash-text"),
         ("команда в коде", "slash-code"),
         ("switch", "switch"),
-        ("includes", "includes"),
-        ("member-выражение", "dotted"),
+        ("switch с не-литералом", "switch-case-ident"),
     ):
         problems = []
         check_flow("syn", mutate(mutation), problems)
         if not problems:
             bad.append("не поймано нарушение: %s" % label)
+
     problems = []
+    check_flow("syn", mutate("startsWith-ok"), problems)
     check_flow("syn", mutate("no-entry"), problems)
     check_slash("https://app.flow.aiqadam.org/api/v1/webhooks/x/sync", "syn", problems)
     check_slash("#/manage/:id и фото/видео, 24/7, /\\+/gi", "syn", problems)
     check_source_code(
-        "const hasCommand = command !== '';\nconst kind = 'e';\nconst status = 'published';\n"
-        "const sessionScenario = 'registration';\nconst action = 'staff_list';",
+        "const hasCommand = command !== '';\nconst lower = command.toLowerCase();\n"
+        "const head = command.charAt(0);\nconst parts = command.split('@');\n"
+        "const cut = command.slice(1).trim();\nconst kind = 'e';\n"
+        "const status = 'published';\nconst sessionScenario = 'registration';\n"
+        "const action = 'staff_list';",
         "syn/step_x",
         problems,
     )
@@ -373,6 +532,7 @@ def self_test():
     )
     if problems:
         bad.append("ложное срабатывание на notes флоу: %r" % problems)
+
     if bad:
         print("САМОПРОВЕРКА ЧЕКЕРА ПРОВАЛЕНА:")
         for line in bad:
