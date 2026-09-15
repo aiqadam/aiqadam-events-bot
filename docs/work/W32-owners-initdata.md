@@ -1,10 +1,10 @@
 # W32. Права `staff` по чаптеру, окна `initData` по флоу, афиша выведена временно
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: 3 (v0.1)
 - **Зависит от**: W33 (✅ сдан)
-- **Начат**: 2026-09-15 · **Закрыт**: —
+- **Начат**: 2026-09-15 · **Закрыт**: 2026-09-15
 
 ## Цель
 
@@ -277,6 +277,90 @@
 - **Замечание 4 (`на будущее`) — исправлено.** «Как проверено» и «Хвосты»
   приведены в соответствие: `flows/` снят REST-выгрузкой ключом, в
   `ap_validate_flow` — все 6 флоу, `check-migrations` пройден.
+
+### Круг 2
+
+- **Ревьюер**: opencode (независимый агент, чистый контекст), **дата**: 2026-09-15
+- **Вердикт**: замечаний нет
+
+Повторное ревью после фиксов круга 1 (коммиты `0ac509f`, `0ede56c`) — на живом
+проекте через MCP (только чтение) и офлайн-скриптами.
+
+### Замечания (круг 2)
+
+Замечаний уровня «блокер» и «важно» нет — все четыре замечания круга 1 закрыты.
+
+1. **Замечание 1 (`важно`) закрыто.** Живой `manage-api/step_7` (опубликованная
+   версия `mIPZiazp2LwXgjqDFjwoR`) пишет `staffId = isNew ? telegramId :
+   str(ev.staff_id)` и `chapterId = isNew ? (staffChapter || '1') :
+   str(ev.chapter_id)` — при правке автор записи сохраняется, `chapter_id` не
+   меняется; `step_11` по-прежнему берёт поле `6KqxIPre6r76ycWhCX8uU` из
+   `{{step_7['output'].staffId}}`. Живой прогон создания `gbUh823u14fZTdHtngaf0`
+   (PRODUCTION): `isNew:true`, `step_7 staffId=322876545 chapterId=1`,
+   `step_11 action:"created"`, ответ `200` — ветка создания пишет автора и
+   чаптер.
+2. **Замечание 2 (`важно`) закрыто живой различающей матрицей на опубликованном
+   `/sync`**, один и тот же `initData` (`auth_date` 2026-09-15T11:01:58Z):
+   - `XytelhzBz43qclZVUf4Hl` (11:04:49): `step_18` вернул строку staff с
+     временно выставленным `chapter_id=2`, ивент `w28test` чаптера `1` →
+     `step_7 outcome:error httpStatus:403 error:forbidden`;
+   - `V9aCo1Sw1OmFPhiNOy2jk` (11:05:18): строка staff восстановлена
+     (`chapter_id=1`) → `step_7 outcome:load httpStatus:200`;
+   - `ASQHklQKRuvfhJmHpSQMa` (11:04:28): staff чаптера `1` → `200`
+     (`ageSeconds:153`, `maxAgeSeconds:300`);
+   - `14FMclwlufYmIYnIvITNk` (11:07:23): тот же `initData` через ~326 c →
+     `step_1 valid:false reason:expired` → `401 invalid_init_data`.
+   Пара «непривилегированный `403` / привилегированный `200`» на одном входе
+   есть, позитивная половина не тождественна «отказывает всегда». Все прогоны —
+   после публикации (версия от 10:20 UTC), то есть на `mIPZiazp2LwXgjqDFjwoR`.
+3. **Замечание 3 (`на будущее`) закрыто по существу.** Каталог совпадает с живым
+   проектом: `menu.md` (шапка/таблица кнопок — «организатор»), `manage-api.md`
+   (`step_18` между `step_5`/`step_6`), `event-card.md` (`staffId`/`chapterId`).
+   Остаётся косметика уровня «на будущее», не блокирующая сдачу и не меняющая
+   поведения: `catalog/flows/menu.md:32` помечает кнопку `#/manage` как
+   «(owner)», а живой `manage-api/step_14` носит имя «notify targets + owner
+   text» (каталог воспроизводит фактическое имя шага). Правка имени шага = новая
+   версия + строка `migrations` при нулевой пользе — тот же размен, что владелец
+   уже назвал в «Хвостах».
+4. **Замечание 4 (`на будущее`) закрыто.** Журнал не противоречит себе: шапка и
+   `STATUS.md` — «на проверке», «Хвосты» — «Блокеров нет», «Как проверено»
+   описывает REST-выгрузку, перечисляет все 6 флоу в `ap_validate_flow` и
+   пройденный `check-migrations`.
+
+### Проверено (круг 2)
+
+- **Живой проект (MCP, только чтение).** `ap_read_step_code`: `manage-api/step_7`,
+  `menu/step_4`, `fn-hmac-init-data/step_3`, `fn-parse-start/step_1`;
+  `ap_flow_structure` × 6; `ap_validate_flow` × 6 — все зелёные (manage-api
+  19/19, menu 6/6, reg-start 14/14, fn-hmac-init-data 5/5, checkin-api 13/13,
+  my-qr-api 9/9). В `reg-start` нет `step_12`; в `manage-api` `step_18` между
+  `step_5`/`step_6`; окна `manage`/`my-qr` 300, `checkin` 43200,
+  `MAX_AGE_CAP` 43200. `ap_export_flow manage-api` →
+  `flows[0].id = mIPZiazp2LwXgjqDFjwoR` = `publishedVersionId` в
+  `flows/_manifest.json`; `ap_list_flows` — 18 флоу, состав и версии совпали с
+  манифестом. `ap_get_run`: создание `gbUh…`, загрузка `MHr7…`/`ASQH…`/`V9aCo…`,
+  отказ `Xytelhz…`, просрочка `14FM…` — все PRODUCTION и после публикации.
+- **Данные (фикстуры убраны).** `staff` — ровно одна строка `322876545` /
+  `chapter_id=1`; строки с `chapter_id=2` нет; `chapters` — `id=1`
+  («AI Qadam Uzbekistan»); `events` — 6 строк, у всех `chapter_id=1`, поле
+  `staff_id`; тестового ивента `mu2kb1wam0c6` (создан живым прогоном) в таблице
+  **нет**.
+- **Офлайн.** `tools/export-flows.sh` — rc 0, `git status flows/` и `git diff`
+  пусты (снимок не протух); `tools/check-export-secrets.sh` — rc 0 (32 `auth` —
+  ссылки, значений нет); `tools/check-texts.py i18n/ru.json flows/*.json` — rc 0
+  (112 пар, 0 расхождений); `tools/check-migrations.py` — rc 0, «сверка
+  пройдена».
+- **Каталог = живой проект.** Сверены шаг-в-шаг `manage-api.md`, `menu.md`,
+  `reg-start.md`, `events.md`, `staff.md`, `chapters.md`, `overview.md`;
+  короткой формы `{{VAR}}` нет; `owner_id` живьём не читается (единственное
+  вхождение — мёртвый комментарий в `flows/manage-open.json`, уже признан
+  «Хвостами»); `send_media` в `flows/` нет; `photo_file_id` помечен «временно
+  не используется» в `events.md`.
+- **Headless-прогон `#/manage`** остаётся невыполненным. Препятствием для
+  `готов` не считаю: серверная половина (`manage-api` → `401`) подтверждена
+  живьём (`14FM…`), ответ `401` приходит JSON-телом, поэтому в `lib/api.ts` это
+  `kind:'json'` и ветка `res.http === 401` в `Manage.tsx` достижима; сборка SPA
+  зелёная. Это нижняя ступень доказательности, а не дыра в правах.
 
 ## Хвосты и блокеры
 

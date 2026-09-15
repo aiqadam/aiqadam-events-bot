@@ -29,7 +29,7 @@
 
 ## Заметки
 
-- **Кнопки `web_app` собираются из `MINIAPP_URL`**: `#/manage` (owner) и
+- **Кнопки `web_app` собираются из `MINIAPP_URL`**: `#/manage` (организатор) и
   `#/scan?event_id=<ближайший будущий>` (staff). `scanEventId` кодируется
   `encodeURIComponent`. Права проверяет не страница, а `manage-api`/`checkin-api`
   — кнопка на чужой ивент откроет страницу, которая получит 403.
