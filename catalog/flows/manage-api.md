@@ -45,7 +45,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_11 (save) | `tables-upsert-records events` | запись по ключу `id` (пишет `staff_id` и `chapter_id`) |
 | step_12 (save) | `return_response` (**`respond` — «Respond and Continue»**) | `200` странице **до** отправки сообщений |
 | step_13 (save) | `tables-find-records registrations` | `event_id = id`, проекция `telegram_id`, `status` |
-| step_14 (save) | CODE «notify targets + owner text» | дедуп `telegram_id` со `status='registered'`; `[]` если `notifyKind='none'`; текст владельцу с `{count}` |
+| step_14 (save) | CODE «notify targets + owner text» | дедуп `telegram_id` со `status='registered'`; `[]` если `notifyKind='none'`; текст организатору с `{count}` |
 | step_15 (save) | `send_text_message` (`continueOnFailure`) | подтверждение staff'у в чат (`format: None`), при создании — со ссылкой регистрации (OWN-6) |
 | step_16 (save) | `LOOP_ON_ITEMS` по `{{step_14['output'].targets}}` | |
 | step_17 (в цикле) | `send_text_message` (`continueOnFailure`) | уведомление одному зарегистрированному (`format: None`) |
@@ -84,7 +84,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   «Сохранить» апсертят ту же запись (второй раз — как правка, `published_at`
   не перезаписывается). `newId`, занятый записью **чужого чаптера**, — `403`;
   тот же `newId` в своём чаптере — идемпотентная правка.
-  Идемпотентна **запись**, не сообщения: подтверждение владельцу уходит на
+  Идемпотентна **запись**, не сообщения: подтверждение организатору уходит на
   каждый успешный `save`, повтор даст второе «обновлён» — журнала отправок
   нет (ADR-0003). Цена клиентского `id`: два staff'а с одним `newId` в одну
   секунду дадут две строки (`tables-upsert-records` матчит на своей стороне,
@@ -151,7 +151,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   Это свойство всех webhook-флоу с `initData` (`checkin-api`, `my-qr-api`),
   не только этого.
 - **Оба `send_text_message` — `continueOnFailure`**: заблокировавший бота
-  получатель не должен прерывать ни цикл, ни ответ владельцу; ответ странице
+  получатель не должен прерывать ни цикл, ни ответ организатору; ответ странице
   к этому моменту уже отдан.
 - **Событие `emtzwtmr32apl`** (13 символов) формой не открывается: `id` длиннее
   slug'а `fn-parse-start`, у него и deep link не работает. Это дефект данных

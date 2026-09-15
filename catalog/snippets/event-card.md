@@ -198,7 +198,7 @@ export const code = async (inputs) => {
       found: true,
       lang: lang,
       eventId: String(ev.eventId || ''),
-      // Текст содержит ввод owner'а (title/description/address) — шлётся без parse_mode,
+      // Текст содержит ввод организатора (title/description/address) — шлётся без parse_mode,
       // иначе разметка в названии сломает сообщение или подделает его вид.
       parseMode: '',
       text: lines.join('\n\n'),
@@ -236,7 +236,7 @@ export const code = async (inputs) => {
 
 ## Что нельзя трогать
 
-- **`parseMode: ''`.** Текст содержит ввод owner'а (`title`/`description`/`address`).
+- **`parseMode: ''`.** Текст содержит ввод организатора (`title`/`description`/`address`).
   С разметкой ввод либо сломает сообщение, либо подделает его вид.
 - **`has()` против `t()`.** `has()` отличает «перевод есть» от «виден сырой ключ».
   Сырой ключ на **кнопке** недопустим — кнопка без перевода просто не рисуется.

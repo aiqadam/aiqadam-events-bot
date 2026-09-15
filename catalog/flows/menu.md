@@ -4,7 +4,7 @@
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
   (`route: menu`: голый `/start`, `/start` с неразобранным payload, `/menu`, `/help`)
 - **Назначение**: меню-хаб — одно сообщение с inline-кнопками, набор которых
-  зависит от ролей пользователя (гость / owner / staff). Заменяет молчание на
+  зависит от ролей пользователя (гость / организатор / контролёр). Заменяет молчание на
   холостой `/start` ([W34](../../docs/work/W34-menu.md)).
 - **Flow ID (MCP)**: `1DORFhP9F3W00KpKz5wDw` · **externalId**: `BOLkFV1GreF8r7opvDCVo`
 
@@ -16,7 +16,7 @@
 | step_1 | `tables-find-records staff` | строка `staff` пользователя (limit 1) — «Создать ивент» виден организатору |
 | step_2 | `tables-find-records event_staff` | все staff-строки пользователя (limit 50) |
 | step_3 | `tables-find-records events` | опубликованные ивенты (status = `published`, limit 50) |
-| step_4 | CODE «render menu» | сборка кнопок: guest (2) + owner (+1) + staff (+1); фильтр staff по `revoked_at` и будущим ивентам |
+| step_4 | CODE «render menu» | сборка кнопок: гость (2) + организатор (+1) + контролёр (+1); фильтр staff по `revoked_at` и будущим ивентам |
 | step_5 | `send_text_message` (`format: None`) | отправка меню |
 
 ## Зависимости
@@ -39,9 +39,9 @@
   Дополнительно: только опубликованные ивенты (`byId[r.event_id]`) и только
   будущие (`notPast` по `ends_at` или `starts_at`).
 - **Порядок кнопок фиксирован**: гостевые (`ev:list:upcoming`, `myreg:list`)
-  → owner (`Создать ивент`, `web_app #/manage`) → staff (`Сканер`, `web_app
-  #/scan?event_id=`). Owner+staff → 4 кнопки. Staff без будущих ивентов →
-  без кнопки сканера (2 кнопки). Гость → 2 кнопки.
+  → организатор (`Создать ивент`, `web_app #/manage`) → контролёр (`Сканер`, `web_app
+  #/scan?event_id=`). Организатор+контролёр → 4 кнопки. Контролёр без будущих
+  ивентов → без кнопки сканера (2 кнопки). Гость → 2 кнопки.
 - **«Создать ивент» — видимость, а не авторизация** ([ADR-0024](../../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)):
   кнопка показывается по строке в [`staff`](../tables/staff.md), даже если у
   организатора ещё нет ивентов. Само правило прав живёт в одном месте —
