@@ -1,30 +1,27 @@
 // Прототип W41 — общий слой (ADR-0026, ADR-0027).
 // Vanilla, без сборки. Тексты продукта — из ../i18n/ru.json; тексты ещё не
 // написанного — отдельным словарём прототипа, в ru.json не добавляются.
-// Трассировка к SPEC — отдельным слоем (панель), не разметкой экранов.
+// Трассировка к SPEC и демо-контролы — отдельным слоем (шиты), не экранами.
 'use strict';
 var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
 // ---------- Словарь прототипа (строки, которых ещё нет в i18n/ru.json) ----------
-// Ключи proto.* — служебные (обвязка прототипа, демо-контролы), в продукт не
-// поедут. Остальные — предложения продукта: при реализации станут ключами ru.json.
 PROTO.protoDict = {
   // обвязка прототипа (не продукт)
-  'proto.trace_toggle': 'Требования',
-  'proto.trace_title': 'Требования SPEC',
+  'proto.dock_demo': 'Сценарий',
+  'proto.dock_trace': 'Требования',
+  'proto.sheet_demo': 'Сценарий и состояния',
+  'proto.sheet_trace': 'Требования SPEC',
+  'proto.sheet_close': 'Закрыть',
   'proto.trace_empty': 'Для этого экрана отдельного требования SPEC нет — это обвязка прототипа.',
-  'proto.trace_note': 'Слой трассировки. На самих экранах пометок нет — это прототип, а не продукт.',
+  'proto.trace_note': 'Слой трассировки. На экранах пометок нет — это прототип, а не продукт.',
   'proto.reset': 'Начать сценарий заново',
   'proto.to_start': 'На старт',
-  'proto.chat_link': 'Мок чата',
-  'proto.app_link': 'Мок Mini App',
-  'proto.theme': 'Тема',
-  'proto.theme_light': 'Светлая',
-  'proto.theme_dark': 'Тёмная',
+  'proto.theme_dark': 'Тёмная тема',
+  'proto.theme_light': 'Светлая тема',
   'proto.chat_bot': 'бот',
   'proto.app_close': 'Закрыть',
-  'proto.demo_scan': 'Сканировать QR',
-  'proto.demo_controls': 'Демо-контролы',
+  'proto.demo_hint': 'Демо-контролы прототипа. В продукте их нет.',
   'proto.dict_missing': 'Словарь i18n/ru.json не загрузился — на экране сырые ключи.',
   // предложения продукта (ещё не в ru.json)
   'proto.tab_event': 'Ивент',
@@ -33,12 +30,19 @@ PROTO.protoDict = {
   'proto.confirm_cancel_event': 'Отменить ивент «{title}»? Зарегистрированные получат уведомление.',
   'proto.broadcast_chat_hint': 'Составление — в чате: перешлите боту готовое сообщение.',
   'proto.open_chat': 'Перейти в чат',
-  'proto.scan_ready': 'Наведите камеру на QR-код',
-  'proto.scan_result': 'Результат',
-  'proto.you': 'Вы',
   'proto.link_copied': 'Ссылка скопирована',
   'proto.deep_link_note': 'переход по ссылке регистрации',
   'proto.staff_invite_note': 'переход по ссылке-инвайту',
+  'proto.registered_short': 'записался',
+  'proto.checked_in_short': 'пришёл',
+  'proto.cancelled_short': 'отменил',
+  'proto.section_main': 'Основное',
+  'proto.section_where': 'Где и когда',
+  'proto.section_capacity': 'Места',
+  'proto.result_ok': 'Можно впускать',
+  'proto.result_already': 'Пропустить повторно',
+  'proto.result_denied': 'Не впускать',
+  'proto.tab_hint': 'Проверьте данные и опубликуйте — участники увидят ивент после публикации.',
 };
 
 // ---------- Трассировка: id требования → короткая формулировка ----------
@@ -91,13 +95,8 @@ PROTO.loadI18n = async function () {
   if (PROTO.dictLoaded) return PROTO.dict;
   try {
     const res = await fetch('../i18n/ru.json', { cache: 'no-cache' });
-    if (res.ok) {
-      PROTO.dict = await res.json();
-      PROTO.dictLoaded = true;
-    }
-  } catch (e) {
-    /* нет сети — останемся на ключах, страница читаема */
-  }
+    if (res.ok) { PROTO.dict = await res.json(); PROTO.dictLoaded = true; }
+  } catch (e) { /* нет сети — останемся на ключах, страница читаема */ }
   return PROTO.dict;
 };
 
@@ -106,35 +105,25 @@ PROTO.t = function (key, vars) {
   if (s === undefined) s = PROTO.protoDict[key];
   if (s === undefined) {
     s = key;
-    if (!PROTO._missingSeen[key]) {
-      PROTO._missingSeen[key] = true;
-      PROTO.missing.push(key);
-    }
+    if (!PROTO._missingSeen[key]) { PROTO._missingSeen[key] = true; PROTO.missing.push(key); }
   }
-  if (vars) {
-    for (const k of Object.keys(vars)) {
-      s = s.split('{' + k + '}').join(String(vars[k]));
-    }
-  }
+  if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
   return s;
 };
-
-// Короткая форма для файлов прототипа.
 function t(key, vars) { return PROTO.t(key, vars); }
 
 // ---------- Тема (в продукте — Telegram.WebApp.colorScheme) ----------
-PROTO.theme = 'light';
+PROTO.theme = (typeof location !== 'undefined' && /[?&]theme=dark\b/.test(location.search || '')) ? 'dark' : 'light';
 PROTO.applyTheme = function () {
   document.documentElement.setAttribute('data-theme', PROTO.theme);
-  const btns = document.querySelectorAll('[data-proto-theme-label]');
-  btns.forEach((b) => {
-    b.textContent = PROTO.theme === 'light' ? t('proto.theme_dark') : t('proto.theme_light');
-  });
+  const btn = document.querySelector('[data-proto-theme]');
+  if (btn) {
+    PROTO.clear(btn);
+    btn.appendChild(PROTO.icon(PROTO.theme === 'light' ? 'moon' : 'sun', 18));
+    btn.setAttribute('aria-label', PROTO.theme === 'light' ? t('proto.theme_dark') : t('proto.theme_light'));
+  }
 };
-PROTO.toggleTheme = function () {
-  PROTO.theme = PROTO.theme === 'light' ? 'dark' : 'light';
-  PROTO.applyTheme();
-};
+PROTO.toggleTheme = function () { PROTO.theme = PROTO.theme === 'light' ? 'dark' : 'light'; PROTO.applyTheme(); };
 
 // ---------- DOM-хелперы ----------
 PROTO.el = function (tag, cls, text) {
@@ -145,112 +134,195 @@ PROTO.el = function (tag, cls, text) {
 };
 PROTO.clear = function (node) { node.innerHTML = ''; };
 
-// Экранирование не нужно: весь текст ставится через textContent, а не innerHTML.
+// ---------- Иконки (Lucide, 2px stroke, currentColor — ADR-0019) ----------
+PROTO.icons = {
+  'arrow-left': '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+  'calendar': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+  'map-pin': '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'user': '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  'send': '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+  'plus': '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  'ticket': '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 11v2"/><path d="M13 17v2"/>',
+  'scan-line': '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',
+  'link': '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  'copy': '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  'share': '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>',
+  'check': '<path d="M20 6 9 17l-5-5"/>',
+  'check-circle': '<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>',
+  'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  'x-circle': '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  'alert': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'megaphone': '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  'shield': '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  'more': '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  'external': '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  'list': '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  'info': '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  'moon': '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  'pencil': '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  'sliders': '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',
+  'qr': '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+};
+PROTO.icon = function (name, size) {
+  const span = PROTO.el('span', 'proto-icon');
+  span.setAttribute('aria-hidden', 'true');
+  const px = size || 18;
+  span.style.width = px + 'px';
+  span.style.height = px + 'px';
+  span.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (PROTO.icons[name] || '') + '</svg>';
+  return span;
+};
 
-// ---------- Слой трассировки (ADR-0027 п. 4) ----------
+// ---------- Слой трассировки и демо-шиты (ADR-0027 п. 4) ----------
 PROTO._trace = [];
+PROTO._demoItems = [];
+PROTO._demoNote = '';
+PROTO._sheetKind = null;
+
 PROTO.setTrace = function (ids) {
   PROTO._trace = ids || [];
-  PROTO.renderTrace();
+  if (PROTO._sheetKind === 'trace') PROTO.renderSheetBody();
 };
-PROTO.toggleTrace = function () {
-  const panel = document.querySelector('[data-proto-trace-panel]');
-  if (!panel) return;
-  const open = panel.hasAttribute('hidden');
-  if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
-  const btn = document.querySelector('[data-proto-trace-toggle]');
-  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open) PROTO.renderTrace();
+PROTO.setDemo = function (items, note) {
+  PROTO._demoItems = items || [];
+  PROTO._demoNote = note || '';
+  if (PROTO._sheetKind === 'demo') PROTO.renderSheetBody();
 };
-PROTO.renderTrace = function () {
-  const body = document.querySelector('[data-proto-trace-body]');
+PROTO.demoNote = function (text) {
+  PROTO._demoNote = text || '';
+  PROTO.openSheet('demo');
+};
+PROTO.openSheet = function (kind) {
+  PROTO._sheetKind = kind;
+  const sheet = document.querySelector('[data-proto-sheet]');
+  if (!sheet) return;
+  sheet.removeAttribute('hidden');
+  const title = document.querySelector('[data-proto-sheet-title]');
+  if (title) title.textContent = kind === 'trace' ? t('proto.sheet_trace') : t('proto.sheet_demo');
+  PROTO.renderSheetBody();
+  PROTO.syncDock();
+};
+PROTO.closeSheet = function () {
+  PROTO._sheetKind = null;
+  const sheet = document.querySelector('[data-proto-sheet]');
+  if (sheet) sheet.setAttribute('hidden', '');
+  PROTO.syncDock();
+};
+PROTO.toggleSheet = function (kind) {
+  if (PROTO._sheetKind === kind) PROTO.closeSheet(); else PROTO.openSheet(kind);
+};
+PROTO.renderSheetBody = function () {
+  const body = document.querySelector('[data-proto-sheet-body]');
   if (!body) return;
   PROTO.clear(body);
-  if (!PROTO._trace.length) {
-    body.appendChild(PROTO.el('p', 'proto-trace-empty', t('proto.trace_empty')));
+  if (PROTO._sheetKind === 'trace') {
+    body.appendChild(PROTO.el('p', 'proto-sheet-note', t('proto.trace_note')));
+    if (!PROTO._trace.length) body.appendChild(PROTO.el('p', 'proto-sheet-empty', t('proto.trace_empty')));
+    PROTO._trace.forEach((id) => {
+      const item = PROTO.el('div', 'proto-trace-item');
+      item.appendChild(PROTO.el('span', 'proto-trace-id', id));
+      item.appendChild(PROTO.el('span', 'proto-trace-text', PROTO.specMap[id] || ''));
+      body.appendChild(item);
+    });
     return;
   }
-  PROTO._trace.forEach((id) => {
-    const item = PROTO.el('div', 'proto-trace-item');
-    item.appendChild(PROTO.el('span', 'proto-trace-id', id));
-    item.appendChild(PROTO.el('span', 'proto-trace-text', PROTO.specMap[id] || ''));
-    body.appendChild(item);
+  body.appendChild(PROTO.el('p', 'proto-sheet-note', t('proto.demo_hint')));
+  const row = PROTO.el('div', 'proto-chips');
+  PROTO._demoItems.forEach((it) => {
+    if (it.active) { row.appendChild(PROTO.el('span', 'proto-chip active', it.label)); return; }
+    const b = PROTO.el('button', 'proto-chip', it.label);
+    b.type = 'button';
+    if (it.onClick) b.addEventListener('click', () => { it.onClick(); });
+    else if (it.href) b.addEventListener('click', () => { location.href = it.href; });
+    row.appendChild(b);
+  });
+  body.appendChild(row);
+  if (PROTO._demoNote) body.appendChild(PROTO.el('div', 'proto-sheet-state', PROTO._demoNote));
+};
+
+PROTO.syncDock = function () {
+  document.querySelectorAll('[data-proto-dock-btn]').forEach((b) => {
+    const kind = b.getAttribute('data-proto-dock-btn');
+    if (PROTO._sheetKind === kind) b.classList.add('active'); else b.classList.remove('active');
   });
 };
 
-// ---------- Обвязка страницы прототипа ----------
-// Строит верхнюю панель (назад, заголовок, тумблеры) и панель трассировки.
+// ---------- Обвязка страницы ----------
 PROTO.initChrome = function (opts) {
   const o = opts || {};
   const bar = document.querySelector('[data-proto-bar]');
   if (bar) {
     PROTO.clear(bar);
-    const back = PROTO.el('a', 'proto-btn proto-btn-ghost', '← ' + t('proto.to_start'));
+    const back = PROTO.el('a', 'proto-bar-back');
     back.href = 'index.html';
+    back.appendChild(PROTO.icon('arrow-left', 18));
+    back.appendChild(PROTO.el('span', '', t('proto.to_start')));
     bar.appendChild(back);
     if (o.title) bar.appendChild(PROTO.el('span', 'proto-bar-title', o.title));
-
-    const right = PROTO.el('div', 'proto-bar-right');
-    const themeBtn = PROTO.el('button', 'proto-btn proto-btn-ghost', '');
+    const themeBtn = PROTO.el('button', 'proto-icon-btn');
     themeBtn.type = 'button';
-    themeBtn.setAttribute('data-proto-theme-label', '');
+    themeBtn.setAttribute('data-proto-theme', '');
     themeBtn.addEventListener('click', PROTO.toggleTheme);
-    right.appendChild(themeBtn);
-
-    const traceBtn = PROTO.el('button', 'proto-btn proto-btn-outline', t('proto.trace_toggle'));
-    traceBtn.type = 'button';
-    traceBtn.setAttribute('data-proto-trace-toggle', '');
-    traceBtn.setAttribute('aria-expanded', 'false');
-    traceBtn.addEventListener('click', PROTO.toggleTrace);
-    right.appendChild(traceBtn);
-    bar.appendChild(right);
+    bar.appendChild(themeBtn);
   }
+  const dock = document.querySelector('[data-proto-dock]');
+  if (dock) {
+    PROTO.clear(dock);
+    const demo = PROTO.el('button', 'proto-dock-btn');
+    demo.type = 'button';
+    demo.setAttribute('data-proto-dock-btn', 'demo');
+    demo.appendChild(PROTO.icon('list', 16));
+    demo.appendChild(PROTO.el('span', '', o.dockLabel || t('proto.dock_demo')));
+    demo.addEventListener('click', () => PROTO.toggleSheet('demo'));
+    dock.appendChild(demo);
+
+    const trace = PROTO.el('button', 'proto-dock-btn');
+    trace.type = 'button';
+    trace.setAttribute('data-proto-dock-btn', 'trace');
+    trace.appendChild(PROTO.icon('info', 16));
+    trace.appendChild(PROTO.el('span', '', t('proto.dock_trace')));
+    trace.addEventListener('click', () => PROTO.toggleSheet('trace'));
+    dock.appendChild(trace);
+  }
+  const close = document.querySelector('[data-proto-sheet-close]');
+  if (close) close.addEventListener('click', PROTO.closeSheet);
   PROTO.applyTheme();
-  if (PROTO.missing.length === 0 && !PROTO.dictLoaded) {
-    // словарь не доехал — предупредим обвязку, а не экран
+  if (!PROTO.dictLoaded) {
     const warn = document.querySelector('[data-proto-warn]');
     if (warn) warn.removeAttribute('hidden');
   }
 };
 
-// Кнопка запуска сценария/экрана — стиль прототипа, не продукта.
 PROTO.protoLink = function (label, href, kind) {
   const a = PROTO.el('a', 'proto-btn ' + (kind === 'primary' ? 'proto-btn-primary' : 'proto-btn-outline'), label);
   a.href = href;
   return a;
 };
 
-PROTO.esc = function (s) { return String(s === undefined || s === null ? '' : s); };
-
 PROTO.nowTime = function () {
   const d = new Date();
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 };
-
 PROTO.toast = function (msg) {
   const node = PROTO.el('div', 'proto-toast', msg);
   document.body.appendChild(node);
-  setTimeout(() => { node.classList.add('show'); }, 10);
+  setTimeout(() => node.classList.add('show'), 10);
   setTimeout(() => { node.classList.remove('show'); setTimeout(() => node.remove(), 250); }, 1700);
 };
-
 PROTO.copy = function (text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(
-      () => PROTO.toast(PROTO.t('proto.link_copied')),
-      () => PROTO.toast(text)
-    );
-  } else {
-    PROTO.toast(text);
-  }
+    navigator.clipboard.writeText(text).then(() => PROTO.toast(t('proto.link_copied')), () => PROTO.toast(text));
+  } else PROTO.toast(text);
 };
-
-// Кнопка/ссылка прототипа, открывающая мок Mini App из чата.
 PROTO.appUrl = function (route, backUrl) {
   const sep = route.indexOf('?') >= 0 ? '&' : '?';
   return 'app.html' + route + sep + 'back=' + encodeURIComponent(backUrl || 'index.html');
 };
-
 PROTO.chatUrl = function (scenario, step, resume) {
   return 'chat.html?s=' + encodeURIComponent(scenario) + (step ? '&step=' + encodeURIComponent(step) : '') + (resume ? '&resume=1' : '');
 };

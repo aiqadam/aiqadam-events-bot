@@ -157,7 +157,7 @@ PROTO.buildScenarios = function () {
           { label: T('bcast.segment.all_consent') + ' · ' + D.segments.all_consent, go: 'forwarded' },
           { label: T('bcast.segment.registered') + ' · ' + D.segments.registered, go: 'forwarded' },
           { label: T('bcast.segment.checked_in') + ' · ' + D.segments.checked_in, go: 'forwarded' },
-          { label: T('bcast.segment.no_show'), go: 'st-bcast-noshow' },
+          { label: T('bcast.segment.no_show'), go: 'st-bcast-noshow', locked: true },
         ] },
       { id: 'forwarded', kind: 'user', forwarded: true, text: P['proto.broadcast_sample'], trace: ['OWN-9'] },
       { id: 'preview', kind: 'card', edit: true, card: {

@@ -63,13 +63,13 @@ PROTO.data = {
 
   catalog: {
     upcoming: [
-      { id: '4', title: 'AI Qadam #4 · LLM Engineering in Production', when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park', seats: 42, status: 'published', tag: 'LLM' },
-      { id: '6', title: 'RAG Reading Group · «The Faiss Library»', when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom', seats: null, status: 'published', tag: 'RAG' },
-      { id: '7', title: 'Хакатон AI Qadam · RAG for Business', when: 'сб, 17 октября · 10:00', where: 'Ташкент · IT Park', seats: 60, status: 'published', tag: 'Hackathon' },
+      { id: '4', title: 'AI Qadam #4 · LLM Engineering in Production', when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park', seats: 42, status: 'published', tag: 'LLM', d: { weekday: 'сб', day: '26', month: 'сент' } },
+      { id: '6', title: 'RAG Reading Group · «The Faiss Library»', when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom', seats: null, status: 'published', tag: 'RAG', d: { weekday: 'пн', day: '5', month: 'окт' } },
+      { id: '7', title: 'Хакатон AI Qadam · RAG for Business', when: 'сб, 17 октября · 10:00', where: 'Ташкент · IT Park', seats: 60, status: 'published', tag: 'Hackathon', d: { weekday: 'сб', day: '17', month: 'окт' } },
     ],
     past: [
-      { id: '3', title: 'AI Qadam #3 · Embeddings & Vector DB Day', when: 'сб, 5 сентября · 18:30', where: 'Ташкент · IT Park', attended: 178, status: 'finished' },
-      { id: '2', title: 'AI Qadam Almaty #1 · Computer Vision Day', when: 'сб, 22 августа · 18:30', where: 'Алматы · Astana Hub', attended: 134, status: 'finished' },
+      { id: '3', title: 'AI Qadam #3 · Embeddings & Vector DB Day', when: 'сб, 5 сентября · 18:30', where: 'Ташкент · IT Park', attended: 178, status: 'finished', d: { weekday: 'сб', day: '5', month: 'сен' } },
+      { id: '2', title: 'AI Qadam Almaty #1 · Computer Vision Day', when: 'сб, 22 августа · 18:30', where: 'Алматы · Astana Hub', attended: 134, status: 'finished', d: { weekday: 'сб', day: '22', month: 'авг' } },
     ],
   },
 

@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="proto.css" />
   </head>
   <body class="proto-body">
-    <div class="proto-wrap">
+    <div class="proto-app">
       <div class="proto-bar" data-proto-bar></div>
       <div class="proto-warn" data-proto-warn hidden>Словарь i18n/ru.json не загрузился — на экране сырые ключи.</div>
 
@@ -19,30 +19,30 @@
           <div class="tgv-bar">
             <a class="tgv-close" data-proto-close href="index.html">Закрыть</a>
             <span class="tgv-title" id="app-bar-title">Mini App</span>
-            <span class="tgv-more" aria-hidden="true">⋯</span>
+            <span class="tgv-more" aria-hidden="true">
+              <span class="proto-icon" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
+            </span>
           </div>
           <div class="tgv-screen" id="screen"></div>
         </div>
       </div>
 
-      <div class="proto-demo" data-proto-demo></div>
+      <footer class="proto-dock" data-proto-dock></footer>
     </div>
 
-    <div class="proto-trace" data-proto-trace-panel hidden>
-      <div class="proto-trace-head">
-        <span class="proto-trace-title">Требования SPEC</span>
-        <button type="button" class="proto-btn proto-btn-ghost" data-proto-trace-close>Закрыть</button>
+    <div class="proto-sheet" data-proto-sheet hidden>
+      <div class="proto-sheet-head">
+        <span class="proto-sheet-title" data-proto-sheet-title></span>
+        <button type="button" class="proto-icon-btn" data-proto-sheet-close aria-label="Закрыть">
+          <span class="proto-icon" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>
+        </button>
       </div>
-      <div class="proto-trace-note">Слой трассировки. На самих экранах пометок нет — это прототип, а не продукт.</div>
-      <div class="proto-trace-body" data-proto-trace-body></div>
+      <div class="proto-sheet-body" data-proto-sheet-body></div>
     </div>
 
     <script src="proto.js"></script>
     <script src="data.js"></script>
     <script src="scenarios.js"></script>
     <script src="app.js"></script>
-    <script>
-      document.querySelector('[data-proto-trace-close]').addEventListener('click', PROTO.toggleTrace);
-    </script>
   </body>
 </html>
