@@ -56,8 +56,8 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | Поле | Тип | Примечание |
 | --- | --- | --- |
 | `id` | text, **PK** | короткий slug в алфавите `A-Za-z0-9_` — влезает в 64 символа deep link |
-| `owner_id` | text → `users.telegram_id` | роль owner (DAT-3) |
-| `chapter_id` | text → `chapters.id` | заведено заранее под второй чаптер, логики пока нет ([Q8](OPEN-QUESTIONS.md#q8)) |
+| `staff_id` | text → `staff.telegram_id` | **автор** (кто создал); не гейт прав ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)) |
+| `chapter_id` | text → `chapters.id` | чаптер ивента; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
@@ -92,8 +92,26 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `title` | text | |
 | `created_at` | timestamp | |
 
-Заведена сразу, чтобы второй чаптер не требовал миграции. Права, сегменты и
-видимость по чаптеру **пока не режутся** — это отдельное требование, когда появится.
+Заведена сразу, чтобы второй чаптер не требовал миграции. Заведён общий чаптер
+`id=1` («AI Qadam Uzbekistan»); права `staff` режутся по чаптеру
+([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)), сегменты и
+видимость по чаптеру рассылок **пока не режутся** — это отдельное требование, когда
+появится ([Q8](OPEN-QUESTIONS.md#q8)).
+
+## `staff`
+
+| Поле | Тип | Примечание |
+| --- | --- | --- |
+| `telegram_id` | text, PK | единственный ключ (DAT-1) |
+| `chapter_id` | text → `chapters.id` | чаптер staff; пусто = все чаптеры |
+| `note` | text | справочно |
+| `added_at` | timestamp | UTC |
+
+Строка в `staff` — право **создавать и править** ивенты своего чаптера
+([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)). Доступ к ивенту:
+`staff.chapter_id === '' ` или `staff.chapter_id === event.chapter_id`. Нет строки —
+отказ и на создание, и на правку, одним `403 forbidden`. Ведётся человеком в UI
+платформы; это не `users` (реестр контактов) и не `event_staff` (контролёры ивента).
 
 ### notify-on-change
 
@@ -139,7 +157,9 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 
 **Уникальность: `(event_id, telegram_id)`.**
 Проверка прав контролёра (STF-2) — это ровно «есть строка с этим `event_id`,
-этим `telegram_id` и пустым `revoked_at`». Глобального staff не существует.
+этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
+глобальный `staff` — это команда/организаторы, к чекину отношения не имеет.
+Выдаёт и отзывает права **любой staff с доступом к ивенту** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
 
 ## `staff_invites`
 

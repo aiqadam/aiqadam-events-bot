@@ -29,3 +29,4 @@
 | [0021](0021-repo-is-source-of-truth-migrations-table.md) | Источник правды — репозиторий; синхронность фиксирует `migrations` (уточняет 0018 п. 3–5) | Принято |
 | [0022](0022-miniapp-react-spa.md) | Mini App — React SPA на дизайн-системе бренда (расширяет 0001, сужает 0017 п. 3, уточняет 0019 п. 5) | Принято |
 | [0023](0023-fourth-miniapp-page-event-catalog.md) | Четвёртая страница Mini App — каталог ивентов `#/events` (расширяет 0017 п. 3, уточняет 0022 п. 3) | Принято |
+| [0024](0024-staff-by-chapter-event-staff-checkin.md) | Права: глобальный `staff` по чаптеру, чекин — `event_staff`; `events.staff_id` — авторство (расширяет 0002, заменяет Q47 п. 1) | Принято |
