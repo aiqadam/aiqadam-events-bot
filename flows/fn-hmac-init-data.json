@@ -144,6 +144,7 @@
       },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
+      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

@@ -58,7 +58,8 @@
                                     "exampleData": {
                                       "chatId": "322876545",
                                       "eventId": "demo",
-                                      "telegramId": "322876545"
+                                      "telegramId": "322876545",
+                                      "utm": ""
                                     },
                                     "externalId": "HGX7KPhFsyFrapBRvlIAT"
                                   },
@@ -195,9 +196,12 @@
                                   }
                                 },
                                 "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
+                                      "callbackData": "",
+                                      "callbackQueryId": "",
                                       "chatId": "322876545",
                                       "telegramId": "322876545"
                                     },
@@ -235,9 +239,12 @@
                                   }
                                 },
                                 "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
+                                      "callbackData": "",
+                                      "callbackQueryId": "",
                                       "chatId": "322876545",
                                       "telegramId": "322876545"
                                     },
@@ -275,6 +282,7 @@
                                   }
                                 },
                                 "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
@@ -357,6 +365,7 @@
                                   }
                                 },
                                 "input": {
+                                  "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                                   "executionMode": "queue",
                                   "flow": {
                                     "exampleData": {
@@ -809,6 +818,7 @@
     },
     "settings": {
       "input": {
+        "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
         "update_types": [
           "message",
           "callback_query"

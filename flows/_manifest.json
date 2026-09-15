@@ -47,8 +47,7 @@
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "UCE56SHNoeEGOiqcGoYjH",
-    "source": "mcp"
+    "publishedVersionId": "UCE56SHNoeEGOiqcGoYjH"
   },
   {
     "flow": "my-qr-api",
@@ -88,7 +87,6 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "1LNpRakfrf9CPzl7SXKi9",
-    "source": "mcp"
+    "publishedVersionId": "1LNpRakfrf9CPzl7SXKi9"
   }
 ]
