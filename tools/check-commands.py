@@ -216,6 +216,8 @@ def check_flow(name, tree, problems):
     steps = []
     walk(tree, steps)
     hits = 0
+    for value in all_strings((tree or {}).get("settings", {})):
+        check_slash(value, name, problems)
     for st in steps:
         step_name = st.get("name", "?")
         settings = st.get("settings") or {}
@@ -233,6 +235,13 @@ def check_flow(name, tree, problems):
     return hits
 
 
+def check_flow_fields(flow, name, problems):
+    """Поля самого флоу: заметки на канвасе — тоже место для подсказки команды."""
+    for key in ("notes", "displayName"):
+        for value in all_strings(flow.get(key)):
+            check_slash(value, "%s[%s]" % (name, key), problems)
+
+
 def check_texts(ru, path, problems):
     for value in all_strings(ru):
         check_slash(value, path, problems)
@@ -247,17 +256,17 @@ def roots(data, path):
         return []
     if isinstance(tpl.get("flows"), list):
         return [
-            (f.get("displayName", path), f.get("trigger"))
+            (f.get("displayName", path), f.get("trigger"), f)
             for f in tpl["flows"]
             if isinstance(f, dict) and f.get("trigger")
         ]
     if isinstance(tpl.get("version"), dict):
         ver = tpl["version"]
         if ver.get("trigger"):
-            return [(ver.get("displayName", path), ver["trigger"])]
+            return [(ver.get("displayName", path), ver["trigger"], ver)]
         return []
     if tpl.get("trigger"):
-        return [(tpl.get("displayName", path), tpl["trigger"])]
+        return [(tpl.get("displayName", path), tpl["trigger"], tpl)]
     return []
 
 
@@ -351,6 +360,19 @@ def self_test():
     )
     if problems:
         bad.append("ложные срабатывания: %r" % problems)
+
+    problems = []
+    check_flow_fields({"notes": "проверка чекера: /evil"}, "syn", problems)
+    if not problems:
+        bad.append("не поймана команда в notes флоу")
+    problems = []
+    check_flow_fields(
+        {"notes": "см. #/manage и https://app.flow.aiqadam.org/api/v1/x", "displayName": "syn"},
+        "syn",
+        problems,
+    )
+    if problems:
+        bad.append("ложное срабатывание на notes флоу: %r" % problems)
     if bad:
         print("САМОПРОВЕРКА ЧЕКЕРА ПРОВАЛЕНА:")
         for line in bad:
@@ -392,8 +414,9 @@ def main(argv):
 
     hits = 0
     telegram_flows = 0
-    for name, tree in flows:
+    for name, tree, flow in flows:
         hits += check_flow(name, tree, problems)
+        check_flow_fields(flow, name, problems)
         if is_telegram_trigger(tree):
             telegram_flows += 1
     if telegram_flows == 0:
