@@ -1,185 +1,249 @@
-// Мок чата прототипа W41 — движок отрисовки сценариев (scenarios.js).
-// Карточка-экран редактируется на месте (ADR-0017): card-edit заменяет
-// содержимое последней карточки, не отправляя новое сообщение.
+// Прототип W41 — мок чата Telegram (ADR-0027).
+// Рендерит сценарии из scenarios.js в вёрстке, повторяющей Telegram:
+// пузыри, карточки, inline-клавиатура. Карточка диалога редактируется на
+// месте (ADR-0017 п. 1). Трассировка к SPEC — отдельным слоем.
 'use strict';
+var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
-const chatRoot = document.getElementById('chat');
-const roleEl = document.querySelector('[data-proto-chat-role]');
+(function () {
+  const chatRoot = document.getElementById('chat');
+  const params = new URLSearchParams(location.search);
+  const scenarioId = params.get('s') || 'guest';
+  const startStep = params.get('step') || '';
+  const doResume = params.get('resume') === '1';
+  const stateKey = 'proto-chat-' + scenarioId;
 
-// Текущая редактируемая карточка (её заменяет card-edit)
-let activeCardEl = null;
-// Текущий шаг
-let currentStep = null;
-// Отправленные bot-сообщения (для разделителя «предложение»)
-let sentBubbles = 0;
+  let scenarios = null;
+  let sc = null;
+  let rendered = [];       // [{id, time}]
+  let activeCardEl = null; // редактируемая карточка
+  let activeCardId = null;
+  let finished = false;
 
-function bubble(text, { user, proposal, spec, note }) {
-  const wrap = document.createElement('div');
-  wrap.className = 'msg ' + (user ? 'user' : 'bot');
-  const p = document.createElement('div');
-  p.innerHTML = text.replace(/\n/g, '<br/>');
-  wrap.appendChild(p);
-  if (note) {
-    const n = document.createElement('div');
-    n.style.cssText = 'font-size:11px;color:var(--muted-foreground);margin-top:4px;';
-    n.textContent = '↑ ' + note;
-    wrap.appendChild(n);
+  // ---------- состояние (переживает переход в Mini App и обратно) ----------
+  function loadState() {
+    try {
+      const raw = sessionStorage.getItem(stateKey);
+      if (!raw) return null;
+      const st = JSON.parse(raw);
+      return st && st.scenario === scenarioId ? st : null;
+    } catch (e) { return null; }
   }
-  if (proposal) {
-    const b = document.createElement('span');
-    b.style.cssText = 'display:block;margin-top:6px;';
-    b.appendChild(reqBadge({ built: false, spec: spec || 'предложение' }));
-    wrap.appendChild(b);
-  } else if (spec) {
-    const b = document.createElement('span');
-    b.style.cssText = 'display:block;margin-top:6px;';
-    b.appendChild(reqBadge({ built: true, spec }));
-    wrap.appendChild(b);
+  function saveState() {
+    try {
+      sessionStorage.setItem(stateKey, JSON.stringify({ scenario: scenarioId, rendered: rendered, activeCard: activeCardId }));
+    } catch (e) { /* приватный режим — не критично */ }
   }
-  const time = document.createElement('span');
-  time.className = 'time';
-  time.textContent = chatTime();
-  wrap.appendChild(time);
-  chatRoot.appendChild(wrap);
-  scrollDown();
-  return wrap;
-}
-
-function card(node, { title, rows, body, buttons, proposal, spec }) {
-  node.className = 'msg-card';
-  node.innerHTML = '';
-  const head = document.createElement('div');
-  head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;';
-  const titleEl = document.createElement('div');
-  titleEl.className = 'msg-card-title';
-  titleEl.textContent = title;
-  head.appendChild(titleEl);
-  head.appendChild(reqBadge({ built: !proposal, spec: spec || 'v0.1' }));
-  node.appendChild(head);
-
-  if (rows && rows.length) {
-    const dl = document.createElement('div');
-    dl.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-    rows.forEach(([k, v]) => {
-      const row = document.createElement('div');
-      row.className = 'msg-card-row';
-      const kEl = document.createElement('span');
-      kEl.className = 'msg-card-label';
-      kEl.textContent = k + ':';
-      const vEl = document.createElement('span');
-      vEl.textContent = v;
-      row.appendChild(kEl);
-      row.appendChild(vEl);
-      dl.appendChild(row);
-    });
-    node.appendChild(dl);
+  function resetState() {
+    try { sessionStorage.removeItem(stateKey); } catch (e) { /* noop */ }
   }
 
-  if (body) {
-    const p = document.createElement('div');
-    p.innerHTML = body.replace(/\n/g, '<br/>');
-    node.appendChild(p);
+  function findStep(id) {
+    return sc.steps.find((s) => s.id === id) || null;
+  }
+  function indexOf(id) {
+    return sc.steps.findIndex((s) => s.id === id);
   }
 
-  if (buttons && buttons.length) {
-    const act = document.createElement('div');
-    act.className = 'actions';
-    buttons.forEach((btn) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'btn ' + (btn.primary ? 'btn-primary' : 'btn-secondary');
-      b.style.cssText = 'justify-content:center;';
-      b.textContent = btn.label;
-      b.addEventListener('click', () => handleAction(btn));
-      act.appendChild(b);
-    });
-    node.appendChild(act);
+  function scrollDown() {
+    const scr = chatRoot.parentElement;
+    if (scr) scr.scrollTop = scr.scrollHeight;
   }
-  const time = document.createElement('span');
-  time.className = 'time';
-  time.textContent = chatTime();
-  node.appendChild(time);
-  // новая карточка — в чат; существующая (card-edit) — только перерисовать
-  if (!node.parentNode) chatRoot.appendChild(node);
-  scrollDown();
-  return node;
-}
 
-function scrollDown() {
-  const scr = chatRoot.parentElement;
-  if (scr) scr.scrollTop = scr.scrollHeight;
-}
+  // ---------- отрисовка ----------
+  function bubble(kind, text, opts) {
+    const o = opts || {};
+    const row = PROTO.el('div', 'tg-row ' + (kind === 'user' ? 'out' : 'in'));
+    const b = PROTO.el('div', 'tg-bubble ' + (kind === 'user' ? 'tg-out' : 'tg-in'));
+    if (o.forwarded) b.appendChild(PROTO.el('div', 'tg-forwarded', PROTO.t('proto.forwarded_from')));
+    if (o.note) b.appendChild(PROTO.el('div', 'tg-note', o.note));
+    b.appendChild(PROTO.el('div', 'tg-text', text));
+    b.appendChild(PROTO.el('span', 'tg-time', o.time || PROTO.nowTime()));
+    row.appendChild(b);
+    chatRoot.appendChild(row);
+    scrollDown();
+    return b;
+  }
 
-function handleAction(btn) {
-  if (btn.webApp) {
-    // Кнопка web_app — переход в мок Mini App с возвратом в тот же шаг сценария.
-    const back = location.pathname.split('/').pop() + '?s=' + currentScenario + '&step=' + (btn.next || currentStepIndex);
-    const target = 'app.html' + btn.webApp + '&back=' + encodeURIComponent(back);
-    location.href = target;
-    return;
-  }
-  runStep(btn.next);
-}
-
-// Переход к шагу по id (или по индексу)
-function runStep(target) {
-  const steps = currentScenarioData.steps;
-  let idx = typeof target === 'number' ? target : -1;
-  if (idx < 0) {
-    idx = steps.findIndex((s) => s.id === target);
-  }
-  if (idx < 0) {
-    // «end» — конец сценария
-    bubble('— конец сценария —', {});
-    return;
-  }
-  currentStepIndex = idx;
-  const step = steps[idx];
-
-  if (step.type === 'user') {
-    bubble(step.text, { user: true, note: step.note });
-    // после user-сообщения автоматически идём к следующему шагу
-    runStep(idx + 1);
-    return;
-  }
-  if (step.type === 'bot') {
-    bubble(step.text, { proposal: step.proposal, spec: step.spec });
-    runStep(idx + 1);
-    return;
-  }
-  if (step.type === 'card') {
-    activeCardEl = card(document.createElement('div'), step);
-    return;
-  }
-  if (step.type === 'card-edit') {
-    if (!activeCardEl) {
-      // фолбэк: если редактируемой карточки нет — рисуем новую
-      activeCardEl = card(document.createElement('div'), step);
-    } else {
-      card(activeCardEl, step);
+  function buildCard(step) {
+    const card = step.card || {};
+    const b = PROTO.el('div', 'tg-bubble tg-card');
+    if (card.title) b.appendChild(PROTO.el('div', 'tg-card-title', card.title));
+    if (card.lines && card.lines.length) {
+      const box = PROTO.el('div', 'tg-card-lines');
+      card.lines.forEach((line) => box.appendChild(PROTO.el('div', 'tg-card-line', line)));
+      b.appendChild(box);
     }
-    return;
+    if (card.body) b.appendChild(PROTO.el('div', 'tg-card-body', card.body));
+    if (card.link) {
+      const a = PROTO.el('a', 'tg-card-link', card.link.text);
+      a.href = card.link.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      b.appendChild(a);
+    }
+    return b;
   }
-}
 
-// ---------- инициализация ----------
-const params = new URLSearchParams(location.search);
-const currentScenario = params.get('s') || 'guest';
-const resumeStep = params.get('step');
-let currentScenarioData = buildScenario(currentScenario);
-let currentStepIndex = 0;
+  function renderButtons(container, buttons) {
+    const kbd = PROTO.el('div', 'tg-kbd');
+    (buttons || []).forEach((btn) => {
+      const el = PROTO.el('button', 'tg-kbd-btn');
+      el.type = 'button';
+      if (btn.primary) el.classList.add('primary');
+      if (btn.tone === 'danger') el.classList.add('danger');
+      if (btn.disabled) {
+        el.classList.add('disabled');
+        el.disabled = true;
+        if (btn.note) el.title = btn.note;
+      }
+      el.textContent = btn.label;
+      if (btn.note && !btn.disabled) el.title = btn.note;
+      el.addEventListener('click', () => onButton(btn));
+      kbd.appendChild(el);
+    });
+    if (buttons && buttons.length) container.appendChild(kbd);
+  }
 
-async function init() {
-  roleEl.textContent = currentScenarioData.title;
-  await loadI18n();
-  // сценарий перестраиваем после загрузки словаря (тексты — из ru.json)
-  currentScenarioData = buildScenario(currentScenario);
-  chatRoot.innerHTML = '';
-  // стартовое приветствие чата
-  const intro = bubble('AI Qadam Events — прототип диалога «' + currentScenarioData.title + '». Нажимайте кнопки карточек.', {});
-  // первые шаги: user-сообщения и бот-карточки
-  const startIdx = resumeStep ? currentScenarioData.steps.findIndex((s) => s.id === resumeStep) : 0;
-  runStep(startIdx >= 0 ? startIdx : 0);
-}
+  // Рендер шага. replay:true — восстановление истории, без автоперехода.
+  function renderStep(step, replay, time) {
+    PROTO.setTrace(step.trace || []);
+    if (step.kind === 'user') {
+      bubble('user', step.text, { note: step.note, forwarded: step.forwarded, time: time });
+    } else if (step.kind === 'bot') {
+      const b = bubble('bot', step.text, { time: time });
+      renderButtons(b, step.buttons);
+    } else if (step.kind === 'card') {
+      let b;
+      if (step.edit && activeCardEl) {
+        b = activeCardEl;
+        PROTO.clear(b);
+        const fresh = buildCard(step);
+        while (fresh.firstChild) b.appendChild(fresh.firstChild);
+      } else {
+        const row = PROTO.el('div', 'tg-row in');
+        b = buildCard(step);
+        row.appendChild(b);
+        chatRoot.appendChild(row);
+        activeCardEl = b;
+      }
+      activeCardId = step.id;
+      b.appendChild(PROTO.el('span', 'tg-time', time || PROTO.nowTime()));
+      renderButtons(b, step.buttons);
+      scrollDown();
+    }
+    if (!replay) {
+      rendered.push({ id: step.id, time: time || PROTO.nowTime() });
+      saveState();
+    }
+  }
 
-void init();
+  function finish() {
+    finished = true;
+    renderDemo();
+  }
+
+  function advanceFrom(index) {
+    if (finished) return;
+    const next = sc.steps[index + 1];
+    if (!next) { finish(); return; }
+    if (next.state) { finish(); return; }
+    renderStep(next, false);
+    if (!next.buttons || !next.buttons.length) {
+      setTimeout(() => advanceFrom(index + 1), 420);
+    }
+  }
+
+  function runIndex(i) {
+    if (i < 0 || i >= sc.steps.length) { finish(); return; }
+    const step = sc.steps[i];
+    renderStep(step, false);
+    if (!step.buttons || !step.buttons.length) {
+      setTimeout(() => advanceFrom(i), 420);
+    }
+  }
+
+  function runId(id) {
+    if (!id || id === 'end') { finish(); return; }
+    const i = indexOf(id);
+    if (i < 0) { finish(); return; }
+    runIndex(i);
+  }
+
+  function onButton(btn) {
+    if (btn.disabled) return;
+    if (btn.copy) { PROTO.copy(btn.copy); return; }
+    if (btn.share) {
+      const url = 'https://t.me/share/url?url=' + encodeURIComponent(btn.share);
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+    if (btn.webApp) {
+      saveState();
+      const back = PROTO.chatUrl(scenarioId, btn.resume || '', true);
+      location.href = PROTO.appUrl(btn.webApp, back);
+      return;
+    }
+    if (btn.go) runId(btn.go);
+  }
+
+  // ---------- демо-контролы (обвязка прототипа, не экран) ----------
+  const quickIndex = {
+    guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие'], ['myreg', 'Мои регистрации']],
+    owner: [['menu', 'Меню'], ['published', 'Публикация'], ['invite', 'Ссылка-приглашение'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
+    controller: [['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
+  };
+
+  function renderDemo() {
+    const box = document.querySelector('[data-proto-demo]');
+    if (!box) return;
+    PROTO.clear(box);
+    const head = PROTO.el('div', 'proto-demo-head');
+    head.appendChild(PROTO.el('strong', '', sc.title));
+    head.appendChild(PROTO.el('span', 'proto-demo-hint', sc.hint));
+    box.appendChild(head);
+
+    const jumps = PROTO.el('div', 'proto-demo-row');
+    jumps.appendChild(PROTO.el('span', 'proto-demo-label', 'Ключевые шаги:'));
+    (quickIndex[scenarioId] || []).forEach(([id, label]) => {
+      const a = PROTO.protoLink(label, PROTO.chatUrl(scenarioId, id));
+      jumps.appendChild(a);
+    });
+    box.appendChild(jumps);
+
+    const states = PROTO.el('div', 'proto-demo-row');
+    states.appendChild(PROTO.el('span', 'proto-demo-label', 'Состояния:'));
+    (PROTO.stateIndex[scenarioId] || []).forEach(([id, label]) => {
+      states.appendChild(PROTO.protoLink(label, PROTO.chatUrl(scenarioId, id)));
+    });
+    box.appendChild(states);
+
+    const reset = PROTO.el('div', 'proto-demo-row');
+    reset.appendChild(PROTO.protoLink(PROTO.t('proto.reset'), PROTO.chatUrl(scenarioId)));
+    if (finished) reset.appendChild(PROTO.el('span', 'proto-demo-hint', 'Сценарий завершён.'));
+    box.appendChild(reset);
+  }
+
+  // ---------- инициализация ----------
+  async function init() {
+    await PROTO.loadI18n();
+    PROTO.initChrome({ title: 'Мок чата · ' + scenarioId });
+    scenarios = PROTO.buildScenarios();
+    sc = scenarios[scenarioId] || scenarios.guest;
+    renderDemo();
+
+    const saved = (startStep && doResume) ? loadState() : null;
+    if (saved) {
+      rendered = saved.rendered || [];
+      rendered.forEach((entry) => {
+        const st = findStep(entry.id);
+        if (st) renderStep(st, true, entry.time);
+      });
+    } else {
+      resetState();
+    }
+    if (startStep) runId(startStep); else runIndex(0);
+  }
+
+  void init();
+})();

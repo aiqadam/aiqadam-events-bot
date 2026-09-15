@@ -3,135 +3,112 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AI Qadam Events — прототип UI</title>
-    <!-- Бренд — из вендоренной копии miniapp/src/vendor/brand/ (деплой копирует в prototypes/vendor/, ADR-0026) -->
+    <title>AI Qadam Events — прототип (целевой эталон)</title>
     <link rel="stylesheet" href="vendor/tokens.css" />
     <link rel="stylesheet" href="vendor/components.css" />
     <link rel="stylesheet" href="proto.css" />
   </head>
-  <body>
-    <main class="proto-page">
-      <header class="proto-top">
-        <h1>AI Qadam Events — UI-прототип</h1>
-        <span class="badge badge-warning">прототип, не продукт</span>
+  <body class="proto-body">
+    <main class="proto-home">
+      <header class="proto-home-top">
+        <div>
+          <div class="proto-eyebrow">Прототип · целевой эталон (to-be)</div>
+          <h1 class="proto-home-title">AI Qadam Events — как продукт должен выглядеть</h1>
+        </div>
+        <button type="button" class="proto-btn proto-btn-outline" data-proto-theme-label></button>
       </header>
-      <p class="proto-note">
-        Кликабельный прототип двух поверхностей: мок чата Telegram и мок Mini App.
-        Сначала — построенное (v0.1: гость / овнер / контролёр), затем — предложения
-        v0.2 (W13/W14/W38/W39), помеченные бейджем «предложение». Инстанс не трогается,
-        данных на сервере нет (ADR-0026, пакет W41).
+
+      <p class="proto-home-lead">
+        Это не снимок текущего продукта, а <strong>целевое состояние</strong> глазами
+        конечного пользователя. Источники — требования SPEC, дизайн-система
+        <span class="mono">brand.aiqadam.org</span>, голос бота и правила среды Telegram
+        Mini App. Экраны намеренно выглядят как настоящий продукт: служебных бейджей
+        на них нет, а соответствие требованиям живёт отдельным слоем — кнопкой
+        «Требования» в моке. Границы артефакта — ADR-0026, роль эталона — ADR-0027.
       </p>
 
-      <nav class="proto-nav">
-        <a class="btn btn-secondary" href="chat.html">Мок чата</a>
-        <a class="btn btn-secondary" href="app.html">Мок Mini App</a>
-        <button type="button" class="btn btn-ghost" data-proto-theme-btn onclick="PROTO.toggleTheme()">Тёмная тема</button>
-      </nav>
+      <section class="proto-roles" id="roles"></section>
 
-      <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 600;">Сквозные сценарии</h2>
-      <div class="proto-scenarios">
-        <a class="btn btn-primary" href="chat.html?s=guest">Сценарий: гость</a>
-        <a class="btn btn-primary" href="chat.html?s=owner">Сценарий: овнер</a>
-        <a class="btn btn-primary" href="chat.html?s=controller">Сценарий: контролёр</a>
-      </div>
+      <section class="proto-section">
+        <h2 class="proto-home-h2">Состояния, которые ломают экран</h2>
+        <p class="proto-home-note">
+          Их нельзя оставлять на волю случая: пустой срез, истёкший доступ, отказ по
+          правам, нет связи. Открываются прямо в моке чата.
+        </p>
+        <div id="states" class="proto-states"></div>
+      </section>
 
-      <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-top: 28px;">
-        Матрица «роль × вход × функция»
-      </h2>
-      <div class="proto-grid">
-        <section class="proto-cell card" style="padding: 16px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <strong>Гость</strong><span class="req-badge built">PAR-1…PAR-6</span>
-          </div>
-          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
-            Вход — deep link <span class="mono" style="font-size:12px;">?start=e&lt;id&gt;</span> из ссылки регистрации.
-          </p>
-          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
-            <li>Карточка ивента + согласие на ПД — одним экраном (ADR-0017)</li>
-            <li>Согласие на рассылку — отдельный необязательный шаг (PAR-2)</li>
-            <li>Билет с QR в Mini App (<span class="mono" style="font-size:12px;">#/ticket</span>)</li>
-            <li>Напоминания 24ч / 2ч, послесловие — <span class="req-badge proposal">W12</span></li>
-          </ul>
-        </section>
-
-        <section class="proto-cell card" style="padding: 16px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <strong>Овнер (staff)</strong><span class="req-badge built">OWN-1…OWN-15</span>
-          </div>
-          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
-            Вход — карточка меню <span class="mono" style="font-size:12px;">/start</span> → «Создать ивент» (кнопка <span class="mono" style="font-size:12px;">web_app</span>).
-          </p>
-          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
-            <li>Создание и правка ивента в <span class="mono" style="font-size:12px;">#/manage</span> (OWN-1…OWN-5)</li>
-            <li>Ссылка-приглашение после публикации (OWN-6, W37)</li>
-            <li>Контролёры ивента по <span class="mono" style="font-size:12px;">telegram_id</span> (W36)</li>
-            <li>Участники, счётчики, экспорт — <span class="req-badge proposal">W13</span></li>
-            <li>Рассылка пересылкой — <span class="req-badge proposal">W14</span></li>
-          </ul>
-        </section>
-
-        <section class="proto-cell card" style="padding: 16px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <strong>Контролёр</strong><span class="req-badge built">STF-1…STF-4</span>
-          </div>
-          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
-            Вход — кнопка «Сканер чекина» в меню (ближайший будущий ивент) → <span class="mono" style="font-size:12px;">#/scan</span>.
-          </p>
-          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
-            <li>Сканер не закрывается между людьми (STF-1)</li>
-            <li>Четыре исхода: успех / уже отмечен / нет регистрации / другой ивент (STF-4)</li>
-            <li>Права проверяются по конкретному <span class="mono" style="font-size:12px;">event_id</span> (STF-2)</li>
-          </ul>
-        </section>
-
-        <section class="proto-cell card" style="padding: 16px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <strong>Staff + контролёр</strong><span class="req-badge built">совмещение ролей</span>
-          </div>
-          <p class="meta" style="font-size:13px;color:var(--muted-foreground);margin:0;">
-            Одна строка в <span class="mono" style="font-size:12px;">staff</span> (чаптер) и строка в <span class="mono" style="font-size:12px;">event_staff</span> (ивент).
-          </p>
-          <ul style="margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;">
-            <li>Меню показывает все четыре кнопки (порядок фиксирован, W34)</li>
-            <li>Права на правку — по чаптеру, на чекин — по ивенту (ADR-0024)</li>
-          </ul>
-        </section>
-      </div>
-
-      <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-top: 28px;">Состояния, которые ломают экран</h2>
-      <div class="proto-grid">
-        <div class="proto-cell proto-state error">
-          <span class="proto-state-title">401 — устаревший initData</span>
-          <p class="empty-desc">«Данные Mini App устарели — переоткройте приложение» (окна по флоу, Q49)</p>
-        </div>
-        <div class="proto-cell proto-state error">
-          <span class="proto-state-title">403 — нет прав</span>
-          <p class="empty-desc">«Нет прав на чекин этого ивента» / «Нет прав на правку» (STF-2, ADR-0024)</p>
-        </div>
-        <div class="proto-cell proto-state">
-          <span class="proto-state-title">Нет связи</span>
-          <p class="empty-desc">«Нет соединения. Проверьте сеть и повторите.» + кнопка «Повторить»</p>
-        </div>
-        <div class="proto-cell proto-state">
-          <span class="proto-state-title">Сервер ответил не-JSON / ошибка в ответе</span>
-          <p class="empty-desc">«Сервер ответил неожиданно. Повторите чуть позже.» — различимо от нет-связи</p>
-        </div>
-        <div class="proto-cell proto-state">
-          <span class="proto-state-title">Светлая / тёмная тема</span>
-          <p class="empty-desc">Из <span class="mono" style="font-size:12px;">Telegram.WebApp.colorScheme</span>; переключатель справа внизу</p>
-        </div>
-        <div class="proto-cell proto-state">
-          <span class="proto-state-title">Safe Area (инсеты)</span>
-          <p class="empty-desc">Контент под шапкой/жестовой зоной — вариант с инсетами на экранах (Q48 живым девайсом не закрывается)</p>
-        </div>
-      </div>
-
-      <p class="proto-note" style="margin-top: 28px;">
-        Бейдж <span class="req-badge built">требование</span> — экран построен в v0.1;
-        <span class="req-badge proposal">предложение</span> — пакет v0.2 (W13/W14/W38/W39),
-        решения по нему ещё нет.
-      </p>
+      <section class="proto-section">
+        <h2 class="proto-home-h2">Что смотреть</h2>
+        <ul class="proto-home-list">
+          <li><strong>Карточка редактируется на месте</strong> — весь диалог ведёт одно сообщение, а не лента из девяти (ADR-0017).</li>
+          <li><strong>Два согласия — два тапа</strong> — на данные и на анонсы, отдельно и не по умолчанию (PAR-1, PAR-2).</li>
+          <li><strong>Билет и сканер — Mini App</strong> — QR рендерится клиентом, сканер не закрывается между людьми (PAR-6, STF-1).</li>
+          <li><strong>Четыре исхода чекина</strong> — успех, «уже отмечен», «нет регистрации», «другой ивент» (STF-4).</li>
+          <li><strong>Рассылка пересылкой</strong> — переслал сообщение, подтвердил сегмент, тест себе, отправка (OWN-9…OWN-13).</li>
+        </ul>
+      </section>
     </main>
+
     <script src="proto.js"></script>
+    <script src="data.js"></script>
+    <script src="scenarios.js"></script>
+    <script>
+      (function () {
+        PROTO.applyTheme();
+
+        const roles = [
+          {
+            name: 'Гость',
+            desc: 'Регистрация по ссылке, билет с QR, напоминания, послесловие, каталог и отмена.',
+            chat: PROTO.chatUrl('guest'),
+            app: 'app.html#/ticket?event_id=4',
+            appLabel: 'Билет · Каталог',
+            app2: 'app.html#/events',
+          },
+          {
+            name: 'Организатор',
+            desc: 'Создание и правка ивента, ссылка-приглашение, участники и экспорт, рассылка, контролёры.',
+            chat: PROTO.chatUrl('owner'),
+            app: 'app.html#/manage',
+            appLabel: 'Ивенты и правка',
+            app2: 'app.html#/scan?event_id=4',
+          },
+          {
+            name: 'Контролёр',
+            desc: 'Инвайт-ссылка, права на конкретный ивент, сканер Mini App и луп без закрытия.',
+            chat: PROTO.chatUrl('controller'),
+            app: 'app.html#/scan?event_id=4',
+            appLabel: 'Сканер',
+            app2: 'app.html#/events',
+          },
+        ];
+
+        const rolesBox = document.getElementById('roles');
+        roles.forEach((r) => {
+          const card = PROTO.el('div', 'card proto-role');
+          card.appendChild(PROTO.el('div', 'proto-role-name', r.name));
+          card.appendChild(PROTO.el('p', 'proto-role-desc', r.desc));
+          const actions = PROTO.el('div', 'proto-role-actions');
+          actions.appendChild(PROTO.protoLink('Чат бота', r.chat, 'primary'));
+          actions.appendChild(PROTO.protoLink(r.appLabel, r.app));
+          actions.appendChild(PROTO.protoLink('Ещё', r.app2));
+          card.appendChild(actions);
+          rolesBox.appendChild(card);
+        });
+
+        const statesBox = document.getElementById('states');
+        Object.keys(PROTO.stateIndex).forEach((scenario) => {
+          const group = PROTO.el('div', 'proto-state-group');
+          group.appendChild(PROTO.el('div', 'proto-state-group-title', 'Чат · ' + scenario));
+          const row = PROTO.el('div', 'proto-states-row');
+          PROTO.stateIndex[scenario].forEach(([id, label]) => {
+            row.appendChild(PROTO.protoLink(label, PROTO.chatUrl(scenario, id)));
+          });
+          group.appendChild(row);
+          statesBox.appendChild(group);
+        });
+      })();
+    </script>
   </body>
 </html>
