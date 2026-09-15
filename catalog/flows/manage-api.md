@@ -82,10 +82,12 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
 | нечисловой `staffTelegramId` | 422 | `{ok:false, error:"validation", text, fields:{telegram_id:"manage.err.bad_telegram_id"}, staff:[...]}` — страница переводит ключ |
 
-Тело ответа во всех ветках имеет один набор ключей (`ok`, `error`, `text`,
-`fields`, `event`, `eventId`, `inviteLink`, `staff`, `events`, `count`), потому
-что `return_response` ссылается на них из вывода `step_7`/`step_20`/`step_32`/
-`step_3` и не переживёт отсутствующего поля.
+Тело ответа собирается из вывода шага-решения своей ветки, поэтому `return_response`
+не переживёт отсутствующего поля: `step_10`/`step_12` ссылаются на вывод
+`step_7` (`ok`, `error`, `text`, `fields`, `event`, `eventId`, `inviteLink`),
+`step_9` — на него же, `step_30` — на `step_20` (`+ staff`), `step_33` — на
+`step_32` (`+ events`, `count`); `step_7` объявляет весь набор ключей заранее,
+чтобы ветка без ошибки его не теряла.
 
 ### Правила `step_7`
 
