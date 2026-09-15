@@ -9,7 +9,9 @@
 > Всё остальное — v0.2: W13 (списки/экспорт), W14 (рассылки, headline-UX —
 > «переслал боту сообщение → разослал»), W12 (lifecycle), W10 полный,
 > W12b, W25/W27, **W38** (четвёртая страница Mini App — каталог ивентов
-> `#/events`, [ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md)).
+> `#/events`, [ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md)),
+> **W41** (UI-прототипы end-to-end — дизайн-гейт; рекомендуется первым
+> в v0.2, вердикт владельца меняет экраны W13/W14/W38/W39).
 >
 > Порядок v0.1 при одном агенте: **W35** (дозапись `migrations`) → **W32**
 > (права `staff` по чаптеру — [ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md),
@@ -90,6 +92,7 @@
 | W40. Убрать команды, кроме `/start` ([ADR-0025](adr/0025-start-only-commands-ban.md)) | v0.1 | W36 | **готов** 2026-09-15 — ревью 8 кругов, чекер fail-closed, вердикт «замечаний нет»; живой тест «старая команда → меню» закрыт решением владельца (стоит одного `/events`) | агент | [W40](work/W40-no-commands.md) |
 | W38. Четвёртая страница Mini App — каталог ивентов `#/events` ([ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md)) | v0.2 | W33 — ✅; блокеров нет | не начат — **берётся в v0.2** | — | — |
 | W39. Возврат афиши в Mini App ([Q50](OPEN-QUESTIONS.md#q50)) | v0.2 | W32 | не начат — **берётся в v0.2** | — | — |
+| W41. UI-прототипы end-to-end: чат бота и Mini App | v0.2 | ничего жёсткого; ADR-0026 + проход и вердикт владельца | не начат — **берётся первым в v0.2** (рекомендация пакета) | — | — |
 | W12b. `dedup-report` (сужен до диагностики 2026-09-14, [Q42](OPEN-QUESTIONS.md#q42): считать и сообщать, не удалять) | 5 | W1, W5 | не начат — **v0.2** (2026-09-15) | — | — |
 | W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **готов** 2026-09-13 (решением владельца, не «замечаний нет» — [почему](work/W17-inline-callflow.md#закрытие-2026-09-13--решением-владельца-проекта)) | агент W17 | [W17](work/W17-inline-callflow.md) |
