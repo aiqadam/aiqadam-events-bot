@@ -197,7 +197,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- демо-контролы (в шите обвязки, не на экране) ----------
   const quickIndex = {
     guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие'], ['myreg', 'Мои регистрации']],
-    owner: [['menu', 'Меню'], ['published', 'Публикация'], ['invite', 'Ссылка-приглашение'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
+    owner: [['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
     controller: [['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
   };
 

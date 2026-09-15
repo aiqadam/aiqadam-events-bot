@@ -68,7 +68,7 @@ PROTO.buildScenarios = function () {
         }, trace: ['PAR-6', 'IDM-1', 'ADR-0007'],
         buttons: [{ label: T('reg.qr.button'), webApp: '#/ticket?event_id=' + ev.id, resume: 'reminders', primary: true }] },
 
-      { id: 'reminders', kind: 'bot', text: T('remind.24h', { title: ev.title, when: ev.whenLong, address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
+      { id: 'reminders', kind: 'bot', text: T('remind.24h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       { id: 'reminder-2h', kind: 'bot', text: T('remind.2h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       { id: 'afterword', kind: 'bot', text: T('afterword.thanks') + '\n' + T('afterword.next_header') + ' ' + D.next.title + ' — ' + D.next.when, trace: ['ADR-0017'],
         buttons: [{ label: T('afterword.btn_next'), webApp: '#/events', resume: 'afterword', primary: true }] },
@@ -124,21 +124,9 @@ PROTO.buildScenarios = function () {
         }, trace: ['PAR-4'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
-      { id: 'published', kind: 'bot', text: T('manage.chat.published', { title: ev.title }), trace: ['OWN-1', 'OWN-4'] },
-      { id: 'invite', kind: 'card', card: {
-          title: T('manage.invite.title'), lines: [],
-          body: ev.inviteLink + '\n' + T('manage.invite.hint'),
-        }, trace: ['OWN-6'],
-        buttons: [
-          { label: T('manage.btn.copy'), copy: ev.inviteLink },
-          { label: T('manage.btn.share'), share: ev.inviteLink },
-          { label: T('owner.btn.new_link'), go: 'links' },
-        ] },
-      { id: 'links', kind: 'card', edit: true, card: {
-          title: T('owner.links.title', { title: ev.title }), lines: [],
-          body: T('owner.links.plain', { url: ev.inviteLink }) + '\n' + ev.utm.map((u) => T('owner.links.item', { utm: u.utm, url: u.url })).join('\n'),
-        }, trace: ['OWN-6'],
-        buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
+      // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране ивента.
+      { id: 'published', kind: 'bot', text: T('manage.chat.published', { title: ev.title }), trace: ['OWN-1', 'OWN-4', 'OWN-6'],
+        buttons: [{ label: T('owner.event.btn.edit'), webApp: '#/manage/' + ev.id, resume: 'published', primary: true }] },
 
       { id: 'updated', kind: 'bot', text: T('manage.chat.updated_notified', { title: ev.title, count: D.counts.registered }), trace: ['OWN-5'] },
       { id: 'notify', kind: 'card', card: {
@@ -150,9 +138,9 @@ PROTO.buildScenarios = function () {
       { id: 'cancel-notify', kind: 'bot', text: T('notify.event_cancelled', { title: ev.title }), trace: ['OWN-4'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
-      { id: 'broadcast', kind: 'card', card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.body') }, trace: ['OWN-9'],
+      { id: 'broadcast', kind: 'card', cardSub: ev.title, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.body') }, trace: ['OWN-9'],
         buttons: [{ label: T('bcast.ask.segment'), go: 'segment', primary: true }] },
-      { id: 'segment', kind: 'card', edit: true, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.segment') }, trace: ['OWN-9'],
+      { id: 'segment', kind: 'card', edit: true, cardSub: ev.title, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.segment') }, trace: ['OWN-9'],
         buttons: [
           { label: T('bcast.segment.all_consent') + ' · ' + D.segments.all_consent, go: 'forwarded' },
           { label: T('bcast.segment.registered') + ' · ' + D.segments.registered, go: 'forwarded' },
@@ -160,7 +148,7 @@ PROTO.buildScenarios = function () {
           { label: T('bcast.segment.no_show'), go: 'st-bcast-noshow', locked: true },
         ] },
       { id: 'forwarded', kind: 'user', forwarded: true, text: P['proto.broadcast_sample'], trace: ['OWN-9'] },
-      { id: 'preview', kind: 'card', edit: true, card: {
+      { id: 'preview', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
           body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: D.segments.registered }),
         }, trace: ['OWN-10'],
@@ -168,7 +156,7 @@ PROTO.buildScenarios = function () {
           { label: T('bcast.btn.test'), go: 'tested' },
           { label: T('bcast.btn.send'), disabled: true, note: T('bcast.send.blocked_no_test') },
         ] },
-      { id: 'tested', kind: 'card', edit: true, card: {
+      { id: 'tested', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
           body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: D.segments.registered }) + '\n' + T('bcast.test.sent'),
         }, trace: ['OWN-10'],

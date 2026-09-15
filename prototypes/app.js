@@ -81,11 +81,21 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     return wrap;
   }
   function row2(a, b) { const r = E('div', 'app-row2'); r.appendChild(a); r.appendChild(b); return r; }
+  // StatCard — доменный паттерн бренда (`.stat-card`/`.stat-label`/`.stat-value`).
   function stat(n, label, kind) {
-    const s = E('div', 'stat' + (kind ? ' ' + kind : ''));
-    s.appendChild(E('div', 'n', String(n)));
-    s.appendChild(E('div', 'l', label));
+    const s = E('div', 'stat-card' + (kind ? ' ' + kind : ''));
+    s.appendChild(E('div', 'stat-label', label));
+    s.appendChild(E('div', 'stat-value', String(n)));
     return s;
+  }
+  // EmptyState — доменный паттерн бренда (иконка + заголовок).
+  function emptyState(text, icon) {
+    const e = E('div', 'empty-state');
+    const ic = E('div', 'empty-icon');
+    ic.appendChild(PROTO.icon(icon || 'calendar', 22));
+    e.appendChild(ic);
+    e.appendChild(E('div', 'empty-heading', text));
+    return e;
   }
   function iconBadge(icon) {
     const a = E('span', 'avatar avatar-sm');
@@ -102,6 +112,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     };
   }
   function fakeQr(size) {
+    // Фейковый QR. Чёрное на белом — единственное место с «сырым» цветом:
+    // правило бренда «Dark code on light ground. Never teal» (Event stands →
+    // QR codes), как и у настоящего `qrcode` в продукте.
     const c = E('canvas', 'qr-canvas');
     c.width = size; c.height = size;
     const ctx = c.getContext('2d');
@@ -224,11 +237,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     add.style.marginBottom = '14px';
     screen.appendChild(add);
 
-    if (!D.ownerEvents.length) {
-      const empty = E('div', 'empty-state');
-      empty.appendChild(E('div', 'empty-heading', T('manage.list.empty')));
-      screen.appendChild(empty);
-    }
+    if (!D.ownerEvents.length) screen.appendChild(emptyState(T('manage.list.empty'), 'calendar'));
     D.ownerEvents.forEach((ev) => screen.appendChild(manageRow(ev)));
     PROTO.setDemo([]);
   }
@@ -335,8 +344,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ic.appendChild(E('div', 'invite-link', ev.inviteLink));
       ic.appendChild(muted(T('manage.invite.hint')));
       const acts = E('div', 'app-actions');
-      acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-secondary', icon: 'copy', onClick: () => PROTO.copy(ev.inviteLink) }));
-      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-secondary', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(ev.inviteLink), '_blank', 'noopener') }));
+      acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary', icon: 'copy', onClick: () => PROTO.copy(ev.inviteLink) }));
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(ev.inviteLink), '_blank', 'noopener') }));
       ic.appendChild(acts);
       inv.appendChild(ic);
 
@@ -401,7 +410,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       return true;
     });
     if (!list.length) {
-      body.appendChild(E('div', 'empty-state', T('participants.empty')));
+      body.appendChild(emptyState(T('participants.empty'), 'users'));
     } else {
       const box = card([], 'list-card');
       list.forEach((p) => {
@@ -451,7 +460,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderStaff(body) {
     PROTO.setTrace(['OWN-14', 'STF-2']);
     if (!D.controllers.length) {
-      body.appendChild(E('div', 'empty-state', T('manage.staff.empty')));
+      body.appendChild(emptyState(T('manage.staff.empty'), 'shield'));
     } else {
       const box = card([], 'list-card');
       D.controllers.forEach((s) => {
@@ -476,12 +485,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       PROTO.toast(v ? T('manage.staff.added') : T('manage.err.bad_telegram_id'));
     } }));
     body.appendChild(add);
-
-    const inv = card([], 'invite-card');
-    inv.appendChild(E('div', 'card-title', T('staff.btn.invite')));
-    inv.appendChild(muted(T('staff.invite.created', { url: 'https://t.me/' + D.botUsername + '?start=s4-9f2c1a' })));
-    inv.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-secondary', icon: 'copy', onClick: () => PROTO.copy('https://t.me/' + D.botUsername + '?start=s4-9f2c1a') }));
-    body.appendChild(inv);
     PROTO.setDemo([]);
   }
 
@@ -503,7 +506,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     screen.appendChild(tw);
 
     const list = catalogTab === 'upcoming' ? D.catalog.upcoming : D.catalog.past;
-    if (!list.length) screen.appendChild(E('div', 'empty-state', catalogTab === 'upcoming' ? T('events.list.empty_upcoming') : T('events.list.empty_past')));
+    if (!list.length) screen.appendChild(emptyState(catalogTab === 'upcoming' ? T('events.list.empty_upcoming') : T('events.list.empty_past'), 'calendar'));
     list.forEach((ev) => screen.appendChild(eventCardEl(ev)));
 
     PROTO.setDemo([

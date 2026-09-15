@@ -175,12 +175,13 @@
 .tg-avatar {
   width: 40px; height: 40px;
   border-radius: 50%;
-  background: color-mix(in oklch, var(--primary) 14%, var(--card));
+  /* Знак бренда — на плоской нейтральной подложке (Brand → Logo). */
+  background: var(--muted);
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
 }
-.tg-avatar svg { width: 20px; height: 34px; color: var(--primary); }
+.tg-avatar svg { width: 20px; height: 34px; }
 .tg-peer { display: flex; flex-direction: column; min-width: 0; }
 .tg-name { font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.2; }
 .tg-sub { font-size: 12px; color: var(--muted-foreground); }
@@ -290,7 +291,7 @@
 .tgv-close { font-size: 14px; color: var(--primary); text-decoration: none; }
 .tgv-title { flex: 1; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
 .tgv-more { color: var(--muted-foreground); display: inline-flex; }
-.tgv-screen { flex: 1 1 auto; min-height: 0; overflow-y: auto; background: var(--background); padding: 16px 16px 88px; }
+.tgv-screen { flex: 1 1 auto; min-height: 0; overflow-y: auto; background: var(--background); padding: 16px 16px 0; }
 
 /* заголовки и текст */
 .app-title { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px; }
@@ -301,7 +302,8 @@
 .app-hint { font-size: 12px; color: var(--muted-foreground); margin-top: 10px; }
 .app-center { text-align: center; }
 .mono { font-family: var(--font-mono); }
-.tgv-screen .card { padding: 16px; }
+.app-tab-body { margin-top: 12px; padding-bottom: 24px; }
+/* Паддинг `.card` не переопределяем: у бренда стандарт 24px (space-6). */
 .card-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; line-height: 1.3; margin-bottom: 6px; }
 
 /* кнопки с иконкой */
@@ -377,20 +379,14 @@
 .scan-progress-fill { height: 100%; background: var(--primary); border-radius: 999px; }
 .scan-progress-label { font-size: 12px; color: var(--muted-foreground); margin-top: 6px; text-align: center; }
 
-/* ---------- статистика (счётчики) ---------- */
+/* ---------- статистика: StatCard бренда в 3 колонки ---------- */
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.stat {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  padding: 12px 10px;
-  text-align: center;
-}
-.stat .n { font-family: var(--font-mono); font-size: 22px; font-weight: 600; line-height: 1; }
-.stat .l { font-size: 11px; color: var(--muted-foreground); margin-top: 6px; }
-.stat.ok .n { color: var(--success); }
-.stat.warn .n { color: var(--warning); }
-.stat.bad .n { color: var(--destructive); }
+.stat-card { padding: 14px 12px; }
+.stat-card .stat-label { margin: 0 0 6px; font-size: 9px; }
+.stat-card .stat-value { font-size: 26px; margin: 0; }
+.stat-card.ok .stat-value { color: var(--success); }
+.stat-card.warn .stat-value { color: var(--warning); }
+.stat-card.bad .stat-value { color: var(--destructive); }
 
 /* ---------- списки ---------- */
 .list-card { padding: 0; overflow: hidden; }
@@ -450,12 +446,13 @@
 /* залипающие действия формы */
 .sticky-actions {
   position: sticky; bottom: 0;
-  margin: 20px -16px -88px;
+  margin: 20px -16px 0;
   padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   background: var(--card);
   border-top: 1px solid var(--border);
   display: flex; gap: 8px;
 }
+.tab-body-end { height: 24px; }
 .sticky-actions .btn { flex: 1; }
 
 /* табы: горизонтальная прокрутка, без обрезки */
