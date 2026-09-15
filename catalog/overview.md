@@ -61,9 +61,11 @@ W26 закрыт («готов», независимое ревью, три кр
 Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. SPA на Vite+React+TS
 ([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
 (`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`), сборка
-`miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages);
-четвёртый роут — новым ADR. Три роута — все, что разрешены
-[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md).
+`miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages).
+Построены три роута — `ticket`/`scan`/`manage`. Четвёртый роут
+(`#/events`, каталог ивентов) разрешён [ADR-0023](../docs/adr/0023-fourth-miniapp-page-event-catalog.md),
+но **не построен** (пакет W38, v0.2); пятый — только новым ADR.
+[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на четвёртую страницу ADR-0023.
 
 | Роут | Роль | API |
 |---|---|---|
