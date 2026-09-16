@@ -176,6 +176,9 @@
 .event-card.preview .event-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
 /* В бренде нет :disabled — состояние выключенной кнопки заводим на уровне SPA. */
 .btn:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
+/* «Идёт запрос»: кнопка выключена, но не выглядит сломанной — полупрозрачность
+   тут читается как дефект (дизайн-ревью, круг 6). */
+.btn[aria-busy='true']:disabled { opacity: 1; }
 /* Предпросмотр на «Проверке» — карточка, а не ссылка: hover не поднимаем. */
 .event-card.preview { pointer-events: none; }
 /* Без плиты даты карточка — в одну колонку (класс эталона no-plate). */

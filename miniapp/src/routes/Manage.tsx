@@ -265,6 +265,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
   // несохранённые правки молча (дизайн-ревью W42).
   const loadedRef = useRef<Record<string, string> | null>(null);
+  // Счётчик запросов resolve_geo: поздний ответ при закрытом шите не применяем
+  // (дизайн-ревью, круг 6).
+  const geoReqRef = useRef(0);
 
   // form fields
   const [fields, setFields] = useState<Record<string, string>>({ ...EMPTY_FIELDS });
@@ -457,10 +460,18 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setDraftRestored(false);
     setCancelSheet(false);
     setConfirmExit(false);
+    geoReqRef.current += 1; // ответ resolve_geo в полёте уже не применяется
     setGeoSheet(false);
     setGeoInput('');
     setGeoError('');
     setGeoBusy(false);
+  }, []);
+
+  // Закрытие шита ссылки: отменяет и поздний ответ resolve_geo (круг 6).
+  const closeGeoSheet = useCallback(() => {
+    geoReqRef.current += 1;
+    setGeoBusy(false);
+    setGeoSheet(false);
   }, []);
 
   const leaveForm = useCallback(() => {
@@ -645,9 +656,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
     }
+    // Пока идёт запрос, кнопка, поле и «Недавние места» выключены, а поздний
+    // ответ не применяется, если шит уже закрыли (дизайн-ревью, круг 6) —
+    // иначе ответ перетирал бы выбор, сделанный после нажатия.
+    const reqId = ++geoReqRef.current;
     setGeoBusy(true);
     setGeoError('');
     const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
+    if (geoReqRef.current !== reqId) return;
     setGeoBusy(false);
     if (res.kind === 'json' && res.data['ok']) {
       const la = Number(res.data['lat']);
@@ -676,9 +692,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const lo = Number(String(r.lon || '').replace(',', '.'));
       if (r.lat !== '' && r.lon !== '' && coordsInRange(la, lo)) setGeo(la, lo);
       setFields((prev) => ({ ...prev, address: r.address }));
-      setGeoSheet(false);
+      closeGeoSheet();
     },
-    [setGeo],
+    [setGeo, closeGeoSheet],
   );
 
   // Копирование ссылки — тост «Скопировано» (эталон); если буфер недоступен,
@@ -1470,7 +1486,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         </section>
       )}
 
-      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={() => setGeoSheet(false)}>
+      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={closeGeoSheet}>
         <p className="app-muted">{t('manage.hint.geo')}</p>
         <input
           className={`input ${geoError ? 'error' : ''}`}
@@ -1480,13 +1496,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           autoComplete="off"
           placeholder={t('manage.geo.link_placeholder')}
           value={geoInput}
+          disabled={geoBusy}
           onChange={(e) => {
             setGeoInput(e.target.value);
             setGeoError('');
           }}
         />
         {geoError && (
-          <p className="helper error" id="e-geo-link">
+          <p className="helper error" id="e-geo-link" role="alert">
             {geoError}
           </p>
         )}
@@ -1495,7 +1512,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             <div className="section-label">{t('manage.geo.recent')}</div>
             <div className="sheet-actions" id="geo-recent">
               {recents.map((r) => (
-                <button key={r.address} type="button" className="btn btn-outline" onClick={() => applyRecent(r)}>
+                <button
+                  key={r.address}
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={geoBusy}
+                  onClick={() => applyRecent(r)}
+                >
                   <span className="chip-label">{r.address}</span>
                 </button>
               ))}
@@ -1508,6 +1531,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             className="btn btn-primary"
             id="geo-apply"
             disabled={geoInput.trim() === '' || geoBusy}
+            aria-busy={geoBusy}
             onClick={() => void applyGeoLink()}
           >
             {geoBusy ? t('manage.geo.searching') : t('manage.geo.link_apply')}
