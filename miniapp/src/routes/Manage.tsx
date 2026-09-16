@@ -197,6 +197,21 @@ function Sheet({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+  // Пока шит открыт, фон не прокручивается (дизайн-ревью W42, круг 4):
+  // колесо над подложкой уводило визард из-под модалки.
+  useEffect(() => {
+    if (!open) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, [open]);
   if (!open) return null;
   return (
     <div className="app-sheet">
@@ -401,6 +416,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setStatusText('');
       setStep(0);
       setErrs([]);
+      // Серверные ошибки полей не переезжают на другой ивент (ревью W42,
+      // круг 4): карта ключей не привязана к шагу, «starts_past» с ивента A
+      // горел бы под валидной датой ивента B, пока поле не тронут.
+      setFieldErrors({});
       setDone(false);
       setDraftRestored(false);
       setShowForm(true);
@@ -427,6 +446,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const resetFormState = useCallback(() => {
     setStep(0);
     setErrs([]);
+    setFieldErrors({});
     setDone(false);
     setDraftRestored(false);
     setCancelSheet(false);
@@ -704,6 +724,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [dictLoaded]);
 
+  // Отказ/недоступность геолокации не оставляем молча (дизайн-ревью W42,
+  // круг 4): «кнопка не работает» — худший из возможных исходов.
   const handleLocate = useCallback(() => {
     const tg2 = getTelegram();
     const lm = tg2?.LocationManager;
@@ -711,24 +733,30 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       try {
         lm.init(() => {
           if (!lm.isLocationAvailable || (!lm.isAccessGranted && lm.isAccessRequested)) {
+            showToast(t('manage.geo.locate_failed'));
             if (typeof lm.openSettings === 'function') lm.openSettings();
             return;
           }
           lm.getLocation((loc) => {
             if (loc && typeof loc.latitude === 'number') setGeo(loc.latitude, loc.longitude);
+            else showToast(t('manage.geo.locate_failed'));
           });
         });
-      } catch {}
+      } catch {
+        showToast(t('manage.geo.locate_failed'));
+      }
       return;
     }
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setGeo(pos.coords.latitude, pos.coords.longitude),
-        () => {},
+        () => showToast(t('manage.geo.locate_failed')),
         { timeout: 10000 },
       );
+      return;
     }
-  }, [setGeo]);
+    showToast(t('manage.geo.locate_failed'));
+  }, [setGeo, showToast]);
 
   // Подтверждение выхода заменяет содержимое — наверх.
   useEffect(() => {
