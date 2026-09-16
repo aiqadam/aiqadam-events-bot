@@ -32,7 +32,7 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 и байтовая идентичность копий — нет, это сознательное упрощение, не
 задокументированное отдельным эталоном. Шаги с `texts` есть у флоу:
 `checkin-api`, `manage-api`, `menu`,
-`my-qr-api`, `my-reg-cancel`, `my-regs`, `reg-afterword`, `reg-consent-mkt`,
+`my-qr-api`, `reg-afterword`, `reg-api`, `reg-consent-mkt`,
 `reg-consent-pdn`, `reg-start` (полнота — по закоммиченному экспорту
 `flows/*.json`); список шагов каждого — в его карточке `catalog/flows/*.md`.
 

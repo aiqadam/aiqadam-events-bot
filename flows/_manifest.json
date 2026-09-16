@@ -7,7 +7,7 @@
   {
     "flow": "events-api",
     "flowId": "wEdKdE4RBGKIzWkl4MJHG",
-    "publishedVersionId": "ytVOqCYzA5fLsIufaAQd6",
+    "publishedVersionId": "UVCk436XmnjYSoMAgevTG",
     "source": "mcp"
   },
   {
@@ -44,7 +44,7 @@
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "JYOyGHCtsFPFu8mMRoj4u",
+    "publishedVersionId": "n576WXH1IdvFlumzXyOzf",
     "source": "mcp"
   },
   {
@@ -53,19 +53,15 @@
     "publishedVersionId": "TTGweXrUUJZpntWXiWuO2"
   },
   {
-    "flow": "my-reg-cancel",
-    "flowId": "1pt6UqDUUunGio2V7YWna",
-    "publishedVersionId": "FDoYVDDcrMhkLuKgVvqxk"
-  },
-  {
-    "flow": "my-regs",
-    "flowId": "R3KaUIk4M9e01npCxeu3n",
-    "publishedVersionId": "mPNkLSMnU9ZuYo9khtEOT"
-  },
-  {
     "flow": "reg-afterword",
     "flowId": "oMIjSHxUO7m9P7iaeMZ8y",
     "publishedVersionId": "aM86sPndf7vSRhxbDBeN3"
+  },
+  {
+    "flow": "reg-api",
+    "flowId": "SiYL8m6k4oy4YunAdZ1W7",
+    "publishedVersionId": "Y2ryb9ZnjuhK9gE9NCfrw",
+    "source": "mcp"
   },
   {
     "flow": "reg-consent-mkt",
@@ -85,7 +81,7 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "F7pxsKGZXUAqxBl29KuGq",
+    "publishedVersionId": "BLnUXGCKSnFfI2s0BLLKV",
     "source": "mcp"
   }
 ]

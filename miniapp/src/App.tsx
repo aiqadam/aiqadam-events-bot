@@ -10,7 +10,7 @@ type Route =
   | { name: 'ticket'; eventId: string }
   | { name: 'scan'; eventId: string }
   | { name: 'manage'; eventId: string }
-  | { name: 'events'; tab: 'upcoming' | 'past' }
+  | { name: 'events'; tab: 'mine' | 'upcoming' | 'past' }
   | { name: 'notfound'; hash: string };
 
 function parseHash(hash: string): Route {
@@ -39,8 +39,10 @@ function parseHash(hash: string): Route {
     return { name: 'manage', eventId: id };
   }
   if (pathPart === '/events' || pathPart === '/events/') {
-    // W38: каталог; `?tab=past` открывает прошедшие (W43 добавит `mine`).
-    const tab = search.get('tab') === 'past' ? 'past' : 'upcoming';
+    // W38/W43: каталог; `?tab=past` открывает прошедшие, `?tab=mine` — «Мои билеты»,
+    // без параметра — «Мои билеты» первым табом (вердикт W41, прототип).
+    const q = search.get('tab');
+    const tab = q === 'past' ? 'past' : q === 'upcoming' ? 'upcoming' : 'mine';
     return { name: 'events', tab };
   }
   // legacy support: ticket.html?event_id= etc — если кто-то открыл старый URL без hash, hash будет пустой, но location.search содержит event_id

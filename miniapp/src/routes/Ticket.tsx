@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, MY_QR_API } from '../lib/api';
+import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
+import { utcMs } from '../lib/dates';
+import Icon from '../components/Icon';
+import Sheet from '../components/Sheet';
 
 const QR_MAX = 224;
 
@@ -18,6 +21,13 @@ export default function Ticket({ eventId }: { eventId: string }) {
   const [isError, setIsError] = useState(false);
   const [retryable, setRetryable] = useState(false);
   const [showRetry, setShowRetry] = useState(false);
+
+  // W43: отмена регистрации (PAR-5) — с экрана билета, до старта ивента.
+  const [canCancel, setCanCancel] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const [cancelled, setCancelled] = useState('');
 
   // Для заголовка после i18n
   const [title, setTitle] = useState('AI Qadam Events');
@@ -136,6 +146,54 @@ export default function Ticket({ eventId }: { eventId: string }) {
     return res;
   }, [initData, eventId]);
 
+  // Отмена показывается только для активной регистрации до старта ивента:
+  // статус и старт — из reg-api (`mine`) и events-api (публичная афиша).
+  const loadCancelInfo = useCallback(async () => {
+    if (!tg || !initData || !eventId) return;
+    try {
+      const [mineRes, eventsRes] = await Promise.all([
+        postJson(REG_API, { action: 'mine', initData }),
+        postJson(EVENTS_API, {}),
+      ]);
+      if (mineRes.kind !== 'json' || eventsRes.kind !== 'json') return;
+      const mineRows = Array.isArray(mineRes.data['mine']) ? (mineRes.data['mine'] as Array<Record<string, unknown>>) : [];
+      const row = mineRows.find((r) => String(r['eventId'] || '') === eventId);
+      if (!row || String(row['status'] || '') !== 'registered') return;
+      const list = ([] as Array<Record<string, unknown>>)
+        .concat(Array.isArray(eventsRes.data['upcoming']) ? (eventsRes.data['upcoming'] as Array<Record<string, unknown>>) : [])
+        .concat(Array.isArray(eventsRes.data['past']) ? (eventsRes.data['past'] as Array<Record<string, unknown>>) : []);
+      const ev = list.find((e) => String(e['id'] || '') === eventId);
+      const startMs = ev ? utcMs(String(ev['startsAt'] || '')) : NaN;
+      if (isFinite(startMs) && startMs > Date.now()) setCanCancel(true);
+    } catch {
+      // не смогли выяснить — кнопку не показываем (отмена не критична для показа QR)
+    }
+  }, [tg, initData, eventId]);
+
+  const cancelRegistration = useCallback(async () => {
+    if (cancelBusy) return;
+    setCancelBusy(true);
+    setCancelError('');
+    const res = await postJson(REG_API, { action: 'cancel', initData, eventId });
+    setCancelBusy(false);
+    if (res.kind === 'network') {
+      setCancelError(t('events.err.network'));
+      return;
+    }
+    if (res.kind === 'server') {
+      setCancelError(t('events.err.server'));
+      return;
+    }
+    const d = res.data as Record<string, unknown>;
+    if (d['ok']) {
+      setCancelConfirm(false);
+      setCanCancel(false);
+      setCancelled(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('cancel.kept'));
+      return;
+    }
+    setCancelError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
+  }, [cancelBusy, initData, eventId]);
+
   const retry = useCallback(() => {
     showStatus('ticket.loading');
     void requestQr().then(handleQr);
@@ -156,10 +214,11 @@ export default function Ticket({ eventId }: { eventId: string }) {
   useEffect(() => {
     if (tg && initData && eventId) {
       qrRequestRef.current = requestQr() as Promise<{ kind: string; data?: Record<string, unknown> }>;
+      void loadCancelInfo();
     } else {
       qrRequestRef.current = null;
     }
-  }, [tg, initData, eventId, requestQr]);
+  }, [tg, initData, eventId, requestQr, loadCancelInfo]);
 
   useEffect(() => {
     void loadI18n().then((d) => {
@@ -199,16 +258,16 @@ export default function Ticket({ eventId }: { eventId: string }) {
     }
   }, [dictLoaded]);
 
-  const statusText = statusKey ? t(statusKey) : errorText;
+  const statusText = cancelled || (statusKey ? t(statusKey) : errorText);
   const retryLabel = t('ticket.retry');
 
   return (
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
-      <div className={`card ticket-card ${isError ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+      <div className={`card ticket-card ${isError && !cancelled ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         <h1 className="empty-heading" id="title">
           {title}
         </h1>
-        <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />
+        {!cancelled && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         <p className="empty-desc msg" id="status" role="status" style={{ margin: '16px 0 0' }}>
           {statusText}
         </p>
@@ -217,16 +276,37 @@ export default function Ticket({ eventId }: { eventId: string }) {
             {retryLabel}
           </button>
         )}
-        {isError && !retryable && showRetry === false && errorText && (
-          // для не-retryable ошибок кнопка скрыта, но текст уже показан выше
-          <span hidden />
+        {cancelled && (
+          <a className="btn btn-primary" id="to-mine" href="#/events?tab=mine">
+            <Icon name="external" />
+            {t('events.tab.mine')}
+          </a>
         )}
-        {/* Для retryable после ошибки — кнопка видна, текст ошибки уже в statusText */}
-        {isError && retryable && (
-          // кнопка уже отрисована выше в showRetry блоке — дубли не нужен, но оставим один
-          <></>
+        {canCancel && !cancelled && (
+          <button type="button" className="btn btn-outline btn-block" id="cancel-reg" onClick={() => { setCancelError(''); setCancelConfirm(true); }}>
+            {t('myreg.btn.cancel')}
+          </button>
         )}
       </div>
+
+      <Sheet open={cancelConfirm} title={t('myreg.btn.cancel')} onClose={() => setCancelConfirm(false)}>
+        <div className="app-muted" id="cancel-confirm-text">
+          {t('cancel.confirm', { title })}
+        </div>
+        {cancelError && (
+          <div className="card result bad" id="cancel-error">
+            <p className="empty-heading">{cancelError}</p>
+          </div>
+        )}
+        <div className="sheet-actions">
+          <button type="button" className="btn btn-destructive btn-block" id="cancel-yes" disabled={cancelBusy} aria-busy={cancelBusy} onClick={() => void cancelRegistration()}>
+            {t('cancel.btn.confirm')}
+          </button>
+          <button type="button" className="btn btn-secondary btn-block" id="cancel-no" onClick={() => setCancelConfirm(false)}>
+            {t('cancel.btn.keep')}
+          </button>
+        </div>
+      </Sheet>
     </main>
   );
 }
