@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import type { ReactNode } from 'react';
+import Icon from '../components/Icon';
 import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
@@ -174,6 +176,45 @@ function limitText(capacity: string, overbook: string): string {
   return limit === null ? t('event.card.seats_unlimited') : t('manage.capacity.limit', { limit });
 }
 
+// Шит — паттерн эталона (prototypes/proto.css `.app-sheet`): ручка, шапка
+// с крестиком, тело. В WebView позиционируется fixed, поверх sticky-бара.
+function Sheet({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="app-sheet">
+      <div className="app-sheet-backdrop" onClick={onClose} />
+      <div className="app-sheet-panel" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="app-sheet-grab" />
+        <div className="app-sheet-head">
+          <span className="app-sheet-title">{title}</span>
+          <button type="button" className="app-sheet-close" aria-label={t('common.btn.close')} onClick={onClose}>
+            <Icon name="x" size={18} />
+          </button>
+        </div>
+        <div className="app-sheet-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const tg = getTelegram();
   const initData = tg?.initData ?? '';
@@ -189,15 +230,17 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [showLoadfail, setShowLoadfail] = useState(false);
   const [loadfailText, setLoadfailText] = useState('');
   const [loadfailRetryable, setLoadfailRetryable] = useState(true);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Результат сохранения и ошибки — тостом (паттерн эталона), не строкой в баре.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
   // W42: визард — шаг, ошибки шагов (клиентские и серверные), экран успеха.
   const [step, setStep] = useState(0);
   const [errs, setErrs] = useState<StepError[]>([]);
   const [done, setDone] = useState(false);
-  const [doneText, setDoneText] = useState('');
   const [draftRestored, setDraftRestored] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelSheet, setCancelSheet] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
   // несохранённые правки молча (дизайн-ревью W42).
@@ -208,11 +251,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [locateVisible, setLocateVisible] = useState(false);
 
-  // гео: панель ссылки, недавние места
-  const [geoPanel, setGeoPanel] = useState(false);
+  // гео: шит ссылки, недавние места
+  const [geoSheet, setGeoSheet] = useState(false);
   const [geoInput, setGeoInput] = useState('');
   const [geoError, setGeoError] = useState('');
-  const [geoNote, setGeoNote] = useState('');
 
   // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
@@ -228,7 +270,21 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [listLoaded, setListLoaded] = useState(false);
   const [retryTarget, setRetryTarget] = useState<'list' | 'form'>('form');
   const [inviteLink, setInviteLink] = useState<{ eventId: string; url: string } | null>(null);
-  const [inviteCopied, setInviteCopied] = useState(false);
+
+  const showToast = useCallback((text: string, sticky = false) => {
+    if (toastTimer.current !== null) {
+      window.clearTimeout(toastTimer.current);
+      toastTimer.current = null;
+    }
+    setToast(text);
+    if (!sticky) {
+      toastTimer.current = window.setTimeout(() => setToast(null), 2500);
+    }
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+  }, []);
 
   // keep prop sync (when hash changes)
   useEffect(() => setEventId(propEventId), [propEventId]);
@@ -238,7 +294,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   const setField = useCallback((name: string, value: string) => {
-    setResult(null);
     setFields((prev) => ({ ...prev, [name]: value }));
     setErrs((prev) => prev.filter((e) => e.field !== name));
     setFieldErrors((prev) => {
@@ -309,11 +364,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [fields],
   );
 
-  const setBusyState = useCallback((on: boolean, key?: string) => {
-    setBusy(on);
-    setStatusText(on && key ? t(key) : '');
-  }, []);
-
   const errorTextFor = useCallback((res: { kind: string; http?: number; data?: Record<string, unknown> }) => {
     if (res.kind === 'network') return t('manage.err.network');
     if (res.kind === 'server') return t('manage.err.server');
@@ -338,7 +388,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     async (id?: string) => {
       const target = id === undefined ? eventId : id;
       setShowLoadfail(false);
-      setResult(null);
       setRetryTarget('form');
       setStatusText(t('manage.loading'));
       const res = await postJson(MANAGE_API, { initData, action: 'load', eventId: target });
@@ -349,7 +398,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       fillForm(res.data['event'] as EventData);
       const inv = typeof res.data['inviteLink'] === 'string' ? String(res.data['inviteLink']) : '';
       setInviteLink(inv ? { eventId: target, url: inv } : null);
-      setInviteCopied(false);
       setStatusText('');
       setStep(0);
       setErrs([]);
@@ -364,7 +412,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const loadList = useCallback(async () => {
     setShowLoadfail(false);
     setShowForm(false);
-    setResult(null);
     setRetryTarget('list');
     setStatusText(t('manage.loading'));
     const res = await postJson(MANAGE_API, { initData, action: 'list' });
@@ -381,14 +428,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setStep(0);
     setErrs([]);
     setDone(false);
-    setDoneText('');
     setDraftRestored(false);
-    setConfirmCancel(false);
+    setCancelSheet(false);
     setConfirmExit(false);
-    setGeoPanel(false);
+    setGeoSheet(false);
     setGeoInput('');
     setGeoError('');
-    setGeoNote('');
   }, []);
 
   const leaveForm = useCallback(() => {
@@ -401,7 +446,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
     setEventId('');
     setShowForm(false);
-    setResult(null);
     setInviteLink(null);
     void loadList();
   }, [loadList, resetFormState]);
@@ -414,13 +458,16 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, [eventId, fields]);
 
   // «К списку» не теряет несохранённые правки молча: спрашиваем (дизайн-ревью).
+  // У создания правки не теряются — черновик лежит в localStorage, поэтому
+  // подтверждение выхода нужно только у существующего ивента (эталон не
+  // спрашивает вовсе; это исправление дефекта, см. журнал W42).
   const backToList = useCallback(() => {
-    if (!done && isDirty()) {
+    if (!done && eventId && isDirty()) {
       setConfirmExit(true);
       return;
     }
     leaveForm();
-  }, [done, isDirty, leaveForm]);
+  }, [done, eventId, isDirty, leaveForm]);
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
@@ -449,11 +496,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setErrs([]);
     setFieldErrors({});
     setDone(false);
-    setDoneText('');
-    setConfirmCancel(false);
+    setCancelSheet(false);
     setDraftRestored(restored);
     setShowForm(true);
-    setResult(null);
+    setToast(null);
     setTitleText(t('manage.title.new'));
     applyStatus('');
   }, [applyStatus]);
@@ -461,11 +507,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const submit = useCallback(
     async (status: string) => {
       if (busy) return;
-      setConfirmCancel(false);
+      setCancelSheet(false);
       clearErrors();
-      setResult(null);
       const collecting = collect(status);
-      setBusyState(true, 'manage.saving');
+      setBusy(true);
+      showToast(t('manage.saving'), true);
       const res = await postJson(MANAGE_API, {
         initData,
         action: 'save',
@@ -473,9 +519,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         newId: eventId ? '' : newIdRef.current,
         fields: collecting,
       });
-      setBusyState(false);
+      setBusy(false);
       if (res.kind !== 'json') {
-        setResult({ ok: false, text: errorTextFor(res as never) });
+        showToast(errorTextFor(res as never));
         return;
       }
       const d = res.data as Record<string, unknown>;
@@ -490,17 +536,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         // после черновика/правки форма — уже правка существующего ивента.
         setTitleText(t(status === 'published' && origStatus !== 'published' ? 'manage.title.new' : 'manage.title.edit'));
         const inv = typeof d['inviteLink'] === 'string' ? String(d['inviteLink']) : '';
-        setInviteCopied(false);
         setInviteLink(inv ? { eventId: String(d['eventId'] || eventId), url: inv } : null);
         const txt = typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.saved.updated');
         if (status === 'published' && origStatus !== 'published') {
           // Публикация заканчивается экраном успеха со ссылкой, а не прыжком
           // в чат (W42; чат-факт приходит карточкой — W37).
-          setDoneText(txt);
+          setToast(null);
           setDone(true);
-          setResult(null);
+        } else if (status === 'cancelled') {
+          // Отмена — факт в чат, экран возвращается к списку (эталон уходил
+          // в чат; у нас экран несёт состояние, ADR-0017).
+          showToast(txt);
+          leaveForm();
         } else {
-          setResult({ ok: true, text: txt });
+          showToast(txt);
         }
         return;
       }
@@ -508,15 +557,15 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         const errFields = (d['fields'] as Record<string, unknown>) || {};
         showFieldErrors(errFields);
         const txt = typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.err.validation');
-        setResult({ ok: false, text: txt });
+        showToast(txt);
         // Прыгаем на первый шаг с ошибкой, чтобы человек её увидел (W42).
         const first = Object.keys(errFields).find((k) => STEP_OF_FIELD[k] !== undefined);
         if (first !== undefined) setStep(STEP_OF_FIELD[first]);
         return;
       }
-      setResult({ ok: false, text: errorTextFor(res as never) });
+      showToast(errorTextFor(res as never));
     },
-    [busy, clearErrors, collect, eventId, initData, origStatus, applyStatus, errorTextFor, setBusyState, showFieldErrors],
+    [busy, clearErrors, collect, eventId, initData, origStatus, applyStatus, errorTextFor, showFieldErrors, showToast, leaveForm],
   );
 
   // Шаг проверяется на «Далее» — как в эталоне (дизайн-ревью W42): пустые
@@ -555,9 +604,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setGeo(parsed.lat, parsed.lon);
     setGeoInput('');
     setGeoError('');
-    setGeoNote(t('manage.geo.link_applied'));
-    setGeoPanel(false);
-  }, [geoInput, setGeo]);
+    setGeoSheet(false);
+    showToast(t('manage.geo.link_applied'));
+  }, [geoInput, setGeo, showToast]);
 
   const applyRecent = useCallback(
     (r: RecentPlace) => {
@@ -565,10 +614,25 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const lo = Number(String(r.lon || '').replace(',', '.'));
       if (r.lat !== '' && r.lon !== '' && coordsInRange(la, lo)) setGeo(la, lo);
       setFields((prev) => ({ ...prev, address: r.address }));
-      setGeoNote('');
-      setGeoPanel(false);
+      setGeoSheet(false);
     },
     [setGeo],
+  );
+
+  // Копирование ссылки — тост «Скопировано» (эталон); если буфер недоступен,
+  // показываем саму ссылку, чтобы её можно было скопировать руками.
+  const copyInviteLink = useCallback(
+    (url: string) => {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        showToast(url);
+        return;
+      }
+      void navigator.clipboard.writeText(url).then(
+        () => showToast(t('manage.btn.copied')),
+        () => showToast(url),
+      );
+    },
+    [showToast],
   );
 
   // W36: список контролёров ивента. Ответ staff_* всегда несёт `staff`
@@ -666,16 +730,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [setGeo]);
 
-  // Подтверждение отмены может оказаться выше вьюпорта, если его открыли
-  // из sticky-бара, когда страница прокручена вниз (дизайн-ревью, круг 3):
-  // доводим карточку до центра экрана, иначе нажатие выглядит как «ничего
-  // не произошло». Подтверждение выхода заменяет содержимое — наверх.
-  useEffect(() => {
-    if (!confirmCancel) return;
-    const el = document.getElementById('cancel-confirm');
-    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center' });
-  }, [confirmCancel]);
-
+  // Подтверждение выхода заменяет содержимое — наверх.
   useEffect(() => {
     if (confirmExit) window.scrollTo(0, 0);
   }, [confirmExit]);
@@ -767,6 +822,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const plate = plateFromLocal(fields['starts_at']);
   const previewStatus = origStatus || 'draft';
   const capLimit = capacityLimit(fields['capacity'], fields['overbook_pct']);
+  // «Опубликовать» включена только на валидной форме — состояние эталона.
+  const publishReady = clientErrors(fields, true).length === 0;
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, paddingBottom: showForm ? 120 : 16 }}>
@@ -797,15 +854,19 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
       {dictLoaded && !eventId && !showForm && !showLoadfail && (
         <section id="events">
-          <div className="field actions" style={{ marginBottom: 16 }}>
+          <div className="field actions" style={{ marginBottom: 14 }}>
             <button type="button" className="btn btn-primary btn-lg" id="new-event" onClick={startNew}>
+              <Icon name="plus" />
               {t('manage.btn.new')}
             </button>
           </div>
           {listLoaded && listItems.length === 0 && (
-            <p className="empty-desc" id="events-empty">
-              {t('manage.list.empty')}
-            </p>
+            <div className="empty-state" id="events-empty">
+              <div className="empty-icon">
+                <Icon name="calendar" size={22} />
+              </div>
+              <div className="empty-heading">{t('manage.list.empty')}</div>
+            </div>
           )}
           {listItems.length > 0 && (
             <ul id="events-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -843,7 +904,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       {showForm && (
         <section id="wizard">
           {!confirmExit && (
-            <button type="button" className="btn btn-secondary btn-sm" id="back-to-list" onClick={backToList} style={{ marginBottom: 12 }}>
+            <button type="button" className="btn btn-ghost btn-sm" id="back-to-list" onClick={backToList} style={{ marginBottom: 10 }}>
+              <Icon name="arrow-left" />
               {t('manage.btn.back')}
             </button>
           )}
@@ -862,33 +924,27 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             </div>
           ) : done ? (
             <>
-              <div className="card result ok" id="wizard-done">
-                <p className="empty-heading">{doneText || t('manage.saved.created')}</p>
+              <div className="sheet-success" id="wizard-done">
+                <div className="success-icon">
+                  <Icon name="check-circle" size={34} />
+                </div>
+                <div className="success-title">{t('manage.chat.published', { title: fields['title'] })}</div>
               </div>
               {inviteLink && inviteLink.eventId === eventId && (
-                <section className="card" id="invite" style={{ marginTop: 16 }}>
-                  <h2 className="empty-heading" id="invite-title">
+                <section className="card invite-card" id="invite" style={{ marginTop: 16 }}>
+                  <div className="card-title" id="invite-title">
                     {t('manage.invite.title')}
-                  </h2>
-                  <p className="empty-desc" id="invite-hint">
+                  </div>
+                  <div className="invite-link" id="invite-link">
+                    {inviteLink.url}
+                  </div>
+                  <p className="app-muted" id="invite-hint">
                     {t('manage.invite.hint')}
                   </p>
-                  <p className="mono" id="invite-link" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
-                    {inviteLink.url}
-                  </p>
-                  <div className="row" style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      id="invite-copy"
-                      onClick={() => {
-                        void navigator.clipboard.writeText(inviteLink.url).then(
-                          () => setInviteCopied(true),
-                          () => setInviteCopied(false),
-                        );
-                      }}
-                    >
-                      {inviteCopied ? t('manage.btn.copied') : t('manage.btn.copy')}
+                  <div className="app-actions">
+                    <button type="button" className="btn btn-primary" id="invite-copy" onClick={() => copyInviteLink(inviteLink.url)}>
+                      <Icon name="copy" />
+                      {t('manage.btn.copy')}
                     </button>
                     <a
                       className="btn btn-outline"
@@ -897,6 +953,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       target="_blank"
                       rel="noreferrer"
                     >
+                      <Icon name="share" />
                       {t('manage.btn.share')}
                     </a>
                   </div>
@@ -999,78 +1056,40 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         className="btn btn-outline"
                         id="geo-link"
                         onClick={() => {
-                          setGeoPanel((v) => !v);
+                          setGeoSheet(true);
                           setGeoError('');
                         }}
                       >
+                        <Icon name="link" />
                         {t('manage.geo.link')}
                       </button>
                       {locateVisible && (
                         <button type="button" className="btn btn-outline" id="locate" onClick={handleLocate}>
+                          <Icon name="navigation" />
                           {t('manage.btn.locate')}
                         </button>
                       )}
                     </div>
 
-                    {geoPanel && (
-                      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-                        <input
-                          className={`input ${geoError ? 'error' : ''}`}
-                          id="f-geo-link"
-                          type="url"
-                          inputMode="url"
-                          autoComplete="off"
-                          placeholder={t('manage.geo.link_placeholder')}
-                          value={geoInput}
-                          onChange={(e) => {
-                            setGeoInput(e.target.value);
-                            setGeoError('');
-                          }}
-                        />
-                        {geoError && (
-                          <p className="helper error" id="e-geo-link">
-                            {geoError}
-                          </p>
-                        )}
-                        <div style={{ marginTop: 12 }}>
-                          <button type="button" className="btn btn-primary" id="geo-apply" disabled={geoInput.trim() === ''} onClick={applyGeoLink}>
-                            {t('manage.geo.link_apply')}
-                          </button>
-                        </div>
-                        {recents.length > 0 && (
-                          <>
-                            <p className="label" style={{ marginTop: 16 }}>
-                              {t('manage.geo.recent')}
-                            </p>
-                            <div className="chip-row" id="geo-recent">
-                              {recents.map((r) => (
-                                <button key={r.address} type="button" className="btn btn-outline chip-place" onClick={() => applyRecent(r)}>
-                                  <span className="chip-label">{r.address}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
                     {fields['lat'] !== '' && fields['lon'] !== '' ? (
                       <>
+                        <div className="loc-preview" aria-hidden="true">
+                          <div className="loc-grid" />
+                          <span className="loc-pin">
+                            <Icon name="map-pin" size={20} />
+                          </span>
+                        </div>
                         <p className="helper" id="geo-coords">
                           {t('manage.geo.coords', { lat: fmtCoord(fields['lat']), lon: fmtCoord(fields['lon']) })}
                         </p>
-                        <a className="helper" id="geo-map" href={mapUrl(fields['lat'], fields['lon'])} target="_blank" rel="noreferrer">
+                        <a className="loc-link" id="geo-map" href={mapUrl(fields['lat'], fields['lon'])} target="_blank" rel="noreferrer">
                           {t('event.card.btn_map')}
+                          <Icon name="external" size={14} />
                         </a>
                       </>
                     ) : (
                       <p className="helper" id="geo-none">
                         {t('manage.geo.none')}
-                      </p>
-                    )}
-                    {geoNote && (
-                      <p className="helper" id="geo-note" role="status">
-                        {geoNote}
                       </p>
                     )}
                     {fieldError('geo') && (
@@ -1145,8 +1164,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
               {step === 2 && (
                 <div className="form-section">
-                  <div className="row" style={{ display: 'flex', gap: 12 }}>
-                    <div className="field" style={{ flex: 1, minWidth: 0, marginTop: 0 }}>
+                  <div className="app-row2">
+                    <div className="field">
                       <label className="label" htmlFor="f-capacity">
                         {t('field.capacity')}
                       </label>
@@ -1166,7 +1185,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         </p>
                       )}
                     </div>
-                    <div className="field" style={{ flex: 1, minWidth: 0, marginTop: 0 }}>
+                    <div className="field">
                       <label className="label" htmlFor="f-overbook_pct">
                         {t('field.overbook_pct')}
                       </label>
@@ -1196,10 +1215,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
               {step === LAST_STEP && (
                 <div className="form-section">
-                  <p className="helper" id="review-hint">
+                  <p className="app-muted" id="review-hint">
                     {t('manage.review.hint')}
                   </p>
-                  <div className="event-card preview" id="review-card">
+                  <div className={`event-card preview${plate ? '' : ' no-plate'}`} id="review-card">
                     {plate && (
                       <div className="date-plate">
                         <span className="month">{plate.month}</span>
@@ -1213,64 +1232,88 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </div>
                       <h3 className="event-title">{fields['title'] || t('field.title')}</h3>
                       <div className="event-meta">
-                        {fields['starts_at'] && <span className="meta-item">{humanLocal(fields['starts_at'])}</span>}
-                        {fields['address'] && <span className="meta-item">{fields['address']}</span>}
+                        {fields['starts_at'] && (
+                          <span className="meta-item">
+                            <Icon name="calendar" size={12} />
+                            {humanLocal(fields['starts_at'])}
+                          </span>
+                        )}
+                        {fields['address'] && (
+                          <span className="meta-item">
+                            <Icon name="map-pin" size={12} />
+                            {fields['address']}
+                          </span>
+                        )}
                       </div>
-                      {fields['description'] && <p className="event-desc">{fields['description']}</p>}
+                      {fields['description'] && <p className="app-muted">{fields['description']}</p>}
                     </div>
                   </div>
 
-                  {confirmCancel && (
-                    <div className="card result bad" id="cancel-confirm" style={{ marginTop: 16 }}>
-                      <p className="empty-heading">{t('manage.cancel.confirm', { title: fields['title'] })}</p>
-                      <div className="chip-row" style={{ marginBottom: 0 }}>
-                        <button type="button" className="btn btn-destructive" id="cancel-yes" disabled={busy} onClick={() => void submit('cancelled')}>
-                          {t('common.btn.confirm')}
-                        </button>
-                        <button type="button" className="btn btn-secondary" id="cancel-no" onClick={() => setConfirmCancel(false)}>
-                          {t('common.btn.cancel')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-              {inviteLink && inviteLink.eventId === eventId && (
-                <section className="card" id="invite" style={{ marginTop: 16 }}>
-                  <h2 className="empty-heading" id="invite-title">
-                    {t('manage.invite.title')}
-                  </h2>
-                  <p className="empty-desc" id="invite-hint">
-                    {t('manage.invite.hint')}
-                  </p>
-                  <p className="mono" id="invite-link" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
-                    {inviteLink.url}
-                  </p>
-                  <div className="row" style={{ display: 'flex', gap: 12 }}>
+                  {canPublish && (
                     <button
                       type="button"
-                      className="btn btn-primary"
-                      id="invite-copy"
-                      onClick={() => {
-                        void navigator.clipboard.writeText(inviteLink.url).then(
-                          () => setInviteCopied(true),
-                          () => setInviteCopied(false),
-                        );
-                      }}
+                      className="btn btn-outline btn-block"
+                      id="save-draft"
+                      disabled={busy}
+                      style={{ marginTop: 14 }}
+                      onClick={() => void submit('draft')}
                     >
-                      {inviteCopied ? t('manage.btn.copied') : t('manage.btn.copy')}
+                      {t('manage.btn.save_draft')}
                     </button>
-                    <a
-                      className="btn btn-outline"
-                      id="invite-share"
-                      href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink.url)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t('manage.btn.share')}
-                    </a>
-                  </div>
-                </section>
-              )}
+                  )}
+
+                  {!canPublish && (
+                    <>
+                      {inviteLink && inviteLink.eventId === eventId && (
+                        <section className="card invite-card" id="invite" style={{ marginTop: 16 }}>
+                          <div className="card-title" id="invite-title">
+                            {t('manage.invite.title')}
+                          </div>
+                          <div className="invite-link" id="invite-link">
+                            {inviteLink.url}
+                          </div>
+                          <p className="app-muted" id="invite-hint">
+                            {t('manage.invite.hint')}
+                          </p>
+                          <div className="app-actions">
+                            <button type="button" className="btn btn-primary" id="invite-copy" onClick={() => copyInviteLink(inviteLink.url)}>
+                              <Icon name="copy" />
+                              {t('manage.btn.copy')}
+                            </button>
+                            <a
+                              className="btn btn-outline"
+                              id="invite-share"
+                              href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink.url)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Icon name="share" />
+                              {t('manage.btn.share')}
+                            </a>
+                          </div>
+                        </section>
+                      )}
+
+                      {origStatus === 'published' && (
+                        <button
+                          type="button"
+                          className="btn btn-destructive btn-block"
+                          id="cancel-event"
+                          disabled={busy}
+                          style={{ marginTop: 16 }}
+                          onClick={() => setCancelSheet(true)}
+                        >
+                          {t('owner.event.btn.cancel_event')}
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {errs.length > 0 && (
+                    <p className="helper error" id="review-error">
+                      {t('manage.err.validation')}
+                    </p>
+                  )}
 
               {eventId && (
                 <section className="card" id="staff" style={{ marginTop: 16 }}>
@@ -1329,18 +1372,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               )}
 
               <div className="sticky-actions">
-                {busy && (
-                  <p className="helper sticky-status" role="status">
-                    {t('manage.saving')}
-                  </p>
-                )}
-                {result && (
-                  <p className={`helper sticky-status ${result.ok ? 'ok' : 'error'}`} id="result" role="status">
-                    {result.text}
-                  </p>
-                )}
                 {step > 0 && (
-                  <button type="button" className="btn btn-secondary btn-lg" id="wizard-prev" onClick={prevStep}>
+                  <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
                     {t('common.btn.back')}
                   </button>
                 )}
@@ -1349,23 +1382,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     {t('manage.btn.next')}
                   </button>
                 ) : canPublish ? (
-                  <>
-                    <button type="button" className="btn btn-secondary btn-lg" id="save-draft" disabled={busy} onClick={() => void submit('draft')}>
-                      {t('manage.btn.save_draft')}
-                    </button>
-                    <button type="button" className="btn btn-primary btn-lg" id="publish" disabled={busy} onClick={publish}>
-                      {t('manage.btn.publish')}
-                    </button>
-                  </>
+                  <button type="button" className="btn btn-primary btn-lg" id="publish" disabled={busy || !publishReady} onClick={publish}>
+                    {t('manage.btn.publish')}
+                  </button>
                 ) : origStatus === 'published' ? (
-                  <>
-                    <button type="button" className="btn btn-primary btn-lg" id="save-published" disabled={busy} onClick={() => void submit('published')}>
-                      {t('manage.btn.save')}
-                    </button>
-                    <button type="button" className="btn btn-destructive btn-lg" id="cancel-event" disabled={busy} onClick={() => setConfirmCancel(true)}>
-                      {t('owner.event.btn.cancel_event')}
-                    </button>
-                  </>
+                  <button type="button" className="btn btn-primary btn-lg" id="save-published" disabled={busy} onClick={() => void submit('published')}>
+                    {t('manage.btn.save')}
+                  </button>
                 ) : (
                   <button type="button" className="btn btn-primary btn-lg" id="save-status" disabled={busy} onClick={() => void submit(origStatus)}>
                     {t('manage.btn.save')}
@@ -1377,7 +1400,62 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         </section>
       )}
 
+      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={() => setGeoSheet(false)}>
+        <p className="app-muted">{t('manage.hint.geo')}</p>
+        <input
+          className={`input ${geoError ? 'error' : ''}`}
+          id="f-geo-link"
+          type="url"
+          inputMode="url"
+          autoComplete="off"
+          placeholder={t('manage.geo.link_placeholder')}
+          value={geoInput}
+          onChange={(e) => {
+            setGeoInput(e.target.value);
+            setGeoError('');
+          }}
+        />
+        {geoError && (
+          <p className="helper error" id="e-geo-link">
+            {geoError}
+          </p>
+        )}
+        {recents.length > 0 && (
+          <>
+            <div className="section-label">{t('manage.geo.recent')}</div>
+            <div className="sheet-actions" id="geo-recent">
+              {recents.map((r) => (
+                <button key={r.address} type="button" className="btn btn-outline" onClick={() => applyRecent(r)}>
+                  <span className="chip-label">{r.address}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="sheet-actions">
+          <button type="button" className="btn btn-primary" id="geo-apply" disabled={geoInput.trim() === ''} onClick={applyGeoLink}>
+            {t('manage.geo.link_apply')}
+          </button>
+        </div>
+      </Sheet>
 
+      <Sheet open={cancelSheet} title={t('owner.event.btn.cancel_event')} onClose={() => setCancelSheet(false)}>
+        <p className="app-muted">{t('manage.cancel.confirm', { title: fields['title'] })}</p>
+        <div className="sheet-actions">
+          <button type="button" className="btn btn-destructive" id="cancel-yes" disabled={busy} onClick={() => void submit('cancelled')}>
+            {t('common.btn.confirm')}
+          </button>
+          <button type="button" className="btn btn-secondary" id="cancel-no" onClick={() => setCancelSheet(false)}>
+            {t('common.btn.cancel')}
+          </button>
+        </div>
+      </Sheet>
+
+      {toast && (
+        <div className="toast show" id="toast" role="status">
+          {toast}
+        </div>
+      )}
     </main>
   );
 }
