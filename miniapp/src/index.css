@@ -76,9 +76,15 @@
   border-top: 1px solid var(--border);
 }
 .sticky-actions .btn { flex: 1 1 auto; }
-/* Обратная связь сохранения — у места действия, а не только в шапке. */
-.sticky-status { flex: 1 1 100%; margin: 0 0 4px; }
-.sticky-status.ok { color: var(--success); }
+/* Обратная связь сохранения — у места действия, а не только в шапке.
+   Тон несёт полоса слева, текст — --foreground: как у .result, иначе
+   зелёный на карточке даёт 2.4:1 (дизайн-ревью W42, круг 2). */
+.sticky-status { flex: 1 1 100%; margin: 0 0 4px; padding-left: 10px; }
+.sticky-status.ok { color: var(--foreground); box-shadow: inset 3px 0 0 var(--success); }
+.sticky-status.error { color: var(--foreground); box-shadow: inset 3px 0 0 var(--destructive); }
+/* Мета предпросмотра — отдельными строками, как в эталоне (дата и адрес
+   не слипаются в одну строку). */
+.event-card.preview .event-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
 /* В бренде нет :disabled — состояние выключенной кнопки заводим на уровне SPA. */
 .btn:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
 /* Предпросмотр на «Проверке» — карточка, а не ссылка: hover не поднимаем. */

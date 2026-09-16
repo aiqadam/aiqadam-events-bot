@@ -238,6 +238,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   const setField = useCallback((name: string, value: string) => {
+    setResult(null);
     setFields((prev) => ({ ...prev, [name]: value }));
     setErrs((prev) => prev.filter((e) => e.field !== name));
     setFieldErrors((prev) => {
@@ -827,9 +828,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
       {showForm && (
         <section id="wizard">
-          <button type="button" className="btn btn-secondary btn-sm" id="back-to-list" onClick={backToList} style={{ marginBottom: 12 }}>
-            {t('manage.btn.back')}
-          </button>
+          {!confirmExit && (
+            <button type="button" className="btn btn-secondary btn-sm" id="back-to-list" onClick={backToList} style={{ marginBottom: 12 }}>
+              {t('manage.btn.back')}
+            </button>
+          )}
 
           {confirmExit ? (
             <div className="card result bad" id="exit-confirm">
@@ -1203,6 +1206,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     </div>
                   </div>
 
+                  {confirmCancel && (
+                    <div className="card result bad" id="cancel-confirm" style={{ marginTop: 16 }}>
+                      <p className="empty-heading">{t('manage.cancel.confirm', { title: fields['title'] })}</p>
+                      <div className="chip-row" style={{ marginBottom: 0 }}>
+                        <button type="button" className="btn btn-destructive" id="cancel-yes" disabled={busy} onClick={() => void submit('cancelled')}>
+                          {t('common.btn.confirm')}
+                        </button>
+                        <button type="button" className="btn btn-secondary" id="cancel-no" onClick={() => setConfirmCancel(false)}>
+                          {t('common.btn.cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
               {inviteLink && inviteLink.eventId === eventId && (
                 <section className="card" id="invite" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="invite-title">
@@ -1294,19 +1311,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   </div>
                 </section>
               )}
-                  {confirmCancel && (
-                    <div className="card result bad" id="cancel-confirm" style={{ marginTop: 16 }}>
-                      <p className="empty-heading">{t('manage.cancel.confirm', { title: fields['title'] })}</p>
-                      <div className="chip-row" style={{ marginBottom: 0 }}>
-                        <button type="button" className="btn btn-destructive" id="cancel-yes" disabled={busy} onClick={() => void submit('cancelled')}>
-                          {t('common.btn.confirm')}
-                        </button>
-                        <button type="button" className="btn btn-secondary" id="cancel-no" onClick={() => setConfirmCancel(false)}>
-                          {t('common.btn.cancel')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
