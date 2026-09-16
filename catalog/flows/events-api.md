@@ -1,0 +1,43 @@
+# Flow: events-api
+
+- **Статус**: ENABLED (published)
+- **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
+  `POST /api/v1/webhooks/wEdKdE4RBGKIzWkl4MJHG/sync`; тело запроса не читается
+  (`authType: none`)
+- **Назначение**: публичный каталог ивентов для экрана `#/events` — будущие
+  и прошедшие раздельно (PAR-3, [ADR-0023](../../docs/adr/0023-fourth-miniapp-page-event-catalog.md));
+  без `initData`, без персональных данных, только опубликованные и завершённые
+- **Flow ID (MCP)**: `wEdKdE4RBGKIzWkl4MJHG`
+
+## Шаги
+
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём sync-запроса SPA |
+| step_1 | `tables-find-records events` | `status in (published, finished)`, `limit 50`; только поля карточки: `id`, `title`, `address`, `starts_at`, `ends_at`, `status` |
+| step_2 | CODE «build catalog» | постфильтр статуса, деление будущие/прошедшие по `ends_at \|\| starts_at`, сортировка по `starts_at`, сборка `registerLink` |
+| step_3 | `return_response` (`stop`) | `200 {ok, upcoming[], past[]}` — карточки готовыми полями |
+
+## Зависимости
+
+- **Таблицы**: `events` (чтение)
+- **Переменные**: `BOT_USERNAME`
+- **Connections**: —
+
+## Заметки
+
+- **`registerLink` собирает сервер**: `https://t.me/<BOT_USERNAME>?start=e<id>`
+  — SPA не запекает имя бота, оно переживёт смену бота (ADR-0023).
+- **`published` + `finished` в фильтре, постфильтр в CODE** (defense in depth,
+  Q25). `finished` включён осознанно: каталог — афиша, завершённый ивент обязан
+  остаться в «Прошедших»; `draft` и `cancelled` не видны ни в одной вкладке.
+- **PII не читается вовсе**: проекция ограничена полями карточки —
+  `staff_id`, `chapter_id`, `users` и `registrations` в выдачу не попадают.
+- **Деление на будущие/прошедшие — в CODE, не в фильтре**: диапазонные
+  сравнения по `DATE` не работают (Q15). Прошедший — `ends_at` (или
+  `starts_at`, если `ends_at` пуст) уже наступил; разрывов нет.
+- **Порядок в обеих вкладках — по `starts_at` по возрастанию**; ивент
+  с непарсящейся датой считается будущим, чтобы не пропасть из выдачи молча.
+- Лимит 50 — договорённость Q15; при переполнении срезы режутся по тому же
+  порядку (будущие — ближайшие, прошедшие — самые старые), полный курсор
+  в каталоге не строится.

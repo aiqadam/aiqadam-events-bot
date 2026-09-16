@@ -6,6 +6,7 @@ interface TelegramWebApp {
   colorScheme: 'light' | 'dark';
   ready: () => void;
   expand: () => void;
+  openTelegramLink?: (url: string) => void;
   closeScanQrPopup: () => void;
   showScanQrPopup: (params: Record<string, unknown>, cb: (...args: unknown[]) => void) => void;
   onEvent: (event: string, cb: () => void) => void;

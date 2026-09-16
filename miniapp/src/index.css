@@ -52,6 +52,8 @@
 .event-title { overflow-wrap: anywhere; }
 /* Плита даты — по высоте содержимого, как в эталоне. */
 .event-card .date-plate { align-self: start; }
+/* Афиша (W38): мета двумя строками — дата и адрес не слипаются (как .preview). */
+.event-card .event-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
 .capacity-live {
   display: flex;
   align-items: baseline;

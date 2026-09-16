@@ -14,6 +14,7 @@
 | `MINIAPP_URL` | адрес Mini App-статики на GitHub Pages | UI: Settings → Variables | `https://miniapp.events.aiqadam.org/` |
 | `BOT_USERNAME` | username бота **без `@`** — для сборки deep link'ов | UI: Settings → Variables | `aiqadam_events_dev_bot` |
 | `BOT_TOKEN` | тот же токен бота, что и в connection `AI Qadam Events (dev)` — **дубликат специально для HMAC** ([ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) | UI: Settings → Variables | — |
+| `YANDEX_GEOCODER_API_KEY` | ключ Геокодера Яндекс.Карт — разбор орг-ссылок в визарде (Q55) | UI: Settings → Variables | — |
 
 Ротация `QR_SIGNING_KEY` инвалидирует все выданные QR разом — только вместе
 с перевыпуском кодов, см. [SECURITY.md](../docs/SECURITY.md#секреты).
@@ -32,9 +33,11 @@
 | `MINIAPP_URL` | [reg-start](flows/reg-start.md) | кнопка QR в ветке `existing` |
 | `MINIAPP_URL` | [reg-consent-mkt](flows/reg-consent-mkt.md) | кнопка `web_app` на `#/ticket?event_id=` (SPA) в сообщении с билетом (ADR-0007) |
 | `MINIAPP_URL` | [my-regs](flows/my-regs.md) | вход `miniappUrl` у CODE «render my regs» — кнопка QR в каждой активной регистрации |
-| `MINIAPP_URL` | [menu](flows/menu.md) | вход `miniappUrl` у CODE — кнопка `web_app` на `#/manage` и `#/scan?event_id=` (SPA) |
+| `MINIAPP_URL` | [menu](flows/menu.md) | вход `miniappUrl` у CODE — кнопки `web_app` на `#/events`, `#/manage` и `#/scan?event_id=` (SPA) |
 | `BOT_TOKEN` | [manage-api](flows/manage-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
+| `YANDEX_GEOCODER_API_KEY` | [manage-api](flows/manage-api.md) | `http` Геокодера, `queryParams.apikey` (ветка `geo_link`, Q55) |
 | `BOT_USERNAME` | [manage-api](flows/manage-api.md) | `inviteLink` в ответах `load`/`save` — ссылка на форме, не в чате (W37) |
+| `BOT_USERNAME` | [events-api](flows/events-api.md) | вход `botUsername` у CODE — `registerLink` каждой карточки каталога (W38) |
 | `BOT_USERNAME` | [reg-afterword](flows/reg-afterword.md) | deep link на следующий ивент в послесловии (`?start=e<id>-afterword`) |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —
