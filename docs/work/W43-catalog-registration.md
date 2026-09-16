@@ -55,7 +55,7 @@ SPEC PAR-5: «Отмена — доступна до `starts_at`, **из чат�
 | flow `my-reg-cancel` (удалён) | был `1pt6UqDUUunGio2V7YWna` | — |
 | роут SPA `#/events` | `miniapp/src/routes/Events.tsx` (табы `mine`/`upcoming`/`past`, шит регистрации) | [catalog/overview.md](../../catalog/overview.md) |
 | роут SPA `#/ticket` | `miniapp/src/routes/Ticket.tsx` (отмена с подтверждением) | [catalog/overview.md](../../catalog/overview.md) |
-| `components/Sheet.tsx` | общий шит (вынесен из `Manage.tsx` без изменений) | — |
+| `components/Sheet.tsx` | общий шит каталога и билета (копия приёма из `Manage.tsx`; сам `Manage.tsx` не тронут — унификация в один компонент отдельной работой) | — |
 | SPEC PAR-5 + Q57 | отмена только с экрана билета (решение владельца) | [SPEC](../SPEC.md), [OPEN-QUESTIONS](../OPEN-QUESTIONS.md#q57) |
 
 ## Чек-лист готовности
@@ -197,18 +197,166 @@ SPEC PAR-5: «Отмена — доступна до `starts_at`, **из чат�
   `my-regs`/`my-reg-cancel`). Промежуточные републикации при отладке
   не записаны (контент не менялся). Сверка `check-migrations.py` —
   за ревьюером (ключа в сессии нет).
+- **2026-09-16 — круг 1 ревью: 3 «важно» + 3 «на будущее», исправлено.**
+  Каталог переменных (читатель `BOT_TOKEN → reg-api`, строка
+  `MINIAPP_URL → my-regs` убрана, `?tab=mine` в строке `menu`);
+  `fn-find-registration.md` — читатели `reg-start`/`reg-api`; журнал
+  про `Sheet` говорит правду (копия, не вынос — `Manage.tsx` не трогаем:
+  чужая manage-поверхность, W42 → W44 → W13 → W14). «На будущее»
+  (мёртвые `checked_in`, `.find()` вместо схлопывания, `cancelled_at`
+  при реактивации) — принято к сведению, не чинится: безвредно, часть
+  материала для W13/W45. Ждём повторного круга.
 
 ## Ревью
 
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 > Владелец пакета сюда не пишет — только отвечает под замечаниями, что исправлено.
 
-- **Ревьюер**: <агент> · **Дата**: YYYY-MM-DD · **Вердикт**: замечаний нет | есть замечания
+- **Ревьюер**: review-agent (независимая сессия, чистый контекст) · **Дата**: 2026-09-16 · **Вердикт**: есть замечания
+
+### Что проверено
+
+- **Живой проект (MCP).** `ap_list_flows` — 16 флоу, все ENABLED/published; `reg-api`
+  (`SiYL8m6k4oy4YunAdZ1W7`) на месте, `my-regs`/`my-reg-cancel` отсутствуют.
+  `ap_flow_structure(includeInput=true)` — `reg-api` (17 узлов: trigger → step_1 →
+  step_2 → ROUTER valid/Otherwise → step_6/7/8 → step_9 → ROUTER
+  register/cancel/Otherwise → ветки step_11-13 / step_14-15 / step_16; Otherwise
+  ветка невалидного initData — step_4 → step_5), `menu` (6 шагов, step_4 несёт
+  `menu.btn.my_tickets` + `web_app {{MINIAPP_URL}}#/events?tab=mine`), `tg-router`
+  (17 шагов; step_11 — `reg_start`/`reg_pdn`/`reg_mkt`/`menu`/`Otherwise`, веток
+  `my_regs`/`my_reg_cancel` и шагов step_24/25 нет), `events-api` (4 шага,
+  проекция step_1 — 7 колонок), `fn-hmac-init-data` (step_3 читает
+  `maxAgeSeconds` из входа, шаг 4 возвращает `telegramId`).
+- **Код побайтово против `flows/reg-api.json`.** `ap_read_step_code` (step_2, step_9,
+  step_4) сверен с текстом из репозиторного экспорта строка в строку: step_2 (603 Б,
+  `telegramId` только из `hmac`, входов из тела с таким именем нет вовсе),
+  step_9 `decide` (6424 Б — постфильтры Q25, порядок register: pdn → bad_request →
+  existing → not_found → cancelled/finished/not_published → deadline → no_seats →
+  registered; cancel: только активная `registered` + перепроверка `starts_at`),
+  step_4 (340 Б, `401 invalid_init_data`). Экспорт свеж (`state: LOCKED`).
+  Также прочитаны: `menu/step_4` (кнопки `web_app`, постфильтры, порядок кнопок —
+  как в карточке), `events-api/step_2` (отдаёт `regDeadlineAt`, `registerLink`
+  собирает из `BOT_USERNAME`), `tg-router/step_10` (колбэки `myreg:*` никуда не
+  ведут — `route` остаётся `none`, комментарий W43 на месте).
+- **Валидация.** `ap_validate_flow` ×4: `reg-api` 17/17, `menu` 6/6, `tg-router`
+  17/17, `events-api` 4/4 — все «ready to publish», замечаний валидатора нет.
+- **Версии.** `flows/_manifest.json` ↔ 7 строк `migrations` (`package=W43`:
+  `2026-09-16-w43-01…07`, версии `Y2ryb9ZnjuhK9gE9NCfrw`, `UVCk436XmnjYSoMAgevTG`,
+  `n576WXH1IdvFlumzXyOzf`, `BLnUXGCKSnFfI2s0BLLKV`, delete `my-regs`/`my-reg-cancel`)
+  ↔ `flows/*.json` (`state: LOCKED`) ↔ `ap_list_flows` (состав 16, статусы).
+  `tools/check-migrations.py` не запускался — ключа платформы в сессии нет;
+  сверка сделана вручную, это ограничение зафиксировано.
+- **Живые ответы (curl, без побочных эффектов).** `events-api` без тела → `200`,
+  карточки несут `regDeadlineAt`, ПД нет (только id/title/address/даты/статус/
+  registerLink). `reg-api` `mine`/`register` без `initData` и с мусором → `401`
+  `invalid_init_data` во всех трёх пробах (отсечение до чтений — построением:
+  ROUTER `valid?` стоит раньше всех табличных шагов).
+- **Прогон владельца перепроверен.** `ap_get_run YRRgkkrVgQV8dZ99aNuUm` (TESTING,
+  SUCCEEDED): колбэк `myreg:list` → `step_10.route = "none"` → ветка Otherwise →
+  `step_16 {unhandled:true}`. Тишина для старых кнопок доказана прогоном, а не
+  словами. Остальные прогоны журнала (curl с живым `initData`, PRODUCTION
+  `menu`/`tg-router`) цитируются по журналу — см. ниже, что не воспроизведено.
+- **Офлайн.** `check-export-secrets.sh` — чист (ссылок `BOT_TOKEN` — 4, включая
+  новый `reg-api`; все 13 полей `auth` — ссылки, значений нет);
+  `check-texts.py` — 16 флоу, 112 пар, расхождений 0 (все 13 ключей `decide`
+  сошлись с `ru.json`); `check-commands.py` — 0 нарушений; `miniapp build`
+  (tsc+vite) — без ошибок.
+- **Дифф и прототип.** `git diff main...w43-catalog-registration` разобран
+  целиком (SPA, `ru.json`, `flows/`, каталог, доки). `prototypes/app.js`
+  (`renderEvents` 1133+, `ticketRow`, `eventCardEl`, `openRegistration`,
+  `openCancelSheet`, `renderTicket` 291+) и `data.js` сверены с таблицей журнала
+  «Сверка с прототипом»: табы/строки/шит/отмена/прошедшие — все шесть строк
+  подтверждаются; отличие «текст + явная кнопка вместо тоста» названо с причиной.
+  Неназванных расхождений в затронутых W43 местах нет (строка `seats_left`
+  эталона отсутствует и в W38-карточке — наследие W38, не регрессия W43).
+- **AppSec.** `telegram_id` только из `initData` (вход step_2 не содержит поля
+  из тела с этим именем — подмена невозможна построением, а не проверкой);
+  `mine` — постфильтр по `telegram_id` + только 4 поля без ПД; `register`
+  требует PAR-1 сервером (`400 pdn_required` раньше всех проверок ивента);
+  PAR-2 пишется всегда явно (`consentValue` true/false + время); `cancel` —
+  только своя активная строка + серверная перепроверка `starts_at`;
+  пользовательский ввод (title/address) в SPA — только текстовыми узлами
+  React, `innerHTML`/`dangerouslySetInnerHTML` нет (в W43-файлах; `textarea`
+  есть только в `Manage.tsx` — до W43); литерального `BOT_USERNAME`/`t.me` в SPA
+  нет; бренд-чек (`#[hex]|rgb(|font-`) по новым файлам молчит.
+- **Не удалось воспроизвести.** Валидный `initData` в сессии ревьюера отсутствует
+  (протухает за час, чужой не берём принципиально), поэтому позитивные пути
+  (`mine`/`registered`/`existing`/`cancelled`, различающие прогоны дедлайна,
+  мест, повтора и IDOR-тест с чужим `telegramId` в теле) приняты по журналу +
+  перепроверены кодом/структурой: IDOR — формой входов (телу некуда положить
+  чужой id), IDM-1 — маршрутизацией (`existing` уходит в Otherwise без записей,
+  `registered_at` не переписывается — сильнее, чем требует чек-лист), дедлайн/
+  ёмкость/статусы — прочтением всех веток `decide`.
+
+### Ответы на вопросы пакета (по существу)
+
+- **Окно initData 3600 c — приемлемо.** Реплей в течение часа даёт только строки
+  самого вызывающего: `mine` — чтение своих, `register` — идемпотентна,
+  `cancel` — отмена своей же. Окно реально доезжает до проверки (`flowProps`
+  `maxAgeSeconds: 3600` → `fn-hmac-init-data/step_3`, сверху режется капом по его
+  карточке), а не только записано: UI-круг владельца показал `mine` успешным на
+  том `initData`, который `my-qr-api` (300 c) уже отклонил.
+- **`mine` только живые — W13/W45 не ломает.** `mine` — форма ответа таба, а не
+  хранилище: BACKLOG W13 требует «счётчики сходятся с содержимым таблиц»
+  (читает `registrations` напрямую, отменённые строки там на месте), сегменты
+  W14 — `all_consent`/`registered`/`attended`/`no_show`, не `mine`.
+- **`source` не пишется — W14 не ломает.** Сегменты рассылок `source` не используют;
+  поле остаётся за utm из deep link (OWN-6), чат-путь `reg-start` пишет его
+  как раньше.
+- **IDM-1 «та же регистрация» — верно.** Повтор не обновляет `registered_at`:
+  запись вообще не трогается (ответ `existing` собирается без write-шагов).
 
 ### Замечания
 
-1. **блокер | важно | на будущее** — <что не так> — <флоу/шаг/файл> — <почему важно>
-   - *Исправлено*: <что сделал владелец> (YYYY-MM-DD)
+1. **важно** — каталог ссылается на несуществующий флоу и молчит о новом
+   читателе секрета — `catalog/variables.md`, таблица «Кто их читает» —
+   строка `MINIAPP_URL | [my-regs](flows/my-regs.md)` ведёт на удалённый файл
+   (карточка `catalog/flows/my-regs.md` стёрта этим же пакетом — битая
+   относительная ссылка), а `reg-api`, читающий `{{variables['BOT_TOKEN']}}`
+   (живой `step_1`, четвёртая ссылка по `check-export-secrets.sh`), в таблицу
+   не добавлен.    Чек-лист §2 требует ровно обратного: мёртвых флоу в каталоге
+   нет, живые читатели перечислены.
+   - *Исправлено*: строка `MINIAPP_URL → my-regs` убрана, добавлена строка
+     `BOT_TOKEN → reg-api` (окно 1 ч); в строке `menu` перечислен и
+     `#/events?tab=mine` (2026-09-16).
+2. **важно** — stale-перечисление читателей `registrations` —
+   `catalog/flows/fn-find-registration.md:7` — «`reg-start`, `my-regs`,
+   `my-reg-cancel` читают `registrations` напрямую» в настоящем времени, хотя
+   два флоу из трёх удалены; новый прямой читатель `reg-api` (свои чтения +
+   собственные постфильтры вместо вызова `fn-find-registration`) не упомянут.
+   Тот же класс расхождения каталога с реальностью, чинится вместе с п. 1.
+   - *Исправлено*: «`reg-start` и `reg-api` читают `registrations` напрямую»
+     (2026-09-16).
+3. **важно** — `Sheet` скопирован, а не вынесен —
+   `miniapp/src/components/Sheet.tsx` vs `miniapp/src/routes/Manage.tsx:186` —
+   новый «общий» шит — построчная копия локального шита `Manage.tsx` (включая
+   оба `useEffect`), а `Manage.tsx` в диффе пакета отсутствует: журнал
+   («вынесен из `Manage.tsx` без изменений») описывает не то, что сделано.
+   Либо `Manage.tsx` переводится на общий компонент по-настоящему, либо журнал
+   правится на «скопирован осознанно». Сейчас две реализации одной модалки
+   будут расходиться молча.
+   - *Исправлено*: журнал честно называет копию копией («копия приёма из
+     `Manage.tsx`; сам `Manage.tsx` не тронут — унификация отдельной
+     работой»); `Manage.tsx` не трогаем осознанно — его поверхность
+     (W42 → W44 → W13 → W14) идёт строго последовательно, чужая правка
+     под ногами следующего пакета запрещена границами (2026-09-16).
+4. **на будущее** — мёртвые ветки `checked_in` в статусе —
+   `reg-api/step_9` (`mine`-фильтр, `existing`-проверка) и избыточный тернар
+   в `MineCard` (`upcoming ? 'myreg.status.registered' : 'myreg.status.registered'`) —
+   `registrations.status` — dropdown только `registered`/`cancelled`,
+   `checkin-api` статус не пишет (только `checked_in_at`), так что значение
+   `checked_in` в `status` не встречается никогда; `checkedInAt` в `mine`
+   при этом корректно берётся из поля `checked_in_at`. Безвредно, убрать при
+   следующей правке `decide`.
+5. **на будущее** — `reg-api` ищет свою строку `.find()` первым совпадением,
+   а не каноническим схлопыванием дублей (`fn-find-registration`, ADR-0003) —
+   при гонке дублей подсчёт занятости посчитает обе строки и раньше выдаст
+   `no_seats`. Атомарности всё равно нет (ADR-0003 — принятая цена), окно
+   микроскопическое; держать в уме при проектировании счётчиков W13.
+6. **на будущее** — реактивация после отмены оставляет старый `cancelled_at`
+   (`reg-api/step_11` его не трогает — очистить DATE нечем, Q30): строка
+   `registered` с проштампованной отменой. Потребители смотрят на `status`
+   (Q30), но W13 стоит явно зафиксировать это в своей логике счётчиков.
 
 ## Хвосты и блокеры
 
