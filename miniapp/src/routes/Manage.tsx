@@ -84,6 +84,10 @@ function coordsInRange(lat: number, lon: number): boolean {
   return isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
 }
 
+// Орг-ссылка (её даёт «Поделиться»): https://yandex.com/maps/org/<slug>/<oid>…
+// Координат в ней нет — их достаёт сервер через Геокодер (W42, Q55).
+const YANDEX_MAPS_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\//i;
+
 function mapUrl(lat: string, lon: string): string {
   return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
 }
@@ -270,6 +274,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [geoSheet, setGeoSheet] = useState(false);
   const [geoInput, setGeoInput] = useState('');
   const [geoError, setGeoError] = useState('');
+  const [geoBusy, setGeoBusy] = useState(false);
 
   // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
@@ -454,6 +459,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setGeoSheet(false);
     setGeoInput('');
     setGeoError('');
+    setGeoBusy(false);
   }, []);
 
   const leaveForm = useCallback(() => {
@@ -615,18 +621,49 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     void submit('published');
   }, [fields, submit]);
 
-  const applyGeoLink = useCallback(() => {
-    const parsed = parseYandexLink(geoInput);
-    if (!parsed || !coordsInRange(parsed.lat, parsed.lon)) {
+  // W42: ссылку на место разбираем на клиенте; орг-ссылка (в ней координат
+  // нет) уходит на сервер — Геокодер возвращает точку и адрес (Q55). Пока
+  // идёт запрос, кнопка выключена, чтобы не отправить два.
+  const applyGeoLink = useCallback(async () => {
+    if (geoBusy) return;
+    const raw = geoInput.trim();
+    const parsed = parseYandexLink(raw);
+    if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
+      setGeo(parsed.lat, parsed.lon);
+      setGeoInput('');
+      setGeoError('');
+      setGeoSheet(false);
+      showToast(t('manage.geo.link_applied'));
+      return;
+    }
+    if (!YANDEX_MAPS_RE.test(raw)) {
       setGeoError(t('manage.geo.link_bad'));
       return;
     }
-    setGeo(parsed.lat, parsed.lon);
-    setGeoInput('');
+    setGeoBusy(true);
     setGeoError('');
-    setGeoSheet(false);
-    showToast(t('manage.geo.link_applied'));
-  }, [geoInput, setGeo, showToast]);
+    const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
+    setGeoBusy(false);
+    if (res.kind === 'json' && res.data['ok']) {
+      const la = Number(res.data['lat']);
+      const lo = Number(res.data['lon']);
+      if (coordsInRange(la, lo)) {
+        setGeo(la, lo);
+        // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
+        const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
+        if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
+        setGeoInput('');
+        setGeoError('');
+        setGeoSheet(false);
+        showToast(t('manage.geo.link_applied'));
+        return;
+      }
+    }
+    const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
+    const errFields = d && d['fields'] && typeof d['fields'] === 'object' ? (d['fields'] as Record<string, unknown>) : null;
+    const key = errFields && typeof errFields['geo'] === 'string' ? String(errFields['geo']) : '';
+    setGeoError(key ? t(key) : errorTextFor(res as never));
+  }, [geoBusy, geoInput, initData, setGeo, showToast, errorTextFor]);
 
   const applyRecent = useCallback(
     (r: RecentPlace) => {
@@ -1461,8 +1498,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           </>
         )}
         <div className="sheet-actions">
-          <button type="button" className="btn btn-primary" id="geo-apply" disabled={geoInput.trim() === ''} onClick={applyGeoLink}>
-            {t('manage.geo.link_apply')}
+          <button
+            type="button"
+            className="btn btn-primary"
+            id="geo-apply"
+            disabled={geoInput.trim() === '' || geoBusy}
+            onClick={() => void applyGeoLink()}
+          >
+            {geoBusy ? t('manage.geo.searching') : t('manage.geo.link_apply')}
           </button>
         </div>
       </Sheet>
