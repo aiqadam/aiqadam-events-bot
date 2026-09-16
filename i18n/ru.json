@@ -139,6 +139,8 @@
   "manage.err.status": "Такого статуса нет.",
   "manage.err.title_length": "Название — от 2 до 200 символов.",
   "manage.err.validation": "Проверьте отмеченные поля.",
+  "manage.exit.btn": "Выйти",
+  "manage.exit.confirm": "Изменения не сохранены. Выйти без сохранения?",
   "manage.geo.coords": "Координаты: {lat}, {lon}",
   "manage.geo.link": "Ссылка Яндекс.Карт",
   "manage.geo.link_apply": "Взять координаты",

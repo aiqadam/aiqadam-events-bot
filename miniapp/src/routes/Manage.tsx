@@ -158,12 +158,20 @@ function clientErrors(f: Record<string, string>, strict: boolean): StepError[] {
   return out;
 }
 
-function limitText(capacity: string, overbook: string): string {
+function isForbiddenRes(res: { kind: string; data?: Record<string, unknown> }): boolean {
+  return res.kind === 'json' && String((res.data as Record<string, unknown> | undefined)?.['error'] || '') === 'forbidden';
+}
+
+function capacityLimit(capacity: string, overbook: string): number | null {
   const cap = parseInt(capacity, 10);
-  if (!cap || cap <= 0) return t('event.card.seats_unlimited');
+  if (!cap || cap <= 0) return null;
   const over = overbook === '' ? 40 : parseInt(overbook, 10);
-  const limit = Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
-  return t('manage.capacity.limit', { limit });
+  return Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
+}
+
+function limitText(capacity: string, overbook: string): string {
+  const limit = capacityLimit(capacity, overbook);
+  return limit === null ? t('event.card.seats_unlimited') : t('manage.capacity.limit', { limit });
 }
 
 export default function Manage({ eventId: propEventId }: { eventId: string }) {
@@ -180,6 +188,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [showLoadfail, setShowLoadfail] = useState(false);
   const [loadfailText, setLoadfailText] = useState('');
+  const [loadfailRetryable, setLoadfailRetryable] = useState(true);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   // W42: визард — шаг, ошибки шагов (клиентские и серверные), экран успеха.
@@ -189,6 +198,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [doneText, setDoneText] = useState('');
   const [draftRestored, setDraftRestored] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
+  // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
+  // несохранённые правки молча (дизайн-ревью W42).
+  const loadedRef = useRef<Record<string, string> | null>(null);
 
   // form fields
   const [fields, setFields] = useState<Record<string, string>>({ ...EMPTY_FIELDS });
@@ -277,6 +290,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         next[n] = utcToLocalInput(String(ev[n] || ''));
       });
       setFields(next);
+      loadedRef.current = next;
       applyStatus(String(ev['status'] || 'draft'));
     },
     [applyStatus],
@@ -311,9 +325,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     return t('manage.err.server');
   }, []);
 
-  const showLoadFail = useCallback((text: string) => {
+  const showLoadFail = useCallback((text: string, retryable = true) => {
     setShowForm(false);
     setLoadfailText(text);
+    setLoadfailRetryable(retryable);
     setShowLoadfail(true);
     setStatusText('');
   }, []);
@@ -327,7 +342,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setStatusText(t('manage.loading'));
       const res = await postJson(MANAGE_API, { initData, action: 'load', eventId: target });
       if (res.kind !== 'json' || !res.data['ok'] || !res.data['event']) {
-        showLoadFail(errorTextFor(res as never));
+        showLoadFail(errorTextFor(res as never), !isForbiddenRes(res));
         return;
       }
       fillForm(res.data['event'] as EventData);
@@ -353,7 +368,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setStatusText(t('manage.loading'));
     const res = await postJson(MANAGE_API, { initData, action: 'list' });
     if (res.kind !== 'json' || !res.data['ok'] || !Array.isArray(res.data['events'])) {
-      showLoadFail(errorTextFor(res as never));
+      showLoadFail(errorTextFor(res as never), !isForbiddenRes(res));
       return;
     }
     setListItems(res.data['events'] as ListItem[]);
@@ -368,13 +383,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setDoneText('');
     setDraftRestored(false);
     setConfirmCancel(false);
+    setConfirmExit(false);
     setGeoPanel(false);
     setGeoInput('');
     setGeoError('');
     setGeoNote('');
   }, []);
 
-  const backToList = useCallback(() => {
+  const leaveForm = useCallback(() => {
     resetFormState();
     // Если форма открыта из списка, hash ведёт на ивент — возвращаем его
     // на #/manage (App пересоберёт роут); после создания hash не менялся.
@@ -388,6 +404,22 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setInviteLink(null);
     void loadList();
   }, [loadList, resetFormState]);
+
+  const isDirty = useCallback(() => {
+    if (!eventId) return false;
+    const base = loadedRef.current;
+    if (!base) return false;
+    return FIELDS.some((n) => String(fields[n] || '').trim() !== String(base[n] || '').trim());
+  }, [eventId, fields]);
+
+  // «К списку» не теряет несохранённые правки молча: спрашиваем (дизайн-ревью).
+  const backToList = useCallback(() => {
+    if (!done && isDirty()) {
+      setConfirmExit(true);
+      return;
+    }
+    leaveForm();
+  }, [done, isDirty, leaveForm]);
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
@@ -411,6 +443,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       }
     } catch {}
     setFields(next);
+    loadedRef.current = next;
     setStep(nextStep);
     setErrs([]);
     setFieldErrors({});
@@ -449,6 +482,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         try {
           localStorage.removeItem(DRAFT_KEY);
         } catch {}
+        loadedRef.current = collecting;
         if (d['eventId']) setEventId(String(d['eventId']));
         applyStatus(status);
         // После публикации экран успеха живёт как «Новый ивент» (прототип);
@@ -484,8 +518,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [busy, clearErrors, collect, eventId, initData, origStatus, applyStatus, errorTextFor, setBusyState, showFieldErrors],
   );
 
+  // Шаг проверяется на «Далее» — как в эталоне (дизайн-ревью W42): пустые
+  // обязательные поля не пропускаем, точки шагов с ошибками помечаются.
   const nextStep = useCallback(() => {
-    const e = clientErrors(fields, false).filter((x) => x.step === step);
+    const e = clientErrors(fields, true).filter((x) => x.step === step);
     if (e.length) {
       setErrs(e);
       return;
@@ -715,6 +751,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const canPublish = !origStatus || origStatus === 'draft';
   const plate = plateFromLocal(fields['starts_at']);
   const previewStatus = origStatus || 'draft';
+  const capLimit = capacityLimit(fields['capacity'], fields['overbook_pct']);
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, paddingBottom: showForm ? 120 : 16 }}>
@@ -736,9 +773,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             type="button"
             className="btn btn-secondary"
             id="retry"
-            onClick={() => (retryTarget === 'list' ? void loadList() : void load())}
+            onClick={() => (loadfailRetryable ? (retryTarget === 'list' ? void loadList() : void load()) : backToList())}
           >
-            {t('manage.btn.retry')}
+            {loadfailRetryable ? t('manage.btn.retry') : t('manage.btn.back')}
           </button>
         </div>
       )}
@@ -794,7 +831,19 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             {t('manage.btn.back')}
           </button>
 
-          {done ? (
+          {confirmExit ? (
+            <div className="card result bad" id="exit-confirm">
+              <p className="empty-heading">{t('manage.exit.confirm')}</p>
+              <div className="chip-row" style={{ marginBottom: 0 }}>
+                <button type="button" className="btn btn-destructive" id="exit-yes" onClick={leaveForm}>
+                  {t('manage.exit.btn')}
+                </button>
+                <button type="button" className="btn btn-secondary" id="exit-no" onClick={() => setConfirmExit(false)}>
+                  {t('common.btn.cancel')}
+                </button>
+              </div>
+            </div>
+          ) : done ? (
             <>
               <div className="card result ok" id="wizard-done">
                 <p className="empty-heading">{doneText || t('manage.saved.created')}</p>
@@ -813,7 +862,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   <div className="row" style={{ display: 'flex', gap: 12 }}>
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
+                      className="btn btn-primary"
                       id="invite-copy"
                       onClick={() => {
                         void navigator.clipboard.writeText(inviteLink.url).then(
@@ -825,7 +874,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       {inviteCopied ? t('manage.btn.copied') : t('manage.btn.copy')}
                     </button>
                     <a
-                      className="btn btn-outline btn-sm"
+                      className="btn btn-outline"
                       id="invite-share"
                       href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink.url)}`}
                       target="_blank"
@@ -842,17 +891,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               <div className="wizard-head">
                 <div className="step-dots" aria-hidden="true">
                   {STEP_KEYS.map((_, i) => (
-                    <span key={i} className={`step-dot${i < step ? ' done' : ''}${i === step ? ' active' : ''}`} />
+                    <span
+                      key={i}
+                      className={`step-dot${i < step ? ' done' : ''}${i === step ? ' active' : ''}${errs.some((e) => e.step === i) ? ' warn' : ''}`}
+                    />
                   ))}
                 </div>
                 <span className="wizard-step-label">{t('manage.step.label', { n: step + 1, m: STEP_KEYS.length })}</span>
               </div>
-              <h2 className="empty-heading wizard-title">{t(STEP_KEYS[step])}</h2>
               {draftRestored && (
                 <p className="helper" id="draft-restored">
                   {t('manage.draft.restored')}
                 </p>
               )}
+              <h2 className="empty-heading wizard-title">{t(STEP_KEYS[step])}</h2>
 
               {step === 0 && (
                 <div className="form-section">
@@ -927,7 +979,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     <div className="chip-row">
                       <button
                         type="button"
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-outline"
                         id="geo-link"
                         onClick={() => {
                           setGeoPanel((v) => !v);
@@ -937,7 +989,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         {t('manage.geo.link')}
                       </button>
                       {locateVisible && (
-                        <button type="button" className="btn btn-outline btn-sm" id="locate" onClick={handleLocate}>
+                        <button type="button" className="btn btn-outline" id="locate" onClick={handleLocate}>
                           {t('manage.btn.locate')}
                         </button>
                       )}
@@ -964,7 +1016,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           </p>
                         )}
                         <div style={{ marginTop: 12 }}>
-                          <button type="button" className="btn btn-primary btn-sm" id="geo-apply" disabled={geoInput.trim() === ''} onClick={applyGeoLink}>
+                          <button type="button" className="btn btn-primary" id="geo-apply" disabled={geoInput.trim() === ''} onClick={applyGeoLink}>
                             {t('manage.geo.link_apply')}
                           </button>
                         </div>
@@ -975,8 +1027,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                             </p>
                             <div className="chip-row" id="geo-recent">
                               {recents.map((r) => (
-                                <button key={r.address} type="button" className="btn btn-outline btn-sm" onClick={() => applyRecent(r)}>
-                                  {r.address}
+                                <button key={r.address} type="button" className="btn btn-outline chip-place" onClick={() => applyRecent(r)}>
+                                  <span className="chip-label">{r.address}</span>
                                 </button>
                               ))}
                             </div>
@@ -1118,9 +1170,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       )}
                     </div>
                   </div>
-                  <p className="helper" id="capacity-limit">
-                    {limitText(fields['capacity'], fields['overbook_pct'])}
-                  </p>
+                  <div className="capacity-live" id="capacity-limit">
+                    {capLimit !== null && <span className="capacity-live-value">{capLimit}</span>}
+                    <span className="capacity-live-text">{limitText(fields['capacity'], fields['overbook_pct'])}</span>
+                  </div>
                 </div>
               )}
 
@@ -1146,10 +1199,101 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         {fields['starts_at'] && <span className="meta-item">{humanLocal(fields['starts_at'])}</span>}
                         {fields['address'] && <span className="meta-item">{fields['address']}</span>}
                       </div>
-                      {fields['description'] && <p className="empty-desc">{fields['description']}</p>}
+                      {fields['description'] && <p className="event-desc">{fields['description']}</p>}
                     </div>
                   </div>
 
+              {inviteLink && inviteLink.eventId === eventId && (
+                <section className="card" id="invite" style={{ marginTop: 16 }}>
+                  <h2 className="empty-heading" id="invite-title">
+                    {t('manage.invite.title')}
+                  </h2>
+                  <p className="empty-desc" id="invite-hint">
+                    {t('manage.invite.hint')}
+                  </p>
+                  <p className="mono" id="invite-link" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
+                    {inviteLink.url}
+                  </p>
+                  <div className="row" style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      id="invite-copy"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(inviteLink.url).then(
+                          () => setInviteCopied(true),
+                          () => setInviteCopied(false),
+                        );
+                      }}
+                    >
+                      {inviteCopied ? t('manage.btn.copied') : t('manage.btn.copy')}
+                    </button>
+                    <a
+                      className="btn btn-outline"
+                      id="invite-share"
+                      href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink.url)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t('manage.btn.share')}
+                    </a>
+                  </div>
+                </section>
+              )}
+
+              {eventId && (
+                <section className="card" id="staff" style={{ marginTop: 16 }}>
+                  <h2 className="empty-heading" id="staff-title">
+                    {t('manage.staff.title')}
+                  </h2>
+                  {staffItems.length === 0 ? (
+                    <p className="empty-desc" id="staff-empty">
+                      {t('manage.staff.empty')}
+                    </p>
+                  ) : (
+                    <ul id="staff-list" style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {staffItems.map((s) => (
+                        <li key={s.telegram_id} data-telegram-id={s.telegram_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <span>{s.item}</span>
+                          <button type="button" className="btn btn-outline btn-sm" disabled={staffBusy} onClick={() => void revokeStaff(s.telegram_id)}>
+                            {t('manage.staff.btn.revoke')}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="field">
+                    <label className="label" htmlFor="f-staff-id">
+                      {t('manage.staff.add_label')}
+                    </label>
+                    <div className="row" style={{ display: 'flex', gap: 12 }}>
+                      <input
+                        className={`input ${staffFieldError ? 'error' : ''}`}
+                        id="f-staff-id"
+                        name="staff_telegram_id"
+                        inputMode="numeric"
+                        maxLength={16}
+                        autoComplete="off"
+                        value={staffIdInput}
+                        onChange={(e) => setStaffIdInput(e.target.value)}
+                      />
+                      <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
+                        {t('manage.staff.btn.add')}
+                      </button>
+                    </div>
+                    {staffFieldError && (
+                      <p className="helper error" id="e-staff-id">
+                        {staffFieldError}
+                      </p>
+                    )}
+                    {staffResult && (
+                      <p className="helper" id="staff-result" role="status">
+                        {staffResult}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )}
                   {confirmCancel && (
                     <div className="card result bad" id="cancel-confirm" style={{ marginTop: 16 }}>
                       <p className="empty-heading">{t('manage.cancel.confirm', { title: fields['title'] })}</p>
@@ -1167,6 +1311,16 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               )}
 
               <div className="sticky-actions">
+                {busy && (
+                  <p className="helper sticky-status" role="status">
+                    {t('manage.saving')}
+                  </p>
+                )}
+                {result && (
+                  <p className={`helper sticky-status ${result.ok ? 'ok' : 'error'}`} id="result" role="status">
+                    {result.text}
+                  </p>
+                )}
                 {step > 0 && (
                   <button type="button" className="btn btn-secondary btn-lg" id="wizard-prev" onClick={prevStep}>
                     {t('common.btn.back')}
@@ -1205,105 +1359,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         </section>
       )}
 
-      {inviteLink && inviteLink.eventId === eventId && !done && (
-        <section className="card" id="invite" style={{ marginTop: 16 }}>
-          <h2 className="empty-heading" id="invite-title">
-            {t('manage.invite.title')}
-          </h2>
-          <p className="empty-desc" id="invite-hint">
-            {t('manage.invite.hint')}
-          </p>
-          <p className="mono" id="invite-link" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
-            {inviteLink.url}
-          </p>
-          <div className="row" style={{ display: 'flex', gap: 12 }}>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              id="invite-copy"
-              onClick={() => {
-                void navigator.clipboard.writeText(inviteLink.url).then(
-                  () => setInviteCopied(true),
-                  () => setInviteCopied(false),
-                );
-              }}
-            >
-              {inviteCopied ? t('manage.btn.copied') : t('manage.btn.copy')}
-            </button>
-            <a
-              className="btn btn-outline btn-sm"
-              id="invite-share"
-              href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink.url)}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t('manage.btn.share')}
-            </a>
-          </div>
-        </section>
-      )}
 
-      {showForm && eventId && !done && step === LAST_STEP && (
-        <section className="card" id="staff" style={{ marginTop: 16 }}>
-          <h2 className="empty-heading" id="staff-title">
-            {t('manage.staff.title')}
-          </h2>
-          {staffItems.length === 0 ? (
-            <p className="empty-desc" id="staff-empty">
-              {t('manage.staff.empty')}
-            </p>
-          ) : (
-            <ul id="staff-list" style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {staffItems.map((s) => (
-                <li key={s.telegram_id} data-telegram-id={s.telegram_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <span>{s.item}</span>
-                  <button type="button" className="btn btn-outline btn-sm" disabled={staffBusy} onClick={() => void revokeStaff(s.telegram_id)}>
-                    {t('manage.staff.btn.revoke')}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="field">
-            <label className="label" htmlFor="f-staff-id">
-              {t('manage.staff.add_label')}
-            </label>
-            <div className="row" style={{ display: 'flex', gap: 12 }}>
-              <input
-                className={`input ${staffFieldError ? 'error' : ''}`}
-                id="f-staff-id"
-                name="staff_telegram_id"
-                inputMode="numeric"
-                maxLength={16}
-                autoComplete="off"
-                value={staffIdInput}
-                onChange={(e) => setStaffIdInput(e.target.value)}
-              />
-              <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
-                {t('manage.staff.btn.add')}
-              </button>
-            </div>
-            {staffFieldError && (
-              <p className="helper error" id="e-staff-id">
-                {staffFieldError}
-              </p>
-            )}
-            {staffResult && (
-              <p className="helper" id="staff-result" role="status">
-                {staffResult}
-              </p>
-            )}
-          </div>
-        </section>
-      )}
-
-      {result && (
-        <div className={`card result ${result.ok ? 'ok' : 'bad'}`} id="result" role="status">
-          <p className="empty-heading" id="resultText">
-            {result.text}
-          </p>
-        </div>
-      )}
     </main>
   );
 }
