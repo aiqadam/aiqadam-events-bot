@@ -84,6 +84,11 @@ function coordsInRange(lat: number, lon: number): boolean {
   return isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
 }
 
+// Орг-ссылка (её даёт «Поделиться»): https://yandex.com/maps/org/<slug>/<oid>…
+// Координат в ней нет — их достаёт сервер через Геокодер (W42, Q55).
+const ORG_LINK_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\/org\//i;
+const YANDEX_MAPS_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\//i;
+
 function mapUrl(lat: string, lon: string): string {
   return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
 }
@@ -260,6 +265,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
   // несохранённые правки молча (дизайн-ревью W42).
   const loadedRef = useRef<Record<string, string> | null>(null);
+  // Счётчик запросов resolve_geo: поздний ответ при закрытом шите не применяем
+  // (дизайн-ревью, круг 6).
+  const geoReqRef = useRef(0);
 
   // form fields
   const [fields, setFields] = useState<Record<string, string>>({ ...EMPTY_FIELDS });
@@ -270,6 +278,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [geoSheet, setGeoSheet] = useState(false);
   const [geoInput, setGeoInput] = useState('');
   const [geoError, setGeoError] = useState('');
+  const [geoBusy, setGeoBusy] = useState(false);
 
   // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
@@ -451,9 +460,18 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setDraftRestored(false);
     setCancelSheet(false);
     setConfirmExit(false);
+    geoReqRef.current += 1; // ответ resolve_geo в полёте уже не применяется
     setGeoSheet(false);
     setGeoInput('');
     setGeoError('');
+    setGeoBusy(false);
+  }, []);
+
+  // Закрытие шита ссылки: отменяет и поздний ответ resolve_geo (круг 6).
+  const closeGeoSheet = useCallback(() => {
+    geoReqRef.current += 1;
+    setGeoBusy(false);
+    setGeoSheet(false);
   }, []);
 
   const leaveForm = useCallback(() => {
@@ -615,18 +633,58 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     void submit('published');
   }, [fields, submit]);
 
-  const applyGeoLink = useCallback(() => {
-    const parsed = parseYandexLink(geoInput);
-    if (!parsed || !coordsInRange(parsed.lat, parsed.lon)) {
-      setGeoError(t('manage.geo.link_bad'));
-      return;
+  // W42: ссылку на место разбираем на клиенте; орг-ссылка (в ней координат
+  // нет) уходит на сервер — Геокодер возвращает точку и адрес (Q55). Пока
+  // идёт запрос, кнопка выключена, чтобы не отправить два.
+  const applyGeoLink = useCallback(async () => {
+    if (geoBusy) return;
+    const raw = geoInput.trim();
+    // Орг-ссылка всегда уходит на сервер: координат в ней нет, а `ll`/`pt`
+    // в такой ссылке задают центр карты, а не точку (ревью W42, круг 5).
+    if (!ORG_LINK_RE.test(raw)) {
+      const parsed = parseYandexLink(raw);
+      if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
+        setGeo(parsed.lat, parsed.lon);
+        setGeoInput('');
+        setGeoError('');
+        setGeoSheet(false);
+        showToast(t('manage.geo.link_applied'));
+        return;
+      }
+      if (!YANDEX_MAPS_RE.test(raw)) {
+        setGeoError(t('manage.geo.link_bad'));
+        return;
+      }
     }
-    setGeo(parsed.lat, parsed.lon);
-    setGeoInput('');
+    // Пока идёт запрос, кнопка, поле и «Недавние места» выключены, а поздний
+    // ответ не применяется, если шит уже закрыли (дизайн-ревью, круг 6) —
+    // иначе ответ перетирал бы выбор, сделанный после нажатия.
+    const reqId = ++geoReqRef.current;
+    setGeoBusy(true);
     setGeoError('');
-    setGeoSheet(false);
-    showToast(t('manage.geo.link_applied'));
-  }, [geoInput, setGeo, showToast]);
+    const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
+    if (geoReqRef.current !== reqId) return;
+    setGeoBusy(false);
+    if (res.kind === 'json' && res.data['ok']) {
+      const la = Number(res.data['lat']);
+      const lo = Number(res.data['lon']);
+      if (coordsInRange(la, lo)) {
+        setGeo(la, lo);
+        // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
+        const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
+        if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
+        setGeoInput('');
+        setGeoError('');
+        setGeoSheet(false);
+        showToast(t('manage.geo.link_applied'));
+        return;
+      }
+    }
+    const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
+    const errFields = d && d['fields'] && typeof d['fields'] === 'object' ? (d['fields'] as Record<string, unknown>) : null;
+    const key = errFields && typeof errFields['geo'] === 'string' ? String(errFields['geo']) : '';
+    setGeoError(key ? t(key) : errorTextFor(res as never));
+  }, [geoBusy, geoInput, initData, setGeo, showToast, errorTextFor]);
 
   const applyRecent = useCallback(
     (r: RecentPlace) => {
@@ -634,9 +692,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const lo = Number(String(r.lon || '').replace(',', '.'));
       if (r.lat !== '' && r.lon !== '' && coordsInRange(la, lo)) setGeo(la, lo);
       setFields((prev) => ({ ...prev, address: r.address }));
-      setGeoSheet(false);
+      closeGeoSheet();
     },
-    [setGeo],
+    [setGeo, closeGeoSheet],
   );
 
   // Копирование ссылки — тост «Скопировано» (эталон); если буфер недоступен,
@@ -1428,7 +1486,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         </section>
       )}
 
-      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={() => setGeoSheet(false)}>
+      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={closeGeoSheet}>
         <p className="app-muted">{t('manage.hint.geo')}</p>
         <input
           className={`input ${geoError ? 'error' : ''}`}
@@ -1438,13 +1496,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           autoComplete="off"
           placeholder={t('manage.geo.link_placeholder')}
           value={geoInput}
+          disabled={geoBusy}
           onChange={(e) => {
             setGeoInput(e.target.value);
             setGeoError('');
           }}
         />
         {geoError && (
-          <p className="helper error" id="e-geo-link">
+          <p className="helper error" id="e-geo-link" role="alert">
             {geoError}
           </p>
         )}
@@ -1453,7 +1512,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             <div className="section-label">{t('manage.geo.recent')}</div>
             <div className="sheet-actions" id="geo-recent">
               {recents.map((r) => (
-                <button key={r.address} type="button" className="btn btn-outline" onClick={() => applyRecent(r)}>
+                <button
+                  key={r.address}
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={geoBusy}
+                  onClick={() => applyRecent(r)}
+                >
                   <span className="chip-label">{r.address}</span>
                 </button>
               ))}
@@ -1461,8 +1526,15 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           </>
         )}
         <div className="sheet-actions">
-          <button type="button" className="btn btn-primary" id="geo-apply" disabled={geoInput.trim() === ''} onClick={applyGeoLink}>
-            {t('manage.geo.link_apply')}
+          <button
+            type="button"
+            className="btn btn-primary"
+            id="geo-apply"
+            disabled={geoInput.trim() === '' || geoBusy}
+            aria-busy={geoBusy}
+            onClick={() => void applyGeoLink()}
+          >
+            {geoBusy ? t('manage.geo.searching') : t('manage.geo.link_apply')}
           </button>
         </div>
       </Sheet>

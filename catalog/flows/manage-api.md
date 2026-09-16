@@ -8,8 +8,10 @@
   чаптера (W37 — вход в правку без команд, [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md)),
   выдача staff'у ивент для правки, приём создания/правки (OWN-1…OWN-5, OWN-15),
   ссылка регистрации, список контролёров ивента (W36 — ручной путь вместо
-  инвайт-ссылок W10) и недавние места для визарда (W42 — `address`/`lat`/`lon`
-  в `list` только у своих ивентов). Права решаются здесь, страница их не решает.
+  инвайт-ссылок W10), недавние места для визарда (W42 — `address`/`lat`/`lon`
+  в `list` только у своих ивентов) и разбор орг-ссылки Яндекс.Карт через
+  Геокодер (W42, [Q55](../../docs/OPEN-QUESTIONS.md#q55) — `resolve_geo`).
+  Права решаются здесь, страница их не решает.
 - **Flow ID (MCP)**: `CcGPwuW4ws5hkcaOPerEG`
 
 ## Вход
@@ -19,8 +21,9 @@
 | Поле | Что |
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
-| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `list` — ивенты чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав |
+| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `list` — ивенты чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав; `resolve_geo` — координаты и адрес орг-ссылки Яндекс.Карт через Геокодер (W42, Q55) |
 | `staffTelegramId` | только при `staff_add`/`staff_remove`: `telegram_id` контролёра; формат (цифры 8–16) проверяет `step_20` |
+| `link` | только при `resolve_geo`: ссылка Яндекс.Карт; из неё берётся **только числовой `oid`** (хост — `yandex.*`, путь `/maps/org/…`), в Геокодер уходит `uri=ymapsbm1://org?oid=…`; короткие `maps/-/…` не поддержаны — в них нет `oid` |
 | `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка и отказ) |
 | `newId` | только при создании: slug того же вида, который страница генерирует один раз на открытие формы — ключ идемпотентности (ADR-0003); ивент получает этот `id` |
 | `fields` | только при `save`: `title`, `description`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `capacity`, `overbook_pct`, `status` — строки как в форме; даты `YYYY-MM-DDTHH:mm` **ташкентские** |
@@ -68,6 +71,10 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_31 (events_list) | `tables-find-records events` | ивенты чаптера: фильтр `chapter_id eq {{step_7['output'].chapterId}}`, `limit: 200` |
 | step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию; у своих ивентов (`isAuthor`) с непустым адресом добавляются `address`/`lat`/`lon` — недавние места визарда (W42) |
 | step_33 (events_list) | `return_response` (`stop`) | `200 {ok:true, events:[…], count}` |
+| step_34 (geo_link) | CODE «geo link: parse» | вырезает `oid` из орг-ссылки (`/maps/org/<slug?>/<oid>`); всё прочее даёт пустой `uri` — Геокодер ответит `400`, отказ вернёт `step_36` |
+| step_35 (geo_link) | `@aiqadam/qadam-http : send_request` | `GET https://geocode-maps.yandex.ru/1.x/` (`apikey` — `{{variables['YANDEX_GEOCODER_API_KEY']}}`, `uri`, `format=json`, `lang=ru_RU`, `results=1`), `failureMode: continue_all`, `timeout: 10`. **Именно `1.x`:** тот же ключ на `/v1/` отвечает `403 Invalid api key` — различающий прогон в журнале W42 |
+| step_36 (geo_link) | CODE «geo link: parse response» | разбирает обе формы вывода `http` (2xx — плоская, 4xx/5xx — `response`); `Point.pos` = «долгота широта» → `lat`/`lon` (6 знаков), адрес — `Address.formatted` (подряд идущие одинаковые компоненты схлопываются, ≤300); отказ — `422 {fields:{geo:'manage.geo.org_fail'}}` |
+| step_37 (geo_link) | `return_response` (`stop`) | `200 {ok:true, lat, lon, address}` или `422` с ключом ошибки |
 
 ### Контракт ответа (согласован с `#/manage` SPA)
 
@@ -81,6 +88,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `save` | 200 | `{ok:true, text, eventId, inviteLink}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем; `inviteLink` — только у `published` |
 | `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки ивента, `item` отформатирован сервером |
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
+| `resolve_geo` успех | 200 | `{ok:true, lat, lon, address}` — координаты (6 знаков) и адрес из Геокодера; `address` может быть пустым |
+| `resolve_geo` отказ (нет `oid` в ссылке, организация не найдена, Геокодер недоступен или ключ отвергнут) | 422 | `{ok:false, error:"validation", text, fields:{geo:"manage.geo.org_fail"}}` — страница переводит ключ и оставляет шит открытым; фолбэк — координаты текстом |
 | нечисловой `staffTelegramId` | 422 | `{ok:false, error:"validation", text, fields:{telegram_id:"manage.err.bad_telegram_id"}, staff:[...]}` — страница переводит ключ |
 
 Тело ответа собирается из вывода шага-решения своей ветки, поэтому `return_response`
@@ -116,6 +125,16 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   **W42:** у своих ивентов с непустым адресом в ответ добавляются
   `address`/`lat`/`lon` — визард берёт их для «Недавних мест» (чужой адрес
   в ответ не попадает); отдельного хранилища недавних мест нет.
+- **Орг-ссылка (`resolve_geo`, W42/[Q55](../../docs/OPEN-QUESTIONS.md#q55))** —
+  отдельная ветка (`step_34`…`step_37`), ранний возврат в `step_7` до
+  *использования* ивента (сам `step_6` в графе выполняется всегда: сентинел
+  `-` даёт пустую выборку, это цена линейного графа): ивент не нужен, прав
+  достаточно строки `staff` (проверена выше).
+  Из ссылки берётся **только `oid`** (цифры), URL Геокодера фиксирован в
+  `step_35` — произвольный URL через флоу не ходит. Ответ — `lat`/`lon`/`address`;
+  отказ Геокодера — `422` с ключом `manage.geo.org_fail`, страница оставляет шит
+  открытым (фолбэк — координаты текстом, визард их принимает). Свободный ключ
+  Геокодера и принятая цена — [Q55](../../docs/OPEN-QUESTIONS.md#q55).
 - **Ссылка регистрации (`inviteLink`)** строится сервером из `BOT_USERNAME`
   (`https://t.me/<bot>?start=e<id>`) и возвращается только для `published`
   (`load` и `save`) — черновик участникам невидим (OWN-4). Формат — OWN-6;
@@ -204,7 +223,10 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 - **Флоу**: `fn-hmac-init-data`
 - **Переменные**: `BOT_TOKEN` (ADR-0008, передаётся в `fn-hmac-init-data`),
   `BOT_USERNAME` (`inviteLink` в ответах `load`/`save`, W37), `MINIAPP_URL`
-  (кнопка сканера в уведомлении)
+  (кнопка сканера в уведомлении), `YANDEX_GEOCODER_API_KEY` (`step_35`,
+  Геокодер; заводится в UI, ADR-0008 — в репозиторий не попадает)
+- **Qadam'ы**: `@aiqadam/qadam-http : send_request` (`step_35` — единственный
+  HTTP-шаг флоу, `failureMode: continue_all`)
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — `step_15`, `step_17`, `step_27`
 
 ## Заметки
