@@ -19,6 +19,7 @@ on:
     paths:
       - 'miniapp/**'
       - 'i18n/**'
+      - 'prototypes/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -52,11 +53,18 @@ jobs:
         run: |
           npm ci
           npm run build
-      - name: Assemble site (dist + i18n)
+      - name: Assemble site (dist + i18n + prototypes)
         run: |
           mkdir -p _site/i18n
           cp -R miniapp/dist/. _site/
           cp -R i18n/. _site/i18n/
+          # Прототипы W41 (ADR-0026): статика без сборки, не в бандле SPA.
+          # Бренд — из единственной вендоренной копии miniapp/src/vendor/brand/:
+          # на деплое копируем её в артефакт прототипа, второй копии в репо нет.
+          mkdir -p _site/prototypes/vendor
+          cp -R prototypes/. _site/prototypes/
+          cp miniapp/src/vendor/brand/tokens.css _site/prototypes/vendor/tokens.css
+          cp miniapp/src/vendor/brand/components.css _site/prototypes/vendor/components.css
           # CNAME — домен Pages (miniapp.events.aiqadam.org)
           if [ -f miniapp/CNAME ]; then cp miniapp/CNAME _site/CNAME; fi
           if [ -f miniapp/public/CNAME ]; then cp miniapp/public/CNAME _site/CNAME; fi

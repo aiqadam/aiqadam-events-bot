@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Qadam Events — прототип (целевой эталон)</title>
+    <link rel="stylesheet" href="vendor/tokens.css" />
+    <link rel="stylesheet" href="vendor/components.css" />
+    <link rel="stylesheet" href="proto.css" />
+  </head>
+  <body class="proto-body">
+    <main class="proto-home">
+      <header class="proto-home-top">
+        <div>
+          <div class="proto-eyebrow">Прототип · целевой эталон (to-be)</div>
+          <h1 class="proto-home-title">AI Qadam Events — как продукт должен выглядеть</h1>
+        </div>
+        <button type="button" class="proto-icon-btn" data-proto-theme aria-label="Тема"></button>
+      </header>
+
+      <p class="proto-home-lead">
+        Это не снимок текущего продукта, а <strong>целевое состояние</strong> глазами
+        конечного пользователя. Источники — требования SPEC, дизайн-система
+        <span class="mono">brand.aiqadam.org</span>, голос бота и правила среды Telegram
+        Mini App. Экраны выглядят как настоящий продукт; соответствие требованиям живёт
+        отдельным слоем — кнопкой «Требования» в моке.
+      </p>
+
+      <section class="proto-roles" id="roles"></section>
+
+      <section class="proto-section">
+        <h2 class="proto-home-h2">Состояния, которые ломают экран</h2>
+        <p class="proto-home-note">Пустой срез, истёкший доступ, отказ по правам, нет связи. Открываются прямо в моке.</p>
+        <div id="states" class="proto-states"></div>
+      </section>
+    </main>
+
+    <script src="proto.js"></script>
+    <script src="data.js"></script>
+    <script src="scenarios.js"></script>
+    <script>
+      (function () {
+        PROTO.initTheme();
+        const roles = [
+          { name: 'Гость', icon: 'user', desc: 'Каталог с «Моими билетами», регистрация прямо в Mini App, билет с QR, напоминания, послесловие с отзывом.', chat: PROTO.chatUrl('guest'), app: 'app.html#/events?tab=mine', appLabel: 'Мои билеты', app2: 'app.html#/events' },
+          { name: 'Организатор', icon: 'sliders', desc: 'Визард создания и правки ивента, ссылка-приглашение, участники и экспорт, рассылка, контролёры из списка.', chat: PROTO.chatUrl('owner'), app: 'app.html#/manage', appLabel: 'Ивенты и правка', app2: 'app.html#/scan?event_id=4' },
+          { name: 'Контролёр', icon: 'scan-line', desc: 'Инвайт-ссылка, права на конкретный ивент, сканер Mini App и луп без закрытия.', chat: PROTO.chatUrl('controller'), app: 'app.html#/scan?event_id=4', appLabel: 'Сканер', app2: 'app.html#/events' },
+        ];
+        const rolesBox = document.getElementById('roles');
+        roles.forEach((r) => {
+          const card = PROTO.el('div', 'card proto-role');
+          const head = PROTO.el('div', 'proto-role-head');
+          const ic = PROTO.el('span', 'proto-role-icon');
+          ic.appendChild(PROTO.icon(r.icon, 20));
+          head.appendChild(ic);
+          head.appendChild(PROTO.el('div', 'proto-role-name', r.name));
+          card.appendChild(head);
+          card.appendChild(PROTO.el('p', 'proto-role-desc', r.desc));
+          const actions = PROTO.el('div', 'proto-role-actions');
+          actions.appendChild(PROTO.protoLink('Чат бота', r.chat, 'primary'));
+          actions.appendChild(PROTO.protoLink(r.appLabel, r.app));
+          actions.appendChild(PROTO.protoLink('Ещё', r.app2));
+          card.appendChild(actions);
+          rolesBox.appendChild(card);
+        });
+        const statesBox = document.getElementById('states');
+        Object.keys(PROTO.stateIndex).forEach((scenario) => {
+          const group = PROTO.el('div', 'proto-state-group');
+          group.appendChild(PROTO.el('div', 'proto-state-group-title', 'Чат · ' + scenario));
+          const row = PROTO.el('div', 'proto-states-row');
+          PROTO.stateIndex[scenario].forEach(([id, label]) => {
+            row.appendChild(PROTO.protoLink(label, PROTO.chatUrl(scenario, id)));
+          });
+          group.appendChild(row);
+          statesBox.appendChild(group);
+        });
+      })();
+    </script>
+  </body>
+</html>
