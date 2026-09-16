@@ -63,3 +63,26 @@ export function utcToTime(iso: string): string {
   const ms = utcMs(iso);
   return isFinite(ms) ? timeFmt.format(new Date(ms)) : '';
 }
+
+// Строка «сб, 26 сентября · 18:30» для меты карточки каталога (форма прототипа W41).
+const whenFmt = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
+  weekday: 'short',
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+export function utcToWhen(iso: string): string {
+  const ms = utcMs(iso);
+  if (!isFinite(ms)) return '';
+  const p: Record<string, string> = {};
+  whenFmt.formatToParts(new Date(ms)).forEach((x) => {
+    p[x.type] = x.value;
+  });
+  const date = [p['weekday'], p['day'], p['month']].filter(Boolean).join(' ');
+  const time = p['hour'] && p['minute'] ? `${p['hour']}:${p['minute']}` : '';
+  return time ? `${date} · ${time}` : date;
+}

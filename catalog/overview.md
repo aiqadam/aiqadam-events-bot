@@ -28,8 +28,8 @@ W26 закрыт («готов», независимое ревью, три кр
 | Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
 | Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
-| Списки и отмена участника (W06) | [events-list](flows/events-list.md), [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md) |
+| Списки и отмена участника (W06) | [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -60,21 +60,21 @@ W26 закрыт («готов», независимое ревью, три кр
 ## Mini App
 
 Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. SPA на Vite+React+TS
-([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
-(`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`), сборка
+([ADR-0022](../../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
+(`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`,
+`#/events?tab=upcoming|past`), сборка
 `miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages).
-Построены три роута — `ticket`/`scan`/`manage`. Четвёртый роут
-(`#/events`, каталог ивентов) разрешён [ADR-0023](../docs/adr/0023-fourth-miniapp-page-event-catalog.md),
-но **не построен** (пакет W38, v0.1: прототип — таргет,
-[ADR-0027](../docs/adr/0027-prototype-as-target-reference.md)); пятый — только новым ADR
-(форма отзыва — черновик [ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
-[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на четвёртую страницу ADR-0023.
+Построены четыре роута — `ticket`/`scan`/`manage`/`events`. Пятый — только
+новым ADR (форма отзыва — черновик
+[ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
+[ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../../docs/adr/0022-miniapp-react-spa.md) расширены на четвёртую страницу ADR-0023.
 
 | Роут | Роль | API |
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
 | `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
+| `#/events?tab=upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками, кнопка ведёт в чат на `reg-start` этого ивента (W38); таб «Мои билеты» и регистрация на месте — [W43](../../docs/BACKLOG.md#w43-регистрация-и-мои-билеты-в-каталоге-events) | [events-api](flows/events-api.md) |
 
 Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
 (`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,
@@ -90,9 +90,12 @@ W26 закрыт («готов», независимое ревью, три кр
 
 Стек: Vite+React+TypeScript, hash-роутер (без `browser` history и без `404.html`),
 Tailwind 4 + брендовые компоненты, `qrcode` npm lazy только на `ticket`,
-`manage` lazy. Чанки: `ticket`+`scan` один, `manage` отдельный, `qrcode` отдельный
+`manage` и `events` — ленивые чанки. Чанки: `ticket`+`scan` один, `manage`
+отдельный, `events` отдельный (3,7 КиБ, 1,4 КиБ gzip), `qrcode` отдельный
 (25 КиБ, 10 КиБ gzip). `ticket`+`scan` открываются до того, как догрузился
-`manage` — бюджет `initial <50 КиБ` из ADR-0020 по смыслу, а не буквально.
+`manage` или `events` — бюджет `initial <50 КиБ` из ADR-0020 по смыслу,
+а не буквально; каталог `#/events` — публичный экран с входом из чата
+кнопкой `web_app` (W38).
 
 Все роутy опираются на общие модули `lib/i18n.ts`/`lib/api.ts`/`lib/theme.ts`:
 `i18n/ru.json` тянется словарём с того же Pages (русский-онли,

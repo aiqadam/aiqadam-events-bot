@@ -4,11 +4,13 @@ import Scan from './routes/Scan';
 
 // ticket+scan — один чанк (статические импорты), manage — lazy (отдельный чанк), qrcode — lazy внутри Ticket
 const Manage = lazy(() => import('./routes/Manage'));
+const Events = lazy(() => import('./routes/Events'));
 
 type Route =
   | { name: 'ticket'; eventId: string }
   | { name: 'scan'; eventId: string }
   | { name: 'manage'; eventId: string }
+  | { name: 'events'; tab: 'upcoming' | 'past' }
   | { name: 'notfound'; hash: string };
 
 function parseHash(hash: string): Route {
@@ -35,6 +37,11 @@ function parseHash(hash: string): Route {
   if (pathPart.startsWith('/manage/')) {
     const id = pathPart.slice('/manage/'.length).split('/')[0] || '';
     return { name: 'manage', eventId: id };
+  }
+  if (pathPart === '/events' || pathPart === '/events/') {
+    // W38: каталог; `?tab=past` открывает прошедшие (W43 добавит `mine`).
+    const tab = search.get('tab') === 'past' ? 'past' : 'upcoming';
+    return { name: 'events', tab };
   }
   // legacy support: ticket.html?event_id= etc — если кто-то открыл старый URL без hash, hash будет пустой, но location.search содержит event_id
   // Мы не можем отличить, но App может проверить location.search как fallback для ticket/scan
@@ -75,6 +82,7 @@ export default function App() {
           <h1 className="empty-heading">AI Qadam Events</h1>
           <p className="empty-desc">Откройте экран по кнопке из бота.</p>
           <p className="empty-desc" style={{ marginTop: 12 }}>
+            <a className="btn btn-secondary" href="#/events">Афиша</a>{' '}
             <a className="btn btn-secondary" href="#/ticket">Билет</a>{' '}
             <a className="btn btn-secondary" href="#/scan">Сканер</a>{' '}
             <a className="btn btn-secondary" href="#/manage">Форма</a>
@@ -91,6 +99,7 @@ export default function App() {
           <h1 className="empty-heading">Страница не найдена</h1>
           <p className="empty-desc">Проверьте ссылку. Доступные экраны:</p>
           <p className="empty-desc">
+            <a className="btn btn-secondary" href="#/events">Афиша</a>{' '}
             <a className="btn btn-secondary" href="#/ticket">Билет</a>{' '}
             <a className="btn btn-secondary" href="#/scan">Сканер</a>{' '}
             <a className="btn btn-secondary" href="#/manage">Форма</a>
@@ -105,6 +114,7 @@ export default function App() {
       {route.name === 'ticket' && <Ticket eventId={route.eventId} />}
       {route.name === 'scan' && <Scan eventId={route.eventId} />}
       {route.name === 'manage' && <Manage eventId={route.eventId} />}
+      {route.name === 'events' && <Events tab={route.tab} />}
     </Suspense>
   );
 }

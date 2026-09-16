@@ -31,7 +31,7 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 [`tools/check-texts.py`](../../tools/check-texts.py); механизм substitution
 и байтовая идентичность копий — нет, это сознательное упрощение, не
 задокументированное отдельным эталоном. Шаги с `texts` есть у флоу:
-`checkin-api`, `events-list`, `manage-api`, `menu`,
+`checkin-api`, `manage-api`, `menu`,
 `my-qr-api`, `my-reg-cancel`, `my-regs`, `reg-afterword`, `reg-consent-mkt`,
 `reg-consent-pdn`, `reg-start` (полнота — по закоммиченному экспорту
 `flows/*.json`); список шагов каждого — в его карточке `catalog/flows/*.md`.

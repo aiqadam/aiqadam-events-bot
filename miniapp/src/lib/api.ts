@@ -43,3 +43,5 @@ export async function postJson(url: string, body: unknown): Promise<ApiResult> {
 export const MY_QR_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync';
 export const CHECKIN_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/rKoDYtiIVdbzlW59b57uH/sync';
 export const MANAGE_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync';
+// W38: публичный каталог — без initData, читает events-api.
+export const EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/wEdKdE4RBGKIzWkl4MJHG/sync';

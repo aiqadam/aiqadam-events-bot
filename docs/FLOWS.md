@@ -69,13 +69,17 @@ Subflow-«функции» именуются `fn-*` и лежат там же.
 
 ---
 
-## `my-registrations` / `events-list` — participant
+## `my-regs` — participant
 
-- **A** `tables find-records` `events` где `status = published`, `starts_at > now`
-  → «будущие»; `ends_at < now` → «прошедшие» (PAR-3).
 - «Мои регистрации» (PAR-4) — `registrations` по `telegram_id`, с кнопкой QR.
 - **Отмена** (PAR-5) — только пока `now < starts_at`; `status = cancelled`,
   `cancelled_at = now`. После старта кнопка не показывается вовсе.
+
+Список ивентов (PAR-3) живёт экраном каталога `#/events`
+([ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md), W38): его читает
+`events-api`, тап по ивенту ведёт в `reg-start` по deep link; чат-флоу
+`events-list` выведен из эксплуатации. Таб «Мои билеты» и регистрация
+прямо из каталога — W43.
 
 ---
 
