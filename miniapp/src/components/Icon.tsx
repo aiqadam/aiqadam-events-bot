@@ -14,7 +14,8 @@ export type IconName =
   | 'x'
   | 'external'
   | 'plus'
-  | 'navigation';
+  | 'navigation'
+  | 'ticket';
 
 const PATHS: Record<IconName, ReactNode> = {
   'arrow-left': (
@@ -82,6 +83,14 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   navigation: <polygon points="3 11 22 2 13 21 11 13 3 11" />,
+  ticket: (
+    <>
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+      <path d="M13 5v2" />
+      <path d="M13 17v2" />
+      <path d="M13 11v2" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 16 }: { name: IconName; size?: number }) {

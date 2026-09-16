@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 17 | [flows/](flows/) |
+| Флоу | 16 | [flows/](flows/) |
 | Таблицы | 12 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -26,10 +26,9 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
 | Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
-| Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается |
+| Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
-| Списки и отмена участника (W06) | [my-regs](flows/my-regs.md), [my-reg-cancel](flows/my-reg-cancel.md) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -62,7 +61,7 @@ W26 закрыт («готов», независимое ревью, три кр
 Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. SPA на Vite+React+TS
 ([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
 (`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`,
-`#/events?tab=upcoming|past`), сборка
+`#/events?tab=mine|upcoming|past`), сборка
 `miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages).
 Построены четыре роута — `ticket`/`scan`/`manage`/`events`. Пятый — только
 новым ADR (форма отзыва — черновик
@@ -74,7 +73,7 @@ W26 закрыт («готов», независимое ревью, три кр
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
 | `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
-| `#/events?tab=upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками, кнопка ведёт в чат на `reg-start` этого ивента (W38); таб «Мои билеты» и регистрация на месте — [W43](../docs/BACKLOG.md#w43-регистрация-и-мои-билеты-в-каталоге-events) | [events-api](flows/events-api.md) |
+| `#/events?tab=mine\|upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; регистрация — шитом PAR-1/PAR-2 на месте, подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
 
 Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
 (`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,

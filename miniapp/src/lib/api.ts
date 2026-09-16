@@ -45,3 +45,5 @@ export const CHECKIN_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/rKoDYti
 export const MANAGE_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync';
 // W38: публичный каталог — без initData, читает events-api.
 export const EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/wEdKdE4RBGKIzWkl4MJHG/sync';
+// W43: регистрация и «Мои билеты» — initData обязателен.
+export const REG_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync';

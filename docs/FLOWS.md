@@ -69,11 +69,22 @@ Subflow-«функции» именуются `fn-*` и лежат там же.
 
 ---
 
-## `my-regs` — participant
+## `#/events` + `reg-api` — participant (экран, не чат)
 
-- «Мои регистрации» (PAR-4) — `registrations` по `telegram_id`, с кнопкой QR.
-- **Отмена** (PAR-5) — только пока `now < starts_at`; `status = cancelled`,
-  `cancelled_at = now`. После старта кнопка не показывается вовсе.
+PAR-3/4/5 живут экраном каталога, чат-путь `myreg` выведен (W43,
+[Q57](OPEN-QUESTIONS.md#q57), PAR-5 — только экраном):
+
+- «Мои билеты» (PAR-4) — `reg-api` `mine`: только живые регистрации
+  вызывающего (`registered`/`checked_in`) по его `initData`; заголовок
+  (название, дата, адрес) добирает SPA из публичного `events-api`;
+  будущие — кнопка «Показать QR» (`#/ticket?event_id=`).
+- Регистрация (PAR-1/PAR-2) — шит на месте: `reg-api` `register` проверяет
+  статус/дедлайн/ёмкость идентично чат-пути (OWN-4, OWN-15), пишет ту же
+  строку `<eventId>-<telegramId>` (IDM-1 действует между путями),
+  повтор даёт `existing`, второе подтверждение не создаётся.
+- **Отмена** (PAR-5) — `reg-api` `cancel` с экрана билета, только пока
+  `now < starts_at`; `status = cancelled`, `cancelled_at = now`.
+  После старта — отказ, запись не трогается.
 
 Список ивентов (PAR-3) живёт экраном каталога `#/events`
 ([ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md), W38): его читает
