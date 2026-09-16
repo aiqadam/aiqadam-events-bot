@@ -8,8 +8,16 @@ let dict: Record<string, string> = {};
 let loaded = false;
 let loading: Promise<Record<string, string>> | null = null;
 
-export function t(key: string): string {
-  return dict[key] || key;
+// W42: подстановка {vars} — «Шаг {n} из {m}», «Координаты: {lat}, {lon}» и т. п.
+// Форма та же, что у t() во входах CODE-шагов (catalog/snippets/ru-texts.md).
+export function t(key: string, vars?: Record<string, string | number>): string {
+  let s = dict[key] || key;
+  if (vars) {
+    Object.keys(vars).forEach((k) => {
+      s = s.split('{' + k + '}').join(String(vars[k]));
+    });
+  }
+  return s;
 }
 
 export function getDict(): Record<string, string> {
