@@ -7,17 +7,26 @@ Events Bot для AI Qadam. Несущий стек — [Qadam Flow](https://git
 
 > **0 кода. Всё на Qadam Flow, максимум — Code steps внутри флоу.**
 
+**Прежде чем что-то изобретать — ищите готовое на платформе.** У неё есть
+qadam'ы и pieces на типовые задачи (core и сообщества); поиск — `ap_research_pieces`
+по действиям и триггерам, поля — `ap_get_piece_props`. Свой код — последняя
+очередь, а не первая.
+
 Прежде чем предложить «давайте напишем небольшой сервис / скрипт / кастомный qadam» —
-перечитайте [ADR-0001](docs/adr/0001-qadam-flow-as-carrier-stack.md). Это решение принято
+перечитайте [ADR-0001](docs/adr/0001-qadam-flow-as-carrier-stack.md) и
+[ADR-0030](docs/adr/0030-platform-tools-first.md). Это решение принято
 с открытыми глазами, включая его цену. Обходить его «по мелочи» нельзя: два-три таких
 обхода — и у проекта снова свой деплой.
 
 Что допустимо:
 
 - флоу и subflow-«функции» (`subflows` qadam);
-- **Code steps** — только чистые функции: ни сетевых вызовов, ни записи в БД внутри.
-  HTTP делает `http`/`telegram-bot` qadam, запись — `tables`;
-- core-qadam'ы: `tables`, `crypto`, `store`, `schedule`, `webhook`, `http`, `csv`, `qrcode`, `delay`;
+- **инструменты платформы первым делом**: core-qadam'ы (`tables`, `crypto`, `store`,
+  `schedule`, `webhook`, `http`, `csv`, `qrcode`, `delay`) и pieces сообщества
+  (`telegram-bot` и другие). Перечисление — примеры, а не предел: готовый инструмент
+  берём, свой не пишем;
+- **Code steps** — чистые функции и только когда готового инструмента нет: ни сетевых
+  вызовов, ни записи в БД внутри. HTTP делает `http`/`telegram-bot` qadam, запись — `tables`;
 - статические страницы Mini App — **ровно три**: `ticket`, `scan`, `manage`
   (исключение ADR-0001, расширенное с одной страницы до трёх
   [ADR-0017](docs/adr/0017-screen-not-message.md)). Четвёртая — только новым ADR.

@@ -6,8 +6,9 @@ Telegram-бот событий AI Qadam: публикация ивентов, р
 > Events bot for AI Qadam meetups — registration, QR check-in via Telegram Mini App,
 > segmented broadcasts. Built on top of Qadam Flow (self-hosted workflow automation).
 
-**Цель — 0 кода.** Вся логика собирается на Qadam Flow: флоу, subflow-«функции»,
-core-qadam'ы и Tables. Максимум, что допускается, — Code steps внутри флоу.
+**Цель — 0 кода.** При этом сначала всегда ищется готовый инструмент платформы:
+Qadam Flow даёт qadam'ы core и сообщества, из них и собирается логика. Своё —
+последняя очередь; максимум, что допускается, — Code steps внутри флоу.
 Артефакт проекта — агентский каталог `catalog/` и схема таблиц, а не приложение.
 Единственное исключение — статическая страница Mini App для сканера контролёра.
 
