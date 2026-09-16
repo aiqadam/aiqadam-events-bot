@@ -43,6 +43,70 @@ PROTO.protoDict = {
   'proto.result_already': 'Пропустить повторно',
   'proto.result_denied': 'Не впускать',
   'proto.tab_hint': 'Проверьте данные и опубликуйте — участники увидят ивент после публикации.',
+
+  // каталог и мои билеты
+  'proto.tab_my_tickets': 'Мои билеты',
+  'proto.tab_my_tickets_hint': 'Билет открывается с этого экрана — возвращаться в чат не нужно.',
+  'proto.my_tickets_empty': 'Билетов пока нет. Выберите ивент во вкладке «Будущие».',
+
+  // регистрация внутри Mini App (PAR-1, PAR-2)
+  'proto.reg_title': 'Регистрация на ивент',
+  'proto.reg_pdn': 'Согласен на обработку персональных данных',
+  'proto.reg_mkt': 'Присылать анонсы других ивентов',
+  'proto.reg_mkt_hint': 'Это отдельное согласие и на регистрацию не влияет.',
+  'proto.reg_done_title': 'Вы зарегистрированы',
+  'proto.reg_done_hint': 'Билет уже готов — QR откроется на экране билета.',
+
+  // визард ивента
+  'proto.wizard_step': 'Шаг {n} из {m}',
+  'proto.wizard_next': 'Далее',
+  'proto.step_review': 'Проверка',
+  'proto.review_hint': 'Так ивент увидят участники. Всё на месте?',
+  'proto.save_draft': 'Сохранить черновик',
+  'proto.published_ok': 'Ивент опубликован',
+  'proto.published_hint': 'Ссылка регистрации — ниже. Отправьте её участникам.',
+  'proto.wizard_saved': 'Изменения сохранены',
+  'proto.wizard_draft': 'Черновик сохранён — участникам он пока не виден.',
+  'proto.capacity_limit': 'Регистрация закроется на {limit} участниках.',
+
+  // гео: ссылка Яндекс.Карт и точка на карте
+  'proto.paste_link': 'Ссылка Яндекс.Карт',
+  'proto.pick_on_map': 'Указать на карте',
+  'proto.venue_recent': 'Недавние места',
+  'proto.link_placeholder': 'https://yandex.ru/maps/...',
+  'proto.link_apply': 'Взять координаты',
+  'proto.link_applied': 'Координаты взяли из ссылки',
+  'proto.link_bad': 'Не разобрали ссылку. Нужна ссылка Яндекс.Карт с координатами.',
+  'proto.coords': 'Координаты: {lat}, {lon}',
+  'proto.map_hint': 'Тапните по карте, чтобы поставить точку.',
+  'proto.map_apply': 'Готово',
+  'proto.location_none': 'Точка не задана — карты в карточке не будет.',
+
+  // контролёры: выбор из списка
+  'proto.staff_add': 'Добавить контролёра',
+  'proto.staff_search': 'Имя или @username',
+  'proto.staff_nobody': 'Никого не нашли. Проверьте написание или пригласите ссылкой.',
+  'proto.staff_hint': 'Права — на этот ивент; отозвать можно в любой момент.',
+  'proto.staff_section_participants': 'Участники ивента',
+  'proto.staff_invite_alt': 'Нет в списке? Пригласите ссылкой — она действует 24 часа и один раз.',
+  'proto.staff_added': 'Контролёр добавлен',
+  'proto.staff_since': 'контролёр с {when}',
+
+  // послесловие и форма отзыва
+  'proto.afterword_feedback': 'Оставить отзыв',
+  'proto.feedback_title': 'Как прошёл ивент?',
+  'proto.feedback_lead': 'Пара слов — и следующий станет лучше. Это займёт минуту.',
+  'proto.feedback_rate': 'Оценка',
+  'proto.feedback_text': 'Комментарий',
+  'proto.feedback_placeholder': 'Что понравилось, что улучшить — можно не заполнять',
+  'proto.feedback_submit': 'Отправить отзыв',
+  'proto.feedback_done_title': 'Спасибо за отзыв',
+  'proto.feedback_done': 'Мы передадим его организаторам. До встречи на следующем ивенте!',
+  'proto.feedback_to_events': 'К ивентам',
+  'proto.feedback_given': 'Отзыв отправлен',
+
+  // билет
+  'proto.ticket_cancelled': 'Регистрация отменена',
 };
 
 // ---------- Трассировка: id требования → короткая формулировка ----------
@@ -60,14 +124,14 @@ PROTO.specMap = {
   'OWN-11': 'Троттлинг: не более 25 сообщений в секунду.',
   'OWN-12': '429 — повтор по retry_after; 403 — blocked_bot, больше не дёргаем.',
   'OWN-13': 'В каждом массовом сообщении — кнопка «отписаться».',
-  'OWN-14': 'Инвайт контролёра: одноразовая ссылка ?start=s<eventId>-<token>, TTL 24 часа.',
+  'OWN-14': 'Контролёры ивента: выбор из списка людей (поиск по имени или @username), права — по telegram_id; инвайт-ссылка ?start=s<eventId>-<token>, TTL 24 часа — альтернатива.',
   'OWN-15': 'Ёмкость и овербукинг: закрытие при ceil(capacity × (1 + overbook_pct/100)).',
   'OWN-16': 'Два напоминания — за 24 ч и за 2 ч до starts_at; пропущенное окно не досылается.',
   'PAR-1': 'Согласие на обработку данных — обязательный шаг регистрации.',
   'PAR-2': 'Согласие на рассылку — отдельный и необязательный шаг.',
-  'PAR-3': 'Список ивентов: будущие и прошедшие раздельно.',
-  'PAR-4': 'Мои регистрации.',
-  'PAR-5': 'Отмена регистрации доступна до starts_at.',
+  'PAR-3': 'Список ивентов: мои билеты, будущие и прошедшие; регистрация — прямо в каталоге, без возврата в чат.',
+  'PAR-4': 'Мои регистрации — вкладка «Мои билеты» в каталоге Mini App.',
+  'PAR-5': 'Отмена регистрации доступна до starts_at — и в чате, и на экране билета.',
   'PAR-6': 'QR участника: payload c<eventId>-<userId>-<sig>, sig — 10 символов base64url.',
   'STF-1': 'Чекин — Mini App со сканером, не закрывающимся между людьми.',
   'STF-2': 'Права контролёра проверяются по конкретному event_id.',
@@ -83,6 +147,7 @@ PROTO.specMap = {
   'ADR-0017': 'Единица интерфейса — экран; состояние редактируется, факт отправляется.',
   'ADR-0023': 'Каталог ивентов — четвёртый роут #/events.',
   'ADR-0025': 'Единственный командный вход — /start; дальше карточки и Mini App.',
+  'ADR-0028': 'Форма отзыва — предлагается пятым роутом #/feedback; требует нового ADR (черновик ADR-0028).',
 };
 
 // ---------- i18n ----------
@@ -113,7 +178,20 @@ PROTO.t = function (key, vars) {
 function t(key, vars) { return PROTO.t(key, vars); }
 
 // ---------- Тема (в продукте — Telegram.WebApp.colorScheme) ----------
-PROTO.theme = (typeof location !== 'undefined' && /[?&]theme=dark\b/.test(location.search || '')) ? 'dark' : 'light';
+// Порядок: ?theme= в ссылке (скриншоты) → выбор, сохранённый кнопкой → светлая.
+PROTO.themeFromQuery = function () {
+  if (typeof location === 'undefined') return null;
+  const m = /[?&]theme=(dark|light)\b/.exec(location.search || '');
+  return m ? m[1] : null;
+};
+PROTO.themeStored = function () {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const v = localStorage.getItem('proto-theme');
+    return v === 'dark' || v === 'light' ? v : null;
+  } catch (e) { return null; }
+};
+PROTO.theme = PROTO.themeFromQuery() || PROTO.themeStored() || 'light';
 PROTO.applyTheme = function () {
   document.documentElement.setAttribute('data-theme', PROTO.theme);
   const btn = document.querySelector('[data-proto-theme]');
@@ -123,7 +201,21 @@ PROTO.applyTheme = function () {
     btn.setAttribute('aria-label', PROTO.theme === 'light' ? t('proto.theme_dark') : t('proto.theme_light'));
   }
 };
-PROTO.toggleTheme = function () { PROTO.theme = PROTO.theme === 'light' ? 'dark' : 'light'; PROTO.applyTheme(); };
+PROTO.toggleTheme = function () {
+  PROTO.theme = PROTO.theme === 'light' ? 'dark' : 'light';
+  try { if (typeof localStorage !== 'undefined') localStorage.setItem('proto-theme', PROTO.theme); } catch (e) { /* noop */ }
+  PROTO.applyTheme();
+};
+// Привязка кнопки темы. Вызывается каждой страницей (в т.ч. стартовой, где
+// кнопка лежит в разметке, а не создаётся initChrome).
+PROTO.initTheme = function () {
+  const btn = document.querySelector('[data-proto-theme]');
+  if (btn && !btn.getAttribute('data-proto-theme-bound')) {
+    btn.setAttribute('data-proto-theme-bound', '1');
+    btn.addEventListener('click', PROTO.toggleTheme);
+  }
+  PROTO.applyTheme();
+};
 
 // ---------- DOM-хелперы ----------
 PROTO.el = function (tag, cls, text) {
@@ -167,6 +259,11 @@ PROTO.icons = {
   'pencil': '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
   'sliders': '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',
   'qr': '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+  'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  'star': '<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
+  'message-square': '<path d="M22 17a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>',
+  'map': '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
+  'navigation': '<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
 };
 PROTO.icon = function (name, size) {
   const span = PROTO.el('span', 'proto-icon');
@@ -267,7 +364,6 @@ PROTO.initChrome = function (opts) {
     const themeBtn = PROTO.el('button', 'proto-icon-btn');
     themeBtn.type = 'button';
     themeBtn.setAttribute('data-proto-theme', '');
-    themeBtn.addEventListener('click', PROTO.toggleTheme);
     bar.appendChild(themeBtn);
   }
   const dock = document.querySelector('[data-proto-dock]');
@@ -291,7 +387,7 @@ PROTO.initChrome = function (opts) {
   }
   const close = document.querySelector('[data-proto-sheet-close]');
   if (close) close.addEventListener('click', PROTO.closeSheet);
-  PROTO.applyTheme();
+  PROTO.initTheme();
   if (!PROTO.dictLoaded) {
     const warn = document.querySelector('[data-proto-warn]');
     if (warn) warn.removeAttribute('hidden');

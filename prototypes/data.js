@@ -54,7 +54,7 @@ PROTO.data = {
     statusKey: 'status.draft',
   },
 
-  // Ближайший ивент для послесловия и каталога.
+  // Ближайший ивент для каталога.
   next: {
     id: '6',
     title: 'RAG Reading Group · «The Faiss Library»',
@@ -63,15 +63,56 @@ PROTO.data = {
 
   catalog: {
     upcoming: [
-      { id: '4', title: 'AI Qadam #4 · LLM Engineering in Production', when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park', seats: 42, status: 'published', tag: 'LLM', d: { weekday: 'сб', day: '26', month: 'сент' } },
-      { id: '6', title: 'RAG Reading Group · «The Faiss Library»', when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom', seats: null, status: 'published', tag: 'RAG', d: { weekday: 'пн', day: '5', month: 'окт' } },
-      { id: '7', title: 'Хакатон AI Qadam · RAG for Business', when: 'сб, 17 октября · 10:00', where: 'Ташкент · IT Park', seats: 60, status: 'published', tag: 'Hackathon', d: { weekday: 'сб', day: '17', month: 'окт' } },
+      {
+        id: '4', title: 'AI Qadam #4 · LLM Engineering in Production',
+        when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park', seats: 42,
+        status: 'published', tag: 'LLM', registered: true,
+        d: { weekday: 'сб', day: '26', month: 'сент' },
+      },
+      {
+        id: '6', title: 'RAG Reading Group · «The Faiss Library»',
+        when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom', seats: null,
+        status: 'published', tag: 'RAG', registered: false,
+        d: { weekday: 'пн', day: '5', month: 'окт' },
+      },
+      {
+        id: '7', title: 'Хакатон AI Qadam · RAG for Business',
+        when: 'сб, 17 октября · 10:00', where: 'Ташкент · IT Park', seats: 60,
+        status: 'published', tag: 'Hackathon', registered: false,
+        d: { weekday: 'сб', day: '17', month: 'окт' },
+      },
     ],
     past: [
-      { id: '3', title: 'AI Qadam #3 · Embeddings & Vector DB Day', when: 'сб, 5 сентября · 18:30', where: 'Ташкент · IT Park', attended: 178, status: 'finished', d: { weekday: 'сб', day: '5', month: 'сен' } },
-      { id: '2', title: 'AI Qadam Almaty #1 · Computer Vision Day', when: 'сб, 22 августа · 18:30', where: 'Алматы · Astana Hub', attended: 134, status: 'finished', d: { weekday: 'сб', day: '22', month: 'авг' } },
+      {
+        id: '3', title: 'AI Qadam #3 · Embeddings & Vector DB Day',
+        when: 'сб, 5 сентября · 18:30', where: 'Ташкент · IT Park', attended: 178,
+        status: 'finished', attendedMe: true, feedbackGiven: false,
+        d: { weekday: 'сб', day: '5', month: 'сен' },
+      },
+      {
+        id: '2', title: 'AI Qadam Almaty #1 · Computer Vision Day',
+        when: 'сб, 22 августа · 18:30', where: 'Алматы · Astana Hub', attended: 134,
+        status: 'finished', attendedMe: false, feedbackGiven: false,
+        d: { weekday: 'сб', day: '22', month: 'авг' },
+      },
     ],
   },
+
+  // Мои билеты (PAR-4) — первый таб каталога.
+  myTickets: [
+    {
+      eventId: '4', title: 'AI Qadam #4 · LLM Engineering in Production',
+      when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park',
+      statusKey: 'myreg.status.registered', canCancel: true, upcoming: true,
+      d: { weekday: 'сб', day: '26', month: 'сент' },
+    },
+    {
+      eventId: '3', title: 'AI Qadam #3 · Embeddings & Vector DB Day',
+      when: 'сб, 5 сентября · 18:30', where: 'Ташкент · IT Park',
+      statusKey: 'myreg.status.checked_in', canCancel: false, upcoming: false,
+      feedbackGiven: false, d: { weekday: 'сб', day: '5', month: 'сен' },
+    },
+  ],
 
   // Организатор: свои ивенты (список #/manage).
   ownerEvents: [
@@ -89,20 +130,42 @@ PROTO.data = {
     { name: 'Жасур Турсунов', statusKey: 'myreg.status.registered', at: '' },
   ],
 
+  // Люди, известные боту: участники ивента и уже добавленные контролёры.
+  // Поиск в выборе контролёра идёт по имени и @username; права выдаются
+  // по telegram_id (DAT-1) — username здесь только подпись для поиска.
+  people: [
+    { id: '322876545', name: 'Азиза Каримова', username: '@aziza_k', note: 'checked_in' },
+    { id: '901234567', name: 'Бекзод Рахимов', username: '@bekzod', note: 'registered' },
+    { id: '902345678', name: 'Гулноза Юсупова', username: '@gulnoza_y', note: 'registered' },
+    { id: '903456789', name: 'Дилшод Азимов', username: '@dilshod', note: 'checked_in' },
+    { id: '904567890', name: 'Елена Соколова', username: '@elena_s', note: 'cancelled' },
+    { id: '905678901', name: 'Жасур Турсунов', username: '@jasur_t', note: 'registered' },
+    { id: '9001234567', name: 'Камила Юлдашева', username: '@kamila', note: 'staff' },
+    { id: '906789012', name: 'Максим Орлов', username: '@max_orlov', note: 'participant' },
+    { id: '907890123', name: 'Нигора Ахмедова', username: '@nigora_a', note: 'participant' },
+    { id: '908901234', name: 'Отабек Мирзаев', username: '@otabek', note: 'participant' },
+    { id: '909012345', name: 'Полина Ким', username: '@polina_k', note: 'participant' },
+    { id: '910123456', name: 'Рустам Назаров', username: '@rustam_n', note: 'participant' },
+  ],
+
   controllers: [
-    { id: '322876545', since: '25 сентября, 10:14' },
-    { id: '9001234567', since: '25 сентября, 11:02' },
+    { id: '322876545', name: 'Азиза Каримова', username: '@aziza_k', since: '25 сентября, 10:14' },
+    { id: '9001234567', name: 'Камила Юлдашева', username: '@kamila', since: '25 сентября, 11:02' },
+  ],
+
+  // Недавние места — быстрый выбор в шаге «Где и когда».
+  venues: [
+    { name: 'IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737 },
+    { name: 'Astana Hub, Мангилик Ел 55/8', lat: 51.090488, lon: 71.418153 },
+    { name: 'Онлайн · Zoom', lat: null, lon: null },
   ],
 
   counts: { registered: 48, checkedIn: 31, cancelled: 2, seatsLeft: 42, capacity: 120 },
   segments: { all_consent: 214, registered: 48, checked_in: 31, no_show: 17 },
 
-  // Мои регистрации гостя (PAR-4).
-  myRegs: [
-    { title: 'AI Qadam #4 · LLM Engineering in Production', when: 'сб, 26 сентября · 18:30', statusKey: 'myreg.status.registered', canCancel: true },
-    { title: 'AI Qadam #3 · Embeddings & Vector DB Day', when: 'сб, 5 сентября · 18:30', statusKey: 'myreg.status.checked_in', canCancel: false },
-  ],
-
   // Контролёр: счётчик чекина.
   scan: { checkedIn: 31, registered: 48, alreadyAt: '18:42' },
+
+  // Фидбек после ивента (предложение).
+  feedback: { eventId: '3', eventTitle: 'AI Qadam #3 · Embeddings & Vector DB Day' },
 };

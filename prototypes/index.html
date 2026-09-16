@@ -40,10 +40,10 @@
     <script src="scenarios.js"></script>
     <script>
       (function () {
-        PROTO.applyTheme();
+        PROTO.initTheme();
         const roles = [
-          { name: 'Гость', icon: 'user', desc: 'Регистрация по ссылке, билет с QR, напоминания, послесловие, каталог и отмена.', chat: PROTO.chatUrl('guest'), app: 'app.html#/ticket?event_id=4', appLabel: 'Билет', app2: 'app.html#/events' },
-          { name: 'Организатор', icon: 'sliders', desc: 'Создание и правка ивента, ссылка-приглашение, участники и экспорт, рассылка, контролёры.', chat: PROTO.chatUrl('owner'), app: 'app.html#/manage', appLabel: 'Ивенты и правка', app2: 'app.html#/scan?event_id=4' },
+          { name: 'Гость', icon: 'user', desc: 'Каталог с «Моими билетами», регистрация прямо в Mini App, билет с QR, напоминания, послесловие с отзывом.', chat: PROTO.chatUrl('guest'), app: 'app.html#/events?tab=mine', appLabel: 'Мои билеты', app2: 'app.html#/events' },
+          { name: 'Организатор', icon: 'sliders', desc: 'Визард создания и правки ивента, ссылка-приглашение, участники и экспорт, рассылка, контролёры из списка.', chat: PROTO.chatUrl('owner'), app: 'app.html#/manage', appLabel: 'Ивенты и правка', app2: 'app.html#/scan?event_id=4' },
           { name: 'Контролёр', icon: 'scan-line', desc: 'Инвайт-ссылка, права на конкретный ивент, сканер Mini App и луп без закрытия.', chat: PROTO.chatUrl('controller'), app: 'app.html#/scan?event_id=4', appLabel: 'Сканер', app2: 'app.html#/events' },
         ];
         const rolesBox = document.getElementById('roles');

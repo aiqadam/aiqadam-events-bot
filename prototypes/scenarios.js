@@ -25,13 +25,15 @@ PROTO.buildScenarios = function () {
     link: { text: T('event.card.map_link', { url: ev.mapUrl }), url: ev.mapUrl },
   });
 
+  // Мои регистрации живут экраном (PAR-4 → таб «Мои билеты»), а не карточкой
+  // в чате: чат-карточка myreg из прототипа убрана вердиктом владельца.
   const menuButtonsGuest = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu-guest' },
-    { label: T('menu.btn.my_registrations'), go: 'myreg' },
+    { label: T('menu.btn.my_registrations'), webApp: '#/events?tab=mine', resume: 'menu-guest' },
   ];
   const menuButtonsOwner = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
-    { label: T('menu.btn.my_registrations'), go: 'myreg' },
+    { label: T('menu.btn.my_registrations'), webApp: '#/events?tab=mine', resume: 'menu' },
     { label: T('menu.btn.new_event'), webApp: '#/manage', resume: 'menu' },
     { label: T('menu.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'menu' },
   ];
@@ -70,26 +72,24 @@ PROTO.buildScenarios = function () {
 
       { id: 'reminders', kind: 'bot', text: T('remind.24h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       { id: 'reminder-2h', kind: 'bot', text: T('remind.2h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
-      { id: 'afterword', kind: 'bot', text: T('afterword.thanks') + '\n' + T('afterword.next_header') + ' ' + D.next.title + ' — ' + D.next.when, trace: ['ADR-0017'],
-        buttons: [{ label: T('afterword.btn_next'), webApp: '#/events', resume: 'afterword', primary: true }] },
+      // Послесловие — только благодарность; предложение следующего ивента убрано
+      // вердиктом владельца. Отзыв живёт экраном #/feedback (черновик ADR-0028).
+      { id: 'afterword', kind: 'bot', text: T('afterword.thanks'), trace: ['ADR-0017', 'ADR-0028'],
+        buttons: [{ label: P['proto.afterword_feedback'], webApp: '#/feedback?event_id=' + ev.id, resume: 'afterword', primary: true }] },
 
       { id: 'menu-guest', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
         buttons: menuButtonsGuest },
 
-      { id: 'myreg', kind: 'card', card: {
-          title: T('myreg.title'), lines: [],
-          body: D.myRegs.map((r) => T('myreg.item', { title: r.title, when: r.when, status: T(r.statusKey) })).join('\n'),
-        }, trace: ['PAR-4'],
-        buttons: [{ label: T('myreg.btn.cancel'), go: 'cancel', tone: 'danger' }, { label: T('common.btn.menu'), go: 'menu-guest' }] },
-
-      { id: 'cancel', kind: 'card', card: { title: ev.title, lines: [], body: T('cancel.confirm', { title: ev.title }) }, trace: ['PAR-5'],
+      // Отмена регистрации из чата — состояние (в to-be основной путь отмены
+      // живёт на экране билета в Mini App, PAR-5).
+      { id: 'cancel', kind: 'card', state: true, card: { title: ev.title, lines: [], body: T('cancel.confirm', { title: ev.title }) }, trace: ['PAR-5'],
         buttons: [
           { label: T('cancel.btn.confirm'), go: 'cancel-done', tone: 'danger' },
           { label: T('cancel.btn.keep'), go: 'cancel-kept', primary: true },
         ] },
-      { id: 'cancel-done', kind: 'card', edit: true, card: { title: ev.title, lines: [], body: T('cancel.done', { title: ev.title }) }, trace: ['PAR-5', 'IDM-1'],
+      { id: 'cancel-done', kind: 'card', state: true, edit: true, card: { title: ev.title, lines: [], body: T('cancel.done', { title: ev.title }) }, trace: ['PAR-5', 'IDM-1'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu-guest' }] },
-      { id: 'cancel-kept', kind: 'card', edit: true, card: { title: ev.title, lines: [], body: T('cancel.kept') }, trace: ['PAR-5'],
+      { id: 'cancel-kept', kind: 'card', state: true, edit: true, card: { title: ev.title, lines: [], body: T('cancel.kept') }, trace: ['PAR-5'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu-guest' }] },
 
       { id: 'st-already', kind: 'card', state: true, card: eventCard(T('reg.already', { title: ev.title })), trace: ['IDM-1', 'PAR-6'],
@@ -117,12 +117,6 @@ PROTO.buildScenarios = function () {
       { id: 'start', kind: 'user', text: '/start', trace: ['ADR-0025'] },
       { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
         buttons: menuButtonsOwner },
-
-      { id: 'myreg', kind: 'card', card: {
-          title: T('myreg.title'), lines: [],
-          body: D.myRegs.map((r) => T('myreg.item', { title: r.title, when: r.when, status: T(r.statusKey) })).join('\n'),
-        }, trace: ['PAR-4'],
-        buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
       // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране ивента.
       { id: 'published', kind: 'bot', text: T('manage.chat.published', { title: ev.title }), trace: ['OWN-1', 'OWN-4', 'OWN-6'],
@@ -220,6 +214,7 @@ PROTO.stateIndex = {
     ['st-cancelled', 'Ивент отменён'],
     ['st-finished', 'Ивент завершён'],
     ['st-bad-payload', 'Ссылка не разобрана'],
+    ['cancel', 'Отмена регистрации'],
   ],
   owner: [
     ['st-forbidden', 'Нет прав на правку'],

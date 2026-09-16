@@ -22,7 +22,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   const cardIcons = {
     event: 'calendar', 'consent-pdn': 'calendar', 'consent-mkt': 'calendar', done: 'ticket',
-    'pdn-declined': 'alert', 'menu-guest': 'list', myreg: 'ticket', cancel: 'alert',
+    'pdn-declined': 'alert', 'menu-guest': 'list', cancel: 'alert',
     'cancel-done': 'check-circle', 'cancel-kept': 'check-circle', 'st-already': 'ticket',
     'st-no-seats': 'alert', 'st-deadline': 'clock', 'st-not-published': 'alert',
     'st-cancelled': 'alert', 'st-finished': 'alert', 'st-bad-payload': 'alert',
@@ -196,7 +196,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- демо-контролы (в шите обвязки, не на экране) ----------
   const quickIndex = {
-    guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие'], ['myreg', 'Мои регистрации']],
+    guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
     owner: [['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
     controller: [['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
   };
