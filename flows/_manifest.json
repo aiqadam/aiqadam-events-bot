@@ -84,11 +84,5 @@
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
     "publishedVersionId": "9A4Eqy0qtPJt2Dp9qACwY"
-  },
-  {
-    "flow": "tmp-w42-geo-probe",
-    "flowId": "IOkaVFFMxQYfMSUMNlxl8",
-    "publishedVersionId": "aYQ680JTrwDbBmmwomCYE",
-    "source": "mcp"
   }
 ]
