@@ -47,6 +47,7 @@ const EMPTY_FIELDS: Record<string, string> = {
 
 type EventData = Record<string, unknown>;
 type StaffItem = { telegram_id: string; item: string };
+type StaffCandidate = { telegram_id: string; name: string; username: string };
 type ListItem = {
   id: string;
   title: string;
@@ -183,6 +184,15 @@ function limitText(capacity: string, overbook: string): string {
 
 // Шит — паттерн эталона (prototypes/proto.css `.app-sheet`): ручка, шапка
 // с крестиком, тело. В WebView позиционируется fixed, поверх sticky-бара.
+// W44: инициалы для аватара кандидата — кружок с буквами, как в прототипе.
+// Фото из Bot API не тянем; цвета — только семантические токены бренда.
+function candidateInitials(name: string, username: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return username.replace(/^@/, '').slice(0, 2).toUpperCase();
+}
+
 function Sheet({
   open,
   title,
@@ -287,6 +297,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [staffIdInput, setStaffIdInput] = useState('');
   const [staffFieldError, setStaffFieldError] = useState('');
   const [staffResult, setStaffResult] = useState('');
+
+  // W44: поиск кандидатов в контролёры — шит с выбором тапом (вердикт W41).
+  // Источник — участники ивента + staff чаптера (Q51); кого нет в списке —
+  // ручной ввод ID ниже остаётся запасным путём.
+  const [searchSheet, setSearchSheet] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [candidates, setCandidates] = useState<StaffCandidate[]>([]);
+  const [searchBusy, setSearchBusy] = useState(false);
 
   // W37: список ивентов чаптера (#/manage без :id) и ссылка регистрации,
   // которая живёт на экране (сервер отдаёт её в `load` и `save`).
@@ -722,18 +740,28 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [eventId, initData]);
 
-  const addStaff = useCallback(async () => {
+  const addStaff = useCallback(async (id?: string) => {
     if (staffBusy) return;
+    // W44: из шита поиска приходит готовый telegram_id кандидата; запись идёт
+    // тем же staff_add — решение и запись только по telegram_id (DAT-1).
+    const target = (id === undefined ? staffIdInput : id).trim();
+    if (target === '') return;
     setStaffFieldError('');
     setStaffResult('');
     setStaffBusy(true);
-    const res = await postJson(MANAGE_API, { initData, action: 'staff_add', eventId, staffTelegramId: staffIdInput.trim() });
+    const res = await postJson(MANAGE_API, { initData, action: 'staff_add', eventId, staffTelegramId: target });
     setStaffBusy(false);
     if (res.kind === 'json') {
       const d = res.data as Record<string, unknown>;
       if (d['ok']) {
         if (Array.isArray(d['staff'])) setStaffItems(d['staff'] as StaffItem[]);
-        setStaffIdInput('');
+        if (id === undefined) setStaffIdInput('');
+        else {
+          // Добавление из поиска: шит закрываем, итог — строкой в секции.
+          setSearchSheet(false);
+          setSearchQuery('');
+          setCandidates([]);
+        }
         setStaffResult(typeof d['text'] === 'string' ? String(d['text']) : '');
         return;
       }
@@ -746,6 +774,39 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
     setStaffResult(errorTextFor(res as never));
   }, [eventId, initData, staffBusy, staffIdInput, errorTextFor]);
+
+  // W44: поиск кандидатов (manage-api action staff_search). Сервер отдаёт
+  // только совпадения (топ-20); запрос короче 2 символов не отправляем вовсе —
+  // базу без запроса не светим (решение при взятии пакета).
+  const searchStaff = useCallback(async (q: string) => {
+    const query = q.trim();
+    if (query.length < 2 || staffBusy || searchBusy) {
+      if (query.length < 2) setCandidates([]);
+      return;
+    }
+    setSearchBusy(true);
+    const res = await postJson(MANAGE_API, { initData, action: 'staff_search', eventId, query });
+    setSearchBusy(false);
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && Array.isArray(d['candidates'])) {
+        setCandidates(d['candidates'] as StaffCandidate[]);
+        return;
+      }
+    }
+    setCandidates([]);
+  }, [eventId, initData, staffBusy, searchBusy]);
+
+  // W44: живой поиск с дебаунсом — отдельный запрос на каждое нажатие не шлём.
+  useEffect(() => {
+    if (!searchSheet) return;
+    if (searchQuery.trim().length < 2) {
+      setCandidates([]);
+      return;
+    }
+    const timer = window.setTimeout(() => void searchStaff(searchQuery), 400);
+    return () => window.clearTimeout(timer);
+  }, [searchSheet, searchQuery, searchStaff]);
 
   const revokeStaff = useCallback(
     async (id: string) => {
@@ -1452,6 +1513,19 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </p>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    id="staff-search-open"
+                    disabled={staffBusy}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setCandidates([]);
+                      setSearchSheet(true);
+                    }}
+                  >
+                    {t('manage.staff.search_open')}
+                  </button>
                 </section>
               )}
                 </div>
@@ -1549,6 +1623,62 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             {t('common.btn.cancel')}
           </button>
         </div>
+      </Sheet>
+
+      <Sheet open={searchSheet} title={t('manage.staff.search_title')} onClose={() => setSearchSheet(false)}>
+        <div className="field">
+          <label className="label" htmlFor="f-staff-search">
+            {t('manage.staff.search_label')}
+          </label>
+          <div className="row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <span style={{ display: 'flex', flexShrink: 0 }} aria-hidden="true">
+              <Icon name="search" size={18} />
+            </span>
+            <input
+              className="input"
+              id="f-staff-search"
+              type="search"
+              autoComplete="off"
+              maxLength={100}
+              placeholder={t('manage.staff.search_placeholder')}
+              value={searchQuery}
+              disabled={staffBusy}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <p className="helper">{t('manage.staff.search_hint')}</p>
+        </div>
+        {searchQuery.trim().length >= 2 && candidates.length === 0 && !searchBusy ? (
+          <p className="empty-desc" id="staff-search-empty">
+            {t('manage.staff.search_nobody')}
+          </p>
+        ) : (
+          <ul id="staff-search-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {candidates.map((c) => (
+              <li key={c.telegram_id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span className="avatar-initials" aria-hidden="true">
+                  {candidateInitials(c.name, c.username)}
+                </span>
+                <span style={{ flexGrow: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block' }}>{c.name === '' ? `@${c.username.replace(/^@/, '')}` : c.name}</span>
+                  {c.username !== '' && (
+                    <span className="app-muted" style={{ display: 'block' }}>
+                      @{c.username.replace(/^@/, '')}
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={staffBusy}
+                  onClick={() => void addStaff(c.telegram_id)}
+                >
+                  {t('manage.staff.btn.add')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Sheet>
 
       {toast && (
