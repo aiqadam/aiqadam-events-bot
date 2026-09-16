@@ -67,7 +67,7 @@ report "hex-строки >=32 символов" '\b[0-9a-fA-F]{32,}\b'
 #    EXPECTED_* — сколько ссылок ожидается сейчас. Меньше ожидаемого =
 #    ПРОВАЛ: ссылка пропала, и неважно, на что её заменили. Больше — норма
 #    (в проекте прибавилось шагов), печатается для сведения.
-EXPECTED_BOT_TOKEN=3
+EXPECTED_BOT_TOKEN=4
 EXPECTED_QR_SIGNING_KEY=2
 
 for var in BOT_TOKEN QR_SIGNING_KEY; do
