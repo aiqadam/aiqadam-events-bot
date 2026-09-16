@@ -44,7 +44,7 @@
   [Q50](../../docs/OPEN-QUESTIONS.md#q50)): шаг `send_media` удалён из флоу,
   карточка текстовая. `step_3` по-прежнему отдаёт `photoFileId`, разбор фото в
   `tg-router` и `photo_file_id` в `events` **сохранены намеренно** — афиша
-  вернётся в v0.2, пакет [W39](../../docs/BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка).
+  вернётся пакетом [W39](../../docs/BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка) (v0.1).
 - **Разметка `MarkdownV2`,** экранирование — эталон
   [`catalog/snippets/markdown-v2.md`](../snippets/markdown-v2.md). `format`
   задан явно в каждом шаге отправки: умолчание пропа — `MarkdownV2`, и шаг
