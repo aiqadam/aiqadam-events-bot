@@ -392,6 +392,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
   const startNew = useCallback(() => {
+    // Ключ идемпотентности — один на открытие формы (ADR-0003): повторное
+    // «Сохранить» апсертит ту же запись. Новое открытие формы — новый ключ,
+    // иначе второе создание перезаписало бы первый ивент (ревью W42, блокер).
+    newIdRef.current = genNewId();
     let next = { ...EMPTY_FIELDS };
     let nextStep = 0;
     let restored = false;
@@ -447,7 +451,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         } catch {}
         if (d['eventId']) setEventId(String(d['eventId']));
         applyStatus(status);
-        setTitleText(t('manage.title.edit'));
+        // После публикации экран успеха живёт как «Новый ивент» (прототип);
+        // после черновика/правки форма — уже правка существующего ивента.
+        setTitleText(t(status === 'published' && origStatus !== 'published' ? 'manage.title.new' : 'manage.title.edit'));
         const inv = typeof d['inviteLink'] === 'string' ? String(d['inviteLink']) : '';
         setInviteCopied(false);
         setInviteLink(inv ? { eventId: String(d['eventId'] || eventId), url: inv } : null);
@@ -830,11 +836,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   </div>
                 </section>
               )}
-              <div className="field actions" style={{ marginTop: 16 }}>
-                <button type="button" className="btn btn-secondary btn-lg" id="done-to-list" onClick={backToList}>
-                  {t('manage.btn.back')}
-                </button>
-              </div>
             </>
           ) : (
             <>
