@@ -149,28 +149,28 @@ PROTO.buildScenarios = function (opts) {
           { label: T('proto.bcast_btn_checked_in', { count: ed.segments.checked_in }), go: 'forwarded' },
           { label: T('participants.filter.btn.no_show'), go: 'st-bcast-noshow' },
         ] },
-      { id: 'forwarded', kind: 'user', forwarded: true, text: P['proto.broadcast_sample'], trace: ['OWN-9'] },
+      { id: 'forwarded', kind: 'user', forwarded: true, text: (ev.broadcastText || P['proto.broadcast_sample']), trace: ['OWN-9'] },
       { id: 'preview', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
-          body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: ed.segments.registered }),
+          body: (ev.broadcastText || P['proto.broadcast_sample']) + '\n\n' + T('bcast.preview.count', { count: ed.segments.registered }),
         }, trace: ['OWN-10'],
         // Кнопка отправки появляется только после теста себе: в Telegram нет
         // «выключенной» кнопки — сообщение редактируется и клавиатура меняется.
         buttons: [{ label: T('bcast.btn.test'), go: 'tested' }] },
       { id: 'tested', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
-          body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: ed.segments.registered }) + '\n' + T('bcast.test.sent'),
+          body: (ev.broadcastText || P['proto.broadcast_sample']) + '\n\n' + T('bcast.preview.count', { count: ed.segments.registered }) + '\n' + T('bcast.test.sent'),
         }, trace: ['OWN-10'],
         buttons: [{ label: T('bcast.btn.send'), go: 'sent', primary: true }] },
       { id: 'sent', kind: 'card', edit: true, card: {
           title: T('owner.event.btn.broadcast'), lines: [],
-          body: T('bcast.started', { count: ed.segments.registered }) + '\n' + T('bcast.progress', { sent: 48, total: 48, failed: 0 }),
+          body: T('bcast.started', { count: ed.broadcast.total }) + '\n' + T('bcast.progress', { sent: ed.broadcast.sent, total: ed.broadcast.total, failed: 0 }),
         }, trace: ['OWN-11', 'OWN-12'] },
-      { id: 'mass', kind: 'bot', text: P['proto.broadcast_sample'], trace: ['OWN-13'],
+      { id: 'mass', kind: 'bot', text: (ev.broadcastText || P['proto.broadcast_sample']), trace: ['OWN-13'],
         buttons: [{ label: T('bcast.btn.unsubscribe'), go: 'unsub-done' }] },
       { id: 'unsub-done', kind: 'bot', text: T('unsub.done'), trace: ['OWN-13'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
-      { id: 'finished', kind: 'bot', text: T('bcast.finished', { sent: 48, failed: 0 }), trace: ['OWN-11'],
+      { id: 'finished', kind: 'bot', text: T('bcast.finished', { sent: ed.broadcast.sent, failed: 0 }), trace: ['OWN-11'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
       { id: 'staff-invite', kind: 'card', card: {

@@ -488,7 +488,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     ['tl', 'tr', 'bl', 'br'].forEach((c) => view.appendChild(E('span', 'scan-corner ' + c)));
     view.appendChild(E('div', 'scan-line'));
     view.style.cursor = 'pointer';
-    view.addEventListener('click', () => { scanState++; renderScan(); });
+    view.addEventListener('click', () => {
+      // Успешный скан в демо двигает счётчик — иначе «отмечен» и «0 из 67»
+      // выглядят как несработавший чекин.
+      if (outcome.key === 'ok' && ed.scan.checkedIn < ed.scan.registered) ed.scan.checkedIn++;
+      scanState++;
+      renderScan();
+    });
     screen.appendChild(view);
     screen.appendChild(E('div', 'scan-hint', T('scan.hint')));
 
@@ -833,7 +839,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       renderInviteBlock(body, eventId);
       const cancel = E('div');
       cancel.style.marginTop = '16px';
-      cancel.appendChild(btn(T('owner.event.btn.cancel_event'), { kind: 'btn-destructive', block: true, onClick: () => openCancelEventSheet(f) }));
+      cancel.appendChild(btn(T('owner.event.btn.cancel_event'), { kind: 'btn-destructive', block: true, onClick: () => openCancelEventSheet(f, eventId) }));
       body.appendChild(cancel);
     }
   }
@@ -880,14 +886,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setDemo([]);
   }
 
-  function openCancelEventSheet(f) {
+  function openCancelEventSheet(f, id) {
     openSheet(T('owner.event.btn.cancel_event'), (body) => {
       body.appendChild(E('div', 'app-muted', T('proto.confirm_cancel_event', { title: f.title })));
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('common.btn.confirm'), { kind: 'btn-destructive', onClick: () => {
         closeSheet();
         PROTO.toast(T('manage.saved.cancelled'));
-        go('#/manage');
+        location.href = PROTO.chatUrl('owner', 'cancelled', true, id);
       } }));
       acts.appendChild(btn(T('common.btn.cancel'), { kind: 'btn-secondary', onClick: closeSheet }));
       body.appendChild(acts);
@@ -1028,8 +1034,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderBroadcastTab(body) {
     PROTO.setTrace(['OWN-9', 'OWN-10', 'OWN-11', 'OWN-12', 'OWN-13']);
     body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
-    // Чат открывается про этот же ивент: название и сегменты — его.
-    body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true) + '&event=' + encodeURIComponent(eventId); } }));
+    // Чат открывается про этот же ивент: название, сегменты и обратный путь.
+    body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true, eventId); } }));
 
     const ed = eventData(eventId);
     const seg = card([], '');

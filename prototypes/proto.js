@@ -414,6 +414,23 @@ PROTO.appUrl = function (route, backUrl) {
   const sep = route.indexOf('?') >= 0 ? '&' : '?';
   return 'app.html' + route + sep + 'back=' + encodeURIComponent(backUrl || 'index.html');
 };
-PROTO.chatUrl = function (scenario, step, resume) {
-  return 'chat.html?s=' + encodeURIComponent(scenario) + (step ? '&step=' + encodeURIComponent(step) : '') + (resume ? '&resume=1' : '');
+// Ивент, вокруг которого идёт чат-сценарий: пока он выбран, все ссылки чата
+// (шаги, чипы демо, обратный путь из Mini App) несут его с собой.
+PROTO.chatEventId = function () {
+  try { return (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('proto-chat-event')) || ''; } catch (e) { return ''; }
+};
+PROTO.setChatEvent = function (id) {
+  try {
+    if (typeof sessionStorage === 'undefined') return;
+    if (id) sessionStorage.setItem('proto-chat-event', String(id));
+    else sessionStorage.removeItem('proto-chat-event');
+  } catch (e) { /* noop */ }
+};
+PROTO.chatUrl = function (scenario, step, resume, eventId) {
+  if (eventId) PROTO.setChatEvent(eventId);
+  const ev = eventId || PROTO.chatEventId();
+  return 'chat.html?s=' + encodeURIComponent(scenario)
+    + (step ? '&step=' + encodeURIComponent(step) : '')
+    + (resume ? '&resume=1' : '')
+    + (ev ? '&event=' + encodeURIComponent(ev) : '');
 };
