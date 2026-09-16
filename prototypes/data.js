@@ -57,7 +57,7 @@ PROTO.data = {
   // Ближайший ивент для каталога.
   next: {
     id: '6',
-    title: 'RAG Reading Group · «The Faiss Library»',
+    title: 'RAG Reading Group · The Faiss Library',
     when: 'пн, 5 октября · 19:00',
   },
 
@@ -70,7 +70,7 @@ PROTO.data = {
         d: { weekday: 'сб', day: '26', month: 'сент' },
       },
       {
-        id: '6', title: 'RAG Reading Group · «The Faiss Library»',
+        id: '6', title: 'RAG Reading Group · The Faiss Library',
         when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom', seats: null,
         status: 'published', tag: 'RAG', registered: false,
         d: { weekday: 'пн', day: '5', month: 'окт' },
@@ -114,11 +114,39 @@ PROTO.data = {
     },
   ],
 
-  // Организатор: свои ивенты (список #/manage).
+  // Организатор: ивенты чаптера (список #/manage). Поля полные — форма
+  // правки открывает любой ивент, а не только свой (W32: правит любой staff).
   ownerEvents: [
-    { id: '4', title: 'AI Qadam #4 · LLM Engineering in Production', when: 'сб, 26 сентября · 18:30', status: 'published', statusKey: 'status.published', author: true, registered: 48, checkedIn: 31 },
-    { id: '5', title: 'Мастер-класс по LLM', when: 'вс, 4 октября · 14:00', status: 'draft', statusKey: 'status.draft', author: true, registered: 0, checkedIn: 0 },
-    { id: '7', title: 'Хакатон AI Qadam · RAG for Business', when: 'сб, 17 октября · 10:00', status: 'published', statusKey: 'status.published', author: false, registered: 67, checkedIn: 0 },
+    {
+      id: '4', title: 'AI Qadam #4 · LLM Engineering in Production',
+      description: 'Четыре практика о том, как LLM-системы живут в продакшене: пайплайны оценки, версионирование промптов, дежурства и цена инференса.',
+      address: 'Ташкент, IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737,
+      startsLocal: '2026-09-26T18:30', endsLocal: '2026-09-26T22:00', deadlineLocal: '2026-09-23T23:59',
+      capacity: '120', overbook: '40',
+      when: 'сб, 26 сентября · 18:30', status: 'published', statusKey: 'status.published',
+      author: true, registered: 48, checkedIn: 31, cancelled: 2,
+      inviteLink: 'https://t.me/aiqadam_events_bot?start=e4',
+    },
+    {
+      id: '5', title: 'Мастер-класс по LLM',
+      description: 'Практический разбор: как собрать LLM-пайплайн от идеи до продакшена.',
+      address: 'Ташкент, IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737,
+      startsLocal: '2026-10-04T14:00', endsLocal: '2026-10-04T17:00', deadlineLocal: '2026-10-02T23:59',
+      capacity: '40', overbook: '40',
+      when: 'вс, 4 октября · 14:00', status: 'draft', statusKey: 'status.draft',
+      author: true, registered: 0, checkedIn: 0, cancelled: 0,
+      inviteLink: 'https://t.me/aiqadam_events_bot?start=e5',
+    },
+    {
+      id: '7', title: 'Хакатон AI Qadam · RAG for Business',
+      description: 'Командный хакатон: собрать RAG-решение для бизнес-задачи за один день.',
+      address: 'Ташкент, IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737,
+      startsLocal: '2026-10-17T10:00', endsLocal: '2026-10-17T19:00', deadlineLocal: '2026-10-15T23:59',
+      capacity: '60', overbook: '40',
+      when: 'сб, 17 октября · 10:00', status: 'published', statusKey: 'status.published',
+      author: false, registered: 67, checkedIn: 0, cancelled: 5,
+      inviteLink: 'https://t.me/aiqadam_events_bot?start=e7',
+    },
   ],
 
   participants: [

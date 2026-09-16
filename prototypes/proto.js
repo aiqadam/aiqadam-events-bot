@@ -33,9 +33,9 @@ PROTO.protoDict = {
   'proto.link_copied': 'Ссылка скопирована',
   'proto.deep_link_note': 'переход по ссылке регистрации',
   'proto.staff_invite_note': 'переход по ссылке-инвайту',
-  'proto.registered_short': 'записался',
-  'proto.checked_in_short': 'пришёл',
-  'proto.cancelled_short': 'отменил',
+  'proto.registered_short': 'зарегистрировано',
+  'proto.checked_in_short': 'пришло',
+  'proto.cancelled_short': 'отменило',
   'proto.section_main': 'Основное',
   'proto.section_where': 'Где и когда',
   'proto.section_capacity': 'Места',
@@ -46,15 +46,12 @@ PROTO.protoDict = {
 
   // каталог и мои билеты
   'proto.tab_my_tickets': 'Мои билеты',
-  'proto.tab_my_tickets_hint': 'Билет открывается с этого экрана — возвращаться в чат не нужно.',
-  'proto.my_tickets_empty': 'Билетов пока нет. Выберите ивент во вкладке «Будущие».',
 
   // регистрация внутри Mini App (PAR-1, PAR-2)
   'proto.reg_title': 'Регистрация на ивент',
   'proto.reg_pdn': 'Согласен на обработку персональных данных',
   'proto.reg_mkt': 'Присылать анонсы других ивентов',
   'proto.reg_mkt_hint': 'Это отдельное согласие и на регистрацию не влияет.',
-  'proto.reg_done_title': 'Вы зарегистрированы',
   'proto.reg_done_hint': 'Билет уже готов — QR откроется на экране билета.',
 
   // визард ивента
@@ -63,10 +60,6 @@ PROTO.protoDict = {
   'proto.step_review': 'Проверка',
   'proto.review_hint': 'Так ивент увидят участники. Всё на месте?',
   'proto.save_draft': 'Сохранить черновик',
-  'proto.published_ok': 'Ивент опубликован',
-  'proto.published_hint': 'Ссылка регистрации — ниже. Отправьте её участникам.',
-  'proto.wizard_saved': 'Изменения сохранены',
-  'proto.wizard_draft': 'Черновик сохранён — участникам он пока не виден.',
   'proto.capacity_limit': 'Регистрация закроется на {limit} участниках.',
 
   // гео: ссылка Яндекс.Карт и точка на карте
@@ -89,7 +82,6 @@ PROTO.protoDict = {
   'proto.staff_hint': 'Права — на этот ивент; отозвать можно в любой момент.',
   'proto.staff_section_participants': 'Участники ивента',
   'proto.staff_invite_alt': 'Нет в списке? Пригласите ссылкой — она действует 24 часа и один раз.',
-  'proto.staff_added': 'Контролёр добавлен',
   'proto.staff_since': 'контролёр с {when}',
 
   // послесловие и форма отзыва
@@ -97,16 +89,23 @@ PROTO.protoDict = {
   'proto.feedback_title': 'Как прошёл ивент?',
   'proto.feedback_lead': 'Пара слов — и следующий станет лучше. Это займёт минуту.',
   'proto.feedback_rate': 'Оценка',
+  'proto.feedback_rate_hint': 'Выберите оценку, чтобы отправить.',
   'proto.feedback_text': 'Комментарий',
   'proto.feedback_placeholder': 'Что понравилось, что улучшить — можно не заполнять',
   'proto.feedback_submit': 'Отправить отзыв',
   'proto.feedback_done_title': 'Спасибо за отзыв',
-  'proto.feedback_done': 'Мы передадим его организаторам. До встречи на следующем ивенте!',
+  'proto.feedback_done': 'Мы передадим его организаторам.',
   'proto.feedback_to_events': 'К ивентам',
   'proto.feedback_given': 'Отзыв отправлен',
 
   // билет
-  'proto.ticket_cancelled': 'Регистрация отменена',
+  'proto.ticket_none': 'Вы не зарегистрированы на этот ивент.',
+
+  // рассылка: короткие подписи кнопок (VOICE: до 23 знаков); «не пришли» —
+  // реальная строка фильтра участников, второй такой же не заводим.
+  'proto.bcast_btn_all': 'Все · {count}',
+  'proto.bcast_btn_registered': 'Зарегистрированные · {count}',
+  'proto.bcast_btn_checked_in': 'Пришедшие · {count}',
 };
 
 // ---------- Трассировка: id требования → короткая формулировка ----------
@@ -133,7 +132,7 @@ PROTO.specMap = {
   'PAR-4': 'Мои регистрации — вкладка «Мои билеты» в каталоге Mini App.',
   'PAR-5': 'Отмена регистрации доступна до starts_at — и в чате, и на экране билета.',
   'PAR-6': 'QR участника: payload c<eventId>-<userId>-<sig>, sig — 10 символов base64url.',
-  'STF-1': 'Чекин — Mini App со сканером, не закрывающимся между людьми.',
+  'STF-1': 'Чекин — Mini App; кадр сканера — нативный попап Telegram (showScanQrPopup), страница показывает вердикт и счётчик и не закрывается между людьми.',
   'STF-2': 'Права контролёра проверяются по конкретному event_id.',
   'STF-3': 'Fallback-канал чекина не реализуется (решение владельца, Q41).',
   'STF-4': 'Четыре исхода на экране: успех / уже отмечен / нет регистрации / другой ивент.',
@@ -412,7 +411,7 @@ PROTO.toast = function (msg) {
 };
 PROTO.copy = function (text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => PROTO.toast(t('proto.link_copied')), () => PROTO.toast(text));
+    navigator.clipboard.writeText(text).then(() => PROTO.toast(t('manage.btn.copied')), () => PROTO.toast(text));
   } else PROTO.toast(text);
 };
 PROTO.appUrl = function (route, backUrl) {

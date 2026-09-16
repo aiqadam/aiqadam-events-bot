@@ -212,34 +212,14 @@
 }
 .tg-time { display: block; text-align: right; font-family: var(--font-mono); font-size: 10px; opacity: 0.5; margin-top: 4px; }
 
-/* карточка-экран: на всю ширину ленты */
-.tg-card { width: 100%; max-width: 100%; padding: 14px; }
-.tg-card-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
-.tg-card-mark {
-  width: 36px; height: 36px; flex-shrink: 0;
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--primary) 12%, transparent);
-  color: var(--primary);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.tg-card-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; line-height: 1.25; letter-spacing: -0.01em; }
-.tg-card-sub { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
-.tg-card-lines { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
-.tg-card-line { display: flex; gap: 8px; font-size: 14px; align-items: baseline; }
-.tg-card-line .k { color: var(--muted-foreground); min-width: 96px; flex-shrink: 0; }
-.tg-card-line .v { color: var(--foreground); }
-.tg-card-body { font-size: 14px; line-height: 1.45; color: var(--foreground); white-space: pre-line; }
-.tg-card-body.muted { color: var(--muted-foreground); }
-.tg-card-link {
-  display: flex; align-items: flex-start; gap: 8px;
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--primary);
-  text-decoration: none;
-  word-break: break-all;
-}
-.tg-card-link .proto-icon { margin-top: 1px; }
-.tg-kbd { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+/* Сообщение бота — текст, как его отдаёт Telegram: пузырь + клавиатура
+   отдельным блоком под ним. Никаких таблиц и SVG внутри сообщения. */
+.tg-msg { display: flex; flex-direction: column; align-items: flex-start; max-width: 86%; }
+.tg-msg .tg-bubble { max-width: 100%; }
+.tg-msg-title { font-weight: 600; margin-bottom: 4px; }
+.tg-msg-sub { font-size: 12px; color: var(--muted-foreground); margin-bottom: 4px; }
+.tg-msg-body { margin-top: 6px; }
+.tg-kbd { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; width: 100%; }
 .tg-kbd-btn {
   width: 100%;
   min-height: 44px;
@@ -254,12 +234,8 @@
   border-radius: 10px;
   cursor: pointer;
 }
-.tg-kbd-btn:hover { border-color: color-mix(in oklch, var(--primary) 45%, var(--border)); }
-.tg-kbd-btn.primary { font-weight: 600; }
-.tg-kbd-btn.danger { color: var(--destructive); }
-.tg-kbd-btn.locked { color: var(--muted-foreground); border-style: dashed; }
+.tg-kbd-btn:hover { background: var(--muted); }
 .tg-kbd-btn.disabled { color: var(--muted-foreground); cursor: not-allowed; opacity: 0.6; }
-.tg-kbd-note { font-size: 11px; color: var(--muted-foreground); text-align: center; margin-top: -2px; }
 .tg-composer {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
@@ -294,7 +270,12 @@
 .tgv-close { font-size: 14px; color: var(--primary); text-decoration: none; }
 .tgv-title { flex: 1; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
 .tgv-more { color: var(--muted-foreground); display: inline-flex; }
-.tgv-screen { flex: 1 1 auto; min-height: 0; overflow-y: auto; background: var(--background); padding: 16px 16px 0; scroll-padding-top: 8px; }
+.tgv-screen {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  background: var(--background);
+  padding: 16px 16px env(safe-area-inset-bottom, 0px);
+  scroll-padding-top: 8px;
+}
 
 /* заголовки и текст */
 .app-title { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px; }
@@ -425,9 +406,39 @@
 .ev-row .ev-tail { color: var(--muted-foreground); display: inline-flex; }
 .ev-row-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; font-size: 12px; color: var(--muted-foreground); }
 
-/* сегменты/фильтры */
-.segmented { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+/* сегменты/фильтры: одна строка с горизонтальной прокруткой, как табы */
+.segmented {
+  display: flex; gap: 6px; margin: 12px -16px;
+  padding: 0 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.segmented::-webkit-scrollbar { display: none; }
+.segmented .btn { flex-shrink: 0; }
 .segmented .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
+
+/* иконка внутри брендового .input-wrap: PROTO.icon отдаёт span, а не svg */
+.input-wrap > .proto-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+/* состояния экрана билета и сканера (загрузка, ошибка, нет билета) */
+.ticket-state, .scan-state {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 48px 16px 24px; text-align: center;
+}
+.ticket-state .state-icon, .scan-state .state-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.ticket-state .state-title, .scan-state .state-title {
+  font-family: var(--font-display); font-weight: 600; font-size: 17px; line-height: 1.3;
+  max-width: 300px;
+}
+.ticket-skeleton { width: 232px; height: 232px; max-width: 62vw; border-radius: var(--radius-xl); }
 
 /* ---------- форма ---------- */
 .form-section { margin-bottom: 22px; }

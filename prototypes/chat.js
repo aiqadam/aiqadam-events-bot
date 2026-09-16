@@ -1,7 +1,9 @@
 // Прототип W41 — мок чата Telegram (ADR-0027).
-// Рендерит сценарии из scenarios.js в вёрстке, повторяющей Telegram:
-// пузыри, карточки, inline-клавиатура. Карточка диалога редактируется на
-// месте (ADR-0017 п. 1). Трассировка и демо-контролы — в шитах обвязки.
+// Рендерит сценарии из scenarios.js так, как это отрисует Telegram:
+// сообщение — пузырь с текстом, инлайн-клавиатура — отдельным блоком под
+// пузырём (внутри сообщения SVG и таблиц не бывает). Карточка диалога
+// редактируется на месте (ADR-0017 п. 1). Трассировка и демо-контролы —
+// в шитах обвязки.
 'use strict';
 var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
@@ -19,18 +21,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let activeCardEl = null;
   let activeCardId = null;
   let finished = false;
-
-  const cardIcons = {
-    event: 'calendar', 'consent-pdn': 'calendar', 'consent-mkt': 'calendar', done: 'ticket',
-    'pdn-declined': 'alert', 'menu-guest': 'list', cancel: 'alert',
-    'cancel-done': 'check-circle', 'cancel-kept': 'check-circle', 'st-already': 'ticket',
-    'st-no-seats': 'alert', 'st-deadline': 'clock', 'st-not-published': 'alert',
-    'st-cancelled': 'alert', 'st-finished': 'alert', 'st-bad-payload': 'alert',
-    menu: 'list', published: 'megaphone', invite: 'link', links: 'link', notify: 'megaphone',
-    broadcast: 'megaphone', segment: 'megaphone', preview: 'megaphone', tested: 'megaphone',
-    sent: 'megaphone', 'staff-invite': 'shield', 'accept-ok': 'shield',
-    'st-accept-invalid': 'shield', 'st-accept-used': 'shield', 'st-accept-expired': 'shield',
-  };
 
   function loadState() {
     try {
@@ -50,84 +40,55 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function scrollDown() { const scr = chatRoot.parentElement; if (scr) scr.scrollTop = scr.scrollHeight; }
 
   // ---------- отрисовка ----------
+  // Обёртка сообщения: пузырь и (для входящих) клавиатура под ним.
+  function msgRow(kind) {
+    const row = PROTO.el('div', 'tg-row ' + (kind === 'user' ? 'out' : 'in'));
+    const wrap = PROTO.el('div', 'tg-msg');
+    row.appendChild(wrap);
+    return { row: row, wrap: wrap };
+  }
+
   function bubble(kind, text, opts) {
     const o = opts || {};
-    const row = PROTO.el('div', 'tg-row ' + (kind === 'user' ? 'out' : 'in'));
+    const m = msgRow(kind);
     const b = PROTO.el('div', 'tg-bubble ' + (kind === 'user' ? 'tg-out' : 'tg-in'));
     if (o.forwarded) b.appendChild(PROTO.el('div', 'tg-forwarded', PROTO.t('proto.forwarded_from')));
     b.appendChild(PROTO.el('div', 'tg-text', text));
     b.appendChild(PROTO.el('span', 'tg-time', o.time || PROTO.nowTime()));
-    row.appendChild(b);
-    chatRoot.appendChild(row);
+    m.wrap.appendChild(b);
+    chatRoot.appendChild(m.row);
     scrollDown();
-    return b;
+    return m.wrap;
   }
 
-  function splitLine(line) {
-    const i = line.indexOf(': ');
-    if (i < 0) return { v: line };
-    return { k: line.slice(0, i), v: line.slice(i + 2) };
-  }
-
+  // Сообщение-карточка: текст как его отдаёт бот. Заголовок — первой строкой;
+  // при parse_mode = MarkdownV2 (шаги с markup) он будет жирным.
   function buildCard(step) {
     const card = step.card || {};
-    const b = PROTO.el('div', 'tg-bubble tg-in tg-card');
-    const head = PROTO.el('div', 'tg-card-head');
-    const mark = PROTO.el('span', 'tg-card-mark');
-    mark.appendChild(PROTO.icon(cardIcons[step.id] || 'calendar', 18));
-    head.appendChild(mark);
-    const titles = PROTO.el('div', 'tg-card-titles');
-    titles.appendChild(PROTO.el('div', 'tg-card-title', card.title || ''));
-    const sub = step.cardSub || '';
-    if (sub) titles.appendChild(PROTO.el('div', 'tg-card-sub', sub));
-    head.appendChild(titles);
-    b.appendChild(head);
-
-    if (card.lines && card.lines.length) {
-      const box = PROTO.el('div', 'tg-card-lines');
-      card.lines.forEach((line) => {
-        const parts = splitLine(line);
-        const row = PROTO.el('div', 'tg-card-line');
-        if (parts.k) row.appendChild(PROTO.el('span', 'k', parts.k));
-        row.appendChild(PROTO.el('span', 'v', parts.v));
-        box.appendChild(row);
-      });
-      b.appendChild(box);
-    }
-    if (card.body) {
-      const body = PROTO.el('div', 'tg-card-body');
-      if (card.bodyMuted) body.classList.add('muted');
-      body.textContent = card.body;
-      b.appendChild(body);
-    }
-    if (card.link) {
-      const a = PROTO.el('a', 'tg-card-link');
-      a.href = card.link.url;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.appendChild(PROTO.icon('map-pin', 15));
-      a.appendChild(PROTO.el('span', '', card.link.text));
-      b.appendChild(a);
-    }
+    const b = PROTO.el('div', 'tg-bubble tg-in');
+    const text = PROTO.el('div', 'tg-text');
+    if (card.title) text.appendChild(PROTO.el('div', step.markup ? 'tg-msg-title' : 'tg-msg-line', card.title));
+    if (step.cardSub) text.appendChild(PROTO.el('div', 'tg-msg-sub', step.cardSub));
+    (card.lines || []).forEach((line) => text.appendChild(PROTO.el('div', 'tg-msg-line', line)));
+    if (card.body) text.appendChild(PROTO.el('div', 'tg-msg-body', card.body));
+    if (card.link) text.appendChild(PROTO.el('div', 'tg-msg-line', card.link.text));
+    b.appendChild(text);
     return b;
   }
 
-  function renderButtons(container, buttons) {
+  // Инлайн-клавиатура — блок под пузырём, как её рисует Telegram.
+  function renderButtons(row, buttons) {
     if (!buttons || !buttons.length) return;
     const kbd = PROTO.el('div', 'tg-kbd');
     buttons.forEach((btn) => {
       const el = PROTO.el('button', 'tg-kbd-btn');
       el.type = 'button';
-      if (btn.primary) el.classList.add('primary');
-      if (btn.tone === 'danger') el.classList.add('danger');
-      if (btn.locked) el.classList.add('locked');
       if (btn.disabled) { el.classList.add('disabled'); el.disabled = true; }
       el.textContent = btn.label;
       el.addEventListener('click', () => onButton(btn));
       kbd.appendChild(el);
-      if (btn.disabled && btn.note) kbd.appendChild(PROTO.el('div', 'tg-kbd-note', btn.note));
     });
-    container.appendChild(kbd);
+    row.appendChild(kbd);
   }
 
   function renderStep(step, replay, time) {
@@ -135,25 +96,24 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (step.kind === 'user') {
       bubble('user', step.text, { forwarded: step.forwarded, time: time });
     } else if (step.kind === 'bot') {
-      const b = bubble('bot', step.text, { time: time });
-      renderButtons(b, step.buttons);
+      const row = bubble('bot', step.text, { time: time });
+      renderButtons(row, step.buttons);
     } else if (step.kind === 'card') {
-      let b;
+      let wrap;
       if (step.edit && activeCardEl) {
-        b = activeCardEl;
-        PROTO.clear(b);
-        const fresh = buildCard(step);
-        while (fresh.firstChild) b.appendChild(fresh.firstChild);
+        wrap = activeCardEl;
+        PROTO.clear(wrap);
+        wrap.appendChild(buildCard(step));
       } else {
-        const row = PROTO.el('div', 'tg-row in');
-        b = buildCard(step);
-        row.appendChild(b);
-        chatRoot.appendChild(row);
-        activeCardEl = b;
+        const m = msgRow('bot');
+        wrap = m.wrap;
+        wrap.appendChild(buildCard(step));
+        chatRoot.appendChild(m.row);
+        activeCardEl = wrap;
       }
       activeCardId = step.id;
-      b.appendChild(PROTO.el('span', 'tg-time', time || PROTO.nowTime()));
-      renderButtons(b, step.buttons);
+      wrap.querySelector('.tg-bubble').appendChild(PROTO.el('span', 'tg-time', time || PROTO.nowTime()));
+      renderButtons(wrap, step.buttons);
       scrollDown();
     }
     if (!replay) { rendered.push({ id: step.id, time: time || PROTO.nowTime() }); saveState(); }

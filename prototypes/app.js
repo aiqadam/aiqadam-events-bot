@@ -16,9 +16,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   let manageTab = 'event';
   let scanState = 0;
+  let scanError = null;
   let showErrors = false;
+  let wizardTried = false;
   let participantFilter = 'all';
+  let participantsEmpty = false;
   let catalogTab = 'mine';
+  let catalogEmpty = false;
+  let ticketDemo = null;
   let backUrl = '';
   let hashParams = new URLSearchParams('');
   let eventId = '';
@@ -122,11 +127,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const kind = statusKey === 'status.published' ? 'success' : statusKey === 'status.draft' ? 'warning' : 'default';
     return badge(T(statusKey), kind);
   }
-  function splitLine(line) {
-    const i = line.indexOf(': ');
-    if (i < 0) return { v: line };
-    return { k: line.slice(0, i), v: line.slice(i + 2) };
-  }
 
   // ---------- шит продукта (регистрация, гео, выбор контролёра) ----------
   let sheet = null;
@@ -224,6 +224,18 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (ev && typeof ev.registered === 'boolean') return ev.registered;
     return D.myTickets.some((t) => String(t.eventId) === String(id));
   }
+  function eventInvite(id) {
+    const ev = D.ownerEvents.find((e) => String(e.id) === String(id));
+    return (ev && ev.inviteLink) || ('https://t.me/' + D.botUsername + '?start=e' + (id === 'new' ? '5' : id));
+  }
+  function eventUtm(id) {
+    const base = eventInvite(id);
+    return [
+      { utm: 'telegram', url: base + '-telegram' },
+      { utm: 'instagram', url: base + '-instagram' },
+      { utm: 'friends', url: base + '-friends' },
+    ];
+  }
   function mapUrl(lat, lon) {
     return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
   }
@@ -238,13 +250,90 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
     return null;
   }
+  function plateFromLocal(s) {
+    if (!s) return null;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return {
+      weekday: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'][d.getDay()],
+      day: String(d.getDate()),
+      month: ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'][d.getMonth()],
+    };
+  }
+  function humanLocal(s) {
+    const p = plateFromLocal(s);
+    if (!p) return s || '';
+    const months = { янв: 'января', фев: 'февраля', мар: 'марта', апр: 'апреля', мая: 'мая', июн: 'июня', июл: 'июля', авг: 'августа', сен: 'сентября', окт: 'октября', ноя: 'ноября', дек: 'декабря' };
+    return p.weekday + ', ' + p.day + ' ' + (months[p.month] || p.month) + ' · ' + String(s).slice(11, 16);
+  }
 
   // ---------- роут: билет ----------
   function renderTicket() {
-    const ev = eventById(hashParams.get('event_id') || D.main.id) || D.main;
+    const id = hashParams.get('event_id') || D.main.id;
+    const ev = eventById(id);
     setBar(T('ticket.title'));
     PROTO.setTrace(['PAR-6', 'IDM-2', 'ADR-0007', 'PAR-5']);
     clear();
+
+    const demoItems = [
+      { label: T('ticket.title'), active: ticketDemo === null, onClick: () => { ticketDemo = null; renderTicket(); } },
+      { label: T('ticket.loading'), active: ticketDemo === 'loading', onClick: () => { ticketDemo = 'loading'; renderTicket(); } },
+      { label: T('ticket.error.network'), active: ticketDemo === 'network', onClick: () => { ticketDemo = 'network'; renderTicket(); } },
+      { label: T('ticket.error.server'), active: ticketDemo === 'server', onClick: () => { ticketDemo = 'server'; renderTicket(); } },
+    ];
+
+    if (!ev) {
+      screen.appendChild(emptyState(T('common.err.event_not_found'), 'ticket'));
+      const acts = E('div', 'app-actions');
+      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events', 'btn-primary'));
+      screen.appendChild(acts);
+      PROTO.setDemo(demoItems);
+      return;
+    }
+
+    if (ticketDemo === 'loading') {
+      const box = E('div', 'ticket-state');
+      const sk = E('div', 'skeleton ticket-skeleton');
+      box.appendChild(sk);
+      box.appendChild(E('div', 'app-muted', T('ticket.loading')));
+      screen.appendChild(box);
+      PROTO.setDemo(demoItems);
+      return;
+    }
+    if (ticketDemo) {
+      const box = E('div', 'ticket-state');
+      const ic = E('div', 'state-icon');
+      ic.appendChild(PROTO.icon('alert', 24));
+      box.appendChild(ic);
+      box.appendChild(E('div', 'state-title', T(ticketDemo === 'network' ? 'ticket.error.network' : 'ticket.error.server')));
+      box.appendChild(btn(T('ticket.retry'), { kind: 'btn-primary', onClick: () => { ticketDemo = null; renderTicket(); } }));
+      screen.appendChild(box);
+      PROTO.setDemo(demoItems);
+      return;
+    }
+
+    const ticket = D.myTickets.find((t) => String(t.eventId) === String(ev.id));
+    const finished = ev.status === 'finished' || ev.statusKey === 'status.finished';
+
+    if (finished) {
+      screen.appendChild(ticketState('check-circle', T('reg.event_finished')));
+      const acts = E('div', 'app-actions');
+      if (ticket && !ticket.feedbackGiven) acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events?tab=past', 'btn-primary'));
+      screen.appendChild(acts);
+      PROTO.setDemo(demoItems);
+      return;
+    }
+
+    if (!ticket) {
+      screen.appendChild(ticketState('ticket', T('proto.ticket_none')));
+      const acts = E('div', 'app-actions');
+      acts.appendChild(btn(T('event.card.btn_register'), { kind: 'btn-primary', onClick: () => openRegistration(ev) }));
+      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events', 'btn-secondary'));
+      screen.appendChild(acts);
+      PROTO.setDemo(demoItems);
+      return;
+    }
 
     const top = E('div', 'ticket-top');
     top.appendChild(E('div', 'ticket-event', ev.title));
@@ -252,10 +341,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     when.appendChild(PROTO.icon('calendar', 15));
     when.appendChild(E('span', '', ev.whenLong || ev.when));
     top.appendChild(when);
-    if (ev.address) {
+    const whereText = ev.address || ev.where;
+    if (whereText) {
       const where = E('div', 'ticket-when');
       where.appendChild(PROTO.icon('map-pin', 15));
-      where.appendChild(E('span', '', ev.address));
+      where.appendChild(E('span', '', whereText));
       top.appendChild(where);
     }
     screen.appendChild(top);
@@ -267,28 +357,29 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
     screen.appendChild(E('div', 'ticket-hint', T('ticket.show_at_entrance')));
 
-    const ticket = D.myTickets.find((t) => String(t.eventId) === String(ev.id));
-    if (ticket && ticket.canCancel) {
+    if (ticket.canCancel) {
       const cancel = E('div', 'ticket-cancel');
       cancel.appendChild(btn(T('myreg.btn.cancel'), {
         kind: 'btn-outline', block: true, onClick: () => openCancelSheet(ev),
       }));
       screen.appendChild(cancel);
     }
+    PROTO.setDemo(demoItems);
+  }
 
-    PROTO.setDemo([
-      { label: 'Билет', active: true },
-      { label: T('ticket.loading'), onClick: () => PROTO.demoNote(T('ticket.loading')) },
-      { label: T('ticket.error.network'), onClick: () => PROTO.demoNote(T('ticket.error.network')) },
-      { label: T('ticket.error.server'), onClick: () => PROTO.demoNote(T('ticket.error.server')) },
-      { label: T('ticket.no_event'), onClick: () => PROTO.demoNote(T('ticket.no_event')) },
-      { label: T('ticket.not_in_telegram'), onClick: () => PROTO.demoNote(T('ticket.not_in_telegram')) },
-    ]);
+  function ticketState(icon, text) {
+    const box = E('div', 'ticket-state');
+    const ic = E('div', 'state-icon');
+    ic.appendChild(PROTO.icon(icon, 24));
+    box.appendChild(ic);
+    box.appendChild(E('div', 'state-title', text));
+    return box;
   }
 
   function openCancelSheet(ev) {
+    const title = String(ev.title || '').replace(/[«»]/g, '').trim();
     openSheet(T('myreg.btn.cancel'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('cancel.confirm', { title: ev.title })));
+      body.appendChild(E('div', 'app-muted', T('cancel.confirm', { title: title })));
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('cancel.btn.confirm'), { kind: 'btn-destructive', onClick: () => {
         const t = D.myTickets.find((x) => String(x.eventId) === String(ev.id));
@@ -298,7 +389,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         if (D.main.id === String(ev.id)) D.main.registered = false;
         D.myTickets = D.myTickets.filter((x) => String(x.eventId) !== String(ev.id));
         closeSheet();
-        PROTO.toast(T('proto.ticket_cancelled'));
+        PROTO.toast(T('cancel.done', { title: title }));
         go('#/events?tab=mine');
       } }));
       acts.appendChild(btn(T('cancel.btn.keep'), { kind: 'btn-secondary', onClick: closeSheet }));
@@ -313,11 +404,42 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'proto.result_denied' },
     { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'proto.result_denied' },
   ];
+  const scanErrors = {
+    forbidden: { icon: 'shield', text: 'checkin.forbidden', action: 'scan.rescan' },
+    stale: { icon: 'clock', text: 'checkin.unauthorized', action: 'scan.reopen_app' },
+    network: { icon: 'alert', text: 'scan.network_error', action: 'scan.rescan' },
+    server: { icon: 'alert', text: 'scan.error_server', action: 'scan.rescan' },
+    unsupported: { icon: 'alert', text: 'scan.unsupported', action: 'scan.rescan' },
+    no_event: { icon: 'calendar', text: 'scan.no_event', action: 'common.btn.menu' },
+    not_tg: { icon: 'alert', text: 'scan.not_in_telegram', action: 'common.btn.menu' },
+  };
 
   function renderScan() {
     setBar(T('scan.title'));
     PROTO.setTrace(['STF-1', 'STF-2', 'STF-4', 'IDM-2']);
     clear();
+
+    const items = scanOutcomes.map((o, i) => ({
+      label: o.key,
+      active: !scanError && i === scanState % scanOutcomes.length,
+      onClick: () => { scanError = null; scanState = i; renderScan(); },
+    }));
+    Object.keys(scanErrors).forEach((k) => {
+      items.push({ label: k, active: scanError === k, onClick: () => { scanError = k; renderScan(); } });
+    });
+    PROTO.setDemo(items, 'Нажатие на кадр — следующий скан (STF-1: сканер не закрывается).');
+
+    if (scanError) {
+      const e = scanErrors[scanError];
+      const box = E('div', 'scan-state');
+      const ic = E('div', 'state-icon');
+      ic.appendChild(PROTO.icon(e.icon, 24));
+      box.appendChild(ic);
+      box.appendChild(E('div', 'state-title', T(e.text)));
+      box.appendChild(btn(T(e.action), { kind: 'btn-primary', onClick: () => { scanError = null; renderScan(); } }));
+      screen.appendChild(box);
+      return;
+    }
 
     const outcome = scanOutcomes[scanState % scanOutcomes.length];
 
@@ -348,15 +470,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     prog.appendChild(bar);
     prog.appendChild(E('div', 'scan-progress-label', T('checkin.counter', { checked_in: D.scan.checkedIn, registered: D.scan.registered })));
     screen.appendChild(prog);
-
-    const items = scanOutcomes.map((o, i) => ({
-      label: o.key,
-      active: i === scanState % scanOutcomes.length,
-      onClick: () => { scanState = i; renderScan(); },
-    }));
-    [['forbidden', T('checkin.forbidden')], ['stale', T('checkin.unauthorized')], ['network', T('scan.network_error')], ['server', T('scan.error_server')], ['unsupported', T('scan.unsupported')], ['no_event', T('scan.no_event')], ['not_tg', T('scan.not_in_telegram')]]
-      .forEach(([k, txt]) => items.push({ label: k, onClick: () => PROTO.demoNote(txt) }));
-    PROTO.setDemo(items, 'Нажатие на кадр — следующий скан (STF-1: сканер не закрывается).');
   }
 
   // ---------- роут: список ивентов овнера ----------
@@ -364,7 +477,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     setBar(T('manage.list.title'));
     PROTO.setTrace(['OWN-4', 'ADR-0024', 'ADR-0025']);
     clear();
-    const add = linkBtn(T('manage.btn.new'), '#/manage/new', 'btn-primary', 'plus');
+    const add = linkBtn(T('manage.btn.new'), '#/manage/new', 'btn-primary btn-lg', 'plus');
     add.style.marginBottom = '14px';
     screen.appendChild(add);
 
@@ -382,7 +495,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     meta.appendChild(statusBadge(ev.statusKey));
     meta.appendChild(E('span', '', ev.when));
     main.appendChild(meta);
-    main.appendChild(E('div', 'app-muted', T('participants.counters', { registered: ev.registered, checked_in: ev.checkedIn, cancelled: 2 })));
+    main.appendChild(E('div', 'app-muted', T('participants.counters', { registered: ev.registered, checked_in: ev.checkedIn, cancelled: ev.cancelled })));
     a.appendChild(main);
     const tail = E('span', 'ev-tail');
     tail.appendChild(PROTO.icon('chevron-right', 18));
@@ -395,27 +508,45 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function wizardFields(id) {
     if (wizardDraft) return wizardDraft;
-    if (id === 'new') {
-      wizardDraft = { title: '', description: '', address: '', lat: null, lon: null, startsLocal: '', endsLocal: '', deadlineLocal: '', capacity: '', overbook: '' };
-      return wizardDraft;
-    }
-    if (String(id) === D.main.id) {
-      wizardDraft = {
-        title: D.main.title, description: D.main.description, address: D.main.address,
-        lat: D.main.lat, lon: D.main.lon, startsLocal: D.main.startsLocal,
-        endsLocal: D.main.endsLocal, deadlineLocal: D.main.deadlineLocal,
-        capacity: String(D.main.capacity), overbook: String(D.main.overbook),
-      };
-      return wizardDraft;
-    }
+    const src = id === 'new' ? null : D.ownerEvents.find((e) => String(e.id) === String(id));
     wizardDraft = {
-      title: D.draft.title, description: D.draft.description, address: D.draft.address,
-      lat: D.draft.lat, lon: D.draft.lon, startsLocal: D.draft.startsLocal,
-      endsLocal: D.draft.endsLocal, deadlineLocal: D.draft.deadlineLocal,
-      capacity: String(D.draft.capacity || ''), overbook: String(D.draft.overbook || ''),
+      title: src ? src.title : '',
+      description: src ? (src.description || '') : '',
+      address: src ? (src.address || '') : '',
+      lat: src && src.lat !== null && src.lat !== undefined ? src.lat : null,
+      lon: src && src.lon !== null && src.lon !== undefined ? src.lon : null,
+      startsLocal: src ? (src.startsLocal || '') : '',
+      endsLocal: src ? (src.endsLocal || '') : '',
+      deadlineLocal: src ? (src.deadlineLocal || '') : '',
+      capacity: src && src.capacity ? String(src.capacity) : '',
+      overbook: src && src.overbook ? String(src.overbook) : '',
     };
     return wizardDraft;
   }
+
+  function wizardErrors(f) {
+    const e = { main: {}, where: {}, capacity: {} };
+    const title = String(f.title || '').trim();
+    if (title.length < 2 || title.length > 200) e.main.title = T('manage.err.title_length');
+    if (String(f.description || '').length > 4000) e.main.description = T('manage.err.description_length');
+    if (String(f.address || '').trim().length < 2) e.where.address = T('manage.err.address_length');
+    if (!f.startsLocal) e.where.starts = T('manage.err.datetime');
+    if (!f.endsLocal) e.where.ends = T('manage.err.datetime');
+    if (!f.deadlineLocal) e.where.deadline = T('manage.err.datetime');
+    else if (f.startsLocal && f.deadlineLocal > f.startsLocal) e.where.deadline = T('manage.err.deadline_after_starts');
+    if (f.startsLocal && f.endsLocal && f.endsLocal < f.startsLocal) e.where.ends = T('manage.err.ends_before_starts');
+    if ((f.lat === null) !== (f.lon === null)) e.where.geo = T('manage.err.geo_pair');
+    if (f.capacity !== '') {
+      const cap = parseInt(f.capacity, 10);
+      if (isNaN(cap) || cap < 1) e.capacity.capacity = T('manage.err.capacity');
+    }
+    if (f.overbook !== '') {
+      const over = parseInt(f.overbook, 10);
+      if (isNaN(over) || over < 0 || over > 100) e.capacity.overbook = T('manage.err.overbook');
+    }
+    return e;
+  }
+  function stepValid(errs, step) { return Object.keys(errs[step] || {}).length === 0; }
 
   function tabs() {
     const wrap = E('div', 'tabs-wrap');
@@ -459,8 +590,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function stepDots(n, total) {
     const box = E('div', 'step-dots');
     for (let i = 0; i < total; i++) {
-      const d = E('span', 'step-dot' + (i < n ? ' done' : '') + (i === n ? ' active' : ''));
-      box.appendChild(d);
+      box.appendChild(E('span', 'step-dot' + (i < n ? ' done' : '') + (i === n ? ' active' : '')));
     }
     return box;
   }
@@ -469,6 +599,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setTrace(['OWN-1', 'OWN-2', 'OWN-3', 'OWN-4', 'OWN-5', 'OWN-6', 'OWN-15']);
     const f = wizardFields(eventId);
     const step = WIZARD_STEPS[wizardStep];
+    const errs = wizardErrors(f);
+    const show = showErrors || wizardTried;
 
     if (wizardDone) { renderWizardDone(body); return; }
 
@@ -480,50 +612,69 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const stepTitle = { main: T('proto.section_main'), where: T('proto.section_where'), capacity: T('proto.section_capacity'), review: T('proto.step_review') }[step];
     body.appendChild(E('div', 'wizard-title', stepTitle));
 
-    if (step === 'main') renderWizardMain(body, f);
-    else if (step === 'where') renderWizardWhere(body, f);
-    else if (step === 'capacity') renderWizardCapacity(body, f);
-    else renderWizardReview(body, f, isNew);
+    if (step === 'main') renderWizardMain(body, f, errs.main, show);
+    else if (step === 'where') renderWizardWhere(body, f, errs.where, show);
+    else if (step === 'capacity') renderWizardCapacity(body, f, errs.capacity, show);
+    else renderWizardReview(body, f, isNew, errs, show);
 
+    const valid = WIZARD_STEPS.every((s) => stepValid(errs, s));
     const nav = E('div', 'sticky-actions');
     if (wizardStep > 0) {
       nav.appendChild(btn(T('common.btn.back'), { kind: 'btn-secondary', onClick: () => { wizardStep--; renderManageEvent(eventId); } }));
     }
     if (step !== 'review') {
-      nav.appendChild(btn(T('proto.wizard_next'), { kind: 'btn-primary', onClick: () => { wizardStep++; renderManageEvent(eventId); } }));
-    } else if (isNew || (String(eventId) === '5')) {
-      nav.appendChild(btn(T('manage.btn.publish'), { kind: 'btn-primary', onClick: () => { wizardDone = true; renderManageEvent(eventId); } }));
+      // Ошибки считаем в момент нажатия, а не из закрытия рендера: поля
+      // обновляются без перерисовки, и старое состояние уже неактуально.
+      nav.appendChild(btn(T('proto.wizard_next'), { kind: 'btn-primary', onClick: () => {
+        const fresh = wizardErrors(wizardFields(eventId));
+        if (!stepValid(fresh, step)) { wizardTried = true; renderManageEvent(eventId); return; }
+        wizardStep++;
+        renderManageEvent(eventId);
+      } }));
+    } else if (isNew || String(eventId) === '5') {
+      nav.appendChild(btn(T('manage.btn.publish'), {
+        kind: 'btn-primary',
+        disabled: !valid,
+        onClick: () => {
+          const fresh = wizardErrors(wizardFields(eventId));
+          if (!WIZARD_STEPS.every((s) => stepValid(fresh, s))) { wizardTried = true; renderManageEvent(eventId); return; }
+          wizardDone = true;
+          renderManageEvent(eventId);
+        },
+      }));
     } else {
-      nav.appendChild(btn(T('manage.btn.save'), { kind: 'btn-primary', onClick: () => PROTO.toast(T('proto.wizard_saved')) }));
+      nav.appendChild(btn(T('manage.btn.save'), { kind: 'btn-primary', onClick: () => PROTO.toast(T('manage.saved.updated')) }));
     }
+    if (step === 'review' && !valid) body.appendChild(E('div', 'helper error', T('manage.err.validation')));
     body.appendChild(nav);
 
     PROTO.setDemo([
-      { label: T('manage.err.validation'), active: showErrors, onClick: () => { showErrors = !showErrors; renderManageEvent(eventId); } },
-      { label: T('manage.saved.draft'), onClick: () => PROTO.toast(T('proto.wizard_draft')) },
+      { label: 'Ошибки валидации', active: showErrors, onClick: () => { showErrors = !showErrors; renderManageEvent(eventId); } },
+      { label: T('manage.saved.draft'), onClick: () => PROTO.toast(T('manage.saved.draft')) },
       { label: T('manage.err.network'), onClick: () => PROTO.demoNote(T('manage.err.network')) },
       { label: T('manage.err.stale'), onClick: () => PROTO.demoNote(T('manage.err.stale')) },
     ], T('proto.tab_hint'));
   }
 
-  function renderWizardMain(body, f) {
+  function renderWizardMain(body, f, errors, show) {
     const sec = E('div', 'form-section');
     sec.appendChild(field(T('field.title'), f.title, {
-      error: showErrors ? T('manage.err.title_length') : '',
+      error: show ? errors.title : '',
       onInput: (e) => { f.title = e.target.value; },
     }));
     sec.appendChild(field(T('field.description'), f.description, {
       textarea: true, hint: T('manage.hint.description'),
-      error: showErrors ? T('manage.err.description_length') : '',
+      error: show ? errors.description : '',
       onInput: (e) => { f.description = e.target.value; },
     }));
     body.appendChild(sec);
   }
 
-  function renderWizardWhere(body, f) {
+  function renderWizardWhere(body, f, errors, show) {
     const sec = E('div', 'form-section');
     sec.appendChild(field(T('field.address'), f.address, {
       hint: T('manage.hint.address'),
+      error: show ? errors.address : '',
       onInput: (e) => { f.address = e.target.value; },
     }));
 
@@ -543,15 +694,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       a.appendChild(PROTO.icon('external', 14));
       loc.appendChild(a);
     } else {
-      loc.appendChild(E('div', 'helper', T('proto.location_none')));
+      loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('proto.location_none')));
     }
     sec.appendChild(loc);
 
-    sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), onInput: (e) => { f.startsLocal = e.target.value; } }));
-    sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), onInput: (e) => { f.endsLocal = e.target.value; } }));
+    sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
+    sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.ends : '', onInput: (e) => { f.endsLocal = e.target.value; } }));
     sec.appendChild(field(T('field.reg_deadline_at'), f.deadlineLocal, {
       type: 'datetime-local', hint: T('manage.hint.datetime'),
-      error: showErrors ? T('manage.err.deadline_after_starts') : '',
+      error: show ? errors.deadline : '',
       onInput: (e) => { f.deadlineLocal = e.target.value; },
     }));
     body.appendChild(sec);
@@ -559,8 +710,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function locPreview(f) {
     const box = E('div', 'loc-preview');
-    const grid = E('div', 'loc-grid');
-    box.appendChild(grid);
+    box.appendChild(E('div', 'loc-grid'));
     const pin = E('span', 'loc-pin');
     pin.appendChild(PROTO.icon('map-pin', 20));
     pin.style.left = '50%';
@@ -569,7 +719,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     return box;
   }
 
-  function renderWizardCapacity(body, f) {
+  function renderWizardCapacity(body, f, errors, show) {
     const live = E('div', 'capacity-live');
     function paint() {
       PROTO.clear(live);
@@ -585,37 +735,25 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
     const sec = E('div', 'form-section');
     sec.appendChild(row2(
-      field(T('field.capacity'), f.capacity, { type: 'number', hint: T('manage.hint.capacity'), onInput: (e) => { f.capacity = e.target.value; paint(); } }),
-      field(T('field.overbook_pct'), f.overbook, { type: 'number', hint: T('manage.hint.overbook'), onInput: (e) => { f.overbook = e.target.value; paint(); } })
+      field(T('field.capacity'), f.capacity, { type: 'number', hint: T('manage.hint.capacity'), error: show ? errors.capacity : '', onInput: (e) => { f.capacity = e.target.value; paint(); } }),
+      field(T('field.overbook_pct'), f.overbook, { type: 'number', hint: T('manage.hint.overbook'), error: show ? errors.overbook : '', onInput: (e) => { f.overbook = e.target.value; paint(); } })
     ));
     sec.appendChild(live);
     body.appendChild(sec);
     paint();
   }
 
-  function plateFromLocal(s) {
-    if (!s) return null;
-    const d = new Date(s);
-    if (isNaN(d.getTime())) return null;
-    return {
-      weekday: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'][d.getDay()],
-      day: String(d.getDate()),
-      month: ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'][d.getMonth()],
-    };
-  }
-
-  function renderWizardReview(body, f, isNew) {
-    body.appendChild(E('div', 'app-muted', T('proto.review_hint')));
+  function previewCard(f) {
     const c = E('div', 'event-card preview');
     const plate = plateFromLocal(f.startsLocal);
     if (plate) c.appendChild(datePlate(plate));
     else c.classList.add('no-plate');
     const b = E('div', 'event-body');
     const top = E('div', 'event-top');
-    const isDraft = isNew || String(eventId) === '5';
+    const isDraft = String(eventId) === '5' || eventId === 'new';
     top.appendChild(E('span', 'event-status', (isDraft ? T('status.draft') : T('status.published')).toUpperCase()));
     b.appendChild(top);
-    b.appendChild(E('div', 'event-title', f.title || T('manage.err.required')));
+    b.appendChild(E('div', 'event-title', String(f.title || '').trim() || T('manage.err.title_length')));
     const meta = E('div', 'ev-meta');
     const line = (icon, text) => {
       const l = E('span', 'ev-meta-line');
@@ -623,19 +761,26 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       l.appendChild(E('span', '', text));
       meta.appendChild(l);
     };
+    if (f.startsLocal) line('calendar', humanLocal(f.startsLocal));
     if (f.address) line('map-pin', f.address);
-    if (f.startsLocal) line('calendar', f.startsLocal.replace('T', ' · '));
-    if (f.capacity) line('users', T('field.capacity') + ': ' + f.capacity);
+    if (f.capacity) line('users', T('event.card.seats_left', { left: f.capacity }));
     b.appendChild(meta);
     if (f.description) b.appendChild(E('div', 'app-muted', f.description));
     c.appendChild(b);
-    body.appendChild(c);
+    return c;
+  }
 
-    if (isNew || String(eventId) === '5') {
-      const saveDraft = btn(T('proto.save_draft'), { kind: 'btn-outline', block: true, onClick: () => PROTO.toast(T('proto.wizard_draft')) });
+  function renderWizardReview(body, f, isNew, errs, show) {
+    body.appendChild(E('div', 'app-muted', T('proto.review_hint')));
+    body.appendChild(previewCard(f));
+
+    const isDraft = isNew || String(eventId) === '5';
+    if (isDraft) {
+      const saveDraft = btn(T('proto.save_draft'), { kind: 'btn-outline', block: true, onClick: () => PROTO.toast(T('manage.saved.draft')) });
       saveDraft.style.marginTop = '14px';
       body.appendChild(saveDraft);
     } else {
+      renderInviteBlock(body, eventId);
       const cancel = E('div');
       cancel.style.marginTop = '16px';
       cancel.appendChild(btn(T('owner.event.btn.cancel_event'), { kind: 'btn-destructive', block: true, onClick: () => openCancelEventSheet(f) }));
@@ -643,23 +788,39 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
   }
 
+  function renderInviteBlock(body, id) {
+    const inv = card([], 'invite-card');
+    inv.appendChild(E('div', 'card-title', T('manage.invite.title')));
+    inv.appendChild(E('div', 'invite-link', eventInvite(id)));
+    inv.appendChild(muted(T('manage.invite.hint')));
+    const acts = E('div', 'app-actions');
+    acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary', icon: 'copy', onClick: () => PROTO.copy(eventInvite(id)) }));
+    acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(eventInvite(id)), '_blank', 'noopener') }));
+    inv.appendChild(acts);
+    body.appendChild(inv);
+
+    const utm = card([], '');
+    utm.style.marginTop = '10px';
+    utm.appendChild(E('div', 'card-title', T('owner.links.title', { title: wizardFields(id).title })));
+    eventUtm(id).forEach((u) => {
+      const r = E('div', 'utm-row');
+      r.appendChild(E('span', '', u.utm));
+      r.appendChild(E('span', 'utm-url', u.url));
+      utm.appendChild(r);
+    });
+    body.appendChild(utm);
+  }
+
   function renderWizardDone(body) {
+    const title = wizardFields(eventId).title;
     const done = E('div', 'sheet-success');
     const ic = E('div', 'success-icon');
     ic.appendChild(PROTO.icon('check-circle', 34));
     done.appendChild(ic);
-    done.appendChild(E('div', 'success-title', T('proto.published_ok')));
-    done.appendChild(E('div', 'app-muted', T('proto.published_hint')));
+    done.appendChild(E('div', 'success-title', T('manage.chat.published', { title: title })));
+    done.appendChild(E('div', 'app-muted', T('manage.saved.created')));
     body.appendChild(done);
-
-    const inv = card([]);
-    inv.classList.add('invite-card');
-    inv.appendChild(E('div', 'invite-link', D.main.inviteLink));
-    const acts = E('div', 'app-actions');
-    acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary', icon: 'copy', onClick: () => PROTO.copy(D.main.inviteLink) }));
-    acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(D.main.inviteLink), '_blank', 'noopener') }));
-    inv.appendChild(acts);
-    body.appendChild(inv);
+    renderInviteBlock(body, eventId);
 
     const back = btn(T('manage.btn.back'), { kind: 'btn-secondary', block: true, onClick: () => { wizardDone = false; wizardStep = 0; go('#/manage'); } });
     back.style.marginTop = '14px';
@@ -684,16 +845,19 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- гео: ссылка Яндекс.Карт и точка на карте ----------
   function openLinkSheet(f) {
     let error = '';
+    let value = '';
     openSheet(T('proto.paste_link'), (body) => {
       body.appendChild(E('div', 'app-muted', T('manage.hint.geo')));
       const input = E('input', 'input');
       input.type = 'url';
       input.placeholder = T('proto.link_placeholder');
+      input.value = value;
+      input.addEventListener('input', () => { value = input.value; });
       body.appendChild(input);
       if (error) body.appendChild(E('div', 'helper error', error));
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('proto.link_apply'), { kind: 'btn-primary', onClick: () => {
-        const parsed = parseYandexLink(input.value);
+        const parsed = parseYandexLink(value);
         if (!parsed) { error = T('proto.link_bad'); renderSheet(); return; }
         f.lat = parsed.lat;
         f.lon = parsed.lon;
@@ -725,10 +889,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       }
       map.addEventListener('click', (e) => {
         const r = map.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width;
-        const py = (e.clientY - r.top) / r.height;
-        lon = 69.15 + px * 0.3;
-        lat = 41.38 - py * 0.14;
+        lon = 69.15 + ((e.clientX - r.left) / r.width) * 0.3;
+        lat = 41.38 - ((e.clientY - r.top) / r.height) * 0.14;
         paint();
       });
       paint();
@@ -757,13 +919,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const filters = E('div', 'segmented');
     [['all', T('participants.filter.btn.all')], ['checked_in', T('participants.filter.btn.checked_in')], ['no_show', T('participants.filter.btn.no_show')], ['cancelled', T('participants.filter.btn.cancelled')]]
       .forEach(([key, label]) => {
-        const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { participantFilter = key; renderManageEvent(eventId); } });
+        const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { participantFilter = key; participantsEmpty = false; renderManageEvent(eventId); } });
         if (participantFilter === key) b.classList.add('active');
         filters.appendChild(b);
       });
     body.appendChild(filters);
 
-    const list = D.participants.filter((p) => {
+    const list = participantsEmpty ? [] : D.participants.filter((p) => {
       if (participantFilter === 'all') return true;
       if (participantFilter === 'checked_in') return p.statusKey === 'myreg.status.checked_in';
       if (participantFilter === 'cancelled') return p.statusKey === 'myreg.status.cancelled';
@@ -791,14 +953,16 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     ex.appendChild(btn(T('export.btn.csv'), { kind: 'btn-outline', icon: 'download', onClick: () => PROTO.toast(T('export.caption', { title: D.main.title, count: D.counts.registered })) }));
     ex.appendChild(btn(T('export.btn.json'), { kind: 'btn-outline', icon: 'download', onClick: () => PROTO.toast(T('export.caption', { title: D.main.title, count: D.counts.registered })) }));
     body.appendChild(ex);
-    PROTO.setDemo([]);
+    PROTO.setDemo([
+      { label: 'Пустой срез', active: participantsEmpty, onClick: () => { participantsEmpty = !participantsEmpty; renderManageEvent(eventId); } },
+    ]);
   }
 
   // ---------- таб «Рассылка» ----------
   function renderBroadcastTab(body) {
     PROTO.setTrace(['OWN-9', 'OWN-10', 'OWN-11', 'OWN-12', 'OWN-13']);
     body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
-    body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true); } }));
+    body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true); } }));
 
     const seg = card([], '');
     seg.appendChild(E('div', 'card-title', T('bcast.ask.segment')));
@@ -845,7 +1009,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       body.appendChild(box);
     }
 
-    const add = btn(T('proto.staff_add'), { kind: 'btn-primary', block: true, icon: 'plus', onClick: openStaffPicker });
+    const add = btn(T('proto.staff_add'), { kind: 'btn-primary btn-lg', block: true, icon: 'plus', onClick: openStaffPicker });
     add.style.marginTop = '14px';
     body.appendChild(add);
     body.appendChild(E('div', 'helper', T('proto.staff_invite_alt')));
@@ -888,7 +1052,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
           D.controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
           staffQuery = '';
           closeSheet();
-          PROTO.toast(T('proto.staff_added'));
+          PROTO.toast(T('manage.staff.added'));
           renderManageEvent(eventId);
         });
         box.appendChild(r);
@@ -913,29 +1077,28 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     tabsDef.forEach(([key, label]) => {
       const b = E('button', 'tab' + (catalogTab === key ? ' active' : ''), label);
       b.type = 'button';
-      b.addEventListener('click', () => { catalogTab = key; renderEvents(); });
+      b.addEventListener('click', () => { catalogTab = key; catalogEmpty = false; renderEvents(); });
       tbox.appendChild(b);
     });
     tw.appendChild(tbox);
     screen.appendChild(tw);
 
     if (catalogTab === 'mine') {
-      if (!D.myTickets.length) {
-        screen.appendChild(emptyState(T('proto.my_tickets_empty'), 'ticket'));
-      } else {
-        D.myTickets.forEach((t) => screen.appendChild(ticketRow(t)));
-      }
-      screen.appendChild(E('div', 'helper', T('proto.tab_my_tickets_hint')));
+      if (catalogEmpty || !D.myTickets.length) screen.appendChild(emptyState(T('myreg.empty'), 'ticket'));
+      else D.myTickets.forEach((t) => screen.appendChild(ticketRow(t)));
     } else if (catalogTab === 'upcoming') {
-      D.catalog.upcoming.forEach((ev) => screen.appendChild(eventCardEl(ev)));
+      if (catalogEmpty) screen.appendChild(emptyState(T('events.list.empty_upcoming'), 'calendar'));
+      else D.catalog.upcoming.forEach((ev) => screen.appendChild(eventCardEl(ev)));
     } else {
-      D.catalog.past.forEach((ev) => screen.appendChild(eventCardEl(ev)));
+      if (catalogEmpty) screen.appendChild(emptyState(T('events.list.empty_past'), 'calendar'));
+      else D.catalog.past.forEach((ev) => screen.appendChild(eventCardEl(ev)));
     }
 
     PROTO.setDemo([
-      { label: T('proto.tab_my_tickets'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; renderEvents(); } },
-      { label: T('events.list.btn.upcoming'), active: catalogTab === 'upcoming', onClick: () => { catalogTab = 'upcoming'; renderEvents(); } },
-      { label: T('events.list.btn.past'), active: catalogTab === 'past', onClick: () => { catalogTab = 'past'; renderEvents(); } },
+      { label: T('proto.tab_my_tickets'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; catalogEmpty = false; renderEvents(); } },
+      { label: T('events.list.btn.upcoming'), active: catalogTab === 'upcoming', onClick: () => { catalogTab = 'upcoming'; catalogEmpty = false; renderEvents(); } },
+      { label: T('events.list.btn.past'), active: catalogTab === 'past', onClick: () => { catalogTab = 'past'; catalogEmpty = false; renderEvents(); } },
+      { label: 'Пустой срез', active: catalogEmpty, onClick: () => { catalogEmpty = !catalogEmpty; renderEvents(); } },
     ]);
   }
 
@@ -1020,11 +1183,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         const ic = E('div', 'success-icon');
         ic.appendChild(PROTO.icon('check-circle', 34));
         ok.appendChild(ic);
-        ok.appendChild(E('div', 'success-title', T('proto.reg_done_title')));
+        ok.appendChild(E('div', 'success-title', T('reg.done.header')));
         ok.appendChild(E('div', 'app-muted', T('proto.reg_done_hint')));
         body.appendChild(ok);
         const acts = E('div', 'sheet-actions');
-        acts.appendChild(btn(T('reg.qr.button'), { kind: 'btn-primary', icon: 'qr', onClick: () => { closeSheet(); go('#/ticket?event_id=' + ev.id); } }));
+        acts.appendChild(btn(T('reg.qr.button'), { kind: 'btn-primary', icon: 'qr', onClick: () => {
+          closeSheet();
+          if (parseRoute().name === 'ticket') renderTicket();
+          else go('#/ticket?event_id=' + ev.id);
+        } }));
         body.appendChild(acts);
         return;
       }
@@ -1052,7 +1219,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('event.card.btn_register'), {
-        kind: 'btn-primary',
+        kind: 'btn-primary btn-lg',
         disabled: !pdn,
         onClick: () => {
           ev.registered = true;
@@ -1060,7 +1227,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
           const t = D.myTickets.find((x) => String(x.eventId) === String(ev.id));
           if (!t) {
             D.myTickets.unshift({
-              eventId: String(ev.id), title: ev.title, when: ev.when, where: ev.where,
+              eventId: String(ev.id), title: ev.title, when: ev.when, where: ev.where || ev.address,
               statusKey: 'myreg.status.registered', canCancel: true, upcoming: true, d: ev.d,
             });
           }
@@ -1112,6 +1279,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       stars.appendChild(b);
     }
     rate.appendChild(stars);
+    if (feedbackRating === 0) rate.appendChild(E('div', 'helper', T('proto.feedback_rate_hint')));
     screen.appendChild(rate);
 
     const text = E('div', 'form-section');
@@ -1120,10 +1288,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
     const acts = E('div', 'app-actions');
     acts.appendChild(btn(T('proto.feedback_submit'), {
-      kind: 'btn-primary', block: true, disabled: feedbackRating === 0,
+      kind: 'btn-primary btn-lg', block: true, disabled: feedbackRating === 0,
       onClick: () => {
-        const ev2 = ev;
-        if (ev2) ev2.feedbackGiven = true;
+        if (ev) ev.feedbackGiven = true;
         const t = D.myTickets.find((x) => String(x.eventId) === String(id));
         if (t) t.feedbackGiven = true;
         feedbackSent = true;
@@ -1150,12 +1317,16 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const r = parseRoute();
     closeSheet();
     if (r.name === 'ticket') renderTicket();
-    else if (r.name === 'scan') renderScan();
+    else if (r.name === 'scan') { scanError = null; renderScan(); }
     else if (r.name === 'manage') renderManageList();
-    else if (r.name === 'manage-event') { wizardDone = false; wizardStep = 0; wizardDraft = null; renderManageEvent(r.id); }
+    else if (r.name === 'manage-event') {
+      wizardDone = false; wizardStep = 0; wizardDraft = null; wizardTried = false;
+      renderManageEvent(r.id);
+    }
     else if (r.name === 'events') {
       const tab = hashParams.get('tab');
       catalogTab = (tab === 'upcoming' || tab === 'past') ? tab : 'mine';
+      catalogEmpty = false;
       renderEvents();
     }
     else if (r.name === 'feedback') { feedbackSent = false; feedbackRating = 0; renderFeedback(); }

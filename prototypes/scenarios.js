@@ -27,13 +27,15 @@ PROTO.buildScenarios = function () {
 
   // Мои регистрации живут экраном (PAR-4 → таб «Мои билеты»), а не карточкой
   // в чате: чат-карточка myreg из прототипа убрана вердиктом владельца.
+  // «Мои билеты» — одно имя экрана и в табе, и в меню (вердикт владельца);
+  // product-ключ menu.btn.my_registrations заменяется пакетом W43.
   const menuButtonsGuest = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu-guest' },
-    { label: T('menu.btn.my_registrations'), webApp: '#/events?tab=mine', resume: 'menu-guest' },
+    { label: T('proto.tab_my_tickets'), webApp: '#/events?tab=mine', resume: 'menu-guest' },
   ];
   const menuButtonsOwner = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
-    { label: T('menu.btn.my_registrations'), webApp: '#/events?tab=mine', resume: 'menu' },
+    { label: T('proto.tab_my_tickets'), webApp: '#/events?tab=mine', resume: 'menu' },
     { label: T('menu.btn.new_event'), webApp: '#/manage', resume: 'menu' },
     { label: T('menu.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'menu' },
   ];
@@ -45,30 +47,30 @@ PROTO.buildScenarios = function () {
     steps: [
       { id: 'start', kind: 'user', text: '/start e' + ev.id, note: P['proto.deep_link_note'], trace: ['OWN-6', 'ADR-0025'] },
 
-      { id: 'event', kind: 'card', card: eventCard(), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
-        buttons: [{ label: T('event.card.btn_register'), go: 'consent-pdn', primary: true }] },
+      { id: 'event', kind: 'card', markup: true, card: eventCard(), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
+        buttons: [{ label: T('event.card.btn_register'), go: 'consent-pdn' }] },
 
-      { id: 'consent-pdn', kind: 'card', edit: true, card: eventCard(T('reg.consent_pdn.ask')), trace: ['PAR-1', 'ADR-0017'],
+      { id: 'consent-pdn', kind: 'card', edit: true, markup: true, card: eventCard(T('reg.consent_pdn.ask')), trace: ['PAR-1', 'ADR-0017'],
         buttons: [
-          { label: T('reg.consent_pdn.btn_yes'), go: 'consent-mkt', primary: true },
+          { label: T('reg.consent_pdn.btn_yes'), go: 'consent-mkt' },
           { label: T('reg.consent_pdn.btn_no'), go: 'pdn-declined' },
         ] },
 
-      { id: 'pdn-declined', kind: 'card', edit: true, card: { title: ev.title, lines: [], body: T('reg.consent_pdn.declined') }, trace: ['PAR-1'],
+      { id: 'pdn-declined', kind: 'card', edit: true, markup: true, card: { title: ev.title, lines: [], body: T('reg.consent_pdn.declined') }, trace: ['PAR-1'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu-guest' }] },
 
-      { id: 'consent-mkt', kind: 'card', edit: true, card: eventCard(T('reg.consent_marketing.ask')), trace: ['PAR-2', 'ADR-0017'],
+      { id: 'consent-mkt', kind: 'card', edit: true, markup: true, card: eventCard(T('reg.consent_marketing.ask')), trace: ['PAR-2', 'ADR-0017'],
         buttons: [
-          { label: T('reg.consent_marketing.btn_yes'), go: 'done', primary: true },
+          { label: T('reg.consent_marketing.btn_yes'), go: 'done' },
           { label: T('reg.consent_marketing.btn_no'), go: 'done' },
         ] },
 
-      { id: 'done', kind: 'card', edit: true, card: {
+      { id: 'done', kind: 'card', edit: true, markup: true, card: {
           title: T('reg.done.header'),
           lines: [T('event.card.when', { when: ev.whenLong }), T('event.card.where', { address: ev.address })],
           body: T('reg.done', { title: ev.title }) + '\n' + T('reg.qr.open_miniapp'),
         }, trace: ['PAR-6', 'IDM-1', 'ADR-0007'],
-        buttons: [{ label: T('reg.qr.button'), webApp: '#/ticket?event_id=' + ev.id, resume: 'reminders', primary: true }] },
+        buttons: [{ label: T('reg.qr.button'), webApp: '#/ticket?event_id=' + ev.id, resume: 'reminders' }] },
 
       { id: 'reminders', kind: 'bot', text: T('remind.24h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       { id: 'reminder-2h', kind: 'bot', text: T('remind.2h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
@@ -133,23 +135,24 @@ PROTO.buildScenarios = function () {
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
       { id: 'broadcast', kind: 'card', cardSub: ev.title, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.body') }, trace: ['OWN-9'],
-        buttons: [{ label: T('bcast.ask.segment'), go: 'segment', primary: true }] },
+        buttons: [{ label: T('bcast.ask.segment'), go: 'segment' }] },
+      // Подписи кнопок — короткие (VOICE: до 23 знаков); полное имя сегмента
+      // остаётся в тексте экрана рассылки.
       { id: 'segment', kind: 'card', edit: true, cardSub: ev.title, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.segment') }, trace: ['OWN-9'],
         buttons: [
-          { label: T('bcast.segment.all_consent') + ' · ' + D.segments.all_consent, go: 'forwarded' },
-          { label: T('bcast.segment.registered') + ' · ' + D.segments.registered, go: 'forwarded' },
-          { label: T('bcast.segment.checked_in') + ' · ' + D.segments.checked_in, go: 'forwarded' },
-          { label: T('bcast.segment.no_show'), go: 'st-bcast-noshow', locked: true },
+          { label: T('proto.bcast_btn_all', { count: D.segments.all_consent }), go: 'forwarded' },
+          { label: T('proto.bcast_btn_registered', { count: D.segments.registered }), go: 'forwarded' },
+          { label: T('proto.bcast_btn_checked_in', { count: D.segments.checked_in }), go: 'forwarded' },
+          { label: T('participants.filter.btn.no_show'), go: 'st-bcast-noshow' },
         ] },
       { id: 'forwarded', kind: 'user', forwarded: true, text: P['proto.broadcast_sample'], trace: ['OWN-9'] },
       { id: 'preview', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
           body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: D.segments.registered }),
         }, trace: ['OWN-10'],
-        buttons: [
-          { label: T('bcast.btn.test'), go: 'tested' },
-          { label: T('bcast.btn.send'), disabled: true, note: T('bcast.send.blocked_no_test') },
-        ] },
+        // Кнопка отправки появляется только после теста себе: в Telegram нет
+        // «выключенной» кнопки — сообщение редактируется и клавиатура меняется.
+        buttons: [{ label: T('bcast.btn.test'), go: 'tested' }] },
       { id: 'tested', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
           body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: D.segments.registered }) + '\n' + T('bcast.test.sent'),

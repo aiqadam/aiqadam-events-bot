@@ -140,10 +140,21 @@ for (const [sid, sc] of Object.entries(scenarios)) {
 }
 
 // ---------- 5. предложения не в ru.json ----------
+// Сравнение с точностью до пунктуации, кавычек и эмодзи: «Черновик сохранён.»
+// и «Черновик сохранён» — одна и та же строка, второй источник правды не нужен.
+const norm = (s) => String(s).toLowerCase()
+  .replace(/[«»"'`]/g, '')
+  .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
+  .replace(/[.,!?;:—–\-()]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 const ruTexts = new Set(Object.values(ru));
+const ruNorm = new Map();
+Object.entries(ru).forEach(([k, v]) => { if (!ruNorm.has(norm(v))) ruNorm.set(norm(v), k); });
 for (const [k, v] of Object.entries(protoDict)) {
   if (ru[k] !== undefined) fail(`protoDict перекрывает ключ ru.json: ${k}`);
   if (ruTexts.has(v)) warnings.push(`protoDict «${k}» совпадает текстом со строкой ru.json`);
+  if (ruNorm.has(norm(v))) fail(`protoDict «${k}» дублирует строку ru.json «${ruNorm.get(norm(v))}»: ${v}`);
 }
 
 // ---------- вывод ----------
