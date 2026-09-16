@@ -122,7 +122,7 @@ PROTO.data = {
       description: 'Четыре практика о том, как LLM-системы живут в продакшене: пайплайны оценки, версионирование промптов, дежурства и цена инференса.',
       address: 'Ташкент, IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737,
       startsLocal: '2026-09-26T18:30', endsLocal: '2026-09-26T22:00', deadlineLocal: '2026-09-23T23:59',
-      capacity: '120', overbook: '40',
+      capacity: '120', overbook: '40', ends: 'сб, 26 сентября · 22:00',
       when: 'сб, 26 сентября · 18:30', status: 'published', statusKey: 'status.published',
       author: true, registered: 48, checkedIn: 31, cancelled: 2,
       inviteLink: 'https://t.me/aiqadam_events_bot?start=e4',
@@ -132,7 +132,7 @@ PROTO.data = {
       description: 'Практический разбор: как собрать LLM-пайплайн от идеи до продакшена.',
       address: 'Ташкент, IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737,
       startsLocal: '2026-10-04T14:00', endsLocal: '2026-10-04T17:00', deadlineLocal: '2026-10-02T23:59',
-      capacity: '40', overbook: '40',
+      capacity: '40', overbook: '40', ends: 'вс, 4 октября · 17:00',
       when: 'вс, 4 октября · 14:00', status: 'draft', statusKey: 'status.draft',
       author: true, registered: 0, checkedIn: 0, cancelled: 0,
       inviteLink: 'https://t.me/aiqadam_events_bot?start=e5',
@@ -142,21 +142,59 @@ PROTO.data = {
       description: 'Командный хакатон: собрать RAG-решение для бизнес-задачи за один день.',
       address: 'Ташкент, IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737,
       startsLocal: '2026-10-17T10:00', endsLocal: '2026-10-17T19:00', deadlineLocal: '2026-10-15T23:59',
-      capacity: '60', overbook: '40',
+      capacity: '60', overbook: '40', ends: 'сб, 17 октября · 19:00',
       when: 'сб, 17 октября · 10:00', status: 'published', statusKey: 'status.published',
       author: false, registered: 67, checkedIn: 0, cancelled: 5,
       inviteLink: 'https://t.me/aiqadam_events_bot?start=e7',
     },
   ],
 
-  participants: [
-    { name: 'Азиза Каримова', statusKey: 'myreg.status.checked_in', at: '18:42' },
-    { name: 'Бекзод Рахимов', statusKey: 'myreg.status.registered', at: '' },
-    { name: 'Гулноза Юсупова', statusKey: 'myreg.status.registered', at: '' },
-    { name: 'Дилшод Азимов', statusKey: 'myreg.status.checked_in', at: '18:51' },
-    { name: 'Елена Соколова', statusKey: 'myreg.status.cancelled', at: '' },
-    { name: 'Жасур Турсунов', statusKey: 'myreg.status.registered', at: '' },
-  ],
+  // Данные по каждому ивенту: табы «Участники», «Рассылка», «Контролёры» и
+  // сканер показывают ивент, который открыт, а не главный.
+  eventData: {
+    '4': {
+      participants: [
+        { name: 'Азиза Каримова', statusKey: 'myreg.status.checked_in', at: '18:42' },
+        { name: 'Бекзод Рахимов', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Гулноза Юсупова', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Дилшод Азимов', statusKey: 'myreg.status.checked_in', at: '18:51' },
+        { name: 'Елена Соколова', statusKey: 'myreg.status.cancelled', at: '' },
+        { name: 'Жасур Турсунов', statusKey: 'myreg.status.registered', at: '' },
+      ],
+      controllers: [
+        { id: '322876545', name: 'Азиза Каримова', username: '@aziza_k', since: '25 сентября, 10:14' },
+        { id: '9001234567', name: 'Камила Юлдашева', username: '@kamila', since: '25 сентября, 11:02' },
+      ],
+      counts: { registered: 48, checkedIn: 31, cancelled: 2 },
+      segments: { all_consent: 214, registered: 48, checked_in: 31, no_show: 17 },
+      scan: { checkedIn: 31, registered: 48, alreadyAt: '18:42' },
+    },
+    '5': {
+      participants: [],
+      controllers: [],
+      counts: { registered: 0, checkedIn: 0, cancelled: 0 },
+      segments: { all_consent: 12, registered: 0, checked_in: 0, no_show: 0 },
+      scan: { checkedIn: 0, registered: 0, alreadyAt: '—' },
+    },
+    '7': {
+      participants: [
+        { name: 'Камила Юлдашева', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Максим Орлов', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Нигора Ахмедова', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Отабек Мирзаев', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Полина Ким', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Рустам Назаров', statusKey: 'myreg.status.registered', at: '' },
+        { name: 'Тимур Сафаров', statusKey: 'myreg.status.cancelled', at: '' },
+        { name: 'Азиза Каримова', statusKey: 'myreg.status.cancelled', at: '' },
+      ],
+      controllers: [
+        { id: '9001234567', name: 'Камила Юлдашева', username: '@kamila', since: '16 октября, 09:40' },
+      ],
+      counts: { registered: 67, checkedIn: 0, cancelled: 5 },
+      segments: { all_consent: 180, registered: 67, checked_in: 0, no_show: 0 },
+      scan: { checkedIn: 0, registered: 67, alreadyAt: '—' },
+    },
+  },
 
   // Люди, известные боту: участники ивента и уже добавленные контролёры.
   // Поиск в выборе контролёра идёт по имени и @username; права выдаются
@@ -176,23 +214,11 @@ PROTO.data = {
     { id: '910123456', name: 'Рустам Назаров', username: '@rustam_n', note: 'participant' },
   ],
 
-  controllers: [
-    { id: '322876545', name: 'Азиза Каримова', username: '@aziza_k', since: '25 сентября, 10:14' },
-    { id: '9001234567', name: 'Камила Юлдашева', username: '@kamila', since: '25 сентября, 11:02' },
-  ],
-
   // Недавние места — быстрый выбор в шаге «Где и когда».
   venues: [
     { name: 'IT Park, ул. Афросиаб, 1', lat: 41.311081, lon: 69.279737 },
     { name: 'Astana Hub, Мангилик Ел 55/8', lat: 51.090488, lon: 71.418153 },
-    { name: 'Онлайн · Zoom', lat: null, lon: null },
   ],
-
-  counts: { registered: 48, checkedIn: 31, cancelled: 2, seatsLeft: 42, capacity: 120 },
-  segments: { all_consent: 214, registered: 48, checked_in: 31, no_show: 17 },
-
-  // Контролёр: счётчик чекина.
-  scan: { checkedIn: 31, registered: 48, alreadyAt: '18:42' },
 
   // Фидбек после ивента (предложение).
   feedback: { eventId: '3', eventTitle: 'AI Qadam #3 · Embeddings & Vector DB Day' },

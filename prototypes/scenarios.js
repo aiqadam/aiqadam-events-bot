@@ -10,6 +10,8 @@ PROTO.buildScenarios = function () {
   const D = PROTO.data;
   const ev = D.main;
   const P = PROTO.protoDict;
+  // Данные ивента 4: сценарии чата показывают его.
+  const ed = D.eventData[ev.id];
 
   // Карточка ивента — общий каркас гостевого пути. Строки — формат VOICE
   // «Метка: значение», как их отдаёт i18n.
@@ -124,13 +126,13 @@ PROTO.buildScenarios = function () {
       { id: 'published', kind: 'bot', text: T('manage.chat.published', { title: ev.title }), trace: ['OWN-1', 'OWN-4', 'OWN-6'],
         buttons: [{ label: T('owner.event.btn.edit'), webApp: '#/manage/' + ev.id, resume: 'published', primary: true }] },
 
-      { id: 'updated', kind: 'bot', text: T('manage.chat.updated_notified', { title: ev.title, count: D.counts.registered }), trace: ['OWN-5'] },
+      { id: 'updated', kind: 'bot', text: T('manage.chat.updated_notified', { title: ev.title, count: ed.counts.registered }), trace: ['OWN-5'] },
       { id: 'notify', kind: 'card', card: {
           title: T('notify.changed.header', { title: ev.title }), lines: [],
           body: ev.changes.map((c) => T('notify.changed.line', { field: c.field, old: c.old, new: c.now })).join('\n'),
         }, trace: ['OWN-5'], buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
-      { id: 'cancelled', kind: 'bot', text: T('manage.chat.cancelled', { title: ev.title, count: D.counts.registered }), trace: ['OWN-4'] },
+      { id: 'cancelled', kind: 'bot', text: T('manage.chat.cancelled', { title: ev.title, count: ed.counts.registered }), trace: ['OWN-4'] },
       { id: 'cancel-notify', kind: 'bot', text: T('notify.event_cancelled', { title: ev.title }), trace: ['OWN-4'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
@@ -140,27 +142,27 @@ PROTO.buildScenarios = function () {
       // остаётся в тексте экрана рассылки.
       { id: 'segment', kind: 'card', edit: true, cardSub: ev.title, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.ask.segment') }, trace: ['OWN-9'],
         buttons: [
-          { label: T('proto.bcast_btn_all', { count: D.segments.all_consent }), go: 'forwarded' },
-          { label: T('proto.bcast_btn_registered', { count: D.segments.registered }), go: 'forwarded' },
-          { label: T('proto.bcast_btn_checked_in', { count: D.segments.checked_in }), go: 'forwarded' },
+          { label: T('proto.bcast_btn_all', { count: ed.segments.all_consent }), go: 'forwarded' },
+          { label: T('proto.bcast_btn_registered', { count: ed.segments.registered }), go: 'forwarded' },
+          { label: T('proto.bcast_btn_checked_in', { count: ed.segments.checked_in }), go: 'forwarded' },
           { label: T('participants.filter.btn.no_show'), go: 'st-bcast-noshow' },
         ] },
       { id: 'forwarded', kind: 'user', forwarded: true, text: P['proto.broadcast_sample'], trace: ['OWN-9'] },
       { id: 'preview', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
-          body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: D.segments.registered }),
+          body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: ed.segments.registered }),
         }, trace: ['OWN-10'],
         // Кнопка отправки появляется только после теста себе: в Telegram нет
         // «выключенной» кнопки — сообщение редактируется и клавиатура меняется.
         buttons: [{ label: T('bcast.btn.test'), go: 'tested' }] },
       { id: 'tested', kind: 'card', edit: true, cardSub: ev.title, card: {
           title: T('bcast.preview.title'), lines: [],
-          body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: D.segments.registered }) + '\n' + T('bcast.test.sent'),
+          body: P['proto.broadcast_sample'] + '\n\n' + T('bcast.preview.count', { count: ed.segments.registered }) + '\n' + T('bcast.test.sent'),
         }, trace: ['OWN-10'],
         buttons: [{ label: T('bcast.btn.send'), go: 'sent', primary: true }] },
       { id: 'sent', kind: 'card', edit: true, card: {
           title: T('owner.event.btn.broadcast'), lines: [],
-          body: T('bcast.started', { count: D.segments.registered }) + '\n' + T('bcast.progress', { sent: 48, total: 48, failed: 0 }),
+          body: T('bcast.started', { count: ed.segments.registered }) + '\n' + T('bcast.progress', { sent: 48, total: 48, failed: 0 }),
         }, trace: ['OWN-11', 'OWN-12'] },
       { id: 'mass', kind: 'bot', text: P['proto.broadcast_sample'], trace: ['OWN-13'],
         buttons: [{ label: T('bcast.btn.unsubscribe'), go: 'unsub-done' }] },

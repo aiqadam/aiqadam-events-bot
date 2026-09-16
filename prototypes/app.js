@@ -57,9 +57,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
   function heading(text, cls) { return E('div', cls || 'app-h3', text); }
   function muted(text) { return E('div', 'app-muted', text); }
+  // Первичные действия — 44 px (btn-lg из шкалы бренда): главная кнопка
+  // экрана не ниже остальных и попадает под палец.
   function btn(label, opts) {
     const o = opts || {};
-    const b = E('button', 'btn ' + (o.kind || 'btn-primary') + (o.size ? ' ' + o.size : ''), label);
+    const kind = o.kind || 'btn-primary';
+    const size = o.size !== undefined ? o.size : (kind === 'btn-primary' ? 'btn-lg' : '');
+    const b = E('button', 'btn ' + kind + (size ? ' ' + size : ''), label);
     b.type = 'button';
     if (o.icon) b.insertBefore(PROTO.icon(o.icon, 16), b.firstChild);
     if (o.block) b.style.width = '100%';
@@ -68,7 +72,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     return b;
   }
   function linkBtn(label, route, kind, icon) {
-    const a = E('a', 'btn ' + (kind || 'btn-primary'), label);
+    const k = kind || 'btn-primary';
+    const a = E('a', 'btn ' + k + (k === 'btn-primary' ? ' btn-lg' : ''), label);
     a.href = appHref(route);
     a.style.textDecoration = 'none';
     if (icon) a.insertBefore(PROTO.icon(icon, 16), a.firstChild);
@@ -88,6 +93,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     input.value = value || '';
     if (o.placeholder) input.placeholder = o.placeholder;
     if (o.error) input.classList.add('error');
+    // Исправленное поле не должно краснеть до перерисовки: ошибку снимаем
+    // на первом же вводе.
+    input.addEventListener('input', () => {
+      input.classList.remove('error');
+      const err = wrap.querySelector('.helper.error');
+      if (err) err.remove();
+    });
     if (o.onInput) input.addEventListener('input', o.onInput);
     wrap.appendChild(input);
     if (o.hint) wrap.appendChild(E('div', 'helper', o.hint));
@@ -224,9 +236,16 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (ev && typeof ev.registered === 'boolean') return ev.registered;
     return D.myTickets.some((t) => String(t.eventId) === String(id));
   }
+  function eventData(id) {
+    return D.eventData[String(id)] || D.eventData[D.main.id];
+  }
+  function ownerEvent(id) {
+    return D.ownerEvents.find((e) => String(e.id) === String(id)) || null;
+  }
   function eventInvite(id) {
-    const ev = D.ownerEvents.find((e) => String(e.id) === String(id));
-    return (ev && ev.inviteLink) || ('https://t.me/' + D.botUsername + '?start=e' + (id === 'new' ? '5' : id));
+    const ev = ownerEvent(id);
+    // У нового ивента ссылки ещё нет — показываем будущий id, а не чужой.
+    return (ev && ev.inviteLink) || ('https://t.me/' + D.botUsername + '?start=e' + (id === 'new' ? '10' : id));
   }
   function eventUtm(id) {
     const base = eventInvite(id);
@@ -276,10 +295,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     clear();
 
     const demoItems = [
-      { label: T('ticket.title'), active: ticketDemo === null, onClick: () => { ticketDemo = null; renderTicket(); } },
-      { label: T('ticket.loading'), active: ticketDemo === 'loading', onClick: () => { ticketDemo = 'loading'; renderTicket(); } },
-      { label: T('ticket.error.network'), active: ticketDemo === 'network', onClick: () => { ticketDemo = 'network'; renderTicket(); } },
-      { label: T('ticket.error.server'), active: ticketDemo === 'server', onClick: () => { ticketDemo = 'server'; renderTicket(); } },
+      { label: 'Билет', active: ticketDemo === null, onClick: () => { ticketDemo = null; renderTicket(); } },
+      { label: 'Загрузка', active: ticketDemo === 'loading', onClick: () => { ticketDemo = 'loading'; renderTicket(); } },
+      { label: 'Нет связи', active: ticketDemo === 'network', onClick: () => { ticketDemo = 'network'; renderTicket(); } },
+      { label: 'Ошибка сервера', active: ticketDemo === 'server', onClick: () => { ticketDemo = 'server'; renderTicket(); } },
     ];
 
     if (!ev) {
@@ -400,18 +419,21 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- роут: сканер ----------
   const scanOutcomes = [
     { key: 'ok', tone: 'ok', icon: 'check-circle', label: () => T('checkin.ok', { name: 'Азиза Каримова' }), sub: 'proto.result_ok' },
-    { key: 'already', tone: 'warn', icon: 'clock', label: () => T('checkin.already', { time: D.scan.alreadyAt }), sub: 'proto.result_already' },
+    { key: 'already', tone: 'warn', icon: 'clock', label: (scan) => T('checkin.already', { time: scan.alreadyAt }), sub: 'proto.result_already' },
     { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'proto.result_denied' },
     { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'proto.result_denied' },
   ];
+  // Действие в состоянии ошибки: `resume` — вернуться к сканеру (сеть,
+  // повтор), `close` — выйти из сканера (нет прав, ивент не передан:
+  // сканировать дальше бессмысленно).
   const scanErrors = {
-    forbidden: { icon: 'shield', text: 'checkin.forbidden', action: 'scan.rescan' },
-    stale: { icon: 'clock', text: 'checkin.unauthorized', action: 'scan.reopen_app' },
-    network: { icon: 'alert', text: 'scan.network_error', action: 'scan.rescan' },
-    server: { icon: 'alert', text: 'scan.error_server', action: 'scan.rescan' },
-    unsupported: { icon: 'alert', text: 'scan.unsupported', action: 'scan.rescan' },
-    no_event: { icon: 'calendar', text: 'scan.no_event', action: 'common.btn.menu' },
-    not_tg: { icon: 'alert', text: 'scan.not_in_telegram', action: 'common.btn.menu' },
+    forbidden: { icon: 'shield', text: 'checkin.forbidden', action: 'close' },
+    stale: { icon: 'clock', text: 'checkin.unauthorized', action: 'close' },
+    network: { icon: 'alert', text: 'scan.network_error', action: 'resume' },
+    server: { icon: 'alert', text: 'scan.error_server', action: 'resume' },
+    unsupported: { icon: 'alert', text: 'scan.unsupported', action: 'close' },
+    no_event: { icon: 'calendar', text: 'scan.no_event', action: 'close' },
+    not_tg: { icon: 'alert', text: 'scan.not_in_telegram', action: 'close' },
   };
 
   function renderScan() {
@@ -419,13 +441,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setTrace(['STF-1', 'STF-2', 'STF-4', 'IDM-2']);
     clear();
 
+    const outcomeLabels = ['Успех', 'Повторный скан', 'Нет регистрации', 'Чужой QR'];
+    const errorLabels = { forbidden: 'Нет прав', stale: 'Данные устарели', network: 'Нет связи', server: 'Ошибка сервера', unsupported: 'Камера недоступна', no_event: 'Ивент не передан', not_tg: 'Не из Telegram' };
     const items = scanOutcomes.map((o, i) => ({
-      label: o.key,
+      label: outcomeLabels[i] || o.key,
       active: !scanError && i === scanState % scanOutcomes.length,
       onClick: () => { scanError = null; scanState = i; renderScan(); },
     }));
     Object.keys(scanErrors).forEach((k) => {
-      items.push({ label: k, active: scanError === k, onClick: () => { scanError = k; renderScan(); } });
+      items.push({ label: errorLabels[k] || k, active: scanError === k, onClick: () => { scanError = k; renderScan(); } });
     });
     PROTO.setDemo(items, 'Нажатие на кадр — следующий скан (STF-1: сканер не закрывается).');
 
@@ -436,11 +460,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ic.appendChild(PROTO.icon(e.icon, 24));
       box.appendChild(ic);
       box.appendChild(E('div', 'state-title', T(e.text)));
-      box.appendChild(btn(T(e.action), { kind: 'btn-primary', onClick: () => { scanError = null; renderScan(); } }));
+      box.appendChild(btn(e.action === 'close' ? T('proto.app_close') : T('scan.rescan'), {
+        kind: 'btn-primary',
+        onClick: () => { if (e.action === 'close') { go('#/events'); return; } scanError = null; renderScan(); },
+      }));
       screen.appendChild(box);
       return;
     }
 
+    const ed = eventData(hashParams.get('event_id') || D.main.id);
     const outcome = scanOutcomes[scanState % scanOutcomes.length];
 
     const view = E('div', 'scan-view');
@@ -456,19 +484,19 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     vi.appendChild(PROTO.icon(outcome.icon, 22));
     verdict.appendChild(vi);
     const vt = E('div', 'verdict-body');
-    vt.appendChild(E('div', 'verdict-text', outcome.label()));
+    vt.appendChild(E('div', 'verdict-text', outcome.label(ed.scan)));
     vt.appendChild(E('div', 'verdict-sub', T(outcome.sub)));
     verdict.appendChild(vt);
     screen.appendChild(verdict);
 
-    const pct = Math.round((D.scan.checkedIn / D.scan.registered) * 100);
+    const pct = ed.scan.registered ? Math.round((ed.scan.checkedIn / ed.scan.registered) * 100) : 0;
     const prog = E('div', 'scan-progress');
     const bar = E('div', 'scan-progress-bar');
     const fill = E('div', 'scan-progress-fill');
     fill.style.width = pct + '%';
     bar.appendChild(fill);
     prog.appendChild(bar);
-    prog.appendChild(E('div', 'scan-progress-label', T('checkin.counter', { checked_in: D.scan.checkedIn, registered: D.scan.registered })));
+    prog.appendChild(E('div', 'scan-progress-label', T('checkin.counter', { checked_in: ed.scan.checkedIn, registered: ed.scan.registered })));
     screen.appendChild(prog);
   }
 
@@ -643,7 +671,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         },
       }));
     } else {
-      nav.appendChild(btn(T('manage.btn.save'), { kind: 'btn-primary', onClick: () => PROTO.toast(T('manage.saved.updated')) }));
+      // OWN-5: уведомление уходит только при изменении полей notify-on-change
+      // (DATA-MODEL). Сравниваем с исходным ивентом — и тост говорит правду.
+      nav.appendChild(btn(T('manage.btn.save'), { kind: 'btn-primary', onClick: () => {
+        const src = ownerEvent(eventId) || {};
+        const notify = ['title', 'address', 'startsLocal', 'endsLocal', 'deadlineLocal'];
+        const changed = notify.some((k) => String(src[k] || '') !== String(f[k] || ''))
+          || (src.lat !== f.lat) || (src.lon !== f.lon);
+        PROTO.toast(T(changed ? 'manage.saved.updated_notified' : 'manage.saved.updated'));
+      } }));
     }
     if (step === 'review' && !valid) body.appendChild(E('div', 'helper error', T('manage.err.validation')));
     body.appendChild(nav);
@@ -763,7 +799,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     };
     if (f.startsLocal) line('calendar', humanLocal(f.startsLocal));
     if (f.address) line('map-pin', f.address);
-    if (f.capacity) line('users', T('event.card.seats_left', { left: f.capacity }));
+    const cap = parseInt(f.capacity, 10);
+    if (cap > 0) {
+      const reg = (ownerEvent(eventId) || {}).registered || 0;
+      line('users', T('event.card.seats_left', { left: Math.max(0, cap - reg) }));
+    }
     b.appendChild(meta);
     if (f.description) b.appendChild(E('div', 'app-muted', f.description));
     c.appendChild(b);
@@ -806,6 +846,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const r = E('div', 'utm-row');
       r.appendChild(E('span', '', u.utm));
       r.appendChild(E('span', 'utm-url', u.url));
+      const copy = btn('', { kind: 'btn-ghost', size: 'btn-sm btn-icon', icon: 'copy', onClick: () => PROTO.copy(u.url) });
+      copy.setAttribute('aria-label', T('manage.btn.copy') + ' ' + u.utm);
+      r.appendChild(copy);
       utm.appendChild(r);
     });
     body.appendChild(utm);
@@ -818,7 +861,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     ic.appendChild(PROTO.icon('check-circle', 34));
     done.appendChild(ic);
     done.appendChild(E('div', 'success-title', T('manage.chat.published', { title: title })));
-    done.appendChild(E('div', 'app-muted', T('manage.saved.created')));
     body.appendChild(done);
     renderInviteBlock(body, eventId);
 
@@ -855,6 +897,18 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       input.addEventListener('input', () => { value = input.value; });
       body.appendChild(input);
       if (error) body.appendChild(E('div', 'helper error', error));
+      body.appendChild(E('div', 'section-label', T('proto.venue_recent')));
+      const recent = E('div', 'sheet-actions');
+      D.venues.forEach((v) => {
+        if (v.lat === null || v.lon === null) return;
+        recent.appendChild(btn(v.name, { kind: 'btn-outline', onClick: () => {
+          f.lat = v.lat;
+          f.lon = v.lon;
+          closeSheet();
+          renderManageEvent(eventId);
+        } }));
+      });
+      body.appendChild(recent);
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('proto.link_apply'), { kind: 'btn-primary', onClick: () => {
         const parsed = parseYandexLink(value);
@@ -910,10 +964,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- таб «Участники» ----------
   function renderParticipants(body) {
     PROTO.setTrace(['OWN-7', 'OWN-8']);
+    const ed = eventData(eventId);
     const grid = E('div', 'stat-grid');
-    grid.appendChild(stat(D.counts.registered, T('proto.registered_short'), ''));
-    grid.appendChild(stat(D.counts.checkedIn, T('proto.checked_in_short'), 'ok'));
-    grid.appendChild(stat(D.counts.cancelled, T('proto.cancelled_short'), 'warn'));
+    grid.appendChild(stat(ed.counts.registered, T('proto.registered_short'), ''));
+    grid.appendChild(stat(ed.counts.checkedIn, T('proto.checked_in_short'), 'ok'));
+    grid.appendChild(stat(ed.counts.cancelled, T('proto.cancelled_short'), 'warn'));
     body.appendChild(grid);
 
     const filters = E('div', 'segmented');
@@ -925,7 +980,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       });
     body.appendChild(filters);
 
-    const list = participantsEmpty ? [] : D.participants.filter((p) => {
+    const list = participantsEmpty ? [] : ed.participants.filter((p) => {
       if (participantFilter === 'all') return true;
       if (participantFilter === 'checked_in') return p.statusKey === 'myreg.status.checked_in';
       if (participantFilter === 'cancelled') return p.statusKey === 'myreg.status.cancelled';
@@ -949,9 +1004,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       body.appendChild(box);
     }
 
+    const title = (ownerEvent(eventId) || D.main).title;
     const ex = E('div', 'app-actions');
-    ex.appendChild(btn(T('export.btn.csv'), { kind: 'btn-outline', icon: 'download', onClick: () => PROTO.toast(T('export.caption', { title: D.main.title, count: D.counts.registered })) }));
-    ex.appendChild(btn(T('export.btn.json'), { kind: 'btn-outline', icon: 'download', onClick: () => PROTO.toast(T('export.caption', { title: D.main.title, count: D.counts.registered })) }));
+    ex.appendChild(btn(T('export.btn.csv'), { kind: 'btn-outline', icon: 'download', onClick: () => PROTO.toast(T('export.caption', { title: title, count: ed.counts.registered })) }));
+    ex.appendChild(btn(T('export.btn.json'), { kind: 'btn-outline', icon: 'download', onClick: () => PROTO.toast(T('export.caption', { title: title, count: ed.counts.registered })) }));
     body.appendChild(ex);
     PROTO.setDemo([
       { label: 'Пустой срез', active: participantsEmpty, onClick: () => { participantsEmpty = !participantsEmpty; renderManageEvent(eventId); } },
@@ -964,13 +1020,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
     body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true); } }));
 
+    const ed = eventData(eventId);
     const seg = card([], '');
     seg.appendChild(E('div', 'card-title', T('bcast.ask.segment')));
     [
-      [T('bcast.segment.all_consent'), D.segments.all_consent, true],
-      [T('bcast.segment.registered'), D.segments.registered, true],
-      [T('bcast.segment.checked_in'), D.segments.checked_in, true],
-      [T('bcast.segment.no_show'), D.segments.no_show, false],
+      [T('bcast.segment.all_consent'), ed.segments.all_consent, true],
+      [T('bcast.segment.registered'), ed.segments.registered, true],
+      [T('bcast.segment.checked_in'), ed.segments.checked_in, true],
+      [T('bcast.segment.no_show'), ed.segments.no_show, false],
     ].forEach(([label, count, ok]) => {
       const r = E('div', 'list-row');
       r.appendChild(E('span', 'body', label));
@@ -978,7 +1035,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       if (!ok) r.appendChild(PROTO.icon('clock', 15));
       seg.appendChild(r);
     });
-    seg.appendChild(E('div', 'helper', T('bcast.segment.no_show_locked', { when: D.main.ends })));
+    seg.appendChild(E('div', 'helper', T('bcast.segment.no_show_locked', { when: (ownerEvent(eventId) || D.main).ends })));
     body.appendChild(seg);
     PROTO.setDemo([]);
   }
@@ -986,13 +1043,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- таб «Контролёры»: выбор из списка, не ID руками ----------
   function renderStaff(body) {
     PROTO.setTrace(['OWN-14', 'STF-2', 'DAT-1']);
+    const ed = eventData(eventId);
     body.appendChild(muted(T('proto.staff_hint')));
 
-    if (!D.controllers.length) {
+    if (!ed.controllers.length) {
       body.appendChild(emptyState(T('manage.staff.empty'), 'shield'));
     } else {
       const box = card([], 'list-card');
-      D.controllers.forEach((s) => {
+      ed.controllers.forEach((s) => {
         const r = E('div', 'list-row staff-row');
         r.appendChild(avatar(s.name, 'avatar-md'));
         const b = E('div', 'body');
@@ -1000,7 +1058,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         b.appendChild(E('div', 'sub', s.username + ' · ' + T('proto.staff_since', { when: s.since })));
         r.appendChild(b);
         r.appendChild(btn(T('manage.staff.btn.revoke'), { kind: 'btn-outline', size: 'btn-sm', onClick: () => {
-          D.controllers = D.controllers.filter((x) => x.id !== s.id);
+          ed.controllers = ed.controllers.filter((x) => x.id !== s.id);
           PROTO.toast(T('manage.staff.revoked'));
           renderManageEvent(eventId);
         } }));
@@ -1025,7 +1083,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
       }));
       const q = staffQuery.trim().toLowerCase().replace(/^@/, '');
-      const known = D.controllers.map((c) => c.id);
+      const known = eventData(eventId).controllers.map((c) => c.id);
       const found = D.people.filter((p) => {
         if (known.indexOf(p.id) >= 0) return false;
         if (!q) return true;
@@ -1049,7 +1107,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         plus.appendChild(PROTO.icon('plus', 18));
         r.appendChild(plus);
         r.addEventListener('click', () => {
-          D.controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
+          eventData(eventId).controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
           staffQuery = '';
           closeSheet();
           PROTO.toast(T('manage.staff.added'));
@@ -1121,10 +1179,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (t.where) line('map-pin', t.where);
     body.appendChild(meta);
     const acts = E('div', 'event-actions');
-    acts.appendChild(linkBtn(T('reg.qr.button'), '#/ticket?event_id=' + t.eventId, 'btn-primary', 'qr'));
-    if (!t.upcoming && !t.feedbackGiven) {
+    if (t.upcoming) {
+      acts.appendChild(linkBtn(T('reg.qr.button'), '#/ticket?event_id=' + t.eventId, 'btn-primary', 'qr'));
+    } else if (!t.feedbackGiven) {
       acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + t.eventId, 'btn-outline', 'message-square'));
-    } else if (!t.upcoming && t.feedbackGiven) {
+    } else {
       acts.appendChild(E('span', 'badge badge-success', T('proto.feedback_given')));
     }
     body.appendChild(acts);
