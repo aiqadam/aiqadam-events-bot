@@ -141,6 +141,7 @@ PROTO.specMap = {
   'ADR-0007': 'QR рендерится в Mini App, файлом не отправляется.',
   'ADR-0017': 'Единица интерфейса — экран; состояние редактируется, факт отправляется.',
   'ADR-0023': 'Каталог ивентов — четвёртый роут #/events.',
+  'ADR-0024': 'Права: глобальный staff по чаптеру, чекин — event_staff; events.staff_id — авторство.',
   'ADR-0025': 'Единственный командный вход — /start; дальше карточки и Mini App.',
   'ADR-0028': 'Форма отзыва — предлагается пятым роутом #/feedback; требует нового ADR (черновик ADR-0028).',
 };
@@ -268,6 +269,18 @@ PROTO.icon = function (name, size) {
   span.style.height = px + 'px';
   span.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (PROTO.icons[name] || '') + '</svg>';
   return span;
+};
+
+// ---------- Остаток мест (OWN-15) ----------
+// Одно правило для всех экранов и чата: лимит ceil(capacity × (1 + overbook/100))
+// минус зарегистрированные. Живёт здесь, а не в фикстурах, чтобы числа
+// не разъезжались между поверхностями.
+PROTO.seatsLeft = function (capacity, overbook, registered) {
+  const cap = parseInt(capacity, 10);
+  if (!cap || cap <= 0) return null;
+  const over = overbook === '' || overbook === null || overbook === undefined ? 40 : parseInt(overbook, 10);
+  const limit = Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
+  return Math.max(0, limit - (registered || 0));
 };
 
 // ---------- Слой трассировки и демо-шиты (ADR-0027 п. 4) ----------

@@ -258,15 +258,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function mapUrl(lat, lon) {
     return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
   }
-  // Остаток мест — одно правило на все экраны (OWN-15): лимит
-  // ceil(capacity × (1 + overbook/100)) минус зарегистрированные.
-  function seatsLeft(capacity, overbook, registered) {
-    const cap = parseInt(capacity, 10);
-    if (!cap || cap <= 0) return null;
-    const over = overbook === '' || overbook === null || overbook === undefined ? 40 : parseInt(overbook, 10);
-    const limit = Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
-    return Math.max(0, limit - (registered || 0));
-  }
+  const seatsLeft = PROTO.seatsLeft;
   function fmtCoord(n) { return Number(n).toFixed(5); }
   function parseYandexLink(text) {
     const s = String(text || '');
@@ -882,10 +874,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     done.appendChild(E('div', 'success-title', T('manage.chat.published', { title: title })));
     body.appendChild(done);
     renderInviteBlock(body, eventId);
-
-    const back = btn(T('manage.btn.back'), { kind: 'btn-secondary', block: true, onClick: () => { wizardDone = false; wizardStep = 0; go('#/manage'); } });
-    back.style.marginTop = '14px';
-    body.appendChild(back);
+    // «К списку» уже есть в шапке экрана — второй такой кнопки не заводим
+    // (MINIAPP-UX п. 1: навигация не дублируется).
     PROTO.setDemo([]);
   }
 
@@ -1400,6 +1390,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     else if (r.name === 'scan') { scanError = null; renderScan(); }
     else if (r.name === 'manage') renderManageList();
     else if (r.name === 'manage-event') {
+      // Новый ивент открывается с первой вкладки и без чужих фильтров.
+      manageTab = 'event'; participantFilter = 'all'; participantsEmpty = false;
       wizardDone = false; wizardStep = 0; wizardDraft = null; wizardTried = false;
       renderManageEvent(r.id);
     }

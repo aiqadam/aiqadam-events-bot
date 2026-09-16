@@ -28,7 +28,6 @@ PROTO.data = {
     lat: 41.311081,
     lon: 69.279737,
     mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
-    seatsLeft: 120,
     capacity: 120,
     overbook: 40,
     limit: 168,
@@ -62,7 +61,7 @@ PROTO.data = {
   },
 
   catalog: {
-    // seats не хранится: остаток считается по OWN-15 (см. seatsLeft в app.js)
+    // seats не хранится: остаток считается по OWN-15 (PROTO.seatsLeft)
     // от лимита ceil(capacity × (1 + overbook/100)) минус зарегистрированные.
     upcoming: [
       {
@@ -130,7 +129,7 @@ PROTO.data = {
       capacity: '120', overbook: '40', ends: 'сб, 26 сентября · 22:00',
       when: 'сб, 26 сентября · 18:30', whenLong: 'суббота, 26 сентября · 18:30',
       broadcastText: 'Друзья, в пятницу встречаемся на AI Qadam #4. Вход свободный, регистрация обязательна.',
-      deadline: 'ср, 23 сентября · 23:59', seatsLeft: 120,
+      deadline: 'ср, 23 сентября · 23:59',
       mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
       status: 'published', statusKey: 'status.published',
       author: true, registered: 48, checkedIn: 31, cancelled: 2,
@@ -145,7 +144,7 @@ PROTO.data = {
       when: 'вс, 4 октября · 14:00', whenLong: 'воскресенье, 4 октября · 14:00',
       broadcastText: 'В воскресенье — мастер-класс по LLM. Приходите, будет практика.',
       changes: [{ field: 'Начало', old: '14:00', now: '15:00' }],
-      deadline: 'пт, 2 октября · 23:59', seatsLeft: 56,
+      deadline: 'пт, 2 октября · 23:59',
       mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
       status: 'draft', statusKey: 'status.draft',
       author: true, registered: 0, checkedIn: 0, cancelled: 0,
@@ -160,7 +159,7 @@ PROTO.data = {
       when: 'сб, 17 октября · 10:00', whenLong: 'суббота, 17 октября · 10:00',
       broadcastText: 'В субботу — хакатон RAG for Business. Собирайте команды!',
       changes: [{ field: 'Начало', old: '10:00', now: '10:30' }, { field: 'Адрес', old: 'IT Park, блок B', now: 'IT Park, ул. Афросиаб, 1' }],
-      deadline: 'чт, 15 октября · 23:59', seatsLeft: 17,
+      deadline: 'чт, 15 октября · 23:59',
       mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
       status: 'published', statusKey: 'status.published',
       author: false, registered: 67, checkedIn: 0, cancelled: 5,

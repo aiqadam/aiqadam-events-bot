@@ -139,6 +139,21 @@ for (const [sid, sc] of Object.entries(scenarios)) {
   if (!visited.size) fail(`${sid}: обход ничего не посетил`);
 }
 
+// ---------- 4a. trace-иды экранов Mini App (app.js) ----------
+// В сценариях чата trace проверен выше; у экранов Mini App он задаётся
+// литералами в setTrace — их тоже сверяем со specMap.
+const appSrc = read(path.join(here, 'app.js'));
+const traceRe = /setTrace\(\[([^\]]*)\]\)/g;
+let traceTotal = 0;
+let tm;
+while ((tm = traceRe.exec(appSrc)) !== null) {
+  const ids = tm[1].split(',').map((x) => x.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  ids.forEach((id) => {
+    traceTotal++;
+    if (!PROTO.specMap[id]) fail(`app.js: trace ${id} не описан в specMap`);
+  });
+}
+
 // ---------- 5. предложения не в ru.json ----------
 // Сравнение с точностью до пунктуации, кавычек и эмодзи: «Черновик сохранён.»
 // и «Черновик сохранён» — одна и та же строка, второй источник правды не нужен.
@@ -159,7 +174,7 @@ for (const [k, v] of Object.entries(protoDict)) {
 
 // ---------- вывод ----------
 console.log(`Сценарии: ${Object.keys(scenarios).join(', ')}`);
-console.log(`Ключей из JS: ${usedKeys.size}, словарь прототипа: ${Object.keys(protoDict).length}`);
+console.log(`Ключей из JS: ${usedKeys.size}, словарь прототипа: ${Object.keys(protoDict).length}, trace-идов Mini App: ${traceTotal}`);
 if (warnings.length) {
   console.log(`\nПредупреждения (${warnings.length}):`);
   warnings.forEach((w) => console.log('  ~ ' + w));

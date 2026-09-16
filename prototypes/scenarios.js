@@ -22,7 +22,7 @@ PROTO.buildScenarios = function (opts) {
     lines: [
       T('event.card.when', { when: ev.whenLong }),
       T('event.card.where', { address: ev.address }),
-      T('event.card.seats_left', { left: ev.seatsLeft }),
+      T('event.card.seats_left', { left: PROTO.seatsLeft(ev.capacity, ev.overbook, ed.counts.registered) }),
       T('event.card.deadline', { when: ev.deadline }),
     ],
     body: T('event.card.description', { description: ev.description }) + (extraBody ? '\n\n' + extraBody : ''),
