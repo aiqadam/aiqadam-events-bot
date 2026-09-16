@@ -508,14 +508,17 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     verdict.appendChild(vt);
     screen.appendChild(verdict);
 
-    const pct = ed.scan.registered ? Math.round((ed.scan.checkedIn / ed.scan.registered) * 100) : 0;
+    // Счётчик показывает тот скан, который дал вердикт: на успехе +1
+    // (инкремент случится следующим тапом, когда исход сменится).
+    const shown = outcome.key === 'ok' ? Math.min(ed.scan.registered, ed.scan.checkedIn + 1) : ed.scan.checkedIn;
+    const pct = ed.scan.registered ? Math.round((shown / ed.scan.registered) * 100) : 0;
     const prog = E('div', 'scan-progress');
     const bar = E('div', 'scan-progress-bar');
     const fill = E('div', 'scan-progress-fill');
     fill.style.width = pct + '%';
     bar.appendChild(fill);
     prog.appendChild(bar);
-    prog.appendChild(E('div', 'scan-progress-label', T('checkin.counter', { checked_in: ed.scan.checkedIn, registered: ed.scan.registered })));
+    prog.appendChild(E('div', 'scan-progress-label', T('checkin.counter', { checked_in: shown, registered: ed.scan.registered })));
     screen.appendChild(prog);
   }
 
