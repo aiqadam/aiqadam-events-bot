@@ -666,6 +666,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [setGeo]);
 
+  // Подтверждение отмены может оказаться выше вьюпорта, если его открыли
+  // из sticky-бара, когда страница прокручена вниз (дизайн-ревью, круг 3):
+  // доводим карточку до центра экрана, иначе нажатие выглядит как «ничего
+  // не произошло». Подтверждение выхода заменяет содержимое — наверх.
+  useEffect(() => {
+    if (!confirmCancel) return;
+    const el = document.getElementById('cancel-confirm');
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center' });
+  }, [confirmCancel]);
+
+  useEffect(() => {
+    if (confirmExit) window.scrollTo(0, 0);
+  }, [confirmExit]);
+
   // theme and i18n load
   useEffect(() => {
     setupThemeListener();
