@@ -19,19 +19,29 @@ staged="$(git diff --cached --name-only --diff-filter=ACMR)"
 
 flows_changed="$(grep -c '^flows/.*\.json$' <<<"$staged")" || flows_changed=0
 i18n_changed="$(grep -c '^i18n/ru\.json$' <<<"$staged")" || i18n_changed=0
+agents_changed="$(grep -cE '^(AGENTS\.md|CLAUDE\.md|opencode\.json|\.mcp\.json|docs/agents/|\.opencode/agent/|\.claude/agents/|tools/check-agents\.py)' <<<"$staged")" || agents_changed=0
 
-if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 ]]; then
+if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 && "$agents_changed" -eq 0 ]]; then
   exit 0
 fi
 
-echo "pre-commit: изменились flows/i18n — экспортные проверки"
 status=0
-tools/check-export-secrets.sh || status=1
-tools/check-texts.py i18n/ru.json flows/*.json || status=1
-tools/check-commands.py i18n/*.json flows/*.json || status=1
+
+if [[ "$flows_changed" -ne 0 || "$i18n_changed" -ne 0 ]]; then
+  echo "pre-commit: изменились flows/i18n — экспортные проверки"
+  tools/check-export-secrets.sh || status=1
+  tools/check-texts.py i18n/ru.json flows/*.json || status=1
+  tools/check-commands.py i18n/*.json flows/*.json || status=1
+fi
+
+if [[ "$agents_changed" -ne 0 ]]; then
+  echo "pre-commit: изменились роли агентов или их конфиги — проверка согласованности"
+  python3 tools/check-agents.py || status=1
+fi
 
 if [[ "$status" -ne 0 ]]; then
   echo "pre-commit: КОММИТ ЗАБЛОКИРОВАН (обходить --no-verify нельзя:"
-  echo "секрет, расхождение текстов или чужая команда уедут в историю git навсегда)"
+  echo "секрет, расхождение текстов, чужая команда или разъехавшиеся роли"
+  echo "уедут в историю git навсегда)"
 fi
 exit "$status"

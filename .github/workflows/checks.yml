@@ -26,5 +26,7 @@ jobs:
         run: python3 tools/check-texts.py i18n/ru.json flows/*.json
       - name: Команд, кроме /start, нет (ADR-0025)
         run: python3 tools/check-commands.py i18n/*.json flows/*.json
+      - name: Роли агентов держатся канона (ADR-0029)
+        run: python3 tools/check-agents.py
       - name: Синтаксис python-инструментов
         run: python3 -m py_compile tools/*.py
