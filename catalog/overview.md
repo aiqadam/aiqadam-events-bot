@@ -18,7 +18,7 @@ W26 закрыт («готов», независимое ревью, три кр
 | Флоу | 17 | [flows/](flows/) |
 | Таблицы | 12 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
-| Variables | 4 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL` | [variables.md](variables.md) |
+| Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
 ## Flows
 
@@ -60,21 +60,21 @@ W26 закрыт («готов», независимое ревью, три кр
 ## Mini App
 
 Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. SPA на Vite+React+TS
-([ADR-0022](../../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
+([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
 (`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`,
 `#/events?tab=upcoming|past`), сборка
 `miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages).
 Построены четыре роута — `ticket`/`scan`/`manage`/`events`. Пятый — только
 новым ADR (форма отзыва — черновик
-[ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
-[ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../../docs/adr/0022-miniapp-react-spa.md) расширены на четвёртую страницу ADR-0023.
+[ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
+[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на четвёртую страницу ADR-0023.
 
 | Роут | Роль | API |
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
 | `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
-| `#/events?tab=upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками, кнопка ведёт в чат на `reg-start` этого ивента (W38); таб «Мои билеты» и регистрация на месте — [W43](../../docs/BACKLOG.md#w43-регистрация-и-мои-билеты-в-каталоге-events) | [events-api](flows/events-api.md) |
+| `#/events?tab=upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками, кнопка ведёт в чат на `reg-start` этого ивента (W38); таб «Мои билеты» и регистрация на месте — [W43](../docs/BACKLOG.md#w43-регистрация-и-мои-билеты-в-каталоге-events) | [events-api](flows/events-api.md) |
 
 Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
 (`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,

@@ -82,7 +82,8 @@ export function utcToWhen(iso: string): string {
   whenFmt.formatToParts(new Date(ms)).forEach((x) => {
     p[x.type] = x.value;
   });
-  const date = [p['weekday'], p['day'], p['month']].filter(Boolean).join(' ');
+  // «сб, 26 сентября · 18:30» — форма прототипа: запятая после дня недели.
+  const date = [p['weekday'] ? `${p['weekday']},` : '', p['day'], p['month']].filter(Boolean).join(' ');
   const time = p['hour'] && p['minute'] ? `${p['hour']}:${p['minute']}` : '';
   return time ? `${date} · ${time}` : date;
 }
