@@ -74,17 +74,19 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37) | [manage-api](flows/manage-api.md) |
+| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
 
 Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
 (`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,
 таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)). Фото афиши
 форма не трогает ([Q46](../docs/OPEN-QUESTIONS.md#q46), временно снято из OWN-1);
-гео — координаты руками или кнопкой
-через `Telegram.WebApp.LocationManager` (фолбэк `navigator.geolocation`).
-Даты вводятся как Asia/Tashkent (`datetime-local`) и уходят серверу строкой
-без зоны; в UTC переводит `manage-api`.
+гео — координатами из ссылки Яндекс.Карт (`pt`/`ll`/`@lat,lon`/`q`), кнопкой
+«Взять моё местоположение» или недавним местом из своих ивентов; интерактивной
+карты нет ([Q52](../docs/OPEN-QUESTIONS.md#q52)). Визард помнит черновик
+создания в `localStorage` и после публикации показывает экран успеха со ссылкой
+(W42). Даты вводятся как Asia/Tashkent (`datetime-local`) и уходят серверу
+строкой без зоны; в UTC переводит `manage-api`.
 
 Стек: Vite+React+TypeScript, hash-роутер (без `browser` history и без `404.html`),
 Tailwind 4 + брендовые компоненты, `qrcode` npm lazy только на `ticket`,

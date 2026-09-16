@@ -7,8 +7,9 @@
   ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): список ивентов
   чаптера (W37 — вход в правку без команд, [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md)),
   выдача staff'у ивент для правки, приём создания/правки (OWN-1…OWN-5, OWN-15),
-  ссылка регистрации и список контролёров ивента (W36 — ручной путь вместо
-  инвайт-ссылок W10). Права решаются здесь, страница их не решает.
+  ссылка регистрации, список контролёров ивента (W36 — ручной путь вместо
+  инвайт-ссылок W10) и недавние места для визарда (W42 — `address`/`lat`/`lon`
+  в `list` только у своих ивентов). Права решаются здесь, страница их не решает.
 - **Flow ID (MCP)**: `CcGPwuW4ws5hkcaOPerEG`
 
 ## Вход
@@ -65,7 +66,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_16 (save) | `LOOP_ON_ITEMS` по `{{step_14['output'].targets}}` | |
 | step_17 (в цикле) | `send_text_message` (`continueOnFailure`) | уведомление одному зарегистрированному (`format: None`) |
 | step_31 (events_list) | `tables-find-records events` | ивенты чаптера: фильтр `chapter_id eq {{step_7['output'].chapterId}}`, `limit: 200` |
-| step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию |
+| step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию; у своих ивентов (`isAuthor`) с непустым адресом добавляются `address`/`lat`/`lon` — недавние места визарда (W42) |
 | step_33 (events_list) | `return_response` (`stop`) | `200 {ok:true, events:[…], count}` |
 
 ### Контракт ответа (согласован с `#/manage` SPA)
@@ -76,7 +77,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | нет строки `staff`; ивент не найден; `event.chapter_id` не подходит под `staff.chapter_id`; сентинел `-`; создание с `newId`, занятым записью чужого чаптера | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
 | `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId, inviteLink}` — `inviteLink` непустой только у `published` |
-| `list` staff'ом | 200 | `{ok:true, events:[{id,title,starts_at,status,isAuthor}], count}` — ивенты своего чаптера; не staff — `403`, как у `load` |
+| `list` staff'ом | 200 | `{ok:true, events:[{id,title,starts_at,status,isAuthor,address?,lat?,lon?}], count}` — ивенты своего чаптера; `address`/`lat`/`lon` только у своих (`isAuthor`) и только при непустом адресе (недавние места, W42); не staff — `403`, как у `load` |
 | `save` | 200 | `{ok:true, text, eventId, inviteLink}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем; `inviteLink` — только у `published` |
 | `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки ивента, `item` отформатирован сервером |
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
@@ -112,6 +113,9 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   (отдельных чаптеров в проекте пока нет). Форма и порядок — в `step_32`:
   будущие по возрастанию, затем прошедшие по убыванию; `isAuthor` по
   `staff_id` (метка «Вы создали»); записи без `id` не показываются.
+  **W42:** у своих ивентов с непустым адресом в ответ добавляются
+  `address`/`lat`/`lon` — визард берёт их для «Недавних мест» (чужой адрес
+  в ответ не попадает); отдельного хранилища недавних мест нет.
 - **Ссылка регистрации (`inviteLink`)** строится сервером из `BOT_USERNAME`
   (`https://t.me/<bot>?start=e<id>`) и возвращается только для `published`
   (`load` и `save`) — черновик участникам невидим (OWN-4). Формат — OWN-6;
@@ -144,8 +148,9 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   (поля править можно, статус — нет). Обратных переходов нет: снять
   публикацию или «воскресить» ивент формой нельзя (`cancelled_at`/`finished_at`
   очистить нечем — Q30). `published_at` ставится при первой публикации,
-  `cancelled_at` — при первой отмене. Та же таблица переходов стоит на
-  странице и решает, какие радио видны.
+  `cancelled_at` — при первой отмене. Та же таблица переходов решает, какие
+  действия видны на странице: «Сохранить черновик»/«Опубликовать» — у нового
+  и черновика, «Сохранить»/«Отменить ивент» — у опубликованного (W42).
 - **`id` нового ивента** — `newId` страницы: 12 символов `[A-Za-z0-9_]`, без
   префикса `e` (тот же контракт, что у `fn-parse-start`).
 - **Даты проверяются обратным разбором компонент**: `2026-02-31` и `25:00`

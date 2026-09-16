@@ -91,34 +91,54 @@ done
 #    безопасным: externalId connection'а публичен и уже лежит в catalog/.
 #    Блокер — любая ДРУГАЯ форма значения `auth`.
 #
-#    Проверяется через jq, а не grep: резолвнутый connection приезжает
-#    ОБЪЕКТОМ ({"access_token": ...}), а регулярка описывала только строку
-#    и молчала ровно в том сценарии, ради которого поставлена.
-# Regex записан через классы символов, а не обратные слэши: при передаче
-# из bash в jq экранирование съедалось, и проверка ложно валилась на всём.
-AUTH_RE="^[{][{]connections[[]'[A-Za-z0-9_-]+'[]][}][}]$"
+#    Проверяется разбором JSON в python3, а не grep: резолвнутый connection
+#    приезжает ОБЪЕКТОМ ({"access_token": ...}), а регулярка описывала только
+#    строку и молчала ровно в том сценарии, ради которого поставлена.
+#    Раньше здесь был jq; на машинах без него (он не входит в зависимости
+#    репозитория) обязательная проверка не отрабатывала вовсе. python3 уже
+#    нужен check-texts.py/check-commands.py, поэтому зависимость ровно одна.
+AUTH_RE="^\\{\\{connections\\['[A-Za-z0-9_-]+'\\]\\}\\}$"
 auth_total=0
 auth_bad=0
-for f in "${FILES[@]}"; do
-  [[ -f "$f" ]] || continue
-  if ! out="$(jq -r --arg re "$AUTH_RE" '
-        [ .. | objects | select(has("auth")) | .auth ] as $a
-        | [ ($a | length),
-            ([ $a[] | select((type != "string") or (test($re) | not)) ] | length) ]
-        | @tsv' "$f" 2>/dev/null)"; then
-    echo "ПРОВАЛ: $f — не разбирается как JSON, проверить auth невозможно"
-    fail=1
-    continue
-  fi
-  auth_total=$(( auth_total + $(cut -f1 <<<"$out") ))
-  n_bad=$(cut -f2 <<<"$out")
-  if [[ "$n_bad" -gt 0 ]]; then
-    echo "ПРОВАЛ: $f — полей auth не в форме {{connections['...']}}: $n_bad"
+while IFS=$'\t' read -r total bad file; do
+  auth_total=$(( auth_total + total ))
+  if [[ "$bad" -gt 0 ]]; then
+    echo "ПРОВАЛ: $file — полей auth не в форме {{connections['...']}}: $bad"
     echo "        (объект, массив, null или строка иного вида = возможно ЗНАЧЕНИЕ)"
-    auth_bad=$(( auth_bad + n_bad ))
+    auth_bad=$(( auth_bad + bad ))
     fail=1
   fi
-done
+done < <(python3 - "$AUTH_RE" "${FILES[@]}" <<'PY'
+import json
+import re
+import sys
+
+pattern = re.compile(sys.argv[1])
+
+
+def auth_values(node):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == 'auth':
+                yield value
+            yield from auth_values(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from auth_values(item)
+
+
+for path in sys.argv[2:]:
+    try:
+        with open(path, encoding='utf-8') as fh:
+            tree = json.load(fh)
+    except Exception:
+        print('0\t1\t' + path + '\tне разбирается как JSON')
+        continue
+    values = list(auth_values(tree))
+    bad = sum(1 for v in values if not (isinstance(v, str) and pattern.match(v)))
+    print('%d\t%d\t%s' % (len(values), bad, path))
+PY
+)
 if [[ "$auth_bad" -eq 0 ]]; then
   echo "ok: все $auth_total полей auth — строки {{connections['...']}}, значений нет"
 fi

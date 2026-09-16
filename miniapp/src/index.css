@@ -32,3 +32,154 @@
 /* Ticket card error — так же как result bad */
 .ticket-card.error { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
 .ticket-card.error .msg { color: var(--foreground); }
+
+/* W42: визард формы ивента — только раскладка, цвет и шрифт токенами бренда. */
+.form-section .field { margin-bottom: 16px; }
+.wizard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.wizard-step-label { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+.wizard-title { margin: 0 0 14px; font-size: 20px; }
+.step-dots { display: flex; gap: 5px; }
+.step-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--border); transition: width 150ms var(--ease-out); }
+.step-dot.done { background: color-mix(in oklch, var(--primary) 45%, var(--border)); }
+.step-dot.active { width: 18px; background: var(--primary); }
+/* Точка шага с ошибкой (клиентской или серверной) — важнее «где я». */
+.step-dot.warn { background: var(--destructive); }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
+.chip-row .btn { max-width: 100%; min-width: 0; }
+/* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
+.chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */
+.event-title { overflow-wrap: anywhere; }
+/* Плита даты — по высоте содержимого, как в эталоне. */
+.event-card .date-plate { align-self: start; }
+.capacity-live {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+.capacity-live-value { font-family: var(--font-display); font-weight: 600; font-size: 24px; color: var(--primary); }
+.capacity-live-text { font-size: 12px; color: var(--muted-foreground); }
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+}
+.sticky-actions .btn { flex: 1 1 auto; }
+/* Кнопка на всю ширину — действия в теле шага «Проверка» (эталон). */
+.btn-block { width: 100%; }
+/* Два поля в строку — класс эталона (`.app-row2`). */
+.app-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Шит — паттерн эталона (.app-sheet): ручка, шапка, тело. В WebView поверх
+   всего экрана; в эталоне жил внутри рамки телефона. */
+.app-sheet { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; justify-content: flex-end; }
+.app-sheet-backdrop { position: absolute; inset: 0; background: color-mix(in oklch, var(--foreground) 45%, transparent); }
+.app-sheet-panel {
+  position: relative;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 480px; margin: 0 auto;
+  max-height: 88dvh;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  box-shadow: var(--shadow-lg);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.app-sheet-grab { width: 36px; height: 4px; border-radius: 999px; background: var(--border); margin: 8px auto 0; flex-shrink: 0; }
+.app-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px 6px; }
+.app-sheet-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.app-sheet-close {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: var(--radius);
+  background: transparent; color: var(--muted-foreground);
+}
+.app-sheet-close:hover { background: var(--muted); color: var(--foreground); }
+.app-sheet-body { overflow-y: auto; padding: 4px 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.sheet-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.sheet-actions .btn { width: 100%; min-width: 0; }
+.sheet-actions .chip-label { max-width: 100%; }
+/* Экран успеха (эталон renderWizardDone): круг с галочкой + заголовок. */
+.sheet-success { text-align: center; padding: 14px 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.success-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: color-mix(in oklch, var(--success) 16%, transparent);
+  color: var(--success);
+  margin-bottom: 4px;
+}
+.success-title { font-family: var(--font-display); font-weight: 600; font-size: 18px; }
+.section-label { font-size: 12px; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.08em; margin: 4px 0 2px; }
+/* Тост — результат сохранения и короткие подтверждения (эталон .proto-toast). */
+.toast {
+  position: fixed; left: 50%; bottom: 24px;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--foreground); color: var(--background);
+  font-size: 13px; padding: 10px 14px; border-radius: var(--radius);
+  opacity: 0; transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+  z-index: 80; max-width: 90vw; text-align: center;
+  /* Тост — только сообщение: нажатия он не перехватывает (в эталоне
+     перехватывал, но там под ним не было кнопок). */
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Карточка ссылки регистрации (эталон renderInviteBlock). */
+.invite-card { display: flex; flex-direction: column; gap: 10px; }
+.card-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; line-height: 1.3; }
+.invite-link {
+  font-family: var(--font-mono); font-size: 12px;
+  word-break: break-all;
+  background: var(--muted); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px;
+}
+.app-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.app-actions .btn { flex: 1; min-width: 120px; }
+.app-muted { font-size: 13px; color: var(--muted-foreground); line-height: 1.45; }
+/* Превью точки — декоративная сетка с пином (Q52: интерактивной карты нет,
+   эталон рисует то же). */
+.loc-preview {
+  position: relative; height: 150px; overflow: hidden;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--muted); margin-bottom: 8px;
+}
+.loc-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.loc-preview::after {
+  content: '';
+  position: absolute; left: -10%; right: -10%; top: 58%; height: 24px;
+  background: color-mix(in oklch, var(--foreground) 10%, transparent);
+  transform: rotate(-8deg);
+}
+.loc-pin {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -100%);
+  color: var(--primary);
+  filter: drop-shadow(0 2px 3px color-mix(in oklch, var(--foreground) 30%, transparent));
+}
+.loc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--primary); margin-top: 2px; }
+/* Мета предпросмотра — отдельными строками, как в эталоне (дата и адрес
+   не слипаются в одну строку). */
+.event-card.preview .event-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+/* В бренде нет :disabled — состояние выключенной кнопки заводим на уровне SPA. */
+.btn:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
+/* Предпросмотр на «Проверке» — карточка, а не ссылка: hover не поднимаем. */
+.event-card.preview { pointer-events: none; }
+/* Без плиты даты карточка — в одну колонку (класс эталона no-plate). */
+.event-card.preview.no-plate { grid-template-columns: 1fr; }
+/* Нативные контролы (календарь datetime-local) — в теме страницы. */
+html[data-theme='dark'] { color-scheme: dark; }
+html[data-theme='light'] { color-scheme: light; }
