@@ -258,6 +258,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function mapUrl(lat, lon) {
     return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
   }
+  // Остаток мест — одно правило на все экраны (OWN-15): лимит
+  // ceil(capacity × (1 + overbook/100)) минус зарегистрированные.
+  function seatsLeft(capacity, overbook, registered) {
+    const cap = parseInt(capacity, 10);
+    if (!cap || cap <= 0) return null;
+    const over = overbook === '' || overbook === null || overbook === undefined ? 40 : parseInt(overbook, 10);
+    const limit = Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
+    return Math.max(0, limit - (registered || 0));
+  }
   function fmtCoord(n) { return Number(n).toFixed(5); }
   function parseYandexLink(text) {
     const s = String(text || '');
@@ -418,7 +427,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- роут: сканер ----------
   const scanOutcomes = [
-    { key: 'ok', tone: 'ok', icon: 'check-circle', label: () => T('checkin.ok', { name: 'Азиза Каримова' }), sub: 'proto.result_ok' },
+    { key: 'ok', tone: 'ok', icon: 'check-circle', label: (scan) => T('checkin.ok', { name: scan.nextCheckin || T('checkin.name_unknown') }), sub: 'proto.result_ok' },
     { key: 'already', tone: 'warn', icon: 'clock', label: (scan) => T('checkin.already', { time: scan.alreadyAt }), sub: 'proto.result_already' },
     { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'proto.result_denied' },
     { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'proto.result_denied' },
@@ -441,11 +450,16 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setTrace(['STF-1', 'STF-2', 'STF-4', 'IDM-2']);
     clear();
 
+    const ed = eventData(hashParams.get('event_id') || D.main.id);
+    // На ивенте без регистраций успешный скан невозможен — открываемся
+    // на исходе «нет регистрации», а не на успехе с чужим именем.
+    const baseState = scanState % scanOutcomes.length;
+    const state = (ed.scan.registered === 0 && baseState === 0) ? 2 : baseState;
     const outcomeLabels = ['Успех', 'Повторный скан', 'Нет регистрации', 'Чужой QR'];
     const errorLabels = { forbidden: 'Нет прав', stale: 'Данные устарели', network: 'Нет связи', server: 'Ошибка сервера', unsupported: 'Камера недоступна', no_event: 'Ивент не передан', not_tg: 'Не из Telegram' };
     const items = scanOutcomes.map((o, i) => ({
       label: outcomeLabels[i] || o.key,
-      active: !scanError && i === scanState % scanOutcomes.length,
+      active: !scanError && i === state,
       onClick: () => { scanError = null; scanState = i; renderScan(); },
     }));
     Object.keys(scanErrors).forEach((k) => {
@@ -468,8 +482,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       return;
     }
 
-    const ed = eventData(hashParams.get('event_id') || D.main.id);
-    const outcome = scanOutcomes[scanState % scanOutcomes.length];
+    const outcome = scanOutcomes[state];
 
     const view = E('div', 'scan-view');
     ['tl', 'tr', 'bl', 'br'].forEach((c) => view.appendChild(E('span', 'scan-corner ' + c)));
@@ -799,11 +812,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     };
     if (f.startsLocal) line('calendar', humanLocal(f.startsLocal));
     if (f.address) line('map-pin', f.address);
-    const cap = parseInt(f.capacity, 10);
-    if (cap > 0) {
-      const reg = (ownerEvent(eventId) || {}).registered || 0;
-      line('users', T('event.card.seats_left', { left: Math.max(0, cap - reg) }));
-    }
+    const left = seatsLeft(f.capacity, f.overbook, (ownerEvent(eventId) || {}).registered || 0);
+    if (left !== null) line('users', T('event.card.seats_left', { left: left }));
     b.appendChild(meta);
     if (f.description) b.appendChild(E('div', 'app-muted', f.description));
     c.appendChild(b);
@@ -846,7 +856,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const r = E('div', 'utm-row');
       r.appendChild(E('span', '', u.utm));
       r.appendChild(E('span', 'utm-url', u.url));
-      const copy = btn('', { kind: 'btn-ghost', size: 'btn-sm btn-icon', icon: 'copy', onClick: () => PROTO.copy(u.url) });
+      const copy = btn('', { kind: 'btn-ghost', size: 'btn-lg btn-icon', icon: 'copy', onClick: () => PROTO.copy(u.url) });
       copy.setAttribute('aria-label', T('manage.btn.copy') + ' ' + u.utm);
       r.appendChild(copy);
       utm.appendChild(r);
@@ -1018,7 +1028,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderBroadcastTab(body) {
     PROTO.setTrace(['OWN-9', 'OWN-10', 'OWN-11', 'OWN-12', 'OWN-13']);
     body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
-    body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true); } }));
+    // Чат открывается про этот же ивент: название и сегменты — его.
+    body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true) + '&event=' + encodeURIComponent(eventId); } }));
 
     const ed = eventData(eventId);
     const seg = card([], '');
@@ -1210,7 +1221,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
     metaLine('calendar', ev.when);
     metaLine('map-pin', ev.where);
-    if (ev.seats !== null && ev.seats !== undefined) metaLine('users', T('event.card.seats_left', { left: ev.seats }));
+    const left = seatsLeft(ev.capacity, ev.overbook, ev.registeredCount);
+    if (left !== null) metaLine('users', T('event.card.seats_left', { left: left }));
     if (ev.attended) metaLine('check-circle', T('participants.filter.btn.checked_in') + ': ' + ev.attended);
     body.appendChild(meta);
 

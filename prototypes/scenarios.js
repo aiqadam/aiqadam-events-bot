@@ -5,13 +5,15 @@
 'use strict';
 var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
-PROTO.buildScenarios = function () {
+PROTO.buildScenarios = function (opts) {
   const T = PROTO.t;
   const D = PROTO.data;
-  const ev = D.main;
   const P = PROTO.protoDict;
-  // Данные ивента 4: сценарии чата показывают его.
-  const ed = D.eventData[ev.id];
+  const o = opts || {};
+  // Сценарий овнера открывается на конкретный ивент (кнопка «Перейти в чат»
+  // из рассылки передаёт event); без параметра — главный ивент.
+  const ev = (o.eventId && D.ownerEvents.find((e) => String(e.id) === String(o.eventId))) || D.main;
+  const ed = D.eventData[String(ev.id)] || D.eventData[D.main.id];
 
   // Карточка ивента — общий каркас гостевого пути. Строки — формат VOICE
   // «Метка: значение», как их отдаёт i18n.
@@ -124,12 +126,12 @@ PROTO.buildScenarios = function () {
 
       // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране ивента.
       { id: 'published', kind: 'bot', text: T('manage.chat.published', { title: ev.title }), trace: ['OWN-1', 'OWN-4', 'OWN-6'],
-        buttons: [{ label: T('owner.event.btn.edit'), webApp: '#/manage/' + ev.id, resume: 'published', primary: true }] },
+        buttons: [{ label: T('owner.event.btn.edit'), webApp: '#/manage/' + ev.id, resume: 'published' }] },
 
       { id: 'updated', kind: 'bot', text: T('manage.chat.updated_notified', { title: ev.title, count: ed.counts.registered }), trace: ['OWN-5'] },
       { id: 'notify', kind: 'card', card: {
           title: T('notify.changed.header', { title: ev.title }), lines: [],
-          body: ev.changes.map((c) => T('notify.changed.line', { field: c.field, old: c.old, new: c.now })).join('\n'),
+          body: (ev.changes || []).map((c) => T('notify.changed.line', { field: c.field, old: c.old, new: c.now })).join('\n'),
         }, trace: ['OWN-5'], buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
       { id: 'cancelled', kind: 'bot', text: T('manage.chat.cancelled', { title: ev.title, count: ed.counts.registered }), trace: ['OWN-4'] },

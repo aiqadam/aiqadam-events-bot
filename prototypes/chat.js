@@ -177,7 +177,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   async function init() {
     await PROTO.loadI18n();
     PROTO.initChrome({ title: 'Мок чата · ' + scenarioId, dockLabel: 'Сценарий' });
-    scenarios = PROTO.buildScenarios();
+    scenarios = PROTO.buildScenarios({ eventId: params.get('event') || '' });
     sc = scenarios[scenarioId] || scenarios.guest;
     renderDemo();
 
