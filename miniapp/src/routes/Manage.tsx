@@ -86,6 +86,7 @@ function coordsInRange(lat: number, lon: number): boolean {
 
 // Орг-ссылка (её даёт «Поделиться»): https://yandex.com/maps/org/<slug>/<oid>…
 // Координат в ней нет — их достаёт сервер через Геокодер (W42, Q55).
+const ORG_LINK_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\/org\//i;
 const YANDEX_MAPS_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\//i;
 
 function mapUrl(lat: string, lon: string): string {
@@ -627,18 +628,22 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const applyGeoLink = useCallback(async () => {
     if (geoBusy) return;
     const raw = geoInput.trim();
-    const parsed = parseYandexLink(raw);
-    if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
-      setGeo(parsed.lat, parsed.lon);
-      setGeoInput('');
-      setGeoError('');
-      setGeoSheet(false);
-      showToast(t('manage.geo.link_applied'));
-      return;
-    }
-    if (!YANDEX_MAPS_RE.test(raw)) {
-      setGeoError(t('manage.geo.link_bad'));
-      return;
+    // Орг-ссылка всегда уходит на сервер: координат в ней нет, а `ll`/`pt`
+    // в такой ссылке задают центр карты, а не точку (ревью W42, круг 5).
+    if (!ORG_LINK_RE.test(raw)) {
+      const parsed = parseYandexLink(raw);
+      if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
+        setGeo(parsed.lat, parsed.lon);
+        setGeoInput('');
+        setGeoError('');
+        setGeoSheet(false);
+        showToast(t('manage.geo.link_applied'));
+        return;
+      }
+      if (!YANDEX_MAPS_RE.test(raw)) {
+        setGeoError(t('manage.geo.link_bad'));
+        return;
+      }
     }
     setGeoBusy(true);
     setGeoError('');
