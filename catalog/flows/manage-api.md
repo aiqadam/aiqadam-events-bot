@@ -72,8 +72,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию; у своих ивентов (`isAuthor`) с непустым адресом добавляются `address`/`lat`/`lon` — недавние места визарда (W42) |
 | step_33 (events_list) | `return_response` (`stop`) | `200 {ok:true, events:[…], count}` |
 | step_34 (geo_link) | CODE «geo link: parse» | вырезает `oid` из орг-ссылки (`/maps/org/<slug?>/<oid>`); всё прочее даёт пустой `uri` — Геокодер ответит `400`, отказ вернёт `step_36` |
-| step_35 (geo_link) | `@aiqadam/qadam-http : send_request` | `GET https://geocode-maps.yandex.ru/v1/` (`apikey` — `{{variables['YANDEX_GEOCODER_API_KEY']}}`, `uri`, `format=json`, `lang=ru_RU`, `results=1`), `failureMode: continue_all`, `timeout: 10` |
-| step_36 (geo_link) | CODE «geo link: parse response» | разбирает обе формы вывода `http` (2xx — плоская, 4xx/5xx — `response`); `Point.pos` = «долгота широта» → `lat`/`lon` (6 знаков), адрес — `Address.formatted` (≤300); отказ — `422 {fields:{geo:'manage.geo.org_fail'}}` |
+| step_35 (geo_link) | `@aiqadam/qadam-http : send_request` | `GET https://geocode-maps.yandex.ru/1.x/` (`apikey` — `{{variables['YANDEX_GEOCODER_API_KEY']}}`, `uri`, `format=json`, `lang=ru_RU`, `results=1`), `failureMode: continue_all`, `timeout: 10`. **Именно `1.x`:** тот же ключ на `/v1/` отвечает `403 Invalid api key` — различающий прогон в журнале W42 |
+| step_36 (geo_link) | CODE «geo link: parse response» | разбирает обе формы вывода `http` (2xx — плоская, 4xx/5xx — `response`); `Point.pos` = «долгота широта» → `lat`/`lon` (6 знаков), адрес — `Address.formatted` (подряд идущие одинаковые компоненты схлопываются, ≤300); отказ — `422 {fields:{geo:'manage.geo.org_fail'}}` |
 | step_37 (geo_link) | `return_response` (`stop`) | `200 {ok:true, lat, lon, address}` или `422` с ключом ошибки |
 
 ### Контракт ответа (согласован с `#/manage` SPA)
