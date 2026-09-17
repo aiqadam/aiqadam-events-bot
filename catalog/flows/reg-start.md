@@ -15,7 +15,7 @@
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId` |
 | step_1 | `tables-find-records events` | ивент по `id` |
 | step_2 | `tables-find-records registrations` | регистрации ивента — кормят и подсчёт занятости, и поиск своей строки |
-| step_3 | CODE «decide outcome» | `existing` / `new` / `declined` (шесть причин); отдаёт поля карточки и `photoFileId` |
+| step_3 | CODE «decide outcome» | `existing` / `new` / `declined` (семь причин, включая `internal_error`); отдаёт поля карточки и `photoFileId` |
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `new` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
@@ -57,3 +57,14 @@
 - **Ветка `existing` проверяется раньше состояния ивента**: у уже
   зарегистрированного участника отменённый или завершённый ивент всё равно
   даёт `existing` с кнопкой QR, а не отказ.
+- **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)).
+  `step_1`/`step_2` — `continueOnFailure`; `step_3` читает их `error` и, если
+  чтение упало, декларирует `reason: 'internal_error'` — уходит в уже
+  существующую ветку `declined`, где `keyByReason` не находит ключ и берёт
+  `common.err.generic`. Один разговорный текст вместо полной тишины **и**
+  вместо двух противоречащих сообщений (первая версия страховки — отдельная
+  ветка отказа на каждом шаге — дублировала сообщение с тем, что реально
+  решает `step_3`; убрана). `step_11` (запись сессии, лист ветки `new`, после
+  того как карточка уже отправлена) — `continueOnFailure` с собственной
+  веткой отказа: карточка при этом уже показана, второе сообщение
+  «попробуйте ещё раз» — не дубль, а честная реакция на реальный сбой записи.
