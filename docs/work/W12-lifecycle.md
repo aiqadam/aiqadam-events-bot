@@ -109,6 +109,13 @@
     `catalog/flows/reminders.md`, `catalog/overview.md` (счёт 18 + временный),
     карточка `reg-afterword.md` (кто вызывает), этот журнал. `ru.json`
     не менялся (новые ключи не понадобились).
+  - **Строки `migrations`** (вставлены после коммита `d958c3c`, commit в строках —
+    он же): `2026-09-17-w12-01` (lifecycle publish, `pBPkNgpMdq96aEbldi5e6`),
+    `-02` (lifecycle disable), `-03` (reminders publish, `Th6vDdV92jNYQz2JQZWjr`),
+    `-04` (reminders disable), `-05` (tmp-w12-item-probe create, version `-`).
+    `check-migrations.py` прогнать нечем (ключа платформы в сессии нет) —
+    хвост ревью/приёмке; сверка манифест↔инстанс сделана вручную
+    (flowId/versionId совпадают).
 
 ## Ревью
 
