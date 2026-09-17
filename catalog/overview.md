@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 22 (+3 временных DRAFT: `tmp-w12-item-probe` — чужой хвост, `tmp-w14-rate-probe`/`tmp-w14-obj-probe` — замеры W14 (Q13), до вердикта ревью) | [flows/](flows/) |
+| Флоу | 22 | [flows/](flows/) |
 | Таблицы | 12 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
