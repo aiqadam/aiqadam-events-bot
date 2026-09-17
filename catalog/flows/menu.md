@@ -14,7 +14,7 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `telegramId` |
-| step_1 | `tables-find-records staff` | строка `staff` пользователя (limit 1) — «Создать ивент» виден организатору |
+| step_1 | `tables-find-records staff` | строка `staff` пользователя (limit 1) — «Мои ивенты» видны организатору (W13; раньше здесь была кнопка «Создать ивент» на тот же URL) |
 | step_2 | `tables-find-records event_staff` | все staff-строки пользователя (limit 50) |
 | step_3 | `tables-find-records events` | опубликованные ивенты (status = `published`, limit 50) |
 | step_4 | CODE «render menu» | сборка кнопок: гость (2) + организатор (+1) + контролёр (+1); фильтр staff по `revoked_at` и будущим ивентам |

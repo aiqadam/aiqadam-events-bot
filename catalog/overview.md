@@ -78,8 +78,8 @@ W26 закрыт («готов», независимое ревью, три кр
 регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
 | `#/events?tab=mine\|upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; регистрация — шитом PAR-1/PAR-2 на месте, подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
 
-Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
-(`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,
+Роут `manage` открывается кнопкой «Мои ивенты» в карточке [menu](flows/menu.md)
+(`web_app` на `#/manage`; W13: вход в создание — кнопка на экране списка); права на создание **и** правку решает `manage-api` по `initData`,
 таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)). Фото афиши
 форма не трогает ([Q46](../docs/OPEN-QUESTIONS.md#q46), временно снято из OWN-1);
