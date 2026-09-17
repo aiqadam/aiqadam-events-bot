@@ -48,6 +48,10 @@ const EMPTY_FIELDS: Record<string, string> = {
 type EventData = Record<string, unknown>;
 type StaffItem = { telegram_id: string; item: string };
 type StaffCandidate = { telegram_id: string; name: string; username: string };
+// W13: строка участника от manage-api (action participants): status — ключ
+// ('registered'|'cancelled'), checked_in_at — «DD.MM.YYYY HH:mm» Tashkent или ''.
+type PartRow = { telegram_id: string; name: string; status: string; checked_in_at: string };
+type PartsFilter = 'all' | 'checked_in' | 'no_show' | 'cancelled';
 type ListItem = {
   id: string;
   title: string;
@@ -297,6 +301,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [staffIdInput, setStaffIdInput] = useState('');
   const [staffFieldError, setStaffFieldError] = useState('');
   const [staffResult, setStaffResult] = useState('');
+
+  // W13: секция «Участники» (OWN-7, OWN-8) — только у существующего ивента.
+  // Срезы (все/пришли/не пришли/отмены) режет страница из одного ответа, как
+  // эталон; файлы csv/json собирает сервер — страница их только скачивает.
+  const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
+  const [partsError, setPartsError] = useState('');
+  const [partsFilter, setPartsFilter] = useState<PartsFilter>('all');
 
   // W44: поиск кандидатов в контролёры — шит с выбором тапом (вердикт W41).
   // Источник — участники ивента + staff чаптера (Q51); кого нет в списке —
@@ -829,6 +840,76 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [eventId, initData, staffBusy, errorTextFor],
   );
 
+  // W13: участники ивента. Ответ всегда несёт counters+rows+csv+json —
+  // ими и обновляем состояние, без перезапроса (как staff_list у W36).
+  const loadParts = useCallback(async () => {
+    setPartsError('');
+    const res = await postJson(MANAGE_API, { initData, action: 'participants', eventId });
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && d['counters'] && Array.isArray(d['rows'])) {
+        setParts({
+          counters: d['counters'] as { registered: number; checked_in: number; cancelled: number },
+          rows: d['rows'] as PartRow[],
+          csv: typeof d['csv'] === 'string' ? String(d['csv']) : '',
+          json: typeof d['json'] === 'string' ? String(d['json']) : '[]',
+        });
+        return;
+      }
+    }
+    setPartsError(errorTextFor(res as never));
+  }, [eventId, initData, errorTextFor]);
+
+  // W13: экспорт — скачивание готовой серверной строки через blob.
+  // BOM уже первый символ csv (сервер), JSON — без BOM. Имя файла —
+  // participants-<eventId>.csv/json.
+  const downloadExport = useCallback(
+    (kind: 'csv' | 'json') => {
+      if (!parts) return;
+      const text = kind === 'csv' ? parts.csv : parts.json;
+      if (!text) return;
+      const blob = new Blob([text], {
+        type: kind === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'participants-' + eventId + '.' + kind;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+    [parts, eventId],
+  );
+
+  // W13: срезы списка (фильтры OWN-7) — клиентские, из загруженных rows.
+  // Статус пришедшего — по непустому checked_in_at (IDM-2), как на сервере.
+  const partsSlice = useCallback(
+    (f: PartsFilter): PartRow[] => {
+      if (!parts) return [];
+      if (f === 'all') return parts.rows;
+      if (f === 'checked_in') return parts.rows.filter((p) => p.checked_in_at !== '');
+      if (f === 'cancelled') return parts.rows.filter((p) => p.status === 'cancelled');
+      return parts.rows.filter((p) => p.status === 'registered' && p.checked_in_at === '');
+    },
+    [parts],
+  );
+
+  const partStatusKey = useCallback((p: PartRow): string => {
+    if (p.checked_in_at !== '') return 'myreg.status.checked_in';
+    if (p.status === 'cancelled') return 'myreg.status.cancelled';
+    return 'myreg.status.registered';
+  }, []);
+
+  // Хвост времени чекина для списка: сервер отдаёт «DD.MM.YYYY HH:mm» —
+  // показываем «HH:mm», как в эталоне.
+  const partTime = useCallback((p: PartRow): string => {
+    const s = p.checked_in_at;
+    const i = s.lastIndexOf(' ');
+    return i >= 0 ? s.slice(i + 1) : s;
+  }, []);
+
   // locate setup
   useEffect(() => {
     if (!dictLoaded) return;
@@ -927,13 +1008,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // W36: список контролёров — один раз на ивент: после загрузки формы и после
   // создания (eventId появляется из ответа save). Ошибка загрузки списка форму
   // не трогает — секция останется пустой.
+  // W13: участники грузятся тем же жизненным циклом (один запрос на ивент).
   useEffect(() => {
     setStaffItems([]);
     setStaffIdInput('');
     setStaffFieldError('');
     setStaffResult('');
-    if (showForm && eventId && initData) void loadStaff();
-  }, [showForm, eventId, initData, loadStaff]);
+    setParts(null);
+    setPartsError('');
+    setPartsFilter('all');
+    if (showForm && eventId && initData) {
+      void loadStaff();
+      void loadParts();
+    }
+  }, [showForm, eventId, initData, loadStaff, loadParts]);
 
   // W42: черновик создания — в localStorage, пока ивента нет на сервере.
   useEffect(() => {
@@ -1462,6 +1550,103 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     </p>
                   )}
 
+              {eventId && (
+                <section className="card" id="participants" style={{ marginTop: 16 }}>
+                  <h2 className="empty-heading" id="parts-title">
+                    {t('participants.title', { title: fields['title'] })}
+                  </h2>
+                  {partsError ? (
+                    <>
+                      <p className="helper error" id="parts-error" role="alert">
+                        {partsError}
+                      </p>
+                      <button type="button" className="btn btn-secondary btn-sm" id="parts-retry" onClick={() => void loadParts()}>
+                        {t('manage.btn.retry')}
+                      </button>
+                    </>
+                  ) : !parts ? (
+                    <p className="empty-desc" id="parts-loading">
+                      {t('manage.loading')}
+                    </p>
+                  ) : (
+                    <>
+                      <div id="parts-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, margin: '12px 0' }}>
+                        <div className="stat-card" style={{ padding: 12 }}>
+                          <div className="stat-label">{t('manage.parts.stat_registered')}</div>
+                          <div className="stat-value" style={{ fontSize: 26 }}>
+                            {parts.counters.registered}
+                          </div>
+                        </div>
+                        <div className="stat-card" style={{ padding: 12 }}>
+                          <div className="stat-label">{t('manage.parts.stat_checked_in')}</div>
+                          <div className="stat-value" style={{ fontSize: 26, color: 'var(--success)' }}>
+                            {parts.counters.checked_in}
+                          </div>
+                        </div>
+                        <div className="stat-card" style={{ padding: 12 }}>
+                          <div className="stat-label">{t('manage.parts.stat_cancelled')}</div>
+                          <div className="stat-value" style={{ fontSize: 26, color: 'var(--warning)' }}>
+                            {parts.counters.cancelled}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="tabs" id="parts-filter" role="tablist" style={{ marginBottom: 12 }}>
+                        {(
+                          [
+                            ['all', 'participants.filter.btn.all', parts.rows.length],
+                            ['checked_in', 'participants.filter.btn.checked_in', parts.counters.checked_in],
+                            ['no_show', 'participants.filter.btn.no_show', parts.rows.filter((p) => p.status === 'registered' && p.checked_in_at === '').length],
+                            ['cancelled', 'participants.filter.btn.cancelled', parts.counters.cancelled],
+                          ] as [PartsFilter, string, number][]
+                        ).map(([key, label, count]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            role="tab"
+                            aria-selected={partsFilter === key}
+                            className={`tab${partsFilter === key ? ' active' : ''}`}
+                            id={`f-${key}`}
+                            onClick={() => setPartsFilter(key)}
+                          >
+                            {t(label)}
+                            <span className="count">{count}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {partsSlice(partsFilter).length === 0 ? (
+                        <p className="empty-desc" id="parts-empty">
+                          {t('participants.empty')}
+                        </p>
+                      ) : (
+                        <ul id="parts-list" style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          {partsSlice(partsFilter).map((p) => (
+                            <li key={p.telegram_id} data-telegram-id={p.telegram_id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <span className="avatar-initials" aria-hidden="true">
+                                {candidateInitials(p.name, '')}
+                              </span>
+                              <span style={{ flexGrow: 1, minWidth: 0 }}>
+                                <span style={{ display: 'block' }}>{p.name}</span>
+                                <span className="app-muted" style={{ display: 'block' }}>
+                                  {t(partStatusKey(p))}
+                                </span>
+                              </span>
+                              {p.checked_in_at !== '' && <span className="app-muted">{partTime(p)}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="app-actions" style={{ marginTop: 0 }}>
+                        <button type="button" className="btn btn-outline" id="parts-export-csv" disabled={!parts.rows.length} onClick={() => downloadExport('csv')}>
+                          {t('export.btn.csv')}
+                        </button>
+                        <button type="button" className="btn btn-outline" id="parts-export-json" disabled={!parts.rows.length} onClick={() => downloadExport('json')}>
+                          {t('export.btn.json')}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </section>
+              )}
               {eventId && (
                 <section className="card" id="staff" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="staff-title">
