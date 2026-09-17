@@ -25,42 +25,13 @@
               "nextAction": {
                 "children": [
                   {
-                    "displayName": "read published events (для следующего)",
-                    "name": "step_7",
+                    "displayName": "текст послесловия + ближайший ивент",
+                    "name": "step_9",
                     "nextAction": {
-                      "displayName": "текст послесловия + ближайший ивент",
-                      "name": "step_9",
-                      "nextAction": {
-                        "displayName": "send послесловие",
-                        "name": "step_10",
-                        "settings": {
-                          "actionName": "send_text_message",
-                          "errorHandlingOptions": {
-                            "continueOnFailure": {
-                              "value": false
-                            },
-                            "retryOnFailure": {
-                              "value": false
-                            }
-                          },
-                          "input": {
-                            "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
-                            "chat_id": "{{trigger['output'].data.chatId}}",
-                            "disable_notification": false,
-                            "format": "MarkdownV2",
-                            "message": "{{step_9['output'].text}}",
-                            "protect_content": false,
-                            "reply_markup": "{{step_9['output'].replyMarkup}}",
-                            "web_page_preview": false
-                          },
-                          "propertySettings": {},
-                          "qadamName": "@aiqadam/qadam-telegram-bot",
-                          "qadamVersion": "0.8.0"
-                        },
-                        "type": "PIECE",
-                        "valid": true
-                      },
+                      "displayName": "send послесловие",
+                      "name": "step_10",
                       "settings": {
+                        "actionName": "send_text_message",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": false
@@ -70,26 +41,23 @@
                           }
                         },
                         "input": {
-                          "botUsername": "{{variables['BOT_USERNAME']}}",
-                          "eventId": "{{trigger['output'].data.eventId}}",
-                          "events": "{{step_7['output']}}",
-                          "texts": {
-                            "afterword.btn_next": "Зарегистрироваться",
-                            "afterword.next_header": "Ближайшее, куда стоит прийти:",
-                            "afterword.no_next": "Следующий ивент пока не назначен — как появится, расскажем.",
-                            "afterword.thanks": "Спасибо, что были. Надеемся, было не зря."
-                          }
+                          "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_notification": false,
+                          "format": "MarkdownV2",
+                          "message": "{{step_9['output'].text}}",
+                          "protect_content": false,
+                          "reply_markup": "{{step_9['output'].replyMarkup}}",
+                          "web_page_preview": false
                         },
-                        "sourceCode": {
-                          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const parse = (iso) => {\n    if (!iso) return NaN;\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    return Date.parse(s);\n  };\n\n  const thisEventId = str(inputs.eventId);\n  const now = Date.now();\n  // Сортировки у tables-find-records нет — ближайший выбирается здесь.\n  const upcoming = arr(inputs.events).map(flat)\n    .filter((e) => str(e.id) !== thisEventId)\n    .filter((e) => str(e.cancelled_at) === '' && str(e.finished_at) === '')\n    .map((e) => ({ e: e, ts: parse(e.starts_at) }))\n    .filter((x) => isFinite(x.ts) && x.ts > now)\n    .sort((a, b) => a.ts - b.ts);\n  const next = upcoming.length ? upcoming[0] : null;\n\n  const lines = [esc(t('afterword.thanks'))];\n  const buttons = [];\n  if (next) {\n    lines.push(esc(t('afterword.next_header')));\n    const card = ['*' + esc(str(next.e.title)) + '*', '📅 ' + esc(dateFmt.format(new Date(next.ts)))];\n    if (str(next.e.address)) card.push('📍 ' + esc(str(next.e.address)));\n    lines.push(card.join('\\n'));\n    buttons.push([{ text: t('afterword.btn_next'), url: 'https://t.me/' + str(inputs.botUsername) + '?start=e' + str(next.e.id) + '-afterword' }]);\n  } else {\n    lines.push(esc(t('afterword.no_next')));\n  }\n\n  return {\n    hasNext: !!next,\n    nextEventId: next ? str(next.e.id) : '',\n    text: lines.join('\\n\\n'),\n    replyMarkup: buttons.length ? { inline_keyboard: buttons } : null,\n    now: new Date().toISOString()\n  };\n};",
-                          "packageJson": "{}"
-                        }
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
                       },
-                      "type": "CODE",
+                      "type": "PIECE",
                       "valid": true
                     },
                     "settings": {
-                      "actionName": "tables-find-records",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -99,31 +67,21 @@
                         }
                       },
                       "input": {
-                        "columns": [
-                          "39qJ4o2MYyNYsT2VtxfcK",
-                          "tQEzfGR3hYG0ztG50Po00",
-                          "kSRM3ouou0Owj2yDYk92W",
-                          "8me4o2U2wj6cyrv8lfJv9",
-                          "9bwuaZzPNqmutUMLVIpOO",
-                          "Xtzz8LHOpBTVk2hTDYJvL"
-                        ],
-                        "filters": {
-                          "filters": [
-                            {
-                              "field": "status",
-                              "operator": "eq",
-                              "value": "published"
-                            }
-                          ]
-                        },
-                        "record_ids": [],
-                        "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                        "botUsername": "",
+                        "eventId": "{{trigger['output'].data.eventId}}",
+                        "events": "",
+                        "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                        "texts": {
+                          "afterword.feedback_btn": "Оставить отзыв",
+                          "afterword.thanks": "Спасибо, что были. Надеемся, было не зря."
+                        }
                       },
-                      "propertySettings": {},
-                      "qadamName": "@aiqadam/qadam-tables",
-                      "qadamVersion": "0.4.5"
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n\n  // W45 (PAR-7, вердикт владельца): послесловие — только благодарность.\n  // Предложение следующего ивента убрано; кнопка ведёт на форму отзыва\n  // #/feedback (ADR-0028).\n  const eventId = str(inputs.eventId);\n  const miniappUrl = str(inputs.miniappUrl);\n\n  const text = esc(t('afterword.thanks'));\n  const replyMarkup = { inline_keyboard: [[{ text: t('afterword.feedback_btn'), web_app: { url: miniappUrl + '#/feedback?event_id=' + eventId } }]] };\n\n  return { text: text, replyMarkup: replyMarkup };\n};",
+                        "packageJson": "{}"
+                      }
                     },
-                    "type": "PIECE",
+                    "type": "CODE",
                     "valid": true
                   },
                   {
@@ -283,7 +241,11 @@
           "filters": {
             "filters": [
               {
-                "field": "id",
+                "field": {
+                  "id": "BGTxyxBZqagpqUB3UqXta",
+                  "name": "id",
+                  "type": "TEXT"
+                },
                 "operator": "eq",
                 "value": "{{trigger['output'].data.eventId}}-{{trigger['output'].data.telegramId}}"
               }
