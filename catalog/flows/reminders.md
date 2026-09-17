@@ -1,6 +1,6 @@
 # Flow: reminders
 
-- **Статус**: DISABLED (published; заглушён до утреннего живого прогона — хвост W12)
+- **Статус**: ENABLED (published)
 - **Триггер**: cron `*/15 * * * *`, `Asia/Tashkent` (`@aiqadam/qadam-schedule : cron_expression`)
 - **Назначение**: напоминания `24h` / `2h` до `starts_at` (OWN-16, IDM-3).
 - **Flow ID (MCP)**: `HJvh8nEh4BveIw2i27gcv`
