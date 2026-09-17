@@ -16,7 +16,8 @@ export type IconName =
   | 'plus'
   | 'navigation'
   | 'ticket'
-  | 'search';
+  | 'search'
+  | 'star';
 
 const PATHS: Record<IconName, ReactNode> = {
   'arrow-left': (
@@ -98,15 +99,18 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="m21 21-4.3-4.3" />
     </>
   ),
+  star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
 };
 
-export default function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
+// filled — заливка текущим цветом (W45: закрашенная звезда оценки); остальные
+// иконки этим не пользуются, поэтому по умолчанию false (outline, как раньше).
+export default function Icon({ name, size = 16, filled = false }: { name: IconName; size?: number; filled?: boolean }) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth={2}
       strokeLinecap="round"

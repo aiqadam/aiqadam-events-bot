@@ -52,6 +52,9 @@ type StaffCandidate = { telegram_id: string; name: string; username: string };
 // ('registered'|'cancelled'), checked_in_at — «DD.MM.YYYY HH:mm» Tashkent или ''.
 type PartRow = { telegram_id: string; name: string; status: string; checked_in_at: string };
 type PartsFilter = 'all' | 'checked_in' | 'no_show' | 'cancelled';
+// W45 (Q53): строка отзыва от manage-api (action feedback_list) — оценка 1-5,
+// комментарий может быть пустым, submitted_at — «DD.MM.YYYY HH:mm» Tashkent.
+type FeedbackRow = { telegram_id: string; name: string; rating: number; comment: string; submitted_at: string };
 type ListItem = {
   id: string;
   title: string;
@@ -308,6 +311,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
   const [partsError, setPartsError] = useState('');
   const [partsFilter, setPartsFilter] = useState<PartsFilter>('all');
+
+  // W45 (Q53): секция «Отзывы» — только у существующего ивента, читает
+  // feedback-api через manage-api (action feedback_list), та же граница прав,
+  // что у участников.
+  const [feedback, setFeedback] = useState<{ average: number; count: number; rows: FeedbackRow[] } | null>(null);
+  const [feedbackError, setFeedbackError] = useState('');
 
   // W44: поиск кандидатов в контролёры — шит с выбором тапом (вердикт W41).
   // Источник — участники ивента + staff чаптера (Q51); кого нет в списке —
@@ -860,6 +869,25 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setPartsError(errorTextFor(res as never));
   }, [eventId, initData, errorTextFor]);
 
+  // W45 (Q53): отзывы ивента — один запрос, без срезов (список обычно
+  // короткий); average уже посчитан сервером.
+  const loadFeedback = useCallback(async () => {
+    setFeedbackError('');
+    const res = await postJson(MANAGE_API, { initData, action: 'feedback_list', eventId });
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && Array.isArray(d['rows'])) {
+        setFeedback({
+          average: typeof d['average'] === 'number' ? d['average'] : Number(d['average']) || 0,
+          count: typeof d['count'] === 'number' ? d['count'] : Number(d['count']) || 0,
+          rows: d['rows'] as FeedbackRow[],
+        });
+        return;
+      }
+    }
+    setFeedbackError(errorTextFor(res as never));
+  }, [eventId, initData, errorTextFor]);
+
   // W13: экспорт — скачивание готовой серверной строки через blob.
   // BOM уже первый символ csv (сервер), JSON — без BOM. Имя файла —
   // participants-<eventId>.csv/json.
@@ -1017,11 +1045,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setParts(null);
     setPartsError('');
     setPartsFilter('all');
+    setFeedback(null);
+    setFeedbackError('');
     if (showForm && eventId && initData) {
       void loadStaff();
       void loadParts();
+      void loadFeedback();
     }
-  }, [showForm, eventId, initData, loadStaff, loadParts]);
+  }, [showForm, eventId, initData, loadStaff, loadParts, loadFeedback]);
 
   // W42: черновик создания — в localStorage, пока ивента нет на сервере.
   useEffect(() => {
@@ -1643,6 +1674,62 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           {t('export.btn.json')}
                         </button>
                       </div>
+                    </>
+                  )}
+                </section>
+              )}
+              {eventId && (
+                <section className="card" id="feedback" style={{ marginTop: 16 }}>
+                  <h2 className="empty-heading" id="feedback-title">
+                    {t('manage.feedback.title', { title: fields['title'] })}
+                  </h2>
+                  {feedbackError ? (
+                    <>
+                      <p className="helper error" id="feedback-error" role="alert">
+                        {feedbackError}
+                      </p>
+                      <button type="button" className="btn btn-secondary btn-sm" id="feedback-retry" onClick={() => void loadFeedback()}>
+                        {t('manage.btn.retry')}
+                      </button>
+                    </>
+                  ) : !feedback ? (
+                    <p className="empty-desc" id="feedback-loading">
+                      {t('manage.loading')}
+                    </p>
+                  ) : feedback.count === 0 ? (
+                    <p className="empty-desc" id="feedback-empty">
+                      {t('manage.feedback.empty')}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="app-muted" id="feedback-average">
+                        {t('manage.feedback.average', { avg: String(feedback.average), count: String(feedback.count) })}
+                      </p>
+                      <ul id="feedback-list" style={{ listStyle: 'none', margin: '12px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {feedback.rows.map((r, i) => (
+                          <li key={r.telegram_id + '-' + i} data-telegram-id={r.telegram_id} className="card" style={{ padding: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="avatar-initials" aria-hidden="true">
+                                  {candidateInitials(r.name, '')}
+                                </span>
+                                <span>{r.name}</span>
+                              </span>
+                              <span aria-label={t('manage.feedback.rating_label', { rating: String(r.rating) })} style={{ display: 'flex', gap: 2 }}>
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                  <Icon key={i} name="star" size={14} filled={i <= r.rating} />
+                                ))}
+                              </span>
+                            </div>
+                            <p className="app-muted" style={{ margin: '8px 0 0' }}>
+                              {r.comment || t('manage.feedback.no_comment')}
+                            </p>
+                            <p className="app-muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
+                              {r.submitted_at}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
                     </>
                   )}
                 </section>
