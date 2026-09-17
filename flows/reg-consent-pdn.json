@@ -412,7 +412,7 @@
                 "actionName": "tables-upsert-records",
                 "errorHandlingOptions": {
                   "continueOnFailure": {
-                    "value": true
+                    "value": false
                   },
                   "retryOnFailure": {
                     "value": false
