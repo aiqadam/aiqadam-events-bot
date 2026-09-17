@@ -12,9 +12,11 @@
     "displayName": "callableFlow",
     "name": "trigger",
     "nextAction": {
+      "continueOnFailureBranches": {},
       "displayName": "read event",
       "name": "step_1",
       "nextAction": {
+        "continueOnFailureBranches": {},
         "displayName": "read event registrations",
         "name": "step_2",
         "nextAction": {
@@ -39,7 +41,6 @@
                       }
                     },
                     "input": {
-                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                       "chat_id": "{{trigger['output'].data.chatId}}",
                       "disable_notification": false,
                       "format": "None",
@@ -101,7 +102,6 @@
                       }
                     },
                     "input": {
-                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                       "chat_id": "{{trigger['output'].data.chatId}}",
                       "disable_notification": false,
                       "format": "None",
@@ -161,13 +161,68 @@
                     "displayName": "draft JSON + cardMessageId",
                     "name": "step_15",
                     "nextAction": {
+                      "continueOnFailureBranches": {
+                        "onFailure": {
+                          "displayName": "текст сбоя: попробуйте ещё раз",
+                          "name": "step_18",
+                          "nextAction": {
+                            "displayName": "send: сбой записи сессии",
+                            "name": "step_19",
+                            "settings": {
+                              "actionName": "send_text_message",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "chat_id": "{{trigger['output'].data.chatId}}",
+                                "disable_notification": false,
+                                "format": "None",
+                                "message": "{{step_18['output'].text}}",
+                                "protect_content": false,
+                                "web_page_preview": false
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-telegram-bot",
+                              "qadamVersion": "0.8.0"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "texts": {
+                                "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                              }
+                            },
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  return { text: String(texts['common.err.generic'] || 'common.err.generic') };\n};",
+                              "packageJson": "{}"
+                            }
+                          },
+                          "type": "CODE",
+                          "valid": true
+                        }
+                      },
                       "displayName": "start session await_pdn (+ cardMessageId)",
                       "name": "step_11",
                       "settings": {
                         "actionName": "tables-upsert-records",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
-                            "value": false
+                            "value": true
                           },
                           "retryOnFailure": {
                             "value": false
@@ -230,7 +285,6 @@
                       }
                     },
                     "input": {
-                      "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                       "chat_id": "{{trigger['output'].data.chatId}}",
                       "disable_notification": false,
                       "format": "MarkdownV2",
@@ -364,12 +418,14 @@
               }
             },
             "input": {
+              "eventReadError": "{{step_1['error']}}",
               "eventRecords": "{{step_1['output']}}",
+              "regReadError": "{{step_2['error']}}",
               "regRecords": "{{step_2['output']}}",
               "telegramId": "{{trigger['output'].data.telegramId}}"
             },
             "sourceCode": {
-              "code": "export const code = async (inputs) => {\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const eventRows = arr(inputs.eventRecords).map(flat);\n  const ev = eventRows[0];\n  const telegramId = String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId);\n  const regRows = arr(inputs.regRecords).map(flat);\n  const myRow = regRows.find((r) => String(r.telegram_id || '') === telegramId);\n  const registeredCount = regRows.filter((r) => String(r.status || '') === 'registered').length;\n\n  if (myRow && String(myRow.status || '') === 'registered') {\n    return { outcome: 'existing', title: ev ? (ev.title || '') : '', photoFileId: '' };\n  }\n\n  if (!ev) return { outcome: 'declined', reason: 'not_found', deadlineAt: '', photoFileId: '' };\n  const status = ev.status || '';\n  if (status === 'cancelled') return { outcome: 'declined', reason: 'event_cancelled', deadlineAt: '', photoFileId: '' };\n  if (status === 'finished') return { outcome: 'declined', reason: 'event_finished', deadlineAt: '', photoFileId: '' };\n  if (status !== 'published') return { outcome: 'declined', reason: 'not_published', deadlineAt: '', photoFileId: '' };\n\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const nowMs = Date.now();\n  const deadlineMs = ev.reg_deadline_at ? parseIso(ev.reg_deadline_at) : NaN;\n  if (isFinite(deadlineMs) && nowMs > deadlineMs) return { outcome: 'declined', reason: 'deadline_passed', deadlineAt: ev.reg_deadline_at || '', photoFileId: '' };\n\n  const capacityRaw = ev.capacity;\n  const capacity = (capacityRaw === '' || capacityRaw === undefined) ? NaN : Number(capacityRaw);\n  const overbookRaw = ev.overbook_pct;\n  const overbook = (overbookRaw === '' || overbookRaw === undefined || !isFinite(Number(overbookRaw))) ? 40 : Number(overbookRaw);\n  if (isFinite(capacity)) {\n    const limit = Math.ceil(capacity * (1 + overbook / 100));\n    if (registeredCount >= limit) return { outcome: 'declined', reason: 'no_seats', deadlineAt: '', photoFileId: '' };\n  }\n\n  return {\n    outcome: 'new',\n    title: ev.title || '', description: ev.description || '', address: ev.address || '',\n    startsAt: ev.starts_at || '', endsAt: ev.ends_at || '', regDeadlineAt: ev.reg_deadline_at || '',\n    lat: ev.lat || '', lon: ev.lon || '',\n    // Афиша: пустая строка = афиши нет. Шаг отправки медиа тогда упадёт\n    // и будет пропущен по continueOnFailure — см. catalog/flows/reg-start.md.\n    photoFileId: ev.photo_file_id || ''\n  };\n};",
+              "code": "export const code = async (inputs) => {\n  // Q32: если чтение события или регистраций упало (continueOnFailure на\n  // step_1/step_2), не продолжаем логику на пустых данных — это выглядело\n  // бы как \"ивент не найден\", хотя на самом деле сбой чтения. Единая\n  // декларируемая причина 'internal_error' уходит в существующую ветку\n  // \"declined\", где keyByReason не находит ключ и берёт fallback\n  // common.err.generic (см. step_5) — без второго сообщения.\n  if (inputs.eventReadError || inputs.regReadError) {\n    return { outcome: 'declined', reason: 'internal_error', deadlineAt: '', photoFileId: '' };\n  }\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const eventRows = arr(inputs.eventRecords).map(flat);\n  const ev = eventRows[0];\n  const telegramId = String(inputs.telegramId === undefined || inputs.telegramId === null ? '' : inputs.telegramId);\n  const regRows = arr(inputs.regRecords).map(flat);\n  const myRow = regRows.find((r) => String(r.telegram_id || '') === telegramId);\n  const registeredCount = regRows.filter((r) => String(r.status || '') === 'registered').length;\n\n  if (myRow && String(myRow.status || '') === 'registered') {\n    return { outcome: 'existing', title: ev ? (ev.title || '') : '', photoFileId: '' };\n  }\n\n  if (!ev) return { outcome: 'declined', reason: 'not_found', deadlineAt: '', photoFileId: '' };\n  const status = ev.status || '';\n  if (status === 'cancelled') return { outcome: 'declined', reason: 'event_cancelled', deadlineAt: '', photoFileId: '' };\n  if (status === 'finished') return { outcome: 'declined', reason: 'event_finished', deadlineAt: '', photoFileId: '' };\n  if (status !== 'published') return { outcome: 'declined', reason: 'not_published', deadlineAt: '', photoFileId: '' };\n\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const nowMs = Date.now();\n  const deadlineMs = ev.reg_deadline_at ? parseIso(ev.reg_deadline_at) : NaN;\n  if (isFinite(deadlineMs) && nowMs > deadlineMs) return { outcome: 'declined', reason: 'deadline_passed', deadlineAt: ev.reg_deadline_at || '', photoFileId: '' };\n\n  const capacityRaw = ev.capacity;\n  const capacity = (capacityRaw === '' || capacityRaw === undefined) ? NaN : Number(capacityRaw);\n  const overbookRaw = ev.overbook_pct;\n  const overbook = (overbookRaw === '' || overbookRaw === undefined || !isFinite(Number(overbookRaw))) ? 40 : Number(overbookRaw);\n  if (isFinite(capacity)) {\n    const limit = Math.ceil(capacity * (1 + overbook / 100));\n    if (registeredCount >= limit) return { outcome: 'declined', reason: 'no_seats', deadlineAt: '', photoFileId: '' };\n  }\n\n  return {\n    outcome: 'new',\n    title: ev.title || '', description: ev.description || '', address: ev.address || '',\n    startsAt: ev.starts_at || '', endsAt: ev.ends_at || '', regDeadlineAt: ev.reg_deadline_at || '',\n    lat: ev.lat || '', lon: ev.lon || '',\n    photoFileId: ev.photo_file_id || ''\n  };\n};",
               "packageJson": "{}"
             }
           },
@@ -380,7 +436,7 @@
           "actionName": "tables-find-records",
           "errorHandlingOptions": {
             "continueOnFailure": {
-              "value": false
+              "value": true
             },
             "retryOnFailure": {
               "value": false
@@ -418,7 +474,7 @@
         "actionName": "tables-find-records",
         "errorHandlingOptions": {
           "continueOnFailure": {
-            "value": false
+            "value": true
           },
           "retryOnFailure": {
             "value": false

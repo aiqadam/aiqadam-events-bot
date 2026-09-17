@@ -17,14 +17,14 @@
 | step_2 | CODE «parse draft + decide» | `isYes`, `eventId`, `utm`, `cardMessageId`, готовый `draftJson` |
 | step_3 | ROUTER | `no` / `yes` / `Otherwise` |
 | step_14 (`no`) | CODE «card text: отказ от ПД» | отказ с объяснением причины и следующим шагом |
-| step_12 (`no`) | `tables-upsert-records sessions` | сессия закрыта сентинелом `-` |
+| step_12 (`no`) | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
 | step_11 (`no`) | `edit_message_text` (`continueOnFailure`) | карточка → отказ, **кнопки сняты** |
 | step_17 (`no`, On failure) | `send_text_message` | фолбэк: отказ отдельным сообщением |
-| step_4 (`yes`) | `tables-upsert-records users` | `consent_pdn = true` + отметка времени |
-| step_6 (`yes`) | `tables-find-records events` | название, дата и адрес для подтверждения |
-| step_5 (`yes`) | `tables-upsert-records registrations` | создание или реактивация регистрации |
-| step_9 (`yes`) | `tables-upsert-records sessions` | `step = await_marketing`, черновик сохраняется |
-| step_7 (`yes`) | CODE «card text: зарегистрирован + вопрос о рассылке» | кульминация с датой и местом + кнопки `reg:mkt:yes` / `reg:mkt:no` |
+| step_4 (`yes`) | `tables-upsert-records users` (`continueOnFailure`) | `consent_pdn = true` + отметка времени |
+| step_6 (`yes`) | `tables-find-records events` (`continueOnFailure`) | название, дата и адрес для подтверждения |
+| step_5 (`yes`) | `tables-upsert-records registrations` (`continueOnFailure`) | создание или реактивация регистрации |
+| step_9 (`yes`) | `tables-upsert-records sessions` (`continueOnFailure`) | `step = await_marketing`, черновик сохраняется |
+| step_7 (`yes`) | CODE «card text: зарегистрирован + вопрос о рассылке» | кульминация с датой и местом + кнопки `reg:mkt:yes` / `reg:mkt:no`; при сбое `step_4`/`step_6`/`step_5`/`step_9` — `common.err.generic` вместо ложного успеха |
 | step_8 (`yes`) | `edit_message_text` (`continueOnFailure`) | карточка → подтверждение и следующий вопрос |
 | step_10→15→16 (`yes`, On failure) | `send_text_message` → CODE → `tables-upsert-records sessions` | фолбэк: новая карточка, её id переписывается в черновик |
 
@@ -45,6 +45,18 @@
   и сессия записаны до `edit_message_text`, поэтому упавшее редактирование
   не может потерять регистрацию — и после ветки On failure ничему не нужно
   «сходиться» обратно.
+- **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)):
+  `step_4`/`step_6`/`step_5`/`step_9` — `continueOnFailure`, но **без**
+  отдельной ветки отказа на каждом из них. Их общий потребитель — `step_7` —
+  читает `{{stepName['error']}}` всех четырёх и, если хоть один упал,
+  отдаёт `common.err.generic` вместо построенного на неполных данных текста;
+  `step_8` показывает ровно этот текст. Так одно понятное сообщение заменяет
+  и полную тишину (сейчас — без страховки последующий сбой валит весь прогон
+  до `edit_message_text`), и риск показать пользователю ложный «✅ Вы
+  зарегистрированы» на самом деле несохранённое состояние. `step_12` (ветка
+  `no`) — `continueOnFailure` без всякой ветки отказа вовсе: `step_11`
+  показывает «отказ от ПД» независимо от того, очистилась ли сессия, текст
+  этого шага не зависит от результата `step_12`.
 - **Фолбэк построен на ветках `continueOnFailure`, а не на ROUTER'е.**
   Ветка On failure **сходится обратно** в основную цепочку — этим она
   отличается от веток ROUTER'а, которые не сходятся. Побочная выгода:

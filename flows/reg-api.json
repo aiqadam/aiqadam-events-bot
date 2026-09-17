@@ -394,6 +394,11 @@
                     }
                   },
                   "input": {
+                    "columns": [
+                      "qQPYl9c0ew6n8w2CGYZII",
+                      "mVfpZFCwAZskWXNT7iCuI",
+                      "TZyqC63UAWrPbzxuf2q4w"
+                    ],
                     "filters": {
                       "filters": [
                         {
@@ -429,6 +434,13 @@
                   }
                 },
                 "input": {
+                  "columns": [
+                    "mVfpZFCwAZskWXNT7iCuI",
+                    "TZyqC63UAWrPbzxuf2q4w",
+                    "RZYFhQBQbSfNzIVEvmYgd",
+                    "uCnpOj11sJLaX4Rqu6TUG",
+                    "qQPYl9c0ew6n8w2CGYZII"
+                  ],
                   "filters": {
                     "filters": [
                       {
