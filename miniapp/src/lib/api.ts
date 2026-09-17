@@ -47,3 +47,5 @@ export const MANAGE_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/CcGPwuW4
 export const EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/wEdKdE4RBGKIzWkl4MJHG/sync';
 // W43: регистрация и «Мои билеты» — initData обязателен.
 export const REG_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync';
+// W45 (Q53): форма отзыва #/feedback — initData обязателен, доступ по факту участия.
+export const FEEDBACK_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/DgmYgxiEXBz0roebYRBUj/sync';

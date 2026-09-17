@@ -15,8 +15,8 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 22 | [flows/](flows/) |
-| Таблицы | 12 | [tables/](tables/) |
+| Флоу | 23 | [flows/](flows/) |
+| Таблицы | 13 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
@@ -27,10 +27,10 @@ W26 закрыт («готов», независимое ревью, три кр
 | Точка входа бота | [tg-router](flows/tg-router.md) |
 | Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
 | Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) |
-| Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывает [lifecycle](flows/lifecycle.md) |
+| Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
 | Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+ивент; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -45,6 +45,8 @@ W26 закрыт («готов», независимое ревью, три кр
 [tables/README.md](tables/README.md).
 `staff` — глобальные права организаторов по чаптеру
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
+`feedback` — отзывы участников об ивенте, оценка 1–5 + комментарий
+([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
 `strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
 не построен (см. Flows выше); источник правды для строк —
 `i18n/*.json` в репозитории.
@@ -63,12 +65,12 @@ W26 закрыт («готов», независимое ревью, три кр
 Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. SPA на Vite+React+TS
 ([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
 (`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`,
-`#/events?tab=mine|upcoming|past`), сборка
+`#/events?tab=mine|upcoming|past`, `#/feedback?event_id=`), сборка
 `miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages).
-Построены четыре роута — `ticket`/`scan`/`manage`/`events`. Пятый — только
-новым ADR (форма отзыва — черновик
-[ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
-[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на четвёртую страницу ADR-0023.
+Построены пять роутов — `ticket`/`scan`/`manage`/`events`/`feedback`
+([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
+Шестой — только новым ADR.
+[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на пятую страницу ADR-0023/ADR-0028.
 
 | Роут | Роль | API |
 |---|---|---|
@@ -76,8 +78,9 @@ W26 закрыт («готов», независимое ревью, три кр
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
 | `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), видит
 участников со счётчиками и выгружает CSV/JSON (W13), получает ссылку
-регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
+регистрации (W37), видит отзывы участников (W45) | [manage-api](flows/manage-api.md) |
 | `#/events?tab=mine\|upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; регистрация — шитом PAR-1/PAR-2 на месте, подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
+| `#/feedback?event_id=` | гость, который был на ивенте, оставляет оценку 1–5 и необязательный комментарий; вход из послесловия ([reg-afterword](flows/reg-afterword.md)) и из «Прошедших» в `#/events`; доступ — по факту участия, решает сервер (W45, ADR-0028, [Q53](../docs/OPEN-QUESTIONS.md#q53)) | [feedback-api](flows/feedback-api.md) |
 
 Роут `manage` открывается кнопкой «Мои ивенты» в карточке [menu](flows/menu.md)
 (`web_app` на `#/manage`; W13: вход в создание — кнопка на экране списка); права на создание **и** правку решает `manage-api` по `initData`,
@@ -93,11 +96,12 @@ W26 закрыт («готов», независимое ревью, три кр
 
 Стек: Vite+React+TypeScript, hash-роутер (без `browser` history и без `404.html`),
 Tailwind 4 + брендовые компоненты, `qrcode` npm lazy только на `ticket`,
-`manage` и `events` — ленивые чанки. Чанки: `ticket`+`scan` один, `manage`
-отдельный, `events` отдельный (3,7 КиБ, 1,4 КиБ gzip), `qrcode` отдельный
+`manage`, `events` и `feedback` — ленивые чанки. Чанки: `ticket`+`scan` один,
+`manage` отдельный, `events` отдельный (3,7 КиБ, 1,4 КиБ gzip), `feedback`
+отдельный (4,3 КиБ, 1,4 КиБ gzip, W45), `qrcode` отдельный
 (25 КиБ, 10 КиБ gzip). `ticket`+`scan` открываются до того, как догрузился
-`manage` или `events` — бюджет `initial <50 КиБ` из ADR-0020 по смыслу,
-а не буквально; каталог `#/events` — публичный экран с входом из чата
+`manage`, `events` или `feedback` — бюджет `initial <50 КиБ` из ADR-0020 по
+смыслу, а не буквально; каталог `#/events` — публичный экран с входом из чата
 кнопкой `web_app` (W38).
 
 Все роутy опираются на общие модули `lib/i18n.ts`/`lib/api.ts`/`lib/theme.ts`:
@@ -109,7 +113,7 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
 картинкой не шлётся). Вендоренные брендовые файлы лежат с лицензиями в
 `miniapp/src/vendor/brand/` (см. ниже).
 
-Все три роута собраны на брендовых токенах и компонентах
+Все роуты собраны на брендовых токенах и компонентах
 ([ADR-0019](../docs/adr/0019-design-system-from-brand-repo.md)); своих цветов,
 кнопок и типографики в них нет. Собственный CSS — раскладка плюс
 цвет **только через семантические токены бренда** (`--destructive`,
@@ -120,7 +124,7 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   (`.empty-heading` / `.empty-desc`) вне самого компонента — у бренда нет
   продуктовых классов заголовка страницы (`.section-title` и
   `.subsection-title` — docs-шапки). Это компромисс: изменение `EmptyState`
-  у бренда молча поменяет заголовки всех трёх роутов.
+  у бренда молча поменяет заголовки всех роутов.
 - **Шапка Telegram WebView не перекрашивается**: `themeParams` не читаются,
   `setHeaderColor` / `setBackgroundColor` не вызываются — фон страницы
   брендовый, шапка клиента своя, шов между ними виден. Это следствие
@@ -134,7 +138,7 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   Токены 16 КиБ, компоненты 24 КиБ (40 КиБ до gzip); Inputs и Controls нужны
   только роуту `manage`. Правится только переснятием с бренда, не
   редактированием на месте; обновление — отдельный коммит с переснятием.
-- **Веб-шрифтов нет ни на одном из трёх роутов** (включая `manage`).
+- **Веб-шрифтов нет ни на одном из роутов** (включая `manage`).
   Три брендовых семейства — 444 КиБ, и `ticket`/`scan` открываются на площадке
   ивента, где связь плохая ([Q40](../docs/OPEN-QUESTIONS.md#q40),
   [ADR-0020](../docs/adr/0020-no-web-fonts-on-venue-pages.md)). Для `manage`
