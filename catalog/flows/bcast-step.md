@@ -23,9 +23,12 @@
 - `bcast:send:<bid>` — гейты (создатель, сегмент задан, `test_sent_at`,
   время `no_show`) → `callFlow bcast-run`; повторный запуск бегущей
   рассылки — resume с уведомлением `bcast.interrupted`, а не дубль;
+  повторный запуск остановленной (`status='failed'`) — явный отказ
+  `bcast.send_after_stop`, а не тишина;
 - `bcast:cancel[:<bid>]` — своя строка гаснет (`status='failed'`), чужая
-  кнопка чистит только собственную сессию; ответ `bcast.cancelled` в обоих
-  случаях.
+  кнопка чистит только собственную сессию; отмена черновика отвечает
+  `bcast.cancelled`, отмена бегущей — честным `bcast.cancelled_running`
+  (текущий чанк досылается, остаток не уйдёт).
 
 ## Шаги
 
@@ -51,14 +54,14 @@
 | step_32 | ROUTER `delivered verdict` | |
 | step_33→34 | `upsert broadcasts`, `send_text_message` | штамп `test_sent_at`, `bcast.test.sent` |
 | step_35→36 | `send_text_message` ×2 | `common.err.generic` (тест не дошёл) / текст отказа гейта |
-| step_37→40 | `find broadcasts`, CODE ×2 | ветка `send`: контекст + финальный гейт (`test_sent_at`, `no_show`-время); `resumed = status='running'` |
+| step_37→40 | `find broadcasts`, CODE ×2 | ветка `send`: контекст + финальный гейт (`test_sent_at`, `no_show`-время, `failed` → `bcast.send_after_stop`); `resumed = status='running'` |
 | step_41 | ROUTER `send verdict` | |
 | step_42 | ROUTER `resumed?` | resume → сначала `bcast.interrupted`, затем вызов; иначе сразу вызов |
 | step_43→45 | `send_text_message`, `callFlow bcast-run` ×2 | уведомление о продолжении + запуск/перезапуск прогона |
 | step_46 | `send_text_message` | текст отказа `send` |
-| step_47→49 | CODE, `find broadcasts`, CODE | ветка `cancel`: `bidOrNone` (сентинел `__none__`), `{hasMine, bid}` |
+| step_47→49 | CODE, `find broadcasts`, CODE | ветка `cancel`: `bidOrNone` (сентинел `__none__`), `{hasMine, bid, wasRunning, text}` — текст зависит от статуса: `running` → `bcast.cancelled_running`, иначе `bcast.cancelled` |
 | step_50 | ROUTER `cancel verdict` | |
-| step_51→53 | `upsert broadcasts`, `upsert sessions`, `send_text_message` | своя строка → `failed`, чистка сессии, `bcast.cancelled` |
+| step_51→53 | `upsert broadcasts`, `upsert sessions`, `send_text_message` | своя строка → `failed`, чистка сессии, текст из `step_49` |
 | step_54→55 | `upsert sessions`, `send_text_message` | чужая кнопка: только своя сессия + `bcast.cancelled` |
 | step_56 | CODE «unknown bcast callback» | лог (`Otherwise` от `step_3`) |
 
