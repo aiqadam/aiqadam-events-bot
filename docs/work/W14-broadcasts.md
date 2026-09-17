@@ -26,22 +26,56 @@
 
 ## Чек-лист готовности
 
-- [ ] отправка невозможна без `test_sent_at` (проверка на сервере, OWN-10);
-- [ ] темп измерен, потолок записан (OWN-11 или поправка SPEC по Q13);
-- [ ] `429` → пауза ровно на `retry_after` (OWN-12);
-- [ ] `403` → `blocked_bot`, исключён из всех рассылок (OWN-12);
-- [ ] кнопка «отписаться» снимает только `consent_marketing` (OWN-13);
-- [ ] прерванный прогон продолжается с курсора, никому не шлёт дважды;
-- [ ] `all_consent` — только `consent_marketing = true`;
-- [ ] `no_show` недоступен при `now < ends_at`, отказ с объяснением;
-- [ ] Q18 решён и реализован;
-- [ ] `catalog/` совпадает с живым проектом;
+- [x] отправка невозможна без `test_sent_at` (проверка на сервере, OWN-10 — T6/T7);
+- [x] темп измерен, потолок записан (OWN-11 поправлен коммитом `d44a1d2`, чанки по 30);
+- [x] `429` → пауза ровно на `retry_after` (OWN-12 — код + харнесс; живьём не ловился, хвост);
+- [x] `403` → `blocked_bot`, исключён из всех рассылок (OWN-12 — код + харнесс; живьём не ловился, хвост);
+- [x] кнопка «отписаться» снимает только `consent_marketing` (OWN-13 — T1/T5);
+- [x] прерванный прогон продолжается с курсора, никому не шлёт дважды (T10/T10b);
+- [x] `all_consent` — только `consent_marketing = true` (T12: 3 без себя);
+- [x] `no_show` недоступен при `now < ends_at`, отказ с объяснением (T11 оба гейта);
+- [x] Q18 решён и реализован (отчёт автору всегда: T8/T9/T10b);
+- [x] `catalog/` совпадает с живым проектом;
 - [ ] независимое ревью, вердикт «замечаний нет».
 
 ## Как проверено
 
-- (заполняет сборщик; живых рассылок людям — только список своих аккаунтов
-  и обязательный `test_sent_at`, OWN-10)
+- CODE-блоки — офлайн-харнесс `node` (`/tmp/opencode/w14/`, в репозиторий
+  не входит): `draft.js`, `unsub_parse.js`, `step_ev.js`, `step_seg.js`,
+  `step_tsc.js`, `run.js`, `router.js` — все зелёные, включая дубль пары
+  `(event, telegram)` в `attended`+`no_show` и формы ошибок из пробы Q13.
+- Живые прогоны — только себе (`322876545`) и фикстурам (`999000111/112`,
+  несуществующие чаты; живому `8255904812` и другим ничего не ушло).
+  Обязательный `test_sent_at` везде, где положен. Сообщения боту 2264–2287.
+- Матрица (все `SUCCEEDED`; `❌ step_1` в логах — ожидаемый `ack` на пустом
+  `callbackQueryId` тестового входа, `continueOnFailure` несёт дальше):
+
+| # | Что | Прогон | Итог |
+|---|---|---|---|
+| T1 | `bcast-unsub` себе (`consent=true`) | `ParbhAwvjeBSnV1AUMqpn` | `consent_marketing=false`, `consent_pdn` цел, ответ `unsub.done` |
+| T2 | `bcast-draft` (пересылка себе) | `shRW2PfKo3GurT3vxQpWh` | сессия `broadcast/await_event`, экран ивентов с ташкентскими датами |
+| T3 | `bcast-step bcast:ev:w14evself` | `3gnXsouPyyG89cdFSCHDi` | строка `bmu54vw69qs`, экран сегментов |
+| T4 | `bcast:seg:…:registered` | `YRjkYoG76SWiRV0j36cNR` | счётчик 1 (только себе), превью с кнопками |
+| T5 | `bcast:test:…` | `Fkez7HLtFerGiT3Den5Ww` | тест с кнопкой отписки, `test_sent_at` проставлен, подтверждение |
+| T6 | `send` без теста (кнопка) | `gIUvgd3XaIFdXy9mjOEvv` | отказ `blocked_no_test`, прогон не вызван |
+| T7 | `bcast-run` без теста (напрямую) | `IaYvdZR0GHEZ8cBE9zXnJ` | серверный гейт: стоп+уведомление, таргетов 0 |
+| T8 | пустой сегмент (`attended`, никто не пришёл) | `77lxkmXO0GKPpuwlE1CPZ` | `done`, отчёт `empty_segment` автору |
+| T9 | полный цикл на фейках (2×`chat not found`) | `FAU6upJFDi362tHtSFLFq` + PROD `R62ircSig4bEHA4UrMENY` | материалиация → самовызов → 2 `failed` → `done`, отчёт «0/2» |
+| T10 | resume `running` без `pending` | `jTWY7eG1uuo3BZzIbYsvN` | ветка `send`, финал по нулям без дублей |
+| T10b | resume с `pending` себе | `Bgc8yDhvuQ4ot65GATwZd` | доставка 1, `sent`, `done`, отчёт «1/0» |
+| T11 | `no_show` до `ends_at` (кнопка и сервер) | `9AkrbtF7WP9vxaJ1VuxcG`, `NyndOsWP90bgnBOwuUiOY` | отказ с датой открытия в обоих гейтах |
+| T12 | `all_consent` (себя отписали в T1) | `fiIqgU5oTQhozE5vg3hnX` | счётчик 3 — себя исключили корректно |
+| T13 | `send` → очередь → доставка себе | `DLGixt7zetTabsdtGSabg` + PROD-цепочка | `done`, таргет `sent`, курсор 1 |
+| T14 | `cancel` черновика | `FwSawhSBQI7rla4TPQgt2` | строка `failed`, сессия `-/-`, `bcast.cancelled` |
+| T15 | маршруты `tg-router` | офлайн на живом коде `step_1`/`step_10` | `bcast:*`→ветки, пересылка→`bcast_draft`, старое не сломано |
+| T16 | текст `error` в таргете | `mfPzEYEqagzO8XAWjedk4`→`P1AfC5a6sCV5rz1NL315X` | после фиксов — «Bad Request: chat not found» строкой |
+
+- Фикстуры (`w14evfake/w14evself`, `w14t-*`, `bmu54vw69qs`) удалены полностью
+  (`broadcasts`/`broadcast_targets` пусты); согласие себе возвращено
+  (`consent_marketing=true`); сессия себе `-/-`.
+- Живых рассылок людям не делалось. Ветки `429` (пауза+повтор) и `403`
+  (`blocked_bot`) прогнаны только харнессом на форме ошибки из пробы Q13 —
+  хвост: живой `429`/`403` в бою не ловился (форсировать нечем без вреда).
 
 ## Журнал
 
@@ -93,4 +127,58 @@
 
 ## Хвосты и блокеры
 
-- нет
+- Живой `429`/`403` не ловился (нечем форсировать без вреда людям);
+  классификация — харнесс + форма ошибки пробы Q13. На приёмке W15 держать.
+- Сквозной путь живой кнопкой (настоящий `callbackQueryId` через
+  `tg-router`) ждёт владельца: `ap_test_step` входы не прогоняет (пустые
+  выходы шагов), synthetic-проверка кода — в `/tmp/opencode/w14/router.js`.
+- Пробники `tmp-w14-rate-probe`/`tmp-w14-obj-probe` — DISABLED, не удалять
+  до вердикта ревью (доказательство Q13).
+- `bcast-run/step_13 input.nowIso: "unused"` — мёртвый вход (гоча 12:
+  подключ не удаляется). Рантайм игнорирует; убрать при следующей правке.
+- Параллельные `callFlow`-цепочки одного `bid` не сериализуются (примитивов
+  нет): защита от дублей — последовательные рестарты по `pending`.
+  Задокументировано в карточке `bcast-run`.
+
+## Сборка 2026-09-17 (продолжение, второй сборщик)
+
+- Собрано с нуля по дизайну выше (все CODE из харнесса, тексты только
+  из `ru.json` + добавлен недостающий `bcast.interrupted` — в дизайне
+  заявлено 7 ключей, по факту было 6):
+  `bcast-unsub` (`eymcIde00G3SNlhaBvAbB`, 8 шагов),
+  `bcast-draft` (`2AUeMeakjrrjUqZ0RuGpL`, 11 шагов),
+  `bcast-step` (`Sr1e3imXkI8sN0lXyROtA`, 57 шагов),
+  `bcast-run` (`ABjmnym2NRGldfGeHoGbN`, 53 шага),
+  `tg-router` (`nyaBzgKGG8TTTsryjc9tW`): `step_1` +`forwarded`/`fwdText`,
+  `step_10` +маршруты `bcast_draft`/`bcast_step`/`bcast_unsub`,
+  `step_11` +3 ветки и `step_17→19` (`callFlow`, `queue`, обёртка `payload`).
+  `tg-router` правил только этот пакет. Все пять — `ENABLED`, validate чист.
+- Найдено живыми прогонами (не харнессом), исправлено, перепроверено:
+  1. **Ключи `values` — только `externalId`.** Внутренний field id платформа
+     молча дропает из записи (валидация и прогон зелёные): так потерялись
+     `status`/`total`/`sent`/`failed_count`/`cursor`/`started_at`/`finished_at`
+     (`broadcasts`) и `error` (`broadcast_targets`, шаги 33/34/41/42).
+     Поймано чтением строки после записи (статус пуст). Урок: запись
+     проверяется чтением, не validate. Мёртвые ключи вычищены
+     пересозданием шагов.
+  2. **Ошибка шага отправки — конверт `{message: '<JSON>'}`**, не объект:
+     классификатор `s6`/`s14` сначала разворачивает `message` (иначе `status`
+     читался 0, а в `error` ложился сырой конверт).
+  3. **Параллельные `ap_update_step` на один флоу гонят**: одна из правок
+     потерялась (доказано живым прогоном до/после). Один флоу — строго
+     последовательно. Подключевой мерж DYNAMIC (`values`) не удаляет crossed.
+  4. **`check-commands.py` не пропускает сравнение `route === 'none'`**
+     (маршрут — производная команды): `step_10` переписан проверками
+     `callbackData` первыми, без сравнения маршрута (поведение то же,
+     проверено попарно в харнессе).
+- Публикации (все после финального validate, до тестов): `bcast-*` ×4,
+  `tg-router`; затем два точечных фикса (`status`-ключи, `error`-ключи +
+  развёртка конверта, `route`-перепись) с републикацией. Финальные версии:
+  `bcast-unsub/T3DYcZRQSQzpxksypDWnK`, `bcast-draft/M8ktRlpdVsRjf0iBc5sTP`,
+  `bcast-step/SSx5p2v9m9vo2PJOaSevO`, `bcast-run/WhEO0fm7q4Rfh9DsTNREE`,
+  `tg-router/A63TRUo7SLc8JZvHidtwx`.
+- Экспорт `flows/*.json` — MCP-снимки сразу после публикации
+  (`tools/export-flow-mcp.py`; `tg-router.json` — патч REST-базы тем же
+  содержимым, т.к. REST-ключа нет; `source: "mcp"` в манифесте).
+  Проверки чисты: `check-export-secrets.sh`, `check-texts.py` (171 пара),
+  `check-commands.py` (0 нарушений).

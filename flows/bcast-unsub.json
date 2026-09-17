@@ -1,0 +1,238 @@
+{
+  "agentIds": [],
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "bcast-unsub",
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "ack callback",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "read user",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "decide unsub",
+          "name": "step_3",
+          "nextAction": {
+            "children": [
+              {
+                "displayName": "send already",
+                "name": "step_5",
+                "settings": {
+                  "actionName": "send_text_message",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "chat_id": "{{trigger['output'].data.chatId}}",
+                    "disable_notification": false,
+                    "format": "None",
+                    "message": "{{step_3['output'].text}}",
+                    "protect_content": false,
+                    "web_page_preview": false
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                  "qadamVersion": "0.8.0"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              {
+                "displayName": "clear consent_marketing",
+                "name": "step_6",
+                "nextAction": {
+                  "displayName": "send done",
+                  "name": "step_7",
+                  "settings": {
+                    "actionName": "send_text_message",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "chat_id": "{{trigger['output'].data.chatId}}",
+                      "disable_notification": false,
+                      "format": "None",
+                      "message": "{{step_3['output'].text}}",
+                      "protect_content": false,
+                      "web_page_preview": false
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-telegram-bot",
+                    "qadamVersion": "0.8.0"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-upsert-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "key_columns": [
+                      "JtylZU291K7TuMn9c9F2t"
+                    ],
+                    "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                    "values": {
+                      "values": [
+                        {
+                          "3t75byELQCZ1ejfTADsvp": "{{step_3['output'].now}}",
+                          "FpWznk9Fgl8wUXXUKolRu": "false",
+                          "JtylZU291K7TuMn9c9F2t": "{{trigger['output'].data.telegramId}}"
+                        }
+                      ]
+                    }
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              }
+            ],
+            "displayName": "already?",
+            "name": "step_4",
+            "settings": {
+              "branches": [
+                {
+                  "branchName": "already",
+                  "branchType": "CONDITION",
+                  "conditions": [
+                    [
+                      {
+                        "firstValue": "{{step_3['output'].already}}",
+                        "operator": "BOOLEAN_IS_TRUE"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "branchName": "Otherwise",
+                  "branchType": "FALLBACK"
+                }
+              ],
+              "executionType": "EXECUTE_FIRST_MATCH",
+              "propertySettings": {}
+            },
+            "type": "ROUTER",
+            "valid": true
+          },
+          "settings": {
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "telegramId": "{{trigger['output'].data.telegramId}}",
+              "texts": {
+                "unsub.already": "Вы и так не подписаны на анонсы.",
+                "unsub.done": "Анонсы больше присылать не будем. Регистрации это не затронуло."
+              },
+              "userRecords": "{{step_2['output']}}"
+            },
+            "sourceCode": {
+              "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const rows = arr(inputs.userRecords).map(flat)\n    .filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const row = rows[0];\n  const now = new Date().toISOString();\n  if (!row || str(row.consent_marketing) !== 'true')\n    return { already: true, text: t('unsub.already'), now: now };\n  return { already: false, text: t('unsub.done'), now: now };\n};",
+              "packageJson": "{}"
+            }
+          },
+          "type": "CODE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "tables-find-records",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "filters": {
+              "filters": [
+                {
+                  "field": "telegram_id",
+                  "operator": "eq",
+                  "value": "{{trigger['output'].data.telegramId}}"
+                }
+              ]
+            },
+            "limit": 1,
+            "record_ids": [],
+            "table_id": "xHhYjhwqKdONkrYJGcBsz"
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-tables",
+          "qadamVersion": "0.4.5"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "answer_callback_query",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": true
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}"
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-telegram-bot",
+        "qadamVersion": "0.8.0"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "callbackData": "bcast:unsub:abc",
+          "callbackQueryId": "sample-cbq-id",
+          "chatId": "322876545",
+          "telegramId": "322876545"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

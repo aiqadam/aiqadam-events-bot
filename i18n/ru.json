@@ -19,6 +19,7 @@
   "bcast.cancelled": "Рассылка отменена, никому ничего не ушло.",
   "bcast.empty_segment": "В этом сегменте никого нет — отправлять некому.",
   "bcast.finished": "Рассылка завершена: отправлено {sent}, ошибок {failed}.",
+  "bcast.interrupted": "Рассылка была прервана. Продолжаем с места остановки — повторно никому не отправляем.",
   "bcast.preview.count": "Получателей: {count}",
   "bcast.preview.title": "Предпросмотр:",
   "bcast.progress": "Отправлено {sent} из {total}, ошибок {failed}.",

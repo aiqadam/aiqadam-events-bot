@@ -1,5 +1,29 @@
 [
   {
+    "flow": "bcast-draft",
+    "flowId": "2AUeMeakjrrjUqZ0RuGpL",
+    "publishedVersionId": "M8ktRlpdVsRjf0iBc5sTP",
+    "source": "mcp"
+  },
+  {
+    "flow": "bcast-run",
+    "flowId": "ABjmnym2NRGldfGeHoGbN",
+    "publishedVersionId": "WhEO0fm7q4Rfh9DsTNREE",
+    "source": "mcp"
+  },
+  {
+    "flow": "bcast-step",
+    "flowId": "Sr1e3imXkI8sN0lXyROtA",
+    "publishedVersionId": "SSx5p2v9m9vo2PJOaSevO",
+    "source": "mcp"
+  },
+  {
+    "flow": "bcast-unsub",
+    "flowId": "eymcIde00G3SNlhaBvAbB",
+    "publishedVersionId": "T3DYcZRQSQzpxksypDWnK",
+    "source": "mcp"
+  },
+  {
     "flow": "checkin-api",
     "flowId": "rKoDYtiIVdbzlW59b57uH",
     "publishedVersionId": "bxBSUZ32kAPEgxjwTG3C0"
@@ -93,7 +117,7 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "BLnUXGCKSnFfI2s0BLLKV",
+    "publishedVersionId": "A63TRUo7SLc8JZvHidtwx",
     "source": "mcp"
   }
 ]
