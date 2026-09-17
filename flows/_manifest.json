@@ -36,6 +36,12 @@
     "publishedVersionId": "yvDMfIAli1xzzoyfR9ulp"
   },
   {
+    "flow": "lifecycle",
+    "flowId": "4qjk9PsPgcliBvrdt8vbr",
+    "publishedVersionId": "pBPkNgpMdq96aEbldi5e6",
+    "source": "mcp"
+  },
+  {
     "flow": "manage-api",
     "flowId": "CcGPwuW4ws5hkcaOPerEG",
     "publishedVersionId": "j6Wvq0IclIasfC5G6Vqo0",
@@ -77,6 +83,12 @@
     "flow": "reg-start",
     "flowId": "FkxtgayOK5QubyqqMd9q4",
     "publishedVersionId": "At1crVKm99wzBhhJkDPi3"
+  },
+  {
+    "flow": "reminders",
+    "flowId": "HJvh8nEh4BveIw2i27gcv",
+    "publishedVersionId": "Th6vDdV92jNYQz2JQZWjr",
+    "source": "mcp"
   },
   {
     "flow": "tg-router",
