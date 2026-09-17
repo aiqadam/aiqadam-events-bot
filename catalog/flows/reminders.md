@@ -1,0 +1,55 @@
+# Flow: reminders
+
+- **Статус**: DISABLED (published; заглушён до утреннего живого прогона — хвост W12)
+- **Триггер**: cron `*/15 * * * *`, `Asia/Tashkent` (`@aiqadam/qadam-schedule : cron_expression`)
+- **Назначение**: напоминания `24h` / `2h` до `starts_at` (OWN-16, IDM-3).
+- **Flow ID (MCP)**: `HJvh8nEh4BveIw2i27gcv`
+
+## Шаги
+
+| Step | Piece / Action | Назначение |
+|------|----------------|-----------|
+| trigger | `@aiqadam/qadam-schedule : cron_expression` | каждые 15 мин, Asia/Tashkent |
+| step_1 | `tables-find-records events` | только `published` |
+| step_2 | CODE «due windows» | `dt = starts_at - now`; окно `24h` / `2h`; `when` словами Asia/Tashkent; `dueIdsCsv` + сентинел |
+| step_3 | `tables-find-records registrations` | `event_id in dueIds` и `status = registered` |
+| step_4 | CODE «targets» | join регистраций с окнами, дедуп пар `(event_id, telegram_id)` |
+| step_5 | LOOP_ON_ITEMS | по `targets` |
+| step_6 (в цикле) | `store : put_if_absent` | захват `rm:<event_id>:<kind>:<telegram_id>`, `COLLECTION`, TTL 48 ч |
+| step_7 (в цикле) | ROUTER «первый раз?» | `stored` / `Otherwise` |
+| step_8 (`first`) | CODE «reminder text» | текст из `texts` (`remind.24h` / `remind.2h`) |
+| step_9 (`first`) | `send_text_message` | `format: None`, `continueOnFailure` |
+| step_10 (`Otherwise`) | CODE «already reminded» | лог с причиной `already_sent` |
+
+## Зависимости
+
+- **Таблицы**: `events`, `registrations` (чтение)
+- **Переменные**: —
+- **Store**: `rm:<event_id>:<kind>:<telegram_id>`, `COLLECTION`, TTL 48 ч
+- **Connections**: `AI Qadam Events (dev)` (отправка)
+
+## Заметки
+
+- **Окна (OWN-16): `24h` iff `2h < dt <= 24h`, `2h` iff `0 < dt <= 2h`.**
+  В момент старта — ничего; пропущенное окно не досылается (`dt <= 0` —
+  пропуск навсегда). Ивент, опубликованный поздно (`dt` уже `< 2h`), вид `24h`
+  не получит никогда. Каданс 15 мин против окна 24 ч: граница `24h` ловится
+  следующим тиком, дырки нет.
+- **Дедуп (IDM-3) — `put_if_absent` ДО отправки**, гейтит отправку, а не вход.
+  Поле ответа — `stored`, не `acquired` (ошибка в имени молча закрывает гейт
+  навсегда — та же ловушка, что в `reg-afterword`). Маркер ставится и при
+  неуспешной отправке: повторного шанса у этого вида нет, как и у послесловия.
+- **Получатели — только `status = registered`.** Отбор повторяется в CODE (Q25):
+  фильтр чтения может разойтись, решение — по полям записи.
+- **`403` / `blocked_bot` здесь не обрабатываются** — это домен W14 (OWN-12).
+  `continueOnFailure` на отправке не даёт одному фейлу убить весь цикл.
+- **`format: None`** (VOICE: дефолт; разметка однострочному напоминанию не нужна —
+  заодно закрыт класс инъекций разметкой).
+- **Тексты не новые**: ключи `remind.24h` / `remind.2h` уже были в `ru.json`
+  и прототипе именно с этими слотами (`{title}`, `{when}`, `{address}`) —
+  дубли `.body` не заводились.
+- **`{when}` форматируется ICU песочницы** (`ru-RU`, Asia/Tashkent): точный
+  разделитель («в» vs «,») зависит от версии ICU инстанса; шаблон фиксирует
+  `ru.json`, дату — нет.
+- **Сентинел `__none__`** — как в `lifecycle`. Find-шаги обязаны содержать
+  `limit` + `record_ids` (иначе невалидны).

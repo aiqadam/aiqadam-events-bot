@@ -8,7 +8,9 @@
   чаптера (W37 — вход в правку без команд, [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md)),
   выдача staff'у ивент для правки, приём создания/правки (OWN-1…OWN-5, OWN-15),
   ссылка регистрации, список контролёров ивента (W36 — ручной путь вместо
-  инвайт-ссылок W10), недавние места для визарда (W42 — `address`/`lat`/`lon`
+  инвайт-ссылок W10; W44 — выбор из списка с поиском по имени/`@username`),
+  участники и экспорт CSV/JSON (W13 — счётчики, строки, файлы собирает сервер),
+  недавние места для визарда (W42 — `address`/`lat`/`lon`
   в `list` только у своих ивентов) и разбор орг-ссылки Яндекс.Карт через
   Геокодер (W42, [Q55](../../docs/OPEN-QUESTIONS.md#q55) — `resolve_geo`).
   Права решаются здесь, страница их не решает.
@@ -21,8 +23,9 @@
 | Поле | Что |
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
-| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `list` — ивенты чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав; `resolve_geo` — координаты и адрес орг-ссылки Яндекс.Карт через Геокодер (W42, Q55) |
+| `action` | `load` — отдать ивент для правки; `save` — создать (`eventId` пустой) или обновить; `list` — ивенты чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров ивента, выдача и отзыв прав; `staff_search` — поиск кандидатов в контролёры по имени/`@username` (W44); `participants` — участники ивента: счётчики, строки и готовые строки CSV/JSON (W13); `resolve_geo` — координаты и адрес орг-ссылки Яндекс.Карт через Геокодер (W42, Q55) |
 | `staffTelegramId` | только при `staff_add`/`staff_remove`: `telegram_id` контролёра; формат (цифры 8–16) проверяет `step_20` |
+| `query` | только при `staff_search`: строка поиска (W44); минимум длины и сравнение — в CODE-шаге поиска, здесь только обрезка до 100 |
 | `link` | только при `resolve_geo`: ссылка Яндекс.Карт; из неё берётся **только числовой `oid`** (хост — `yandex.*`, путь `/maps/org/…`), в Геокодер уходит `uri=ymapsbm1://org?oid=…`; короткие `maps/-/…` не поддержаны — в них нет `oid` |
 | `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка и отказ) |
 | `newId` | только при создании: slug того же вида, который страница генерирует один раз на открытие формы — ключ идемпотентности (ADR-0003); ивент получает этот `id` |
@@ -56,9 +59,19 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_28 (remove) | `tables-update-record event_staff` | `revoked_at = now (UTC)` |
 | step_29 (remove) | `return_response` (`stop`) | `200` с обновлённым списком |
 | step_30 (Otherwise) | `return_response` (`stop`) | `200` список / `422` валидация / `400` |
+| step_38 (search) | `tables-find-records registrations` | участники ивента (`event_id`, проекция `event_id`+`telegram_id`, `limit: 200`) — половина пула кандидатов |
+| step_39 (search) | `tables-find-records staff` | весь `staff` без фильтра (таблица организаторов — единицы строк; глобальные `chapter_id=''` фильтром `eq` не ловятся), проекция `telegram_id`+`chapter_id` — вторая половина пула |
+| step_40 (search) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+имя+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
+| step_41 (search) | `tables-find-records event_staff` | контролёры ивента (`event_id`, проекция +`revoked_at`, `limit: 200`) — исключение действующих |
+| step_42 (search) | CODE «staff: search candidates» | права повторно по полям (Q25), запрос <2 символов → пустой список, пул = участники + staff чаптера (+глобальные), минус активные; совпадение по имени/`@username` регистронезависимо, топ-20; `outcome` = `done` / `error` |
+| step_43 (search) | `return_response` (`stop`) | `200 {ok:true, candidates:[{telegram_id,name,username}], count}` / `403` |
+| step_44 (participants) | `tables-find-records registrations` | участники ивента (`event_id`, проекция `event_id`+`telegram_id`+`status`+`checked_in_at`+`registered_at`, `limit: 200`) |
+| step_45 (participants) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+`first_name`+`last_name`+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
+| step_46 (participants) | CODE «participants: shape + export» | гейт повторно по полям (Q25), схлопывание дублей по `telegram_id`, счётчики, строки, готовые строки CSV/JSON; `outcome` = `done` / `error` |
+| step_47 (participants) | `return_response` (`stop`) | `200 {ok:true, title, counters, rows, count, csv, json}` / `403` |
 | step_6 (valid) | `tables-find-records events` | ивент по `id`, `limit: 1` |
-| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `error` |
-| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `events_list` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
+| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового ивента, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `participants` / `error` |
+| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `events_list` / `geo_link` / `search` / `participants` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
 | step_9 (Otherwise) | `return_response` (`stop`) | `403` forbidden / `422` validation / `400` |
 | step_10 (load) | `return_response` (`stop`) | `200`, `event` — поля ивента для формы (+ `hasPhoto`, `inviteLink` для published) |
 | step_11 (save) | `tables-upsert-records events` | запись по ключу `id` (пишет `staff_id` и `chapter_id`) |
@@ -88,6 +101,10 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `save` | 200 | `{ok:true, text, eventId, inviteLink}` — `eventId` созданного ивента нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем; `inviteLink` — только у `published` |
 | `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки ивента, `item` отформатирован сервером |
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
+| `staff_search` успех (W44) | 200 | `{ok:true, title, candidates:[{telegram_id,name,username}], count}` — до 20 совпадений; запрос короче 2 символов — пустой список, а не вся база |
+| `staff_search` отказ | 403 | `{ok:false, error:"forbidden", text}` — не-staff, чужой чаптер, нет ивента: один ответ, как у `load` |
+| `participants` успех (W13) | 200 | `{ok:true, title, counters:{registered,checked_in,cancelled}, rows:[{telegram_id,name,status,checked_in_at}], count, csv, json}` — `status` ключ (`registered`/`cancelled`), `checked_in_at` — «DD.MM.YYYY HH:mm» Asia/Tashkent или пусто; `csv` — с BOM, `json` — без |
+| `participants` отказ | 403 | `{ok:false, error:"forbidden", text}` — не-staff, чужой чаптер, нет ивента: один ответ, как у `load` |
 | `resolve_geo` успех | 200 | `{ok:true, lat, lon, address}` — координаты (6 знаков) и адрес из Геокодера; `address` может быть пустым |
 | `resolve_geo` отказ (нет `oid` в ссылке, организация не найдена, Геокодер недоступен или ключ отвергнут) | 422 | `{ok:false, error:"validation", text, fields:{geo:"manage.geo.org_fail"}}` — страница переводит ключ и оставляет шит открытым; фолбэк — координаты текстом |
 | нечисловой `staffTelegramId` | 422 | `{ok:false, error:"validation", text, fields:{telegram_id:"manage.err.bad_telegram_id"}, staff:[...]}` — страница переводит ключ |
@@ -96,7 +113,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 не переживёт отсутствующего поля: `step_10`/`step_12` ссылаются на вывод
 `step_7` (`ok`, `error`, `text`, `fields`, `event`, `eventId`, `inviteLink`),
 `step_9` — на него же, `step_30` — на `step_20` (`+ staff`), `step_33` — на
-`step_32` (`+ events`, `count`); `step_7` объявляет весь набор ключей заранее,
+`step_32` (`+ events`, `count`), `step_47` — на `step_46`
+(`+ title`, `counters`, `rows`, `count`, `csv`, `json`); `step_7` объявляет весь набор ключей заранее,
 чтобы ветка без ошибки его не теряла.
 
 ### Правила `step_7`
@@ -214,6 +232,40 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   кто выдал, `granted_at` — UTC) и `tables-update-record` по `record_id` из
   чтения `step_19` (`__recordId` — `id` записи, а не поле).
 
+### Правила `step_46` (участники и экспорт, W13)
+
+- **Права — те же, что у `load`, и проверяются повторно по полям записи**
+  (defense in depth, Q25): любой `staff` с доступом к чаптеру ивента.
+  «Не staff» / «чужой чаптер» / «нет ивента» / сентинел `-` — один `403`.
+- **Счётчики — по уникальным `telegram_id`, не строкам** (DATA-MODEL, OWN-7):
+  `registered` = эффективный `status=registered` (пришедшие входят — статус
+  у них `registered`); `checked_in` = непустой `checked_in_at` хоть в одной
+  строке (IDM-2); `cancelled` = эффективный `status=cancelled`.
+- **Дубли схлопываются при чтении** (ADR-0003): статус берёт самая ранняя
+  строка по `registered_at` — эталон `fn-find-registration` (с ним сверяется
+  чекин, счётчики с ним расходиться не могут); время прихода — самое раннее
+  из непустых (IDM-2). Строка чужого `event_id` в выборке отбрасывается кодом.
+- **Имена — из `users`, только подписи** (DAT-1): `first_name + last_name`,
+  затем `@username`, затем сам `telegram_id` (строка не теряется — экспорт
+  сходится со счётчиками).
+- **Даты — Asia/Tashkent строкой «DD.MM.YYYY HH:mm»** (OWN-3), из частей
+  `formatToParts` (разделители не зависят от ICU). Пустой чекин — пустая строка.
+- **Файл собирает сервер, а не SPA**: экранирование и даты в одном месте,
+  расхождения «на экране одно, в файле другое» нет. Статус — русским текстом
+  (`myreg.status.*`; пришедший — «был на ивенте», как в эталоне).
+  CSV — разделитель `;` (RU-Excel), **BOM первым символом**, каждое поле в
+  кавычках с удвоением, значения с `=`/`+`/`-`/`@` в начале — с префиксом `'`
+  (CSV-инъекция). JSON (`JSON.stringify`, валиден по построению) — без BOM.
+- **Срезы режет страница, не сервер**: один ответ обслуживает таб, все четыре
+  фильтра и экспорт (набор ≤200 строк; отдельный запрос на срез — лишняя
+  латентность, а экспорт всегда полный). Фильтры эталона: все / пришли
+  (`checked_in_at` непусто) / не пришли (`registered` без чекина) / отмены.
+- **Проекции минимальные** ([Q17](../../docs/OPEN-QUESTIONS.md#q17)):
+  `registrations` — `event_id` (переотбор в коде), `telegram_id`, `status`,
+  `checked_in_at`, `registered_at` (ранняя строка); `users` — `telegram_id`,
+  имя, `username` (без телефона и согласий). `limit: 200` — при росте упрётся
+  в [Q31](../../docs/OPEN-QUESTIONS.md#q31).
+
 ## Зависимости
 
 - **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение и upsert),
@@ -255,6 +307,16 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   внутри существующего роута `#/manage/:id`, четвёртой страницы Mini App не
   заводится (ADR-0017 п. 3). Свой `telegram_id` staff добавить себе тоже может —
   легальный случай (staff-организатор он же контролёр своего ивента).
+- **Поиск кандидатов (W44, [Q51](../../docs/OPEN-QUESTIONS.md#q51))** — шит
+  «Выбор контролёра» в той же секции: поле поиска, список с аватарами-инициалами,
+  именем и `@username`, добавление тапом тем же `staff_add`. Пул — участники
+  ивента (`registrations` → `users`) + `staff` чаптера (+глобальные);
+  действующие контролёры исключены; кого нет в `users` — не показывается
+  (показать нечего), остаётся ручной ввод. Имя/`username` — только подписи для
+  поиска (DAT-1): решение и запись — по `telegram_id`, который в списке текстом
+  не показывается. Запрос короче 2 символов (включая пустой) даёт пустой список —
+  отличие от прототипа, где пустой запрос показывал всех: без запроса базу не
+  светим. Ручной ввод `telegram_id` (W36) остаётся запасным путём.
 - **Ссылка регистрации живёт на экране, а не в чате (W37).** Подтверждение
   организатору (`step_15`) — короткий факт «ивент опубликован»; ссылка с
   кнопками «Скопировать»/«Поделиться» — панель формы, данные — `inviteLink`

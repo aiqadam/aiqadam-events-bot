@@ -122,6 +122,14 @@
 }
 .success-title { font-family: var(--font-display); font-weight: 600; font-size: 18px; }
 .section-label { font-size: 12px; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.08em; margin: 4px 0 2px; }
+/* Аватар кандидата в контролёры (W44): кружок с инициалами, как в прототипе.
+   Фото из Bot API не тянем; цвета — только семантические токены бренда. */
+.avatar-initials {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--muted); color: var(--foreground);
+  font-weight: 600; font-size: 14px; flex-shrink: 0;
+}
 /* Тост — результат сохранения и короткие подтверждения (эталон .proto-toast). */
 .toast {
   position: fixed; left: 50%; bottom: 24px;

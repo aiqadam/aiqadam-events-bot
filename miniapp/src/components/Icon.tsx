@@ -15,7 +15,8 @@ export type IconName =
   | 'external'
   | 'plus'
   | 'navigation'
-  | 'ticket';
+  | 'ticket'
+  | 'search';
 
 const PATHS: Record<IconName, ReactNode> = {
   'arrow-left': (
@@ -89,6 +90,12 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M13 5v2" />
       <path d="M13 17v2" />
       <path d="M13 11v2" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
     </>
   ),
 };

@@ -1,0 +1,246 @@
+{
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "lifecycle",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "cron_expression",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "read published+finished events",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "due to finish",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "finish loop",
+          "firstLoopAction": {
+            "displayName": "finish one event",
+            "name": "step_7",
+            "settings": {
+              "actionName": "tables-update-record",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "only_if": {},
+                "record_id": "{{step_3['output'].item.recordId}}",
+                "table_id": "R4aSQpLZvw7d3u6DVOSjH",
+                "values": {
+                  "Xtzz8LHOpBTVk2hTDYJvL": "{{step_2['output'].nowIso}}",
+                  "iUPI69WFE2B8w3BBHdrak": "finished"
+                }
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "name": "step_3",
+          "nextAction": {
+            "displayName": "read finished-event registrations",
+            "name": "step_4",
+            "nextAction": {
+              "displayName": "afterword targets",
+              "name": "step_5",
+              "nextAction": {
+                "displayName": "afterword loop",
+                "firstLoopAction": {
+                  "displayName": "call reg-afterword",
+                  "name": "step_8",
+                  "settings": {
+                    "actionName": "callFlow",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "executionMode": "queue",
+                      "flow": {
+                        "exampleData": {
+                          "chatId": "322876545",
+                          "eventId": "w28test",
+                          "telegramId": "322876545"
+                        },
+                        "externalId": "1lrH7mXwLldQhc8p1Y2sC"
+                      },
+                      "flowProps": {
+                        "chatId": "{{step_6['output'].item.chatId}}",
+                        "eventId": "{{step_6['output'].item.eventId}}",
+                        "payload": {
+                          "chatId": "{{step_6['output'].item.chatId}}",
+                          "eventId": "{{step_6['output'].item.eventId}}",
+                          "telegramId": "{{step_6['output'].item.telegramId}}"
+                        },
+                        "telegramId": "{{step_6['output'].item.telegramId}}"
+                      },
+                      "mode": "simple",
+                      "waitForResponse": false
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-subflows",
+                    "qadamVersion": "0.4.14"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "name": "step_6",
+                "settings": {
+                  "items": "{{step_5['output'].targets}}"
+                },
+                "type": "LOOP_ON_ITEMS",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "eventIds": "{{step_2['output'].finishedIds}}",
+                  "regs": "{{step_4['output']}}"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const ids = {};\n  (Array.isArray(inputs.eventIds) ? inputs.eventIds : []).forEach((id) => { ids[str(id)] = true; });\n  // Пришёл = непустой checked_in_at (DATA-MODEL), статус не смотрим: строка,\n  // отменённая после чекина, всё равно означает «был». Дедуп пар (ADR-0003).\n  const seen = {};\n  const targets = arr(inputs.regs).map(flat)\n    .filter((r) => ids[str(r.event_id)] && str(r.telegram_id) !== '' && str(r.checked_in_at) !== '' && str(r.checked_in_at) !== '-')\n    .filter((r) => { const k = str(r.event_id) + '|' + str(r.telegram_id); if (seen[k]) return false; seen[k] = true; return true; })\n    .map((r) => ({ telegramId: str(r.telegram_id), chatId: str(r.telegram_id), eventId: str(r.event_id) }));\n  return { targets: targets, count: targets.length };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-find-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "columns": [
+                  "BGTxyxBZqagpqUB3UqXta",
+                  "qQPYl9c0ew6n8w2CGYZII",
+                  "mVfpZFCwAZskWXNT7iCuI",
+                  "TZyqC63UAWrPbzxuf2q4w",
+                  "uCnpOj11sJLaX4Rqu6TUG"
+                ],
+                "filters": {
+                  "filters": [
+                    {
+                      "field": "event_id",
+                      "operator": "in",
+                      "value": "{{step_2['output'].finishedIdsCsv}}"
+                    }
+                  ]
+                },
+                "limit": 100,
+                "record_ids": [],
+                "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "items": "{{step_2['output'].due}}"
+          },
+          "type": "LOOP_ON_ITEMS",
+          "valid": true
+        },
+        "settings": {
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "events": "{{step_1['output']}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  // Tables отдаёт DATE строкой и зону не гарантирует — без зоны это UTC (OWN-3).\n  const parse = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n  const rows = arr(inputs.events).map(flat);\n\n  // Только вперёд (OWN-4): published→finished. cancelled/finished/draft не трогаем.\n  // Пустой ends_at — пропуск. Диапазон по DATE в фильтрах не работает (Q15),\n  // поэтому чтение берёт published+finished широким фильтром, а сравнение здесь.\n  const due = rows\n    .filter((e) => str(e.status) === 'published' && str(e.id) !== '')\n    .filter((e) => { const ms = parse(str(e.ends_at)); return isFinite(ms) && ms <= now; })\n    .map((e) => ({ recordId: str(e.__recordId), id: str(e.id) }))\n    .filter((x) => x.recordId !== '');\n  // Catch-up для послесловия: уже finished, но конец был недавно — поздний чекин\n  // после финиша иначе не позовёт reg-afterword никогда.\n  const CATCHUP_MS = 48 * 3600 * 1000;\n  const catchup = rows\n    .filter((e) => str(e.status) === 'finished' && str(e.id) !== '')\n    .filter((e) => { const ms = parse(str(e.ends_at)); return isFinite(ms) && ms >= now - CATCHUP_MS; })\n    .map((e) => str(e.id));\n  const seen = {};\n  const finishedIds = due.map((x) => x.id).concat(catchup)\n    .filter((id) => { if (seen[id]) return false; seen[id] = true; return true; });\n  // Сентинел вместо пустого `in`: пустое значение валит чтение (fail-closed),\n  // а несуществующий id возвращает ноль строк.\n  return { nowIso: nowIso, due: due, dueCount: due.length, finishedIds: finishedIds, finishedIdsCsv: finishedIds.length ? finishedIds.join(',') : '__none__' };\n};",
+            "packageJson": "{}"
+          }
+        },
+        "type": "CODE",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "tables-find-records",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "columns": [
+            "39qJ4o2MYyNYsT2VtxfcK",
+            "tQEzfGR3hYG0ztG50Po00",
+            "kSRM3ouou0Owj2yDYk92W",
+            "8me4o2U2wj6cyrv8lfJv9",
+            "zIA6xEHm7y1bwkajoYDQn",
+            "iUPI69WFE2B8w3BBHdrak",
+            "Xtzz8LHOpBTVk2hTDYJvL"
+          ],
+          "filters": {
+            "filters": [
+              {
+                "field": "status",
+                "operator": "in",
+                "value": "published,finished"
+              }
+            ]
+          },
+          "limit": 500,
+          "record_ids": [],
+          "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-tables",
+        "qadamVersion": "0.4.5"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "cronExpression": "*/15 * * * *",
+        "timezone": "Asia/Tashkent"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-schedule",
+      "qadamVersion": "0.1.17",
+      "triggerName": "cron_expression"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

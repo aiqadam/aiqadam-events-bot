@@ -27,32 +27,37 @@
 5. Колбэки `myreg:*` сняты (W43, Q57): «Мои билеты» — экран
    `#/events?tab=mine`, отмена — на экране билета; старые кнопки уходят
    в `Otherwise` молча.
-6. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
-    визарда в `sessions`) обработчика не имеют: их сообщения уходят в
+6. Рассылки (W14): колбэк `bcast:unsub:*` → `bcast-unsub` (без staff-гейта,
+   получатель — гость); любой другой `bcast:*` → `bcast-step`;
+   пересланное сообщение без команды и с непустым текстом/подписью →
+   `bcast-draft` (staff-гейт внутри, не-staff уходит в тишину).
+7. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
+     визарда в `sessions`) обработчика не имеют: их сообщения уходят в
    `Otherwise` молча.
-7. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
+8. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
     `scenario/step` не `-`) со `scenario='registration'`:
     - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
       любой другой `reg:*` → **ничего** (не угадываем обработчик).
     Сообщений без колбэка в рамках `registration` нет — все касания диалога кнопочные.
-8. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
+9. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-telegram-bot : new_telegram_message` | приём апдейтов (`message`, `callback_query`) |
-| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey`, `messageId` входящего сообщения |
+| step_1 | CODE «normalize update» | разбор `message`/`callback_query`/`contact`, команда+payload, `dedupKey`, `messageId` входящего сообщения; пересылка: `forwarded` + `fwdText` (`text‖caption`) |
 | step_2 | `@aiqadam/qadam-store : put_if_absent` | атомарный захват `upd:<update_id>` (IDM-4); окно дедупликации — сутки |
 | step_3 | CODE «gate» | `proceed`/`reason` (`bad_update`/`duplicate`/`from_bot`/`non_private_chat`) |
 | step_4 | ROUTER: `proceed` / `Otherwise` (лог) | |
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — три исхода (deep link / меню / молчание), любая другая команда — `menu` (ADR-0025); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step` |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`menu`/`Otherwise` | |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — три исхода (deep link / меню / молчание), любая другая команда — `menu` (ADR-0025); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step`; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`) |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft` |
 | step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start` и любая незнакомая команда (ADR-0025); получает `chatId`, `firstName`, `badPayload`, `telegramId` |
+| step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
@@ -60,7 +65,8 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
-  `menu` — делегирование, не subflow-функции (ADR-0015 п. 4)
+  `menu`, `bcast-draft`, `bcast-step`, `bcast-unsub` — делегирование, не
+  subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)

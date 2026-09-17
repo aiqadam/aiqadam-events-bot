@@ -1,5 +1,29 @@
 [
   {
+    "flow": "bcast-draft",
+    "flowId": "2AUeMeakjrrjUqZ0RuGpL",
+    "publishedVersionId": "M8ktRlpdVsRjf0iBc5sTP",
+    "source": "mcp"
+  },
+  {
+    "flow": "bcast-run",
+    "flowId": "ABjmnym2NRGldfGeHoGbN",
+    "publishedVersionId": "WhEO0fm7q4Rfh9DsTNREE",
+    "source": "mcp"
+  },
+  {
+    "flow": "bcast-step",
+    "flowId": "Sr1e3imXkI8sN0lXyROtA",
+    "publishedVersionId": "wMMewhZvZPvYCJpp9sTCX",
+    "source": "mcp"
+  },
+  {
+    "flow": "bcast-unsub",
+    "flowId": "eymcIde00G3SNlhaBvAbB",
+    "publishedVersionId": "T3DYcZRQSQzpxksypDWnK",
+    "source": "mcp"
+  },
+  {
     "flow": "checkin-api",
     "flowId": "rKoDYtiIVdbzlW59b57uH",
     "publishedVersionId": "bxBSUZ32kAPEgxjwTG3C0"
@@ -36,15 +60,21 @@
     "publishedVersionId": "yvDMfIAli1xzzoyfR9ulp"
   },
   {
+    "flow": "lifecycle",
+    "flowId": "4qjk9PsPgcliBvrdt8vbr",
+    "publishedVersionId": "pBPkNgpMdq96aEbldi5e6",
+    "source": "mcp"
+  },
+  {
     "flow": "manage-api",
     "flowId": "CcGPwuW4ws5hkcaOPerEG",
-    "publishedVersionId": "NttjgQgl4HPBmedbLcRtB",
+    "publishedVersionId": "X8a4vTOO3C1esJ8JEw9cx",
     "source": "mcp"
   },
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "n576WXH1IdvFlumzXyOzf",
+    "publishedVersionId": "2AIvpiedKLmSPVD7kdLJk",
     "source": "mcp"
   },
   {
@@ -79,9 +109,15 @@
     "publishedVersionId": "At1crVKm99wzBhhJkDPi3"
   },
   {
+    "flow": "reminders",
+    "flowId": "HJvh8nEh4BveIw2i27gcv",
+    "publishedVersionId": "Th6vDdV92jNYQz2JQZWjr",
+    "source": "mcp"
+  },
+  {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "BLnUXGCKSnFfI2s0BLLKV",
+    "publishedVersionId": "A63TRUo7SLc8JZvHidtwx",
     "source": "mcp"
   }
 ]

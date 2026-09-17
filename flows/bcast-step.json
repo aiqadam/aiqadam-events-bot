@@ -1,0 +1,1874 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "bcast-step",
+  "notes": [],
+  "schemaVersion": "31",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "ack callback",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "parse callback",
+        "name": "step_2",
+        "nextAction": {
+          "children": [
+            {
+              "displayName": "read session",
+              "name": "step_4",
+              "nextAction": {
+                "displayName": "read event",
+                "name": "step_5",
+                "nextAction": {
+                  "displayName": "read staff",
+                  "name": "step_6",
+                  "nextAction": {
+                    "displayName": "gate + segment keyboard",
+                    "name": "step_7",
+                    "nextAction": {
+                      "children": [
+                        {
+                          "displayName": "create draft row",
+                          "name": "step_9",
+                          "nextAction": {
+                            "displayName": "session await_segment",
+                            "name": "step_10",
+                            "nextAction": {
+                              "displayName": "ask segment",
+                              "name": "step_11",
+                              "settings": {
+                                "actionName": "send_text_message",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "chat_id": "{{trigger['output'].data.chatId}}",
+                                  "disable_notification": false,
+                                  "format": "None",
+                                  "message": "{{step_7['output'].text}}",
+                                  "protect_content": false,
+                                  "reply_markup": "{{step_7['output'].replyMarkup}}",
+                                  "web_page_preview": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-telegram-bot",
+                                "qadamVersion": "0.8.0"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-upsert-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "key_columns": [
+                                  "N8CdPxcdxLX9vFCINvZbL"
+                                ],
+                                "table_id": "toTKgngMTqDNJWDpQMh4d",
+                                "values": {
+                                  "values": [
+                                    {
+                                      "ESthrMwpn29JLvE2BNIj4": "broadcast",
+                                      "IdGimBh539UlGSz6L0Pyo": "await_segment",
+                                      "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                      "U9P3zTZHcFdAAtzLVVSYn": "{{step_7['output'].nowIso}}",
+                                      "sctBFEsMf10UobeFgzsVt": "{\"bid\":\"{{step_7['output'].bid}}\"}"
+                                    }
+                                  ]
+                                }
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "tables-create-records",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "table_id": "XrygYF5Q4EUOKkaBFallb",
+                              "values": {
+                                "values": [
+                                  {
+                                    "6ITY7K1B8OgqL0lm2Idbg": "draft",
+                                    "6rmHz7Lc1djdjFpjAmO5V": "registered",
+                                    "AQs7BEfN0hZ3OjPZXZNsc": "{{trigger['output'].data.telegramId}}",
+                                    "AXQRMe7knv8NFDCckziRD": "{{step_7['output'].bid}}",
+                                    "YF9ryxUV0d3RK74xPjZkq": "{{step_7['output'].body}}",
+                                    "bU9nqeQ2wZo2bMr2kBnNj": "None",
+                                    "vGB2xSw6CWfuMilj0wAlH": "{{step_7['output'].eventId}}"
+                                  }
+                                ]
+                              }
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.4.5"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        {
+                          "displayName": "send ev deny",
+                          "name": "step_12",
+                          "settings": {
+                            "actionName": "send_text_message",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "disable_notification": false,
+                              "format": "None",
+                              "message": "{{step_7['output'].errText}}",
+                              "protect_content": false,
+                              "web_page_preview": false
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-telegram-bot",
+                            "qadamVersion": "0.8.0"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        }
+                      ],
+                      "displayName": "ev gate",
+                      "name": "step_8",
+                      "settings": {
+                        "branches": [
+                          {
+                            "branchName": "ok",
+                            "branchType": "CONDITION",
+                            "conditions": [
+                              [
+                                {
+                                  "firstValue": "{{step_7['output'].verdict}}",
+                                  "operator": "TEXT_EXACTLY_MATCHES",
+                                  "secondValue": "ok"
+                                }
+                              ]
+                            ]
+                          },
+                          {
+                            "branchName": "Otherwise",
+                            "branchType": "FALLBACK"
+                          }
+                        ],
+                        "executionType": "EXECUTE_FIRST_MATCH"
+                      },
+                      "type": "ROUTER",
+                      "valid": true
+                    },
+                    "settings": {
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "eventId": "{{step_2['output'].arg}}",
+                        "eventRecords": "{{step_5['output']}}",
+                        "sessionRecords": "{{step_4['output']}}",
+                        "staffRecords": "{{step_6['output']}}",
+                        "telegramId": "{{trigger['output'].data.telegramId}}",
+                        "texts": {
+                          "bcast.ask.segment": "Кому отправляем?",
+                          "bcast.btn.cancel": "Отменить рассылку",
+                          "bcast.btn.seg_all": "Все согласившиеся",
+                          "bcast.btn.seg_attended": "Пришедшие",
+                          "bcast.btn.seg_noshow": "Не пришедшие",
+                          "bcast.btn.seg_registered": "Зарегистрированные",
+                          "bcast.segment.all_consent": "Все, кто согласился на анонсы",
+                          "bcast.segment.checked_in": "Пришедшие на ивент",
+                          "bcast.segment.no_show": "Зарегистрировались, но не пришли",
+                          "bcast.segment.registered": "Зарегистрированные на ивент",
+                          "common.err.event_not_found": "Ивент не найден.",
+                          "common.err.forbidden": "Недостаточно прав для этого действия.",
+                          "common.err.session_expired": "Диалог прервался. Начнём заново: /start"
+                        }
+                      },
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fresh24h = (updatedAt) => {\n    const ms = parseDate(updatedAt);\n    return isFinite(ms) && (Date.now() - ms) <= 24 * 3600 * 1000;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const nowIso = new Date().toISOString();\n  const deny = (errText) => ({ verdict: 'deny', errText: errText, bid: '', text: '', replyMarkup: null, body: '', eventId: '', nowIso: nowIso });\n  const srows = arr(inputs.sessionRecords).map(flat)\n    .filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const s = srows[0];\n  if (!s || str(s.scenario) !== 'broadcast' || str(s.step) !== 'await_event' || !fresh24h(s.updated_at))\n    return deny(t('common.err.session_expired'));\n  let body = '', createdBy = '';\n  try { const d = JSON.parse(str(s.draft) || '{}'); body = str(d.body); createdBy = str(d.createdBy); } catch (e) { body = ''; }\n  if (body === '' || (createdBy !== '' && createdBy !== str(inputs.telegramId)))\n    return deny(t('common.err.session_expired'));\n  const erows = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(inputs.eventId));\n  const ev = erows[0];\n  if (!ev) return deny(t('common.err.event_not_found'));\n  if (str(ev.status) !== 'published' && str(ev.status) !== 'finished')\n    return deny(t('common.err.event_not_found'));\n  const staffRows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const chapterId = str(ev.chapter_id || '');\n  const srow = staffRows[0];\n  const sc = srow ? str(srow.chapter_id || '') : '';\n  if (!srow || (sc !== '' && chapterId !== '' && sc !== chapterId)) return deny(t('common.err.forbidden'));\n  const bid = 'b' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);\n  const segBtn = (seg, label) => [{ text: label, callback_data: 'bcast:seg:' + bid + ':' + seg }];\n  const kb = [\n    segBtn('registered', t('bcast.btn.seg_registered')),\n    segBtn('attended', t('bcast.btn.seg_attended')),\n    segBtn('no_show', t('bcast.btn.seg_noshow')),\n    segBtn('all_consent', t('bcast.btn.seg_all')),\n    [{ text: t('bcast.btn.cancel'), callback_data: 'bcast:cancel:' + bid }],\n  ];\n  const text = t('bcast.ask.segment')\n    + '\\n— ' + t('bcast.segment.registered')\n    + '\\n— ' + t('bcast.segment.checked_in')\n    + '\\n— ' + t('bcast.segment.no_show')\n    + '\\n— ' + t('bcast.segment.all_consent');\n  return { verdict: 'ok', errText: '', bid: bid, text: text, replyMarkup: { inline_keyboard: kb }, body: body, eventId: str(ev.id), nowIso: nowIso };\n};",
+                        "packageJson": "{}"
+                      }
+                    },
+                    "type": "CODE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "filters": {
+                        "filters": [
+                          {
+                            "field": "telegram_id",
+                            "operator": "eq",
+                            "value": "{{trigger['output'].data.telegramId}}"
+                          }
+                        ]
+                      },
+                      "limit": 1,
+                      "record_ids": [],
+                      "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-find-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "columns": [
+                      "39qJ4o2MYyNYsT2VtxfcK",
+                      "tQEzfGR3hYG0ztG50Po00",
+                      "iUPI69WFE2B8w3BBHdrak",
+                      "Femtgz8bh7N8jSOMUHfRt"
+                    ],
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": "id",
+                          "operator": "eq",
+                          "value": "{{step_2['output'].arg}}"
+                        }
+                      ]
+                    },
+                    "limit": 1,
+                    "record_ids": [],
+                    "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "tables-find-records",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": "telegram_id",
+                        "operator": "eq",
+                        "value": "{{trigger['output'].data.telegramId}}"
+                      }
+                    ]
+                  },
+                  "limit": 1,
+                  "record_ids": [],
+                  "table_id": "toTKgngMTqDNJWDpQMh4d"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.5"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            {
+              "displayName": "read broadcast",
+              "name": "step_13",
+              "nextAction": {
+                "displayName": "seg context",
+                "name": "step_14",
+                "nextAction": {
+                  "displayName": "read event for seg",
+                  "name": "step_15",
+                  "nextAction": {
+                    "displayName": "read staff for seg",
+                    "name": "step_16",
+                    "nextAction": {
+                      "displayName": "read event regs",
+                      "name": "step_17",
+                      "nextAction": {
+                        "displayName": "member csv",
+                        "name": "step_18",
+                        "nextAction": {
+                          "displayName": "read members blocked",
+                          "name": "step_19",
+                          "nextAction": {
+                            "displayName": "read consent users",
+                            "name": "step_20",
+                            "nextAction": {
+                              "displayName": "decide preview",
+                              "name": "step_21",
+                              "nextAction": {
+                                "children": [
+                                  {
+                                    "displayName": "save segment",
+                                    "name": "step_23",
+                                    "nextAction": {
+                                      "displayName": "send preview",
+                                      "name": "step_24",
+                                      "settings": {
+                                        "actionName": "send_text_message",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
+                                        },
+                                        "input": {
+                                          "chat_id": "{{trigger['output'].data.chatId}}",
+                                          "disable_notification": false,
+                                          "format": "None",
+                                          "message": "{{step_21['output'].text}}",
+                                          "protect_content": false,
+                                          "reply_markup": "{{step_21['output'].replyMarkup}}",
+                                          "web_page_preview": false
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                                        "qadamVersion": "0.8.0"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
+                                    },
+                                    "settings": {
+                                      "actionName": "tables-upsert-records",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "key_columns": [
+                                          "AXQRMe7knv8NFDCckziRD"
+                                        ],
+                                        "table_id": "XrygYF5Q4EUOKkaBFallb",
+                                        "values": {
+                                          "values": [
+                                            {
+                                              "6rmHz7Lc1djdjFpjAmO5V": "{{step_14['output'].segment}}",
+                                              "AXQRMe7knv8NFDCckziRD": "{{step_14['output'].bid}}"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-tables",
+                                      "qadamVersion": "0.4.5"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  },
+                                  {
+                                    "displayName": "send locked",
+                                    "name": "step_25",
+                                    "settings": {
+                                      "actionName": "send_text_message",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "chat_id": "{{trigger['output'].data.chatId}}",
+                                        "disable_notification": false,
+                                        "format": "None",
+                                        "message": "{{step_21['output'].errText}}",
+                                        "protect_content": false,
+                                        "web_page_preview": false
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                                      "qadamVersion": "0.8.0"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  },
+                                  {
+                                    "displayName": "send seg deny",
+                                    "name": "step_26",
+                                    "settings": {
+                                      "actionName": "send_text_message",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "chat_id": "{{trigger['output'].data.chatId}}",
+                                        "disable_notification": false,
+                                        "format": "None",
+                                        "message": "{{step_21['output'].errText}}",
+                                        "protect_content": false,
+                                        "web_page_preview": false
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                                      "qadamVersion": "0.8.0"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  }
+                                ],
+                                "displayName": "seg verdict",
+                                "name": "step_22",
+                                "settings": {
+                                  "branches": [
+                                    {
+                                      "branchName": "ok",
+                                      "branchType": "CONDITION",
+                                      "conditions": [
+                                        [
+                                          {
+                                            "firstValue": "{{step_21['output'].verdict}}",
+                                            "operator": "TEXT_EXACTLY_MATCHES",
+                                            "secondValue": "ok"
+                                          }
+                                        ]
+                                      ]
+                                    },
+                                    {
+                                      "branchName": "locked",
+                                      "branchType": "CONDITION",
+                                      "conditions": [
+                                        [
+                                          {
+                                            "firstValue": "{{step_21['output'].verdict}}",
+                                            "operator": "TEXT_EXACTLY_MATCHES",
+                                            "secondValue": "locked"
+                                          }
+                                        ]
+                                      ]
+                                    },
+                                    {
+                                      "branchName": "Otherwise",
+                                      "branchType": "FALLBACK"
+                                    }
+                                  ],
+                                  "executionType": "EXECUTE_FIRST_MATCH"
+                                },
+                                "type": "ROUTER",
+                                "valid": true
+                              },
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "broadcastRecords": "{{step_13['output']}}",
+                                  "consentRecords": "{{step_20['output']}}",
+                                  "eventRecords": "{{step_15['output']}}",
+                                  "regRecords": "{{step_17['output']}}",
+                                  "segment": "{{step_14['output'].segment}}",
+                                  "staffRecords": "{{step_16['output']}}",
+                                  "telegramId": "{{trigger['output'].data.telegramId}}",
+                                  "texts": {
+                                    "bcast.btn.cancel": "Отменить рассылку",
+                                    "bcast.btn.send": "Отправить всем",
+                                    "bcast.btn.test": "Отправить тест себе",
+                                    "bcast.preview.count": "Получателей: {count}",
+                                    "bcast.preview.title": "Предпросмотр:",
+                                    "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания ивента — {when}. Пока часть людей ещё в дороге.",
+                                    "common.err.event_not_found": "Ивент не найден.",
+                                    "common.err.forbidden": "Недостаточно прав для этого действия.",
+                                    "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                                  },
+                                  "usersByIdsRecords": "{{step_19['output']}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fmtTash = (iso) => {\n    const ms = parseDate(iso);\n    if (!isFinite(ms)) return '';\n    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date(ms));\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] || k);\n    if (vars) Object.keys(vars).forEach((key) => { s = s.split('{' + key + '}').join(String(vars[key])); });\n    return s;\n  };\n  const deny = (errText) => ({ verdict: 'deny', errText: errText, count: 0, text: '', replyMarkup: null });\n  const seg = str(inputs.segment);\n  if (['all_consent', 'registered', 'attended', 'no_show'].indexOf(seg) < 0)\n    return deny(t('common.err.generic'));\n  const brows = arr(inputs.broadcastRecords).map(flat);\n  const b = brows[0];\n  if (!b || str(b.id) === '') return deny(t('common.err.generic'));\n  if (str(b.created_by) !== str(inputs.telegramId)) return deny(t('common.err.forbidden'));\n  if (str(b.status) !== 'draft') return deny(t('common.err.generic'));\n  const evrows = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(b.event_id));\n  const ev = evrows[0];\n  if (!ev) return deny(t('common.err.event_not_found'));\n  const staffRows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const chapterId = str(ev.chapter_id || '');\n  const srow = staffRows[0];\n  const sc = srow ? str(srow.chapter_id || '') : '';\n  if (!srow || (sc !== '' && chapterId !== '' && sc !== chapterId)) return deny(t('common.err.forbidden'));\n  const blocked = {};\n  arr(inputs.usersByIdsRecords).map(flat).forEach((u) => {\n    if (str(u.blocked_bot) === 'true') blocked[str(u.telegram_id)] = true;\n  });\n  arr(inputs.consentRecords).map(flat).forEach((u) => {\n    if (str(u.blocked_bot) === 'true') blocked[str(u.telegram_id)] = true;\n  });\n  let members = [];\n  if (seg === 'all_consent') {\n    members = arr(inputs.consentRecords).map(flat)\n      .filter((u) => str(u.consent_marketing) === 'true' && str(u.telegram_id) !== '' && !blocked[str(u.telegram_id)])\n      .map((u) => str(u.telegram_id));\n  } else {\n    const regs = arr(inputs.regRecords).map(flat)\n      .filter((r) => str(r.event_id) === str(b.event_id) && str(r.status) === 'registered');\n    const attendedIds = {};\n    regs.forEach((r) => { if (str(r.checked_in_at) !== '') attendedIds[str(r.telegram_id)] = true; });\n    if (seg === 'no_show') {\n      const endsMs = parseDate(ev.ends_at);\n      if (!isFinite(endsMs) || endsMs > Date.now()) {\n        const when = fmtTash(ev.ends_at) || str(ev.ends_at);\n        return { verdict: 'locked', errText: t('bcast.segment.no_show_locked', { when: when }), count: 0, text: '', replyMarkup: null };\n      }\n      members = regs.filter((r) => str(r.checked_in_at) === '' && !attendedIds[str(r.telegram_id)]).map((r) => str(r.telegram_id));\n    } else if (seg === 'attended') {\n      members = Object.keys(attendedIds);\n    } else {\n      members = regs.map((r) => str(r.telegram_id));\n    }\n    members = members.filter((id) => id !== '' && !blocked[id]);\n  }\n  const seen = {};\n  members = members.filter((id) => { if (seen[id]) return false; seen[id] = true; return true; });\n  const bid = str(b.id);\n  const kb = [\n    [{ text: t('bcast.btn.test'), callback_data: 'bcast:test:' + bid }],\n    [{ text: t('bcast.btn.send'), callback_data: 'bcast:send:' + bid }],\n    [{ text: t('bcast.btn.cancel'), callback_data: 'bcast:cancel:' + bid }],\n  ];\n  const text = t('bcast.preview.title') + '\\n' + str(b.body) + '\\n' + t('bcast.preview.count', { count: members.length });\n  return { verdict: 'ok', errText: '', count: members.length, text: text, replyMarkup: { inline_keyboard: kb } };\n};",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-find-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "columns": [
+                                  "JtylZU291K7TuMn9c9F2t",
+                                  "FpWznk9Fgl8wUXXUKolRu",
+                                  "ja2S7DwVun5AKs3Jk7jK6"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": "consent_marketing",
+                                      "operator": "eq",
+                                      "value": "true"
+                                    }
+                                  ]
+                                },
+                                "limit": 500,
+                                "record_ids": [],
+                                "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "tables-find-records",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "columns": [
+                                "JtylZU291K7TuMn9c9F2t",
+                                "ja2S7DwVun5AKs3Jk7jK6"
+                              ],
+                              "filters": {
+                                "filters": [
+                                  {
+                                    "field": "telegram_id",
+                                    "operator": "in",
+                                    "value": "{{step_18['output'].memberCsv}}"
+                                  }
+                                ]
+                              },
+                              "limit": 500,
+                              "record_ids": [],
+                              "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.4.5"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "eventId": "{{step_14['output'].eventId}}",
+                            "regRecords": "{{step_17['output']}}"
+                          },
+                          "sourceCode": {
+                            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const seen = {};\n  const ids = arr(inputs.regRecords).map(flat)\n    .filter((r) => str(r.event_id) === str(inputs.eventId) && str(r.status) === 'registered')\n    .map((r) => str(r.telegram_id))\n    .filter((id) => { if (id === '' || seen[id]) return false; seen[id] = true; return true; });\n  return { memberCsv: ids.length ? ids.join(',') : '__none__' };\n};",
+                            "packageJson": "{}"
+                          }
+                        },
+                        "type": "CODE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "actionName": "tables-find-records",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "columns": [
+                            "qQPYl9c0ew6n8w2CGYZII",
+                            "mVfpZFCwAZskWXNT7iCuI",
+                            "TZyqC63UAWrPbzxuf2q4w",
+                            "uCnpOj11sJLaX4Rqu6TUG"
+                          ],
+                          "filters": {
+                            "filters": [
+                              {
+                                "field": "event_id",
+                                "operator": "eq",
+                                "value": "{{step_14['output'].eventIdOrNone}}"
+                              },
+                              {
+                                "field": "status",
+                                "operator": "eq",
+                                "value": "registered"
+                              }
+                            ]
+                          },
+                          "limit": 500,
+                          "record_ids": [],
+                          "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-tables",
+                        "qadamVersion": "0.4.5"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-find-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "filters": {
+                          "filters": [
+                            {
+                              "field": "telegram_id",
+                              "operator": "eq",
+                              "value": "{{trigger['output'].data.telegramId}}"
+                            }
+                          ]
+                        },
+                        "limit": 1,
+                        "record_ids": [],
+                        "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "columns": [
+                        "39qJ4o2MYyNYsT2VtxfcK",
+                        "Femtgz8bh7N8jSOMUHfRt",
+                        "zIA6xEHm7y1bwkajoYDQn"
+                      ],
+                      "filters": {
+                        "filters": [
+                          {
+                            "field": "id",
+                            "operator": "eq",
+                            "value": "{{step_14['output'].eventIdOrNone}}"
+                          }
+                        ]
+                      },
+                      "limit": 1,
+                      "record_ids": [],
+                      "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "broadcastRecords": "{{step_13['output']}}",
+                    "segment": "{{step_2['output'].arg}}",
+                    "telegramId": "{{trigger['output'].data.telegramId}}"
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  const seg = str(inputs.segment);\n  const segValid = ['all_consent', 'registered', 'attended', 'no_show'].indexOf(seg) >= 0;\n  if (!b || str(b.id) === '') return { found: false, bid: '', eventId: '', eventIdOrNone: '__none__', creatorOk: false, segValid: segValid, segment: seg };\n  const eventId = str(b.event_id);\n  return {\n    found: true, bid: str(b.id), eventId: eventId, eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    creatorOk: str(b.created_by) === str(inputs.telegramId), segValid: segValid, segment: seg,\n  };\n};",
+                    "packageJson": "{}"
+                  }
+                },
+                "type": "CODE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "tables-find-records",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": "id",
+                        "operator": "eq",
+                        "value": "{{step_2['output'].bid}}"
+                      }
+                    ]
+                  },
+                  "limit": 1,
+                  "record_ids": [],
+                  "table_id": "XrygYF5Q4EUOKkaBFallb"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.5"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            {
+              "displayName": "read broadcast for test",
+              "name": "step_27",
+              "nextAction": {
+                "displayName": "test gate",
+                "name": "step_28",
+                "nextAction": {
+                  "children": [
+                    {
+                      "displayName": "send test to self",
+                      "name": "step_30",
+                      "nextAction": {
+                        "displayName": "test delivered?",
+                        "name": "step_31",
+                        "nextAction": {
+                          "children": [
+                            {
+                              "displayName": "stamp test_sent_at",
+                              "name": "step_33",
+                              "nextAction": {
+                                "displayName": "confirm test",
+                                "name": "step_34",
+                                "settings": {
+                                  "actionName": "send_text_message",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "chat_id": "{{trigger['output'].data.chatId}}",
+                                    "disable_notification": false,
+                                    "format": "None",
+                                    "message": "{{step_28['output'].confirmText}}",
+                                    "protect_content": false,
+                                    "web_page_preview": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                                  "qadamVersion": "0.8.0"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "actionName": "tables-upsert-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "key_columns": [
+                                    "AXQRMe7knv8NFDCckziRD"
+                                  ],
+                                  "table_id": "XrygYF5Q4EUOKkaBFallb",
+                                  "values": {
+                                    "values": [
+                                      {
+                                        "7BP3OXd4mJxqrkodJMm3i": "{{step_31['output'].nowIso}}",
+                                        "AXQRMe7knv8NFDCckziRD": "{{step_28['output'].bid}}"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.4.5"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "send test failed",
+                              "name": "step_35",
+                              "settings": {
+                                "actionName": "send_text_message",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "chat_id": "{{trigger['output'].data.chatId}}",
+                                  "disable_notification": false,
+                                  "format": "None",
+                                  "message": "{{step_28['output'].failText}}",
+                                  "protect_content": false,
+                                  "web_page_preview": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-telegram-bot",
+                                "qadamVersion": "0.8.0"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            }
+                          ],
+                          "displayName": "delivered verdict",
+                          "name": "step_32",
+                          "settings": {
+                            "branches": [
+                              {
+                                "branchName": "delivered",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_31['output'].delivered}}",
+                                      "operator": "BOOLEAN_IS_TRUE"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "Otherwise",
+                                "branchType": "FALLBACK"
+                              }
+                            ],
+                            "executionType": "EXECUTE_FIRST_MATCH"
+                          },
+                          "type": "ROUTER",
+                          "valid": true
+                        },
+                        "settings": {
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "sendErr": "{{step_30['error']}}"
+                          },
+                          "sourceCode": {
+                            "code": "export const code = async (inputs) => {\n  const err = inputs.sendErr;\n  const hasErr = err !== undefined && err !== null && !(typeof err === 'object' && Object.keys(err).length === 0) && err !== '';\n  return { delivered: !hasErr, nowIso: new Date().toISOString() };\n};",
+                            "packageJson": "{}"
+                          }
+                        },
+                        "type": "CODE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "actionName": "send_text_message",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": true
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_notification": false,
+                          "format": "None",
+                          "message": "{{step_28['output'].body}}",
+                          "protect_content": false,
+                          "reply_markup": "{{step_28['output'].unsubMarkup}}",
+                          "web_page_preview": false
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    {
+                      "displayName": "send test deny",
+                      "name": "step_36",
+                      "settings": {
+                        "actionName": "send_text_message",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_notification": false,
+                          "format": "None",
+                          "message": "{{step_28['output'].errText}}",
+                          "protect_content": false,
+                          "web_page_preview": false
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    }
+                  ],
+                  "displayName": "test gate verdict",
+                  "name": "step_29",
+                  "settings": {
+                    "branches": [
+                      {
+                        "branchName": "ok",
+                        "branchType": "CONDITION",
+                        "conditions": [
+                          [
+                            {
+                              "firstValue": "{{step_28['output'].ok}}",
+                              "operator": "BOOLEAN_IS_TRUE"
+                            }
+                          ]
+                        ]
+                      },
+                      {
+                        "branchName": "Otherwise",
+                        "branchType": "FALLBACK"
+                      }
+                    ],
+                    "executionType": "EXECUTE_FIRST_MATCH"
+                  },
+                  "type": "ROUTER",
+                  "valid": true
+                },
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "broadcastRecords": "{{step_27['output']}}",
+                    "telegramId": "{{trigger['output'].data.telegramId}}",
+                    "texts": {
+                      "bcast.btn.unsubscribe": "Отписаться",
+                      "bcast.test.sent": "Тест отправлен. Проверьте, как выглядит, и подтвердите отправку.",
+                      "common.err.forbidden": "Недостаточно прав для этого действия.",
+                      "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                    }
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return { ok: false, body: '', bid: '', unsubMarkup: null, errText: t('common.err.generic'), confirmText: t('bcast.test.sent'), failText: t('common.err.generic') };\n  if (str(b.created_by) !== str(inputs.telegramId)) return { ok: false, body: '', bid: '', unsubMarkup: null, errText: t('common.err.forbidden'), confirmText: t('bcast.test.sent'), failText: t('common.err.generic') };\n  if (str(b.body) === '') return { ok: false, body: '', bid: '', unsubMarkup: null, errText: t('common.err.generic'), confirmText: t('bcast.test.sent'), failText: t('common.err.generic') };\n  return {\n    ok: true, body: str(b.body), bid: str(b.id), errText: '',\n    confirmText: t('bcast.test.sent'), failText: t('common.err.generic'),\n    unsubMarkup: { inline_keyboard: [[{ text: t('bcast.btn.unsubscribe'), callback_data: 'bcast:unsub:' + str(b.id) }]] },\n  };\n};",
+                    "packageJson": "{}"
+                  }
+                },
+                "type": "CODE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "tables-find-records",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": "id",
+                        "operator": "eq",
+                        "value": "{{step_2['output'].bid}}"
+                      }
+                    ]
+                  },
+                  "limit": 1,
+                  "record_ids": [],
+                  "table_id": "XrygYF5Q4EUOKkaBFallb"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.5"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            {
+              "displayName": "read broadcast for send",
+              "name": "step_37",
+              "nextAction": {
+                "displayName": "send context",
+                "name": "step_38",
+                "nextAction": {
+                  "displayName": "read event for send",
+                  "name": "step_39",
+                  "nextAction": {
+                    "displayName": "send gate final",
+                    "name": "step_40",
+                    "nextAction": {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "displayName": "send interrupted note",
+                              "name": "step_43",
+                              "nextAction": {
+                                "displayName": "call run resume",
+                                "name": "step_44",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "executionMode": "queue",
+                                    "flow": {
+                                      "exampleData": {
+                                        "broadcastId": "abc",
+                                        "chatId": "322876545",
+                                        "phase": "start",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "uRUDWnYt303De2TuziKm4"
+                                    },
+                                    "flowProps": {
+                                      "payload": {
+                                        "broadcastId": "{{step_38['output'].bid}}",
+                                        "chatId": "{{trigger['output'].data.chatId}}",
+                                        "phase": "start",
+                                        "telegramId": "{{trigger['output'].data.telegramId}}"
+                                      }
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "actionName": "send_text_message",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "chat_id": "{{trigger['output'].data.chatId}}",
+                                  "disable_notification": false,
+                                  "format": "None",
+                                  "message": "{{step_40['output'].resumeText}}",
+                                  "protect_content": false,
+                                  "web_page_preview": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-telegram-bot",
+                                "qadamVersion": "0.8.0"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call run start",
+                              "name": "step_45",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "broadcastId": "abc",
+                                      "chatId": "322876545",
+                                      "phase": "start",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "uRUDWnYt303De2TuziKm4"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "broadcastId": "{{step_38['output'].bid}}",
+                                      "chatId": "{{trigger['output'].data.chatId}}",
+                                      "phase": "start",
+                                      "telegramId": "{{trigger['output'].data.telegramId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            }
+                          ],
+                          "displayName": "resumed?",
+                          "name": "step_42",
+                          "settings": {
+                            "branches": [
+                              {
+                                "branchName": "resumed",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_40['output'].resumed}}",
+                                      "operator": "BOOLEAN_IS_TRUE"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "Otherwise",
+                                "branchType": "FALLBACK"
+                              }
+                            ],
+                            "executionType": "EXECUTE_FIRST_MATCH"
+                          },
+                          "type": "ROUTER",
+                          "valid": true
+                        },
+                        {
+                          "displayName": "send send deny",
+                          "name": "step_46",
+                          "settings": {
+                            "actionName": "send_text_message",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "disable_notification": false,
+                              "format": "None",
+                              "message": "{{step_40['output'].reasonText}}",
+                              "protect_content": false,
+                              "web_page_preview": false
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-telegram-bot",
+                            "qadamVersion": "0.8.0"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        }
+                      ],
+                      "displayName": "send verdict",
+                      "name": "step_41",
+                      "settings": {
+                        "branches": [
+                          {
+                            "branchName": "ok",
+                            "branchType": "CONDITION",
+                            "conditions": [
+                              [
+                                {
+                                  "firstValue": "{{step_40['output'].verdict}}",
+                                  "operator": "TEXT_EXACTLY_MATCHES",
+                                  "secondValue": "ok"
+                                }
+                              ]
+                            ]
+                          },
+                          {
+                            "branchName": "Otherwise",
+                            "branchType": "FALLBACK"
+                          }
+                        ],
+                        "executionType": "EXECUTE_FIRST_MATCH"
+                      },
+                      "type": "ROUTER",
+                      "valid": true
+                    },
+                    "settings": {
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "ctx": "{{step_38['output']}}",
+                        "eventRecords": "{{step_39['output']}}",
+                        "texts": {
+                          "bcast.finished": "Рассылка завершена: отправлено {sent}, ошибок {failed}.",
+                          "bcast.interrupted": "Рассылка была прервана. Продолжаем с места остановки — повторно никому не отправляем.",
+                          "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания ивента — {when}. Пока часть людей ещё в дороге.",
+                          "bcast.send.blocked_no_test": "Сначала отправьте тест себе — без этого рассылку не запускаем.",
+                          "bcast.send_after_stop": "Рассылка остановлена, повторный запуск невозможен. Для новой рассылки перешлите сообщение боту.",
+                          "common.err.event_not_found": "Ивент не найден.",
+                          "common.err.forbidden": "Недостаточно прав для этого действия.",
+                          "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                        }
+                      },
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fmtTash = (iso) => {\n    const ms = parseDate(iso);\n    if (!isFinite(ms)) return '';\n    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date(ms));\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] || k);\n    if (vars) Object.keys(vars).forEach((key) => { s = s.split('{' + key + '}').join(String(vars[key])); });\n    return s;\n  };\n  const deny = (reasonText) => ({ verdict: 'deny', reasonText: reasonText, resumed: false, resumeText: t('bcast.interrupted') });\n  const ctx = inputs.ctx || {};\n  if (!ctx.found) return deny(t('common.err.generic'));\n  if (!ctx.creatorOk) return deny(t('common.err.forbidden'));\n  if (str(ctx.status) === 'done') return deny(t('bcast.finished', { sent: 0, failed: 0 }));\n  if (str(ctx.status) === 'failed') return deny(t('bcast.send_after_stop'));\n  if (!ctx.segSet) return deny(t('common.err.generic'));\n  if (!ctx.hasTest) return deny(t('bcast.send.blocked_no_test'));\n  const ev = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(ctx.eventId))[0];\n  if (!ev) return deny(t('common.err.event_not_found'));\n  if (str(ctx.segment) === 'no_show') {\n    const endsMs = parseDate(ev.ends_at);\n    if (!isFinite(endsMs) || endsMs > Date.now()) {\n      const when = fmtTash(ev.ends_at) || str(ev.ends_at);\n      return deny(t('bcast.segment.no_show_locked', { when: when }));\n    }\n  }\n  return { verdict: 'ok', reasonText: '', resumed: str(ctx.status) === 'running', resumeText: t('bcast.interrupted') };\n};",
+                        "packageJson": "{}"
+                      }
+                    },
+                    "type": "CODE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "columns": [
+                        "39qJ4o2MYyNYsT2VtxfcK",
+                        "zIA6xEHm7y1bwkajoYDQn"
+                      ],
+                      "filters": {
+                        "filters": [
+                          {
+                            "field": "id",
+                            "operator": "eq",
+                            "value": "{{step_38['output'].eventIdOrNone}}"
+                          }
+                        ]
+                      },
+                      "limit": 1,
+                      "record_ids": [],
+                      "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "broadcastRecords": "{{step_37['output']}}",
+                    "telegramId": "{{trigger['output'].data.telegramId}}"
+                  },
+                  "sourceCode": {
+                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return { found: false, bid: '', eventId: '', eventIdOrNone: '__none__', creatorOk: false, hasTest: false, segSet: false, segment: '', status: '' };\n  const eventId = str(b.event_id);\n  return {\n    found: true, bid: str(b.id), eventId: eventId, eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    creatorOk: str(b.created_by) === str(inputs.telegramId),\n    hasTest: str(b.test_sent_at) !== '', segSet: str(b.segment) !== '',\n    segment: str(b.segment), status: str(b.status),\n  };\n};",
+                    "packageJson": "{}"
+                  }
+                },
+                "type": "CODE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "tables-find-records",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": "id",
+                        "operator": "eq",
+                        "value": "{{step_2['output'].bid}}"
+                      }
+                    ]
+                  },
+                  "limit": 1,
+                  "record_ids": [],
+                  "table_id": "XrygYF5Q4EUOKkaBFallb"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.5"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            {
+              "displayName": "cancel ctx",
+              "name": "step_47",
+              "nextAction": {
+                "displayName": "read broadcast for cancel",
+                "name": "step_48",
+                "nextAction": {
+                  "displayName": "cancel decide",
+                  "name": "step_49",
+                  "nextAction": {
+                    "children": [
+                      {
+                        "displayName": "fail cancelled row",
+                        "name": "step_51",
+                        "nextAction": {
+                          "displayName": "clear session mine",
+                          "name": "step_52",
+                          "nextAction": {
+                            "displayName": "send cancelled mine",
+                            "name": "step_53",
+                            "settings": {
+                              "actionName": "send_text_message",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "chat_id": "{{trigger['output'].data.chatId}}",
+                                "disable_notification": false,
+                                "format": "None",
+                                "message": "{{step_49['output'].text}}",
+                                "protect_content": false,
+                                "web_page_preview": false
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-telegram-bot",
+                              "qadamVersion": "0.8.0"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "tables-upsert-records",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "key_columns": [
+                                "N8CdPxcdxLX9vFCINvZbL"
+                              ],
+                              "table_id": "toTKgngMTqDNJWDpQMh4d",
+                              "values": {
+                                "values": [
+                                  {
+                                    "ESthrMwpn29JLvE2BNIj4": "-",
+                                    "IdGimBh539UlGSz6L0Pyo": "-",
+                                    "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}"
+                                  }
+                                ]
+                              }
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.4.5"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "tables-upsert-records",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "key_columns": [
+                              "AXQRMe7knv8NFDCckziRD"
+                            ],
+                            "table_id": "XrygYF5Q4EUOKkaBFallb",
+                            "values": {
+                              "values": [
+                                {
+                                  "6ITY7K1B8OgqL0lm2Idbg": "failed",
+                                  "AXQRMe7knv8NFDCckziRD": "{{step_49['output'].bid}}",
+                                  "yevE4jElXPvczO4LTt2Yj": "{{step_49['output'].nowIso}}"
+                                }
+                              ]
+                            }
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.4.5"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      {
+                        "displayName": "clear session other",
+                        "name": "step_54",
+                        "nextAction": {
+                          "displayName": "send cancelled other",
+                          "name": "step_55",
+                          "settings": {
+                            "actionName": "send_text_message",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "disable_notification": false,
+                              "format": "None",
+                              "message": "{{step_49['output'].text}}",
+                              "protect_content": false,
+                              "web_page_preview": false
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-telegram-bot",
+                            "qadamVersion": "0.8.0"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "tables-upsert-records",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "key_columns": [
+                              "N8CdPxcdxLX9vFCINvZbL"
+                            ],
+                            "table_id": "toTKgngMTqDNJWDpQMh4d",
+                            "values": {
+                              "values": [
+                                {
+                                  "ESthrMwpn29JLvE2BNIj4": "-",
+                                  "IdGimBh539UlGSz6L0Pyo": "-",
+                                  "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}"
+                                }
+                              ]
+                            }
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.4.5"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      }
+                    ],
+                    "displayName": "cancel verdict",
+                    "name": "step_50",
+                    "settings": {
+                      "branches": [
+                        {
+                          "branchName": "mine",
+                          "branchType": "CONDITION",
+                          "conditions": [
+                            [
+                              {
+                                "firstValue": "{{step_49['output'].hasMine}}",
+                                "operator": "BOOLEAN_IS_TRUE"
+                              }
+                            ]
+                          ]
+                        },
+                        {
+                          "branchName": "Otherwise",
+                          "branchType": "FALLBACK"
+                        }
+                      ],
+                      "executionType": "EXECUTE_FIRST_MATCH"
+                    },
+                    "type": "ROUTER",
+                    "valid": true
+                  },
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "bid": "{{step_2['output'].bid}}",
+                      "broadcastRecords": "{{step_48['output']}}",
+                      "telegramId": "{{trigger['output'].data.telegramId}}",
+                      "texts": {
+                        "bcast.cancelled": "Рассылка отменена, никому ничего не ушло.",
+                        "bcast.cancelled_running": "Рассылка прервана. Текущий чанк досылается, остаток не уйдёт."
+                      }
+                    },
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const rows = arr(inputs.broadcastRecords).map(flat).filter((r) => str(r.id) !== '');\n  const mine = rows.filter((r) => str(r.created_by) === str(inputs.telegramId))[0];\n  if (!mine) return { hasMine: false, bid: '', text: t('bcast.cancelled'), nowIso: new Date().toISOString(), wasRunning: false };\n  const wasRunning = str(mine.status) === 'running';\n  return { hasMine: true, bid: str(mine.id), text: wasRunning ? t('bcast.cancelled_running') : t('bcast.cancelled'), nowIso: new Date().toISOString(), wasRunning: wasRunning };\n};",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-find-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": "id",
+                          "operator": "eq",
+                          "value": "{{step_47['output'].bidOrNone}}"
+                        }
+                      ]
+                    },
+                    "limit": 1,
+                    "record_ids": [],
+                    "table_id": "XrygYF5Q4EUOKkaBFallb"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "bid": "{{step_2['output'].bid}}"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const bid = String(inputs.bid === undefined || inputs.bid === null ? '' : inputs.bid);\n  return { bidOrNone: bid !== '' ? bid : '__none__' };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            {
+              "displayName": "unknown bcast callback",
+              "name": "step_56",
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "op": "{{step_2['output'].op}}",
+                  "valid": "{{step_2['output'].valid}}"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  return { ignored: true, op: String(inputs.op === undefined || inputs.op === null ? '' : inputs.op) };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            }
+          ],
+          "displayName": "by op",
+          "name": "step_3",
+          "settings": {
+            "branches": [
+              {
+                "branchName": "ev",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].op}}",
+                      "operator": "TEXT_EXACTLY_MATCHES",
+                      "secondValue": "ev"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "seg",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].op}}",
+                      "operator": "TEXT_EXACTLY_MATCHES",
+                      "secondValue": "seg"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "test",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].op}}",
+                      "operator": "TEXT_EXACTLY_MATCHES",
+                      "secondValue": "test"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "send",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].op}}",
+                      "operator": "TEXT_EXACTLY_MATCHES",
+                      "secondValue": "send"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "cancel",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].op}}",
+                      "operator": "TEXT_EXACTLY_MATCHES",
+                      "secondValue": "cancel"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "Otherwise",
+                "branchType": "FALLBACK"
+              }
+            ],
+            "executionType": "EXECUTE_FIRST_MATCH"
+          },
+          "type": "ROUTER",
+          "valid": true
+        },
+        "settings": {
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "callbackData": "{{trigger['output'].data.callbackData}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const parts = str(inputs.callbackData).split(':');\n  const ops = ['ev', 'seg', 'test', 'send', 'cancel'];\n  let op = '', bid = '', arg = '', valid = false;\n  if (parts[0] === 'bcast' && ops.indexOf(parts[1]) >= 0) {\n    op = parts[1];\n    if (op === 'ev') { arg = str(parts[2]); valid = arg !== ''; }\n    else if (op === 'seg') { bid = str(parts[2]); arg = str(parts[3]); valid = bid !== '' && arg !== ''; }\n    else if (op === 'test' || op === 'send') { bid = str(parts[2]); valid = bid !== ''; }\n    else if (op === 'cancel') { bid = str(parts[2]); valid = true; }\n  }\n  return { op: op, bid: bid, arg: arg, valid: valid };\n};",
+            "packageJson": "{}"
+          }
+        },
+        "type": "CODE",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "answer_callback_query",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": true
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}"
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-telegram-bot",
+        "qadamVersion": "0.8.0"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "callbackData": "bcast:seg:abc:registered",
+          "callbackQueryId": "sample-cbq-id",
+          "chatId": "322876545",
+          "telegramId": "322876545"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

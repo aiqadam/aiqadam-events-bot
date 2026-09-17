@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 16 | [flows/](flows/) |
+| Флоу | 22 | [flows/](flows/) |
 | Таблицы | 12 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -27,7 +27,9 @@ W26 закрыт («готов», независимое ревью, три кр
 | Точка входа бота | [tg-router](flows/tg-router.md) |
 | Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
 | Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) |
-| Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывающего пока нет, ждёт W12 |
+| Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина; вызывает [lifecycle](flows/lifecycle.md) |
+| Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба DISABLED до утреннего живого прогона (хвост W12) |
+| Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+ивент; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
 | Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
@@ -72,11 +74,13 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), получает ссылку регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
+| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), видит
+участников со счётчиками и выгружает CSV/JSON (W13), получает ссылку
+регистрации (W37); форма — визард из четырёх шагов (W42: основное → где и когда → места → проверка) | [manage-api](flows/manage-api.md) |
 | `#/events?tab=mine\|upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; регистрация — шитом PAR-1/PAR-2 на месте, подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
 
-Роут `manage` открывается кнопкой «Создать ивент» в карточке [menu](flows/menu.md)
-(`web_app` на `#/manage`); права на создание **и** правку решает `manage-api` по `initData`,
+Роут `manage` открывается кнопкой «Мои ивенты» в карточке [menu](flows/menu.md)
+(`web_app` на `#/manage`; W13: вход в создание — кнопка на экране списка); права на создание **и** правку решает `manage-api` по `initData`,
 таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)). Фото афиши
 форма не трогает ([Q46](../docs/OPEN-QUESTIONS.md#q46), временно снято из OWN-1);

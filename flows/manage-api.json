@@ -923,6 +923,381 @@
                         "valid": true
                       },
                       {
+                        "displayName": "search: read registrations",
+                        "name": "step_38",
+                        "nextAction": {
+                          "displayName": "search: read staff",
+                          "name": "step_39",
+                          "nextAction": {
+                            "displayName": "search: read users",
+                            "name": "step_40",
+                            "nextAction": {
+                              "displayName": "search: read controllers",
+                              "name": "step_41",
+                              "nextAction": {
+                                "displayName": "staff: search candidates",
+                                "name": "step_42",
+                                "nextAction": {
+                                  "displayName": "respond (staff search)",
+                                  "name": "step_43",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "candidates": "{{step_42['output'].candidates}}",
+                                          "count": "{{step_42['output'].count}}",
+                                          "error": "{{step_42['output'].error}}",
+                                          "eventId": "{{step_42['output'].eventId}}",
+                                          "fields": "{{step_42['output'].fields}}",
+                                          "ok": "{{step_42['output'].ok}}",
+                                          "text": "{{step_42['output'].text}}",
+                                          "title": "{{step_42['output'].title}}"
+                                        },
+                                        "headers": {},
+                                        "status": "{{step_42['output'].httpStatus}}"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.35"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "controllerRows": "{{step_41['output']}}",
+                                    "event": "{{step_6['output']}}",
+                                    "hmac": "{{step_1['output'].data}}",
+                                    "regRows": "{{step_38['output']}}",
+                                    "req": "{{step_5['output']}}",
+                                    "staff": "{{step_18['output']}}",
+                                    "staffRows": "{{step_39['output']}}",
+                                    "texts": {
+                                      "manage.err.forbidden": "Нет прав на правку этого ивента",
+                                      "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже."
+                                    },
+                                    "userRows": "{{step_40['output']}}"
+                                  },
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', candidates: [], count: 0\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7/step_20 (Q25) -----------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи:\n  // «не staff», «чужой чаптер» и «нет ивента» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- запрос: минимум 2 символа (решение W44) --------------------------------\n  // Короткий/пустой запрос — пустой список, а не вся база: без запроса базу\n  // не светим. Фильтры Tables по подстроке не умеют (Q15), поэтому сравнение\n  // здесь, в коде, а не в чтении.\n  const q = str(req.query).replace(/^@/, '').toLowerCase();\n  if (q.length < 2) return respond('done', 200, { ok: true, title: title, candidates: [], count: 0 });\n\n  // --- кандидаты: участники ивента + staff чаптера (Q51) ----------------------\n  // Участники — все telegram_id из registrations ивента (включая отменённые:\n  // человек остался известен боту, как в прототипе data.js). Staff — строки\n  // staff этого чаптера плюс глобальные (chapter_id=''). Действующие\n  // контролёры ивента исключаются (их добавлять не надо — они уже).\n  const pool = {};\n  arr(inputs.regRows).map(flat).forEach((r) => {\n    if (str(r.event_id) === eventId && str(r.telegram_id) !== '') pool[str(r.telegram_id)] = true;\n  });\n  const chapterId = str(ev.chapter_id);\n  arr(inputs.staffRows).map(flat).forEach((r) => {\n    const c = str(r.chapter_id);\n    if ((c === '' || chapterId === '' || c === chapterId) && str(r.telegram_id) !== '') pool[str(r.telegram_id)] = true;\n  });\n  const active = {};\n  arr(inputs.controllerRows).map(flat).forEach((r) => {\n    if (str(r.event_id) === eventId && str(r.revoked_at) === '' && str(r.telegram_id) !== '') active[str(r.telegram_id)] = true;\n  });\n\n  // --- join к users и совпадение ----------------------------------------------\n  // Имя и username — только подписи для поиска (DAT-1): решение и запись идут\n  // по telegram_id, username ключом не становится. Кого нет в users (ID ввели\n  // руками, бот человека не видел) — показать нечего, остаётся ручной ввод.\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const out = [];\n  Object.keys(pool).forEach((id) => {\n    if (active[id]) return;\n    const u = usersById[id];\n    if (!u) return;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    const username = str(u.username).replace(/^@/, '');\n    if (name === '' && username === '') return;\n    const hay = (name + ' ' + username).toLowerCase();\n    if (hay.indexOf(q) < 0) return;\n    out.push({ telegram_id: id, name: name, username: username });\n  });\n  out.sort((a, b) => (a.name || a.username) < (b.name || b.username) ? -1 : 1);\n  const top = out.slice(0, 20);\n  return respond('done', 200, { ok: true, title: title, candidates: top, count: top.length });\n};",
+                                    "packageJson": "{}"
+                                  }
+                                },
+                                "type": "CODE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "actionName": "tables-find-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "columns": [
+                                    "r5WohfFLBagrxVrPDgB9s",
+                                    "Rs62LH1YLr1QBsnpIrJzH",
+                                    "zX2FO3bZZJuAZcVyZHiRw"
+                                  ],
+                                  "filters": {
+                                    "filters": [
+                                      {
+                                        "field": {
+                                          "id": "r5WohfFLBagrxVrPDgB9s",
+                                          "name": "event_id",
+                                          "type": "TEXT"
+                                        },
+                                        "operator": "eq",
+                                        "value": "{{step_5['output'].eventId}}"
+                                      }
+                                    ]
+                                  },
+                                  "limit": 200,
+                                  "record_ids": [],
+                                  "table_id": "t1g8Vae3iEoDk93D6Rle7"
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.4.5"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-find-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "columns": [
+                                  "JtylZU291K7TuMn9c9F2t",
+                                  "nWPJjEcVpqMUaMwdEpPX5",
+                                  "yd5CbkPctz2GXmBabZeVV",
+                                  "QCFLn2jRQPxB4RpMKxAKH"
+                                ],
+                                "filters": {},
+                                "limit": 200,
+                                "record_ids": [],
+                                "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "tables-find-records",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "columns": [
+                                "qfAUeRaI9qmZCizV8dNKg",
+                                "thFbiP83v33fm1QuvjAXC"
+                              ],
+                              "filters": {},
+                              "limit": 200,
+                              "record_ids": [],
+                              "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.4.5"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "tables-find-records",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "columns": [
+                              "qQPYl9c0ew6n8w2CGYZII",
+                              "mVfpZFCwAZskWXNT7iCuI"
+                            ],
+                            "filters": {
+                              "filters": [
+                                {
+                                  "field": {
+                                    "id": "qQPYl9c0ew6n8w2CGYZII",
+                                    "name": "event_id",
+                                    "type": "TEXT"
+                                  },
+                                  "operator": "eq",
+                                  "value": "{{step_5['output'].eventId}}"
+                                }
+                              ]
+                            },
+                            "limit": 200,
+                            "record_ids": [],
+                            "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.4.5"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      {
+                        "displayName": "read participants rows",
+                        "name": "step_44",
+                        "nextAction": {
+                          "displayName": "read participants names",
+                          "name": "step_45",
+                          "nextAction": {
+                            "displayName": "participants: shape + export",
+                            "name": "step_46",
+                            "nextAction": {
+                              "displayName": "respond (participants)",
+                              "name": "step_47",
+                              "settings": {
+                                "actionName": "return_response",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "fields": {
+                                    "body": {
+                                      "count": "{{step_46['output'].count}}",
+                                      "counters": "{{step_46['output'].counters}}",
+                                      "csv": "{{step_46['output'].csv}}",
+                                      "error": "{{step_46['output'].error}}",
+                                      "eventId": "{{step_46['output'].eventId}}",
+                                      "fields": "{{step_46['output'].fields}}",
+                                      "json": "{{step_46['output'].json}}",
+                                      "ok": "{{step_46['output'].ok}}",
+                                      "rows": "{{step_46['output'].rows}}",
+                                      "text": "{{step_46['output'].text}}",
+                                      "title": "{{step_46['output'].title}}"
+                                    },
+                                    "headers": {},
+                                    "status": "{{step_46['output'].httpStatus}}"
+                                  },
+                                  "respond": "stop",
+                                  "responseType": "json"
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-webhook",
+                                "qadamVersion": "0.1.35"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "event": "{{step_6['output']}}",
+                                "hmac": "{{step_1['output'].data}}",
+                                "regRows": "{{step_44['output']}}",
+                                "req": "{{step_5['output']}}",
+                                "staff": "{{step_18['output']}}",
+                                "texts": {
+                                  "manage.err.forbidden": "Нет прав на правку этого ивента",
+                                  "manage.parts.col_checked_in": "Время чекина",
+                                  "manage.parts.col_name": "Имя",
+                                  "manage.parts.col_status": "Статус",
+                                  "manage.parts.col_telegram_id": "telegram_id",
+                                  "myreg.status.cancelled": "отменена",
+                                  "myreg.status.checked_in": "был на ивенте",
+                                  "myreg.status.registered": "зарегистрирован"
+                                },
+                                "userRows": "{{step_45['output']}}"
+                              },
+                              "sourceCode": {
+                                "code": "export const code = async (inputs) => {\n  // W13: участники ивента (OWN-7) + строки CSV/JSON для экспорта (OWN-8).\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20/step_42).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', counters: { registered: 0, checked_in: 0, cancelled: 0 },\n    rows: [], count: 0, csv: '', json: '[]'\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load` (Q25) ----------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи, а не как\n  // непустота выборки: «не staff», «чужой чаптер» и «нет ивента» отвечают\n  // одинаково — одним 403.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- схлопывание дублей по telegram_id (DATA-MODEL, IDM-1/IDM-2) ------------\n  // Уникальности в БД нет (ADR-0003): одна пара (event_id, telegram_id) может\n  // дать несколько строк. Статус берёт самая ранняя строка по registered_at —\n  // эталон fn-find-registration (с ним же сверяется чекин, расходиться нельзя);\n  // пришёл = непустой checked_in_at хоть в одной строке (IDM-2), показывается\n  // самое раннее время.\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const rows = arr(inputs.regRows).map(flat)\n    .filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  const ratMs = (r) => parseIso(str(r.registered_at));\n  rows.sort((a, b) => {\n    const x = ratMs(a), y = ratMs(b);\n    if (isFinite(x) && isFinite(y)) return x - y;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const byId = {};\n  rows.forEach((r) => {\n    const id = str(r.telegram_id);\n    if (!byId[id]) byId[id] = { status: 'registered', checked_in_at: '', seen: false };\n    const cur = byId[id];\n    if (!cur.seen) {\n      cur.status = str(r.status) === 'cancelled' ? 'cancelled' : 'registered';\n      cur.seen = true;\n    }\n    const cin = str(r.checked_in_at);\n    if (cin !== '') {\n      const ms = parseIso(cin), curMs = parseIso(cur.checked_in_at);\n      if (cur.checked_in_at === '' || (isFinite(ms) && (!isFinite(curMs) || ms < curMs))) cur.checked_in_at = cin;\n    }\n  });\n\n  // --- имена из users (DAT-1: только подписи, решение — по telegram_id) -------\n  // Кого нет в users — показать нечего: имя заменяет сам telegram_id, строка\n  // не теряется (экспорт обязан сходиться со счётчиками).\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  // --- даты — Asia/Tashkent словами (OWN-3) -----------------------------------\n  // Формат фиксирован строкой «DD.MM.YYYY HH:mm»: читается в RU-Excel как\n  // дата, в JSON — однозначен. Строится из частей (formatToParts), а не\n  // готовой строкой Intl — разделители не зависят от версии ICU.\n  const dtf = new Intl.DateTimeFormat('ru-RU', {\n    timeZone: 'Asia/Tashkent',\n    day: '2-digit', month: '2-digit', year: 'numeric',\n    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'\n  });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: сначала пришедшие, затем зарегистрированные, затем отмены -----\n  // Внутри группы — по имени (простое сравнение строк, без localeCompare:\n  // его порядок зависит от ICU рантайма). Тот же порядок — в CSV и JSON.\n  const groupOf = (p) => (p.checked_in_at !== '' ? 0 : (p.status === 'registered' ? 1 : 2));\n  const shaped = Object.keys(byId).map((id) => ({\n    telegram_id: id,\n    name: personName(id),\n    status: byId[id].status,\n    checked_in_at: fmtTashkent(byId[id].checked_in_at)\n  }));\n  shaped.sort((a, b) => {\n    const g = groupOf(a) - groupOf(b);\n    if (g !== 0) return g;\n    if (a.name < b.name) return -1;\n    if (a.name > b.name) return 1;\n    return a.telegram_id < b.telegram_id ? -1 : 1;\n  });\n\n  // --- счётчики — по УНИКАЛЬНЫМ telegram_id, не строкам (DATA-MODEL) ----------\n  // registered включает пришедших (статус у них registered) — как в эталоне\n  // (48 ≥ 31) и формулах DATA-MODEL: зарегистрировано = status=registered;\n  // пришло = checked_in_at непусто; отменило = status=cancelled.\n  const counters = { registered: 0, checked_in: 0, cancelled: 0 };\n  shaped.forEach((p) => {\n    if (p.status === 'registered') counters.registered += 1;\n    else counters.cancelled += 1;\n    if (p.checked_in_at !== '') counters.checked_in += 1;\n  });\n\n  // --- экспорт: собирает сервер одной строкой (OWN-8) -------------------------\n  // Файл строит сервер, а не SPA: экранирование и даты в одном месте, рядом\n  // со счётчиками — расхождения «на экране одно, в файле другое» нет.\n  // Статус — русским текстом (тот же словарь, что экран: myreg.status.*);\n  // пришедший показывается «был на ивенте», как в эталоне.\n  const statusText = (p) => {\n    if (p.checked_in_at !== '') return t('myreg.status.checked_in');\n    if (p.status === 'cancelled') return t('myreg.status.cancelled');\n    return t('myreg.status.registered');\n  };\n  // CSV-инъекция: значение, начинающееся с = + - @, получает префикс '\n  // (запятая не входит: разделитель — ';' под RU-Excel). Кавычки удваиваются,\n  // каждое поле — в кавычках: один инвариант на все поля, без исключений.\n  const csvEsc = (v) => {\n    let s = String(v);\n    if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n    return '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  };\n  const header = [t('manage.parts.col_telegram_id'), t('manage.parts.col_name'), t('manage.parts.col_status'), t('manage.parts.col_checked_in')].map(csvEsc).join(';');\n  const csvBody = shaped.map((p) => [p.telegram_id, p.name, statusText(p), p.checked_in_at].map(csvEsc).join(';')).join('\\n');\n  // BOM — первый символ строки: любой потребитель, сохранивший её как есть,\n  // получает файл с целой кириллицей в Excel. JSON — без BOM (валидность).\n  const csv = '﻿' + header + (csvBody ? '\\n' + csvBody : '');\n  const json = JSON.stringify({\n    event: { id: eventId, title: title },\n    exported_at: fmtTashkent(new Date(Date.now()).toISOString()),\n    counters: counters,\n    rows: shaped.map((p) => ({ telegram_id: p.telegram_id, name: p.name, status: statusText(p), checked_in_at: p.checked_in_at }))\n  }, null, 2);\n\n  return respond('done', 200, {\n    ok: true, title: title,\n    counters: counters, rows: shaped, count: shaped.length,\n    csv: csv, json: json\n  });\n};",
+                                "packageJson": "{}"
+                              }
+                            },
+                            "type": "CODE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "tables-find-records",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "columns": [
+                                "JtylZU291K7TuMn9c9F2t",
+                                "nWPJjEcVpqMUaMwdEpPX5",
+                                "yd5CbkPctz2GXmBabZeVV",
+                                "QCFLn2jRQPxB4RpMKxAKH"
+                              ],
+                              "filters": {},
+                              "limit": 200,
+                              "record_ids": [],
+                              "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.4.5"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "tables-find-records",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "columns": [
+                              "qQPYl9c0ew6n8w2CGYZII",
+                              "mVfpZFCwAZskWXNT7iCuI",
+                              "TZyqC63UAWrPbzxuf2q4w",
+                              "uCnpOj11sJLaX4Rqu6TUG",
+                              "RZYFhQBQbSfNzIVEvmYgd"
+                            ],
+                            "filters": {
+                              "filters": [
+                                {
+                                  "field": {
+                                    "id": "qQPYl9c0ew6n8w2CGYZII",
+                                    "name": "event_id",
+                                    "type": "TEXT"
+                                  },
+                                  "operator": "eq",
+                                  "value": "{{step_5['output'].eventId}}"
+                                }
+                              ]
+                            },
+                            "limit": 200,
+                            "record_ids": [],
+                            "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.4.5"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      {
                         "displayName": "respond (error)",
                         "name": "step_9",
                         "settings": {
@@ -1029,6 +1404,32 @@
                           ]
                         },
                         {
+                          "branchName": "search",
+                          "branchType": "CONDITION",
+                          "conditions": [
+                            [
+                              {
+                                "firstValue": "{{step_7['output'].outcome}}",
+                                "operator": "TEXT_EXACTLY_MATCHES",
+                                "secondValue": "staff_search"
+                              }
+                            ]
+                          ]
+                        },
+                        {
+                          "branchName": "participants",
+                          "branchType": "CONDITION",
+                          "conditions": [
+                            [
+                              {
+                                "firstValue": "{{step_7['output'].outcome}}",
+                                "operator": "TEXT_EXACTLY_MATCHES",
+                                "secondValue": "participants"
+                              }
+                            ]
+                          ]
+                        },
+                        {
                           "branchName": "Otherwise",
                           "branchType": "FALLBACK"
                         }
@@ -1093,7 +1494,7 @@
                       }
                     },
                     "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const isNew = req.isNew === true || req.isNew === 'true';\n  const reqEventId = str(req.eventId);\n  const fields = (req.fields && typeof req.fields === 'object') ? req.fields : {};\n  const botUsername = str(inputs.botUsername);\n  // W37: ссылка регистрации строится на сервере (BOT_USERNAME не запекается\n  // в SPA) и отдаётся только для опубликованного ивента — draft невидим.\n  const inviteFor = (eid, status) => (botUsername && status === 'published' && eid) ? ('https://t.me/' + botUsername + '?start=e' + eid) : '';\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее.\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: '',\n    // запись\n    id: '-', staffId: telegramId, chapterId: '', title: '', description: '', address: '', lat: '', lon: '',\n    startsAt: '', endsAt: '', regDeadlineAt: '', status: '', capacity: '', overbookPct: '',\n    publishedAt: '', cancelledAt: '',\n    // уведомления\n    notifyKind: 'none', notifyText: '', ownerKey: '', ownerVars: {},\n    // W37: ссылка регистрации (только published) и список ивентов чаптера\n    inviteLink: '',\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- права: строка `staff` вызывающего + чаптер (ADR-0024) ------------------\n  // Создание И правка — один глобальный глагол. Нет строки `staff` — отказ.\n  // Scope — чаптер: staff.chapter_id === '' (все чаптеры) или === event.chapter_id.\n  // Строка выбирается по telegram_id, а не как rows[0] (defense in depth, Q25).\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n\n  // --- W37: список ивентов чаптера (route #/manage без :id) -------------------\n  // Права уже проверены: нет строки staff — отказ выше. Дальше отдельная ветка\n  // (step_31…step_33): читает events по chapter_id, отбирает и сортирует код.\n  // Глобальный staff (chapter_id='') нормализуется в '1' — та же норма, что\n  // при создании ивента ниже; отдельных чаптеров в проекте пока нет.\n  if (action === 'list') {\n    return respond('events_list', 200, { ok: true, chapterId: staffChapter || '1' });\n  }\n\n  // --- W42: орг-ссылка Яндекс.Карт (Q55) --------------------------------------\n  // Координаты достаёт Геокодер в отдельной ветке (step_34…step_37): прав\n  // достаточно строки staff (проверена выше), ивент и таблицы не нужны.\n  if (action === 'resolve_geo') {\n    return respond('geo_link', 200, { ok: true, link: str(req.link) });\n  }\n\n  // --- ивент: только по id из запроса ----------------------------------------\n  // Запись выбирается по id, а не как rows[0]: фильтр чтения может\n  // отсутствовать или разойтись — отбор повторяется в коде (catalog/flows/README.md).\n  const rows = arr(inputs.records).map(flat);\n  const ev = rows.filter((r) => str(r.id) === reqEventId)[0] || null;\n  // Сентинел '-' (не-slug на входе) — не ключ, отказ до любого сравнения.\n  if (reqEventId === '-' || reqEventId === '') return forbidden();\n  if (!isNew) {\n    // Правка/чтение: ивент обязан существовать и быть в чаптере вызывающего.\n    // «Не найден», «чужой чаптер» и «не staff» отвечают одинаково — нечего перечислять.\n    if (!ev || str(ev.id) !== reqEventId || !canAccess(ev.chapter_id)) return forbidden();\n  } else if (ev && !canAccess(ev.chapter_id)) {\n    // Создание с newId, занятым записью чужого чаптера: не перезаписываем.\n    return forbidden();\n  }\n  // Повтор создания своим же newId (потерянный ответ) — дальше идёт как\n  // правка существующей записи: orig есть, published_at не перезаписывается.\n\n  // --- W36: действия со списком контролёров -----------------------------------\n  // Права (staff + чаптер события) уже проверены выше — они общие для всех\n  // действий. Сама работа со списком идёт в ветке `staff` (step_19…step_30),\n  // где читается event_staff: здесь только диспетчеризация.\n  if (action === 'staff_list' || action === 'staff_add' || action === 'staff_remove') {\n    return respond('staff', 200, { ok: true, id: reqEventId, eventId: reqEventId });\n  }\n\n  const TZ = 'Asia/Tashkent';\n  const TASHKENT_OFFSET_MIN = 300; // UTC+5, без DST\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  // «YYYY-MM-DDTHH:mm» с экрана — ташкентское время → UTC ISO (OWN-3).\n  const localToUtc = (s) => {\n    const m = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2})(?::(\\d{2}))?$/.exec(s);\n    if (!m) return '';\n    // Компоненты проверяются обратным разбором: Date.UTC молча переносит\n    // 31 февраля на март, а 25:00 — на следующий день.\n    const local = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], m[6] ? +m[6] : 0);\n    const chk = new Date(local);\n    if (!isFinite(local) || chk.getUTCFullYear() !== +m[1] || chk.getUTCMonth() !== +m[2] - 1 || chk.getUTCDate() !== +m[3] || chk.getUTCHours() !== +m[4] || chk.getUTCMinutes() !== +m[5]) return '';\n    return new Date(local - TASHKENT_OFFSET_MIN * 60000).toISOString();\n  };\n  const dispFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const dispDate = (iso) => { const ms = parseIso(iso); return isFinite(ms) ? dispFmt.format(new Date(ms)) : '—'; };\n\n  const pick = (o, keys) => { const out = {}; keys.forEach((k) => { out[k] = str(o[k]); }); return out; };\n  const EVENT_KEYS = ['id', 'title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'status', 'capacity', 'overbook_pct'];\n\n  if (action === 'load') {\n    if (isNew) return forbidden();\n    const out = pick(ev, EVENT_KEYS);\n    out.hasPhoto = str(ev.photo_file_id) !== '';\n    return respond('load', 200, { ok: true, event: out, eventId: str(ev.id), inviteLink: inviteFor(str(ev.id), str(ev.status)) });\n  }\n  if (action !== 'save') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server') });\n\n  // --- валидация ------------------------------------------------------------\n  const f = {};\n  ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'status'].forEach((k) => { f[k] = str(fields[k]); });\n  const errors = {};\n  const orig = ev ? pick(ev, EVENT_KEYS.concat(['published_at', 'cancelled_at', 'staff_id', 'chapter_id'])) : null;\n  const origStatus = orig ? orig.status : '';\n  // Переходы статуса — ровно OWN-4: draft → published → cancelled | finished.\n  // Обратных нет: снять публикацию, «воскресить» отменённый или завершённый\n  // формой нельзя (cancelled_at/finished_at очистить нечем — Q30).\n  const ALLOWED = {\n    '': ['draft', 'published'], 'draft': ['draft', 'published'],\n    'published': ['published', 'cancelled'], 'cancelled': ['cancelled'], 'finished': ['finished']\n  };\n  const allowed = ALLOWED[origStatus] || [];\n  if (allowed.indexOf(f.status) < 0) errors.status = 'manage.err.status';\n\n  if (f.title.length < 2 || f.title.length > 200) errors.title = f.title ? 'manage.err.title_length' : 'manage.err.required';\n  if (f.description.length > 4000) errors.description = 'manage.err.description_length';\n\n  const strict = f.status === 'published' || f.status === 'finished';\n  if (f.address) { if (f.address.length < 2 || f.address.length > 300) errors.address = 'manage.err.address_length'; }\n  else if (strict) errors.address = 'manage.err.required';\n\n  const geoNum = (s, lim) => { if (s === '') return null; const n = Number(s.replace(',', '.')); return (isFinite(n) && Math.abs(n) <= lim) ? n : NaN; };\n  const lat = geoNum(f.lat, 90), lon = geoNum(f.lon, 180);\n  if ((lat === null) !== (lon === null)) errors.geo = 'manage.err.geo_pair';\n  else if ((lat !== null && isNaN(lat)) || (lon !== null && isNaN(lon))) errors.geo = 'manage.err.geo_range';\n\n  const dates = {};\n  ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n    if (f[k] === '') { dates[k] = ''; if (strict) errors[k] = 'manage.err.datetime'; return; }\n    const iso = localToUtc(f[k]);\n    if (!iso) { errors[k] = 'manage.err.datetime'; dates[k] = ''; return; }\n    dates[k] = iso;\n  });\n  const ms = (k) => parseIso(dates[k]);\n  const changed = (k) => !orig || !isFinite(parseIso(orig[k])) || parseIso(orig[k]) !== ms(k);\n  if (dates.starts_at && dates.ends_at && !errors.ends_at && ms('ends_at') <= ms('starts_at')) errors.ends_at = 'manage.err.ends_before_starts';\n  if (dates.starts_at && dates.reg_deadline_at && !errors.reg_deadline_at && ms('reg_deadline_at') > ms('starts_at')) errors.reg_deadline_at = 'manage.err.deadline_after_starts';\n  // «В будущем» — только для публикуемого и только для изменённой даты:\n  // иначе у идущего или прошедшего ивента нельзя было бы поправить адрес.\n  if (strict && dates.starts_at && !errors.starts_at && changed('starts_at') && ms('starts_at') <= now) errors.starts_at = 'manage.err.starts_past';\n  if (strict && dates.reg_deadline_at && !errors.reg_deadline_at && changed('reg_deadline_at') && ms('reg_deadline_at') <= now) errors.reg_deadline_at = 'manage.err.deadline_past';\n\n  const intOrEmpty = (s, min, max) => { if (s === '') return ''; if (!/^\\d+$/.test(s)) return NaN; const n = Number(s); return (n >= min && n <= max) ? String(n) : NaN; };\n  const capacity = intOrEmpty(f.capacity, 1, 1000000);\n  const overbook = intOrEmpty(f.overbook_pct, 0, 100);\n  if (typeof capacity === 'number') errors.capacity = 'manage.err.capacity';\n  if (typeof overbook === 'number') errors.overbook_pct = 'manage.err.overbook';\n\n  if (Object.keys(errors).length) return respond('error', 422, { error: 'validation', text: t('manage.err.validation'), fields: errors });\n\n  // --- запись ---------------------------------------------------------------\n  // id: при правке — из записи; при создании — newId страницы (уже проверен\n  // как slug ≤12 символов [A-Za-z0-9_] без префикса 'e' — контракт fn-parse-start).\n  const id = isNew ? reqEventId : str(ev.id);\n  // staff_id — автор (не гейт): пишется при создании и НЕ меняется при правке\n  // (ADR-0024 п. 3). chapter_id ивента тоже не меняется.\n  const staffId = isNew ? telegramId : str(ev.staff_id);\n  const chapterId = isNew ? (staffChapter || '1') : str(ev.chapter_id);\n  const rec = {\n    id: id, staffId: staffId, chapterId: chapterId,\n    title: f.title, description: f.description, address: f.address,\n    lat: lat === null ? '' : String(lat), lon: lon === null ? '' : String(lon),\n    startsAt: dates.starts_at, endsAt: dates.ends_at, regDeadlineAt: dates.reg_deadline_at,\n    status: f.status, capacity: capacity, overbookPct: overbook,\n    // DATE-поле пустой строкой не очищается — пусто здесь значит «не менять».\n    publishedAt: (f.status === 'published' && (!orig || !orig.published_at)) ? nowIso : '',\n    cancelledAt: (f.status === 'cancelled' && (!orig || !orig.cancelled_at)) ? nowIso : ''\n  };\n\n  // --- уведомление (OWN-5): только если ивент уже был опубликован -------------\n  let notifyKind = 'none';\n  let notifyText = '';\n  if (origStatus === 'published') {\n    if (f.status === 'cancelled') {\n      notifyKind = 'cancelled';\n      notifyText = t('notify.event_cancelled', { title: f.title });\n    } else {\n      const lines = [];\n      const line = (label, before, after) => lines.push(t('notify.changed.line', { field: t(label), old: before, new: after }));\n      if (orig.title !== f.title) line('field.title', orig.title || '—', f.title);\n      if (orig.address !== f.address) line('field.address', orig.address || '—', f.address || '—');\n      ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n        const b = parseIso(orig[k]), a = parseIso(dates[k]);\n        if ((isFinite(b) ? b : -1) !== (isFinite(a) ? a : -1)) line('field.' + k, dispDate(orig[k]), dispDate(dates[k]));\n      });\n      const geo = (la, lo) => (la !== '' && lo !== '') ? (la + ', ' + lo) : '—';\n      const gb = geo(orig.lat, orig.lon), ga = geo(rec.lat, rec.lon);\n      if (gb !== ga) line('field.geo', gb, ga);\n      if (orig.status !== f.status) line('field.status', t('status.' + orig.status), t('status.' + f.status));\n      if (lines.length) {\n        notifyKind = 'changed';\n        notifyText = t('notify.changed.header', { title: f.title }) + '\\n' + lines.join('\\n');\n      }\n    }\n  }\n\n  // --- ответ странице и текст владельцу в чат ----------------------------------\n  let text, ownerKey;\n  if (f.status === 'cancelled') { text = t(origStatus === 'cancelled' ? 'manage.saved.updated' : 'manage.saved.cancelled'); ownerKey = origStatus === 'cancelled' ? 'manage.chat.updated' : 'manage.chat.cancelled'; }\n  else if (f.status === 'draft') { text = t('manage.saved.draft'); ownerKey = 'manage.chat.draft_saved'; }\n  else if (f.status === 'finished') { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  else if (origStatus !== 'published') { text = t('manage.saved.created'); ownerKey = 'manage.chat.published'; }\n  else if (notifyKind === 'changed') { text = t('manage.saved.updated_notified'); ownerKey = 'manage.chat.updated_notified'; }\n  else { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  // W37: ссылка живёт на экране (ответ странице), а не в чат-подтверждении\n  // (ADR-0017: экран редактируется, чат несёт только факт).\n  return respond('save', 200, Object.assign({ ok: true, text: text, eventId: id, notifyKind: notifyKind, notifyText: notifyText, ownerKey: ownerKey, ownerVars: { title: f.title }, inviteLink: inviteFor(id, f.status) }, rec));\n};\n",
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const isNew = req.isNew === true || req.isNew === 'true';\n  const reqEventId = str(req.eventId);\n  const fields = (req.fields && typeof req.fields === 'object') ? req.fields : {};\n  const botUsername = str(inputs.botUsername);\n  // W37: ссылка регистрации строится на сервере (BOT_USERNAME не запекается\n  // в SPA) и отдаётся только для опубликованного ивента — draft невидим.\n  const inviteFor = (eid, status) => (botUsername && status === 'published' && eid) ? ('https://t.me/' + botUsername + '?start=e' + eid) : '';\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее.\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: '',\n    // запись\n    id: '-', staffId: telegramId, chapterId: '', title: '', description: '', address: '', lat: '', lon: '',\n    startsAt: '', endsAt: '', regDeadlineAt: '', status: '', capacity: '', overbookPct: '',\n    publishedAt: '', cancelledAt: '',\n    // уведомления\n    notifyKind: 'none', notifyText: '', ownerKey: '', ownerVars: {},\n    // W37: ссылка регистрации (только published) и список ивентов чаптера\n    inviteLink: '',\n    // W44: поиск кандидатов в контролёры\n    query: '',\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- права: строка `staff` вызывающего + чаптер (ADR-0024) ------------------\n  // Создание И правка — один глобальный глагол. Нет строки `staff` — отказ.\n  // Scope — чаптер: staff.chapter_id === '' (все чаптеры) или === event.chapter_id.\n  // Строка выбирается по telegram_id, а не как rows[0] (defense in depth, Q25).\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n\n  // --- W37: список ивентов чаптера (route #/manage без :id) -------------------\n  // Права уже проверены: нет строки staff — отказ выше. Дальше отдельная ветка\n  // (step_31…step_33): читает events по chapter_id, отбирает и сортирует код.\n  // Глобальный staff (chapter_id='') нормализуется в '1' — та же норма, что\n  // при создании ивента ниже; отдельных чаптеров в проекте пока нет.\n  if (action === 'list') {\n    return respond('events_list', 200, { ok: true, chapterId: staffChapter || '1' });\n  }\n\n  // --- W42: орг-ссылка Яндекс.Карт (Q55) --------------------------------------\n  // Координаты достаёт Геокодер в отдельной ветке (step_34…step_37): прав\n  // достаточно строки staff (проверена выше), ивент и таблицы не нужны.\n  if (action === 'resolve_geo') {\n    return respond('geo_link', 200, { ok: true, link: str(req.link) });\n  }\n\n  // --- ивент: только по id из запроса ----------------------------------------\n  // Запись выбирается по id, а не как rows[0]: фильтр чтения может\n  // отсутствовать или разойтись — отбор повторяется в коде (catalog/flows/README.md).\n  const rows = arr(inputs.records).map(flat);\n  const ev = rows.filter((r) => str(r.id) === reqEventId)[0] || null;\n  // Сентинел '-' (не-slug на входе) — не ключ, отказ до любого сравнения.\n  if (reqEventId === '-' || reqEventId === '') return forbidden();\n  if (!isNew) {\n    // Правка/чтение: ивент обязан существовать и быть в чаптере вызывающего.\n    // «Не найден», «чужой чаптер» и «не staff» отвечают одинаково — нечего перечислять.\n    if (!ev || str(ev.id) !== reqEventId || !canAccess(ev.chapter_id)) return forbidden();\n  } else if (ev && !canAccess(ev.chapter_id)) {\n    // Создание с newId, занятым записью чужого чаптера: не перезаписываем.\n    return forbidden();\n  }\n  // Повтор создания своим же newId (потерянный ответ) — дальше идёт как\n  // правка существующей записи: orig есть, published_at не перезаписывается.\n\n  // --- W36: действия со списком контролёров -----------------------------------\n  // Права (staff + чаптер события) уже проверены выше — они общие для всех\n  // действий. Сама работа со списком идёт в ветке `staff` (step_19…step_30),\n  // где читается event_staff: здесь только диспетчеризация.\n  if (action === 'staff_list' || action === 'staff_add' || action === 'staff_remove') {\n    return respond('staff', 200, { ok: true, id: reqEventId, eventId: reqEventId });\n  }\n\n  // --- W13: участники и экспорт (OWN-7, OWN-8) ----------------------------------\n  // Права и существование ивента уже проверены выше (isNew сюда не доходит:\n  // у нового ивента нет регистраций — выбирать не из кого, и ev ниже\n  // гарантированно не null). Сама выборка — в ветке `participants`: чтение\n  // registrations/users и сборка счётчиков/строк/файлов в CODE-шаге\n  // (фильтры Tables по срезам не умеют, срезы режет страница). Здесь только\n  // диспетчеризация.\n  if (action === 'participants') {\n    if (isNew || !ev) return forbidden();\n    return respond('participants', 200, { ok: true, id: reqEventId, eventId: reqEventId, chapterId: str(ev.chapter_id), title: str(ev.title) });\n  }\n\n  // --- W44: поиск кандидатов в контролёры -------------------------------------\n  // Права и существование ивента уже проверены выше (isNew сюда не доходит:\n  // у нового ивента нет ни участников, ни контролёров — искать не среди кого,\n  // и ev ниже гарантированно не null). Сам поиск — в ветке `search`: чтение\n  // registrations/users/staff/event_staff и отбор в CODE-шаге (фильтры Tables\n  // по подстроке не умеют, Q15). Здесь только диспетчеризация и запрос.\n  if (action === 'staff_search') {\n    if (isNew || !ev) return forbidden();\n    return respond('staff_search', 200, { ok: true, id: reqEventId, eventId: reqEventId, chapterId: str(ev.chapter_id), query: str(req.query) });\n  }\n\n  const TZ = 'Asia/Tashkent';\n  const TASHKENT_OFFSET_MIN = 300; // UTC+5, без DST\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  // «YYYY-MM-DDTHH:mm» с экрана — ташкентское время → UTC ISO (OWN-3).\n  const localToUtc = (s) => {\n    const m = /^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2})(?::(\\d{2}))?$/.exec(s);\n    if (!m) return '';\n    // Компоненты проверяются обратным разбором: Date.UTC молча переносит\n    // 31 февраля на март, а 25:00 — на следующий день.\n    const local = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], m[6] ? +m[6] : 0);\n    const chk = new Date(local);\n    if (!isFinite(local) || chk.getUTCFullYear() !== +m[1] || chk.getUTCMonth() !== +m[2] - 1 || chk.getUTCDate() !== +m[3] || chk.getUTCHours() !== +m[4] || chk.getUTCMinutes() !== +m[5]) return '';\n    return new Date(local - TASHKENT_OFFSET_MIN * 60000).toISOString();\n  };\n  const dispFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const dispDate = (iso) => { const ms = parseIso(iso); return isFinite(ms) ? dispFmt.format(new Date(ms)) : '—'; };\n\n  const pick = (o, keys) => { const out = {}; keys.forEach((k) => { out[k] = str(o[k]); }); return out; };\n  const EVENT_KEYS = ['id', 'title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'status', 'capacity', 'overbook_pct'];\n\n  if (action === 'load') {\n    if (isNew) return forbidden();\n    const out = pick(ev, EVENT_KEYS);\n    out.hasPhoto = str(ev.photo_file_id) !== '';\n    return respond('load', 200, { ok: true, event: out, eventId: str(ev.id), inviteLink: inviteFor(str(ev.id), str(ev.status)) });\n  }\n  if (action !== 'save') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server') });\n\n  // --- валидация ------------------------------------------------------------\n  const f = {};\n  ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'status'].forEach((k) => { f[k] = str(fields[k]); });\n  const errors = {};\n  const orig = ev ? pick(ev, EVENT_KEYS.concat(['published_at', 'cancelled_at', 'staff_id', 'chapter_id'])) : null;\n  const origStatus = orig ? orig.status : '';\n  // Переходы статуса — ровно OWN-4: draft → published → cancelled | finished.\n  // Обратных нет: снять публикацию, «воскресить» отменённый или завершённый\n  // формой нельзя (cancelled_at/finished_at очистить нечем — Q30).\n  const ALLOWED = {\n    '': ['draft', 'published'], 'draft': ['draft', 'published'],\n    'published': ['published', 'cancelled'], 'cancelled': ['cancelled'], 'finished': ['finished']\n  };\n  const allowed = ALLOWED[origStatus] || [];\n  if (allowed.indexOf(f.status) < 0) errors.status = 'manage.err.status';\n\n  if (f.title.length < 2 || f.title.length > 200) errors.title = f.title ? 'manage.err.title_length' : 'manage.err.required';\n  if (f.description.length > 4000) errors.description = 'manage.err.description_length';\n\n  const strict = f.status === 'published' || f.status === 'finished';\n  if (f.address) { if (f.address.length < 2 || f.address.length > 300) errors.address = 'manage.err.address_length'; }\n  else if (strict) errors.address = 'manage.err.required';\n\n  const geoNum = (s, lim) => { if (s === '') return null; const n = Number(s.replace(',', '.')); return (isFinite(n) && Math.abs(n) <= lim) ? n : NaN; };\n  const lat = geoNum(f.lat, 90), lon = geoNum(f.lon, 180);\n  if ((lat === null) !== (lon === null)) errors.geo = 'manage.err.geo_pair';\n  else if ((lat !== null && isNaN(lat)) || (lon !== null && isNaN(lon))) errors.geo = 'manage.err.geo_range';\n\n  const dates = {};\n  ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n    if (f[k] === '') { dates[k] = ''; if (strict) errors[k] = 'manage.err.datetime'; return; }\n    const iso = localToUtc(f[k]);\n    if (!iso) { errors[k] = 'manage.err.datetime'; dates[k] = ''; return; }\n    dates[k] = iso;\n  });\n  const ms = (k) => parseIso(dates[k]);\n  const changed = (k) => !orig || !isFinite(parseIso(orig[k])) || parseIso(orig[k]) !== ms(k);\n  if (dates.starts_at && dates.ends_at && !errors.ends_at && ms('ends_at') <= ms('starts_at')) errors.ends_at = 'manage.err.ends_before_starts';\n  if (dates.starts_at && dates.reg_deadline_at && !errors.reg_deadline_at && ms('reg_deadline_at') > ms('starts_at')) errors.reg_deadline_at = 'manage.err.deadline_after_starts';\n  // «В будущем» — только для публикуемого и только для изменённой даты:\n  // иначе у идущего или прошедшего ивента нельзя было бы поправить адрес.\n  if (strict && dates.starts_at && !errors.starts_at && changed('starts_at') && ms('starts_at') <= now) errors.starts_at = 'manage.err.starts_past';\n  if (strict && dates.reg_deadline_at && !errors.reg_deadline_at && changed('reg_deadline_at') && ms('reg_deadline_at') <= now) errors.reg_deadline_at = 'manage.err.deadline_past';\n\n  const intOrEmpty = (s, min, max) => { if (s === '') return ''; if (!/^\\d+$/.test(s)) return NaN; const n = Number(s); return (n >= min && n <= max) ? String(n) : NaN; };\n  const capacity = intOrEmpty(f.capacity, 1, 1000000);\n  const overbook = intOrEmpty(f.overbook_pct, 0, 100);\n  if (typeof capacity === 'number') errors.capacity = 'manage.err.capacity';\n  if (typeof overbook === 'number') errors.overbook_pct = 'manage.err.overbook';\n\n  if (Object.keys(errors).length) return respond('error', 422, { error: 'validation', text: t('manage.err.validation'), fields: errors });\n\n  // --- запись ---------------------------------------------------------------\n  // id: при правке — из записи; при создании — newId страницы (уже проверен\n  // как slug ≤12 символов [A-Za-z0-9_] без префикса 'e' — контракт fn-parse-start).\n  const id = isNew ? reqEventId : str(ev.id);\n  // staff_id — автор (не гейт): пишется при создании и НЕ меняется при правке\n  // (ADR-0024 п. 3). chapter_id ивента тоже не меняется.\n  const staffId = isNew ? telegramId : str(ev.staff_id);\n  const chapterId = isNew ? (staffChapter || '1') : str(ev.chapter_id);\n  const rec = {\n    id: id, staffId: staffId, chapterId: chapterId,\n    title: f.title, description: f.description, address: f.address,\n    lat: lat === null ? '' : String(lat), lon: lon === null ? '' : String(lon),\n    startsAt: dates.starts_at, endsAt: dates.ends_at, regDeadlineAt: dates.reg_deadline_at,\n    status: f.status, capacity: capacity, overbookPct: overbook,\n    // DATE-поле пустой строкой не очищается — пусто здесь значит «не менять».\n    publishedAt: (f.status === 'published' && (!orig || !orig.published_at)) ? nowIso : '',\n    cancelledAt: (f.status === 'cancelled' && (!orig || !orig.cancelled_at)) ? nowIso : ''\n  };\n\n  // --- уведомление (OWN-5): только если ивент уже был опубликован -------------\n  let notifyKind = 'none';\n  let notifyText = '';\n  if (origStatus === 'published') {\n    if (f.status === 'cancelled') {\n      notifyKind = 'cancelled';\n      notifyText = t('notify.event_cancelled', { title: f.title });\n    } else {\n      const lines = [];\n      const line = (label, before, after) => lines.push(t('notify.changed.line', { field: t(label), old: before, new: after }));\n      if (orig.title !== f.title) line('field.title', orig.title || '—', f.title);\n      if (orig.address !== f.address) line('field.address', orig.address || '—', f.address || '—');\n      ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((k) => {\n        const b = parseIso(orig[k]), a = parseIso(dates[k]);\n        if ((isFinite(b) ? b : -1) !== (isFinite(a) ? a : -1)) line('field.' + k, dispDate(orig[k]), dispDate(dates[k]));\n      });\n      const geo = (la, lo) => (la !== '' && lo !== '') ? (la + ', ' + lo) : '—';\n      const gb = geo(orig.lat, orig.lon), ga = geo(rec.lat, rec.lon);\n      if (gb !== ga) line('field.geo', gb, ga);\n      if (orig.status !== f.status) line('field.status', t('status.' + orig.status), t('status.' + f.status));\n      if (lines.length) {\n        notifyKind = 'changed';\n        notifyText = t('notify.changed.header', { title: f.title }) + '\\n' + lines.join('\\n');\n      }\n    }\n  }\n\n  // --- ответ странице и текст владельцу в чат ----------------------------------\n  let text, ownerKey;\n  if (f.status === 'cancelled') { text = t(origStatus === 'cancelled' ? 'manage.saved.updated' : 'manage.saved.cancelled'); ownerKey = origStatus === 'cancelled' ? 'manage.chat.updated' : 'manage.chat.cancelled'; }\n  else if (f.status === 'draft') { text = t('manage.saved.draft'); ownerKey = 'manage.chat.draft_saved'; }\n  else if (f.status === 'finished') { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  else if (origStatus !== 'published') { text = t('manage.saved.created'); ownerKey = 'manage.chat.published'; }\n  else if (notifyKind === 'changed') { text = t('manage.saved.updated_notified'); ownerKey = 'manage.chat.updated_notified'; }\n  else { text = t('manage.saved.updated'); ownerKey = 'manage.chat.updated'; }\n  // W37: ссылка живёт на экране (ответ странице), а не в чат-подтверждении\n  // (ADR-0017: экран редактируется, чат несёт только факт).\n  return respond('save', 200, Object.assign({ ok: true, text: text, eventId: id, notifyKind: notifyKind, notifyText: notifyText, ownerKey: ownerKey, ownerVars: { title: f.title }, inviteLink: inviteFor(id, f.status) }, rec));\n};",
                       "packageJson": "{}"
                     }
                   },
@@ -1187,7 +1588,7 @@
                 "body": "{{trigger['output'].body}}"
               },
               "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  // Приводит тело запроса к форме, безопасной для чтения таблицы:\n  // eventId — только валидный slug, иначе сентинел '-' (гарантированно пустая\n  // выборка вместо фильтра по пустой строке, catalog/flows/README.md).\n  const body = (inputs.body && typeof inputs.body === 'object') ? inputs.body : {};\n  const raw = String(body.eventId === undefined || body.eventId === null ? '' : body.eventId).trim();\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  // Создание: страница присылает свой newId (один на открытие формы) — это\n  // ключ идемпотентности (ADR-0003): повтор «Сохранить» после потерянного\n  // ответа апсертит ту же запись, а не создаёт вторую. Чтение таблицы идёт по\n  // нему же: если такой id уже есть, step_7 откажет — чужую запись создание\n  // не перепишет.\n  const newIdRaw = String(body.newId === undefined || body.newId === null ? '' : body.newId).trim();\n  const isNew = raw === '';\n  const eventId = isNew ? (SLUG.test(newIdRaw) ? newIdRaw : '-') : (SLUG.test(raw) ? raw : '-');\n  // W36: тем же входом идут действия со списком контролёров. W37: 'list' —\n  // список ивентов чаптера для #/manage без :id. W42: 'resolve_geo' —\n  // координаты орг-ссылки Яндекс.Карт (Q55). Всё, чего нет в белом списке,\n  // — 'unknown' (step_7 отвечает 400), а не «похоже на действие».\n  const ACTIONS = ['load', 'save', 'staff_list', 'staff_add', 'staff_remove', 'list', 'resolve_geo'];\n  const rawAction = String(body.action === undefined || body.action === null ? '' : body.action).trim();\n  const action = ACTIONS.indexOf(rawAction) >= 0 ? rawAction : 'unknown';\n  const fields = (body.fields && typeof body.fields === 'object' && !Array.isArray(body.fields)) ? body.fields : {};\n  // W36: telegram_id контролёра — строка; формат (только цифры, 8–16) проверяет\n  // step_20, здесь — обрезка и защита от не-строки.\n  const staffTelegramId = String(body.staffTelegramId === undefined || body.staffTelegramId === null ? '' : body.staffTelegramId).trim();\n  // W42 (Q55): ссылка Яндекс.Карт от страницы — строка; что в ней допустимо,\n  // решает step_34 (вырезает только oid), здесь — обрезка и предел длины.\n  const link = String(body.link === undefined || body.link === null ? '' : body.link).trim().slice(0, 500);\n  return { eventId: eventId, isNew: isNew, action: action, fields: fields, staffTelegramId: staffTelegramId, link: link };\n};\n",
+                "code": "export const code = async (inputs) => {\n  // Приводит тело запроса к форме, безопасной для чтения таблицы:\n  // eventId — только валидный slug, иначе сентинел '-' (гарантированно пустая\n  // выборка вместо фильтра по пустой строке, catalog/flows/README.md).\n  const body = (inputs.body && typeof inputs.body === 'object') ? inputs.body : {};\n  const raw = String(body.eventId === undefined || body.eventId === null ? '' : body.eventId).trim();\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  // Создание: страница присылает свой newId (один на открытие формы) — это\n  // ключ идемпотентности (ADR-0003): повтор «Сохранить» после потерянного\n  // ответа апсертит ту же запись, а не создаёт вторую. Чтение таблицы идёт по\n  // нему же: если такой id уже есть, step_7 откажет — чужую запись создание\n  // не перепишет.\n  const newIdRaw = String(body.newId === undefined || body.newId === null ? '' : body.newId).trim();\n  const isNew = raw === '';\n  const eventId = isNew ? (SLUG.test(newIdRaw) ? newIdRaw : '-') : (SLUG.test(raw) ? raw : '-');\n  // W36: тем же входом идут действия со списком контролёров. W37: 'list' —\n  // список ивентов чаптера для #/manage без :id. W42: 'resolve_geo' —\n  // координаты орг-ссылки Яндекс.Карт (Q55). W44: 'staff_search' — поиск\n  // кандидатов в контролёры. W13: 'participants' — участники и экспорт\n  // (OWN-7, OWN-8). Всё, чего нет в белом списке, — 'unknown'\n  // (step_7 отвечает 400), а не «похоже на действие».\n  const ACTIONS = ['load', 'save', 'staff_list', 'staff_add', 'staff_remove', 'staff_search', 'list', 'resolve_geo', 'participants'];\n  const rawAction = String(body.action === undefined || body.action === null ? '' : body.action).trim();\n  const action = ACTIONS.indexOf(rawAction) >= 0 ? rawAction : 'unknown';\n  const fields = (body.fields && typeof body.fields === 'object' && !Array.isArray(body.fields)) ? body.fields : {};\n  // W36: telegram_id контролёра — строка; формат (только цифры, 8–16) проверяет\n  // step_20, здесь — обрезка и защита от не-строки.\n  const staffTelegramId = String(body.staffTelegramId === undefined || body.staffTelegramId === null ? '' : body.staffTelegramId).trim();\n  // W42 (Q55): ссылка Яндекс.Карт от страницы — строка; что в ней допустимо,\n  // решает step_34 (вырезает только oid), здесь — обрезка и предел длины.\n  const link = String(body.link === undefined || body.link === null ? '' : body.link).trim().slice(0, 500);\n  // W44: запрос поиска кандидатов — строка; минимум длины и само сравнение\n  // решает CODE-шаг поиска (фильтры Tables по подстроке не умеют, Q15),\n  // здесь — обрезка и предел длины.\n  const query = String(body.query === undefined || body.query === null ? '' : body.query).trim().slice(0, 100);\n  return { eventId: eventId, isNew: isNew, action: action, fields: fields, staffTelegramId: staffTelegramId, link: link, query: query };\n};",
                 "packageJson": "{}"
               }
             },
