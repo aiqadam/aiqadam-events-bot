@@ -200,7 +200,120 @@ PAR-7 — `reg-afterword` отправляет только благодарно
 
 ## Ревью
 
-> Заполняет независимый ревьюер.
+- **Ревьюер**: агент (чистый контекст), **дата**: 2026-09-17
+- **Вердикт**: замечаний нет
+
+### Что проверено (живой проект через MCP + REST GET + git diff)
+
+- `ap_flow_structure`/`ap_read_step_code` по всем трём флоу пакета
+  (`feedback-api` 16 шагов, `reg-afterword` 10 шагов, `manage-api` 52 шага) —
+  все шаги `configured`, `ap_validate_flow` — `valid:true`, 0 issues на
+  каждом из трёх.
+- **IDOR (4.1) — не на слово, а различающими PRODUCTION-прогонами,
+  прочитанными через `ap_get_run`:**
+  - `feedback-api`: один и тот же реальный подписанный `initData`
+    (`telegram_id 322876545`, `hashValid:true`) — на `eventId=w28test`
+    (регистрация отменена, чекина нет) даёт `cB1a83L6Sr5zS2ZFXJVNK` → `403
+    forbidden`; на `eventId=mu2kb1wam0c6` (тот же человек, чекин есть) даёт
+    `XvcxvGmksAn4KFRDdf6cY` → `200`. Пара на одном и том же `initData` —
+    ровно то, что требует чек-лист;
+  - `manage-api` `feedback_list`: несуществующий `eventId` →
+    `BNdp8P1d8iHktzEByOtbo` → `403 forbidden`; свой ивент, есть отзыв →
+    `5XG7kY6yTg98YGKKiA4Xz` → `200` с данными (join имени, `average`).
+    Решение в обоих случаях идёт по полям записи (`found && checkedIn`,
+    `staffRow`/`ev` по `id`), не по непустоте `tables-find-records` (Q25).
+  - Сам вживую воспроизвёл негативный сценарий чек-листа: `curl` с
+    `initData:"bogus"`/`""` на опубликованный `/sync` — `401
+    invalid_init_data` **до** любого обращения к таблицам, в том числе с
+    пустым `eventId` и мусорным `rating:9` (устойчивость, 4.5).
+- **Идемпотентность записи (Q53)** — прочитан прогон `s0F4FtyHDcfckPLFmy9ES`
+  (`submit rating:5` → `action:"created"`, `record id
+  Dy4iZBv0kOMTYWeQ62luE`) и следующий за ним `snDPLCGdurZfG1ofyx1AZ`
+  (`submit rating:3` того же `event_id`+`telegram_id` → `action:"updated"`,
+  **тот же** `record id`). `step_9` (`tables-upsert-records`) сконфигурирован
+  с `key_columns` = externalId полей `event_id`+`telegram_id` (проверено
+  через `ap_resolve_property_chain` на живой таблице — те же externalId,
+  что в шаге). Таблица `feedback` сейчас пуста (0 строк) — тестовые записи
+  удалены, дублей не осталось.
+- **`reg-afterword`** — итоговый текст и `reply_markup` сверены с
+  `i18n/ru.json` и с реальным ответом Bot API из прогона
+  `JjoJcTMKpiPkYtij6gK8D`: `"Спасибо, что были. Надеемся, было не зря."` +
+  одна кнопка `web_app` «Оставить отзыв» на `#/feedback?event_id=...`,
+  никакого упоминания следующего ивента ни в тексте, ни кнопкой. Мёртвые
+  ключи `afterword.next_header`/`afterword.btn_next`/`afterword.no_next`
+  отсутствуют везде (`i18n/ru.json`, `flows/*.json`, `miniapp/src`).
+  Повторный вызов той же пары — `Ho2tgH61sTIoPg9JJNvmO` →
+  `skipped:true, reason:"already_sent"`, сообщение не уходит;
+  незаехавший (`attended:false`) — `AWqt0CW4aKwaHbM1egr5S` →
+  `reason:"not_attended"`, тихо.
+- **manage-api: реальный найденный и исправленный баг** — прогон
+  `e5kqh18HGbG7qDRdXSV9q` (10:58:27, до фикса) подтверждает описанное в
+  журнале: `feedback_list` падал в ветку `Otherwise` step_7 (`400
+  bad_request`), потому что диспетчеризация не была дописана; после фикса
+  и republish — `9V8kGZzE23l2Ba0iBbEgJ`/`5XG7kY6yTg98YGKKiA4Xz` проходят
+  штатно. Баг пойман до того, как кто-либо им воспользовался (UI кнопки
+  «Отзывы» ещё не было в проде на момент бага).
+- **Синхронность манифеста, `migrations` и живого инстанса** — сверено для
+  всех трёх изменённых флоу через `ap_export_flow` (снятый только что,
+  после публикации): `feedback-api` id `bKcD6JRXiT7Po2eOOb0A6`,
+  `reg-afterword` id `GjITive3Kns8hT9ldeTr0`, `manage-api` id
+  `3D5PXRyYjF0b9vIyEkibw` — все три `state: LOCKED`, все три совпадают и с
+  `flows/_manifest.json`, и со строками `migrations` (`2026-09-17-w45-03/04/05`).
+  Расхождений нет.
+- **Офлайн-проверки прогнаны сам**: `tools/check-export-secrets.sh` (0
+  совпадений секретов, `BOT_TOKEN` ссылок 5 — ровно на одну больше
+  прежнего, `EXPECTED_BOT_TOKEN` в скрипте обновлён тем же коммитом),
+  `tools/check-texts.py` (176 пар, 0 расхождений), `tools/check-commands.py`
+  (0 нарушений, самопроверка чекера в порядке).
+- **Таблица `feedback`** — поля и externalId в `catalog/tables/feedback.md`
+  совпадают с `ap_resolve_property_chain` (`table_id`→`columns`) 1:1;
+  внутренний id (`ap_list_tables`) отдельно и верно помечен как «не тот id»
+  в карточке.
+- **SPA**: `npm run build` в `miniapp/` — чисто, `Feedback` — отдельный
+  ленивый чанк 4,31 КиБ / 1,42 КиБ gzip (совпадает с журналом). Комментарий
+  отзыва идёт только в JSX (React-экранирование) и в JSON-ответы API — нет
+  ни одного места, где он попадал бы в `send_text_message` с `parse_mode`.
+  `grep` на `#[hex]|rgb(|oklch(|font-family|font-size` по изменённым
+  `.tsx`-файлам — чисто; `fontSize: 12`/`26` инлайном — существующий в файле
+  паттерн (не новый, использовался в `Manage.tsx` до этого пакета).
+  Тексты формы (`feedback.title/lead/rate/rate_hint/text/placeholder/submit/
+  done_title/done`) и кнопка послесловия сверены с прототипом
+  (`prototypes/proto.js`) побайтово — совпадают.
+- **Каталог** (`catalog/flows/feedback-api.md`, `catalog/flows/reg-afterword.md`,
+  `catalog/flows/manage-api.md`, `catalog/tables/feedback.md`,
+  `catalog/overview.md`, `catalog/tables/README.md`, `docs/DATA-MODEL.md`,
+  `docs/STATUS.md`) — сверен построчно с `ap_flow_structure`/живыми
+  таблицами, расхождений не нашёл.
+- **Проверил утверждение журнала про W12-расхождения `check-migrations.py`**
+  (9 находок, все `2026-09-17-w12-*`/`tmp-w12-item-probe`) — да, все они
+  относятся к пакету W12 (`enable`/`disable` с некорректным `version_id`,
+  недоудалённый `tmp-w12-item-probe`, фикстуры с internal id). Ничего из
+  диффа W45 в эти находки не попадает. Это не блокер W45, но подтверждаю
+  находку владельца для внимания владельца проекта/ревью W12.
+- **Проверил утверждение журнала про 8 не закоммиченных флоу
+  вне пакета** (`bcast-*`, `lifecycle`, `menu`, `reminders`, `tg-router`) —
+  `git diff origin/docs/q53-q50-owner-decisions...origin/w45-afterword-feedback
+  --stat` подтверждает: этих файлов в дифе PR #74 нет вообще. Граница
+  пакета не нарушена.
+
+### Ограничения проверки
+
+- Нет доступа к `BOT_TOKEN`/ключу платформы на этой машине (`security
+  find-generic-password` заблокирован средой) — не смог сам подписать
+  `initData` и лично повторить позитивный/негативный запрос заново. Вместо
+  этого прочитал реальные PRODUCTION- и TESTING-прогоны через `ap_get_run`
+  (не черновики, не `ap_test_flow` со старым сэмплом — тела запросов и
+  `hashValid:true` видны в самих прогонах) — это опора того же уровня
+  надёжности, что требует чек-лист (различающая пара на одном `initData`),
+  просто не проведённая мной лично в моменте ревью. `tools/check-migrations.py`
+  по той же причине не запускал сетевую часть — сверку манифест/инстанс/
+  `migrations` сделал вручную через MCP (`ap_export_flow` + `ap_find_records`
+  по таблице `migrations`) для всех трёх изменённых флоу, расхождений нет.
+- Секцию «Отзывы» в `#/manage` не смотрел глазами в реальном Telegram
+  WebView (только `npm run build` и JSON, отданный сервером) — как и
+  отмечено в журнале самим владельцем, это остаётся визуальным риском
+  «на будущее», не блокером: структура, права и данные проверены сквозным
+  прогоном.
 
 ## Хвосты и блокеры
 
