@@ -3,7 +3,7 @@ import type { MouseEvent } from 'react';
 import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, EVENTS_API, REG_API } from '../lib/api';
+import { postJson, EVENTS_API, REG_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToPlate, utcToWhen, utcMs } from '../lib/dates';
 import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
@@ -49,6 +49,10 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [mine, setMine] = useState<MineRow[]>([]);
   const [mineState, setMineState] = useState<MineState>(inTelegram ? 'loading' : 'off');
   const [mineError, setMineError] = useState('');
+  // W50 (вердикт W49): сканер — рядом с ивентом, видно только контролёру.
+  // Чьи кнопки — решает staff-events-api, страница только рисует; тихо нет —
+  // значит нет (ошибка здесь — не отказ экрана).
+  const [staffIds, setStaffIds] = useState<Record<string, boolean>>({});
 
   // Шит регистрации
   const [sheetEvent, setSheetEvent] = useState<CatalogEvent | null>(null);
@@ -104,6 +108,20 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setMineError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
   }, [inTelegram, initData]);
 
+  const loadStaffEvents = useCallback(async () => {
+    if (!inTelegram) return;
+    const res = await postJson(STAFF_EVENTS_API, { initData });
+    if (res.kind !== 'json') return;
+    const d = res.data;
+    if (d['ok'] && Array.isArray(d['eventIds'])) {
+      const set: Record<string, boolean> = {};
+      (d['eventIds'] as unknown[]).forEach((id) => {
+        if (typeof id === 'string' && id) set[id] = true;
+      });
+      setStaffIds(set);
+    }
+  }, [inTelegram, initData]);
+
   useEffect(() => {
     setupThemeListener();
     if (tg) {
@@ -115,7 +133,8 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     void loadI18n().then(() => setDictLoaded(true));
     void loadEvents();
     void loadMine();
-  }, [tg, loadEvents, loadMine]);
+    void loadStaffEvents();
+  }, [tg, loadEvents, loadMine, loadStaffEvents]);
 
   useEffect(() => {
     if (dictLoaded) {
@@ -291,6 +310,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
                 ev={ev}
                 past={tab === 'past'}
                 registered={Boolean(registeredIds[ev.id])}
+                canScan={Boolean(staffIds[ev.id])}
                 inTelegram={inTelegram}
                 onRegister={openRegister}
               />
@@ -429,12 +449,14 @@ function EventCard({
   ev,
   past,
   registered,
+  canScan,
   inTelegram,
   onRegister,
 }: {
   ev: CatalogEvent;
   past: boolean;
   registered: boolean;
+  canScan: boolean;
   inTelegram: boolean;
   onRegister: (ev: CatalogEvent) => (e: MouseEvent<HTMLAnchorElement>) => void;
 }) {
@@ -483,6 +505,15 @@ function EventCard({
             <a className="btn btn-primary" id="register" href={ev.registerLink} onClick={onRegister(ev)}>
               <Icon name="external" />
               {t('event.card.btn_register')}
+            </a>
+          </div>
+        )}
+        {/* W50 (вердикт W49): сканер — рядом с ивентом, видно только
+            контролёру (canScan — из staff-events-api, решает сервер). */}
+        {canScan && !past && (
+          <div className="app-actions" style={{ marginTop: 8 }}>
+            <a className="btn btn-secondary" id="scan" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
+              {t('menu.btn.scanner')}
             </a>
           </div>
         )}

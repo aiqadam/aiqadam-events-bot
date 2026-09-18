@@ -53,7 +53,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_22 (add) | `tables-create-records event_staff` | `event_id`, `telegram_id`, `granted_by`, `granted_at` |
 | step_23 (add) | `return_response` (**`respond`**) | `200` странице **до** уведомления |
 | step_24 (add) | `tables-find-records users` | есть ли добавленный в `users` (`telegram_id`, `limit: 1`) |
-| step_25 (add) | CODE «staff: notify targets» | цели уведомления (`[]` или один id), текст и `web_app`-кнопка сканера |
+| step_25 (add) | CODE «staff: notify targets» | цели уведомления (`[]` или один id), текст и кнопка «Открыть сканер» на конкретный ивент (W50: исключение из «чекина нет в чате» — событие известно; было «Сканер чекина») |
 | step_26 (add) | `LOOP_ON_ITEMS` по `{{step_25['output'].targets}}` | пустой список — ни одной отправки |
 | step_27 (add, в цикле) | `send_text_message` (`continueOnFailure`) | уведомление новому контролёру; ошибка Bot API (403) не отменяет добавление |
 | step_28 (remove) | `tables-update-record event_staff` | `revoked_at = now (UTC)` |
