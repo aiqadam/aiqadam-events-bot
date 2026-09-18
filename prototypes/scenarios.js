@@ -33,9 +33,11 @@ PROTO.buildScenarios = function (opts) {
   // в чате: чат-карточка myreg из прототипа убрана вердиктом владельца.
   // «Мои билеты» — одно имя экрана и в табе, и в меню (вердикт владельца);
   // product-ключ menu.btn.my_registrations заменяется пакетом W43.
+  // Гость: одна кнопка «Ивенты» — каталог и «Мои билеты» это один экран
+  // (#/events открывается на первом табе «Мои билеты»), две кнопки не нужны.
+  // Вердикт владельца 2026-09-18 (W49).
   const menuButtonsGuest = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu-guest' },
-    { label: T('events.tab.mine'), webApp: '#/events?tab=mine', resume: 'menu-guest' },
   ];
   const menuButtonsOwner = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
