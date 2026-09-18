@@ -766,6 +766,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       loc.appendChild(linkInput);
       const linkStatus = E('div', 'helper');
       function paintLink() {
+        // Очевидное не показываем (вердикт 2026-09-18): координаты не дублируем —
+        // их видно превью и ссылкой «Открыть на карте». Строка живёт только
+        // для пустого (подсказка) и битой ссылки (ошибка).
         const parsed = parseYandexLink(f.mapLink || '');
         linkStatus.classList.remove('error');
         if (!parsed) {
@@ -780,7 +783,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         } else {
           f.lat = parsed.lat;
           f.lon = parsed.lon;
-          linkStatus.textContent = T('manage.geo.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) });
+          linkStatus.textContent = '';
         }
         if (!parsed && show && errors.geo) {
           linkStatus.textContent = errors.geo;
@@ -818,9 +821,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
     sec.appendChild(loc);
 
-    sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
-    // Подпись «Время ташкентское» — один раз, у первого поля: три повтора
-    // подряд — лишние (вердикт владельца 2026-09-18, W49).
+    // Время ташкентское — очевидно, хинта нет вовсе (вердикт 2026-09-18, W49).
+    sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: '', error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
     sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: '', error: show ? errors.ends : '', onInput: (e) => { f.endsLocal = e.target.value; } }));
     sec.appendChild(field(T('field.reg_deadline_at'), f.deadlineLocal, {
       type: 'datetime-local', hint: '',
