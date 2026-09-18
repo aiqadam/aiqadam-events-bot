@@ -59,6 +59,7 @@ W28, W30, W33, W34, W35, W32, W36, W37, W40, W41 — см. [STATUS.md](STATUS.md
 | [W12b](#w12b-dedup-report--диагностика-дублей) | диагностика дублей строк — считать и сообщать, не удалять ([Q42](OPEN-QUESTIONS.md#q42)) | W1, W5 (✅) |
 | [W25](#w25-возврат-i18n-на-платформенном-механизме) | возврат i18n на платформенном механизме | закрытие [qadam-flow#420](https://github.com/aiqadam/qadam-flow/issues/420) |
 | [W27](#w27-догон-переводов-uz--en) | догон переводов `uz` / `en` | W25 — раньше переводить нечего |
+| [W47](#w47-mini-app--платформенные-функции-второго-уровня-backbutton-hapticfeedback-closing-confirmation-vertical-swipes) | `BackButton`, `HapticFeedback`, `enableClosingConfirmation`, `disableVerticalSwipes` — не блокирует, только клиентский слой SPA | W33 ✅ |
 
 **Ждут не агента:**
 
@@ -2686,3 +2687,113 @@ URL-полем в форме либо отдельным касанием в ч�
 
 **Не входит:** модерация и аналитика отзывов, рейтинги ивентов на витрине,
 изменение напоминаний (W12).
+
+---
+
+## W47. Mini App — платформенные функции второго уровня (`BackButton`, `HapticFeedback`, closing confirmation, vertical swipes)
+
+> **Заведён 2026-09-18** по итогам ресёрча best practice Telegram Mini Apps
+> (`core.telegram.org/bots/webapps`, Bot API 6.1–8.0) против того, что
+> реально вызывается в `miniapp/src` (сверка `grep` по `.WebApp`).
+> **v0.2** — ни одна находка не блокирует v0.1/приёмку W15: ничего не меняет
+> контракт с сервером, только клиентский слой SPA.
+> **Не пересекается с [Q48](OPEN-QUESTIONS.md#q48)** (safe area insets) —
+> тот вопрос уже открыт отдельно и блокирует v0.1, здесь его не трогаем.
+> **Не пересекается с [ADR-0019](adr/0019-design-system-from-brand-repo.md)** —
+> отказ от `MainButton`/`setHeaderColor` в пользу брендовых кнопок и системной
+> шапки уже осознанно принят владельцем как цена бренда, пересматривать не
+> предмет этого пакета.
+
+**Цель.** Использовать платформенные API, для которых в продукте уже есть
+подходящий момент, но которые сейчас не вызываются вовсе — `BackButton`,
+`HapticFeedback`, `enableClosingConfirmation`, `disableVerticalSwipes`.
+Ничего из этого не пишет и не меняет ни один флоу — чистый клиентский слой
+`miniapp/src`, [ADR-0001](adr/0001-qadam-flow-as-carrier-stack.md) не
+касается (SPA — уже разрешённое исключение).
+
+**Зависит от:** [W33](#w33-mini-app--react-spa-ticket-scan-manage)
+(React SPA как несущая база) — готов.
+
+**Как обнаружено.** `miniapp/src/vite-env.d.ts` типизирует `MainButton`/
+`BackButton` как `unknown` — заведено про запас, ни разу не вызвано;
+`HapticFeedback`, `safeAreaInset`/`contentSafeAreaInset`,
+`viewportStableHeight`, `enableClosingConfirmation`, `disableVerticalSwipes`,
+`isVersionAtLeast` не типизированы и не вызваны вовсе (`grep` по
+`miniapp/src` по всем этим именам пуст).
+
+**Что делаем.**
+
+1. **`BackButton` (Bot API 6.1+).** Типизировать (`show()`, `hide()`,
+   `onClick(cb)`, `offClick(cb)`, `isVisible`) и подключить там, где есть
+   логический «назад», но нет hash-перехода назад в истории браузера:
+   - `Manage.tsx`, экран ивента (`#/manage/:id`) — тап по `BackButton`
+     делает то же, что кнопка «К списку» ([MINIAPP-UX](MINIAPP-UX.md) п.1,
+     W37); кнопка «К списку» в контенте остаётся — не все клиенты одинаково
+     заметно рисуют `BackButton`, это подстраховка, а не дубль;
+   - любой открытый шит (регистрация в `Events.tsx`, гео-шит в
+     `Manage.tsx`) — `BackButton` закрывает шит, а не весь Mini App;
+   - на корневых экранах без логического «назад» (`#/events`, список
+     `#/manage`, `#/ticket`, `#/scan` без открытого шита) — `BackButton.hide()`,
+     системный жест закрывает Mini App как обычно — это штатное поведение,
+     не регрессия.
+   Уточнить [MINIAPP-UX.md](MINIAPP-UX.md) п.1: там отвергнута **своя**
+   UI-кнопка «назад» как дубль системной; `BackButton` — не элемент страницы,
+   а нативный элемент шапки Telegram, он замещает поведение системного жеста
+   там, где хеш не меняется, а не дублирует его.
+2. **`HapticFeedback` (Bot API 6.1+).** Типизировать
+   (`impactOccurred(style)`, `notificationOccurred(type)`,
+   `selectionChanged()`) и вызвать:
+   - `notificationOccurred('success')` — успешный чекин (`Scan.tsx`),
+     успешная публикация/сохранение визарда (`Manage.tsx`), успешная
+     отправка отзыва (`Feedback.tsx`);
+   - `notificationOccurred('error')` — там, где уже показывается текст
+     ошибки (сеть, валидация, `403`/`404`);
+   - `impactOccurred('light')` — копирование ссылки (приглашение, utm),
+     переключение вкладок `manage`/`events`.
+3. **`enableClosingConfirmation()` / `disableClosingConfirmation()`
+   (Bot API 6.2+).** Включить на визарде ивента (`Manage.tsx`) на время
+   несохранённого черновика, выключить сразу после публикации/сохранения
+   и при выходе из визарда без изменений. Черновик и так переживает
+   закрытие ([MINIAPP-UX.md](MINIAPP-UX.md) п.3, `sessions.draft`) — это не
+   защита от потери данных, а защита от **ощущения** потери.
+4. **`disableVerticalSwipes()` (Bot API 7.7+) — сначала аудит, не код.**
+   Платформа сама рекомендует оставлять свайпы включёнными, если нет
+   конфликта со своими жестами. Проверить на реальном устройстве (не
+   headless-прогоне) длинные скроллящиеся списки — участники и контролёры
+   в `#/manage/:id`, три таба каталога `#/events` — свайп вниз в начале
+   списка не должен сворачивать Mini App. Если конфликт найден — вызвать
+   `disableVerticalSwipes()` на этом роуте; если нет — зафиксировать в
+   журнале как проверенный факт, а не оставить неизвестным, как сейчас.
+5. **`isVersionAtLeast()` — не заводить отдельный гейт.** Самый новый из
+   вызываемых методов пакета — `disableVerticalSwipes` (7.7+); это ниже
+   уже фактически требуемого продуктом пола (Safe Area API из Q48 — 8.0+).
+   Задокументировать пол Bot API продукта в
+   [ARCHITECTURE.md](ARCHITECTURE.md) рядом с прочими платформенными
+   фактами вместо отдельного `isVersionAtLeast`-вызова на каждый метод.
+6. Обновить [MINIAPP-UX.md](MINIAPP-UX.md): различить в п.1 «свою UI-кнопку
+   назад» (дубль, не нужна) и `BackButton` (нативный, замещает системный
+   жест) — добавить пункты про `HapticFeedback` и результат аудита
+   `disableVerticalSwipes`.
+
+**Готово, когда:**
+
+- [ ] `BackButton` виден и работает на `#/manage/:id` и на открытых шитах;
+      скрыт на корневых экранах — подтверждено живым прогоном в Telegram,
+      не только кодревью;
+- [ ] `HapticFeedback` вызывается во всех перечисленных точках — подтверждено
+      кодревью (живого способа проверить вибрацию автоматически нет);
+- [ ] `enableClosingConfirmation` активен только при несохранённом черновике
+      визарда, не залипает после публикации;
+- [ ] решение по `disableVerticalSwipes` принято по результату аудита на
+      реальном устройстве и записано в журнале — использован или осознанно
+      не использован;
+- [ ] `MINIAPP-UX.md` обновлён, разночтение п.1 (своя кнопка vs `BackButton`)
+      закрыто;
+- [ ] `miniapp/src/vite-env.d.ts` — типы `BackButton`/`HapticFeedback` не
+      `unknown`;
+- [ ] независимое ревью, вердикт «замечаний нет».
+
+**Не входит:** `MainButton`/`setHeaderColor`/`setBackgroundColor` (решено
+[ADR-0019](adr/0019-design-system-from-brand-repo.md)), Safe Area API
+(отдельно [Q48](OPEN-QUESTIONS.md#q48)), `CloudStorage` (нет сценария,
+где она нужна — состояние и так на сервере, ADR-0003).
