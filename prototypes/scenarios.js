@@ -209,7 +209,8 @@ PROTO.buildScenarios = function (opts) {
       // кнопок чекина не несут.
       { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'],
         buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'accept-ok', primary: true }] },
-      { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
+      // Меню контролёра — без «Что дальше?», как у гостя и овнера (W49).
+      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_controller') }, trace: ['ADR-0025'],
         buttons: [
           { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
         ] },
