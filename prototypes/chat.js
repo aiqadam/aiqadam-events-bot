@@ -159,6 +159,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
     owner: [['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
     controller: [['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
+    onboard: [['event', 'Карточка ивента'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['city', 'Город'], ['review', 'Всё верно?'], ['done', 'Билет']],
   };
 
   function renderDemo() {

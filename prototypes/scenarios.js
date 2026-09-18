@@ -198,8 +198,7 @@ PROTO.buildScenarios = function (opts) {
     ],
   };
 
-  const controller = {
-    id: 'controller',
+  const controller = {    id: 'controller',
     title: 'Контролёр',
     hint: 'Инвайт-ссылка → права на ивент → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
@@ -220,7 +219,98 @@ PROTO.buildScenarios = function (opts) {
     ],
   };
 
-  return { guest: guest, owner: owner, controller: controller };
+  // Онбординг C end-to-end (ADR-0032): первое касание с профилем целиком —
+  // диплинк → зачем данные → согласие → имя (эвристика) → работа → город →
+  // «Всё верно?» → регистрация → маркетинг. Второе касание и подозрительное
+  // имя — состояниями (боковые ветки, открываются чипами).
+  const onboard = {
+    id: 'onboard',
+    title: 'Онбординг C',
+    hint: 'Первое касание: зачем данные → согласие → профиль → «Всё верно?» → регистрация → анонсы. Второе касание — в один тап.',
+    steps: [
+      { id: 'start', kind: 'user', text: '/start e' + ev.id, note: P['proto.deep_link_note'], trace: ['OWN-6', 'ADR-0025'] },
+
+      { id: 'event', kind: 'card', markup: true, card: eventCard(T('onb.why')), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
+        buttons: [{ label: T('onb.btn.continue'), go: 'consent' }] },
+
+      { id: 'consent', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.consent')), trace: ['PAR-1', 'ADR-0017'],
+        buttons: [
+          { label: T('reg.consent_pdn.btn_yes'), go: 'name-ok' },
+          { label: T('onb.btn.details'), go: 'details' },
+        ] },
+
+      { id: 'details', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.details')), trace: ['PAR-1', 'ADR-0017'],
+        buttons: [
+          { label: T('onb.btn.understood'), go: 'name-ok' },
+          { label: T('reg.consent_pdn.btn_no'), go: 'declined' },
+        ] },
+
+      { id: 'declined', kind: 'card', edit: true, markup: true, card: { title: ev.title, lines: [], body: T('reg.consent_pdn.declined') }, trace: ['PAR-1'],
+        buttons: [{ label: T('common.btn.menu'), go: 'menu-guest' }] },
+
+      { id: 'name-ok', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.name_ok')), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
+        buttons: [
+          { label: T('onb.btn.itsme'), go: 'work' },
+          { label: T('onb.btn.fix_name'), go: 'ask-name' },
+        ] },
+
+      { id: 'ask-name', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_name')), trace: ['PAR-1', 'ADR-0017'] },
+      { id: 'user-name', kind: 'user', text: 'Дилшод Азимов', trace: ['PAR-1'] },
+
+      { id: 'work', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_work')), trace: ['PAR-1', 'ADR-0017'] },
+      { id: 'user-work', kind: 'user', text: 'ML-инженер, Payme', trace: ['PAR-1'] },
+
+      { id: 'city', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_city')), trace: ['PAR-1', 'ADR-0017'],
+        buttons: [
+          { label: 'Ташкент', go: 'review' },
+          { label: 'Алматы', go: 'review' },
+          { label: T('onb.btn.write'), go: 'user-city' },
+        ] },
+      { id: 'user-city', kind: 'user', text: 'Бишкек', trace: ['PAR-1'] },
+
+      { id: 'review', kind: 'card', edit: true, markup: true, card: { title: T('onb.btn.all_good'), lines: [], body: T('onb.review') }, trace: ['PAR-1', 'ADR-0017'],
+        buttons: [
+          { label: T('onb.btn.all_good'), go: 'done', primary: true },
+          { label: T('onb.btn.fix'), go: 'ask-name' },
+        ] },
+
+      { id: 'done', kind: 'card', edit: true, markup: true, card: {
+          title: T('reg.done.header'),
+          lines: [T('event.card.when', { when: ev.whenLong }), T('event.card.where', { address: ev.address })],
+          body: T('reg.done', { title: ev.title }) + '\n' + T('reg.consent_marketing.ask'),
+        }, trace: ['PAR-2', 'IDM-1', 'ADR-0007'],
+        buttons: [
+          { label: T('reg.consent_marketing.btn_yes'), go: 'mkt-done' },
+          { label: T('reg.consent_marketing.btn_no'), go: 'mkt-done' },
+        ] },
+
+      { id: 'mkt-done', kind: 'card', edit: true, markup: true, card: {
+          title: T('reg.done.header'),
+          lines: [T('event.card.when', { when: ev.whenLong }), T('event.card.where', { address: ev.address })],
+          body: T('reg.done', { title: ev.title }) + '\n' + T('reg.qr.open_miniapp'),
+        }, trace: ['PAR-6', 'IDM-1', 'ADR-0007'],
+        buttons: [{ label: T('reg.qr.button'), webApp: '#/ticket?event_id=' + ev.id, resume: 'mkt-done' }] },
+
+      { id: 'menu-guest', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_guest') }, trace: ['ADR-0025'],
+        buttons: menuButtonsGuest },
+
+      // Второе касание: профиль уже есть — только регистрация.
+      { id: 'second', kind: 'card', state: true, markup: true, card: eventCard(T('onb.second_hint')), trace: ['IDM-1', 'ADR-0017'],
+        buttons: [{ label: T('event.card.btn_register'), go: 'second-done', primary: true }] },
+      { id: 'second-done', kind: 'card', state: true, edit: true, markup: true, card: {
+          title: T('reg.done.header'),
+          lines: [T('event.card.when', { when: ev.whenLong })],
+          body: T('reg.done', { title: ev.title }) + '\n' + T('reg.qr.open_miniapp'),
+        }, trace: ['IDM-1', 'ADR-0007'],
+        buttons: [{ label: T('reg.qr.button'), webApp: '#/ticket?event_id=' + ev.id, resume: 'second-done' }] },
+
+      // Подозрительное имя: кнопки «Это я» нет, только ручной ввод.
+      { id: 'suspect', kind: 'card', state: true, markup: true, card: eventCard(T('onb.suspect')), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
+        buttons: [{ label: T('onb.btn.write_name'), go: 'ask-name', primary: true }] },
+    ],
+  };
+
+  return { guest: guest, owner: owner, controller: controller, onboard: onboard };
 };
 
 PROTO.stateIndex = {
@@ -244,5 +334,10 @@ PROTO.stateIndex = {
     ['st-accept-invalid', 'Инвайт не найден'],
     ['st-accept-used', 'Инвайт использован'],
     ['st-accept-expired', 'Срок инвайта истёк'],
+  ],
+  onboard: [
+    ['second', 'Второе касание — в один тап'],
+    ['suspect', 'Подозрительное имя — без «Это я»'],
+    ['declined', 'Отказ от согласия'],
   ],
 };
