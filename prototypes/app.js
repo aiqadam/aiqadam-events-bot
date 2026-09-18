@@ -788,6 +788,22 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         }
       }
       linkInput.addEventListener('input', (e) => { f.mapLink = e.target.value; paintLink(); });
+      // Вставка ссылки: координаты + адрес подтягиваются сразу (без потери
+      // фокуса при наборе — только paste). Адрес заполняем лишь в пустое
+      // поле; в продукте его отдаёт resolve_geo (может быть пустым).
+      // Вердикт владельца 2026-09-18 (геокодер есть).
+      linkInput.addEventListener('paste', () => setTimeout(() => {
+        f.mapLink = linkInput.value;
+        const pasted = parseYandexLink(f.mapLink || '');
+        if (!pasted) { paintLink(); return; }
+        f.lat = pasted.lat;
+        f.lon = pasted.lon;
+        if (!f.address) {
+          const venue = (D.venues || []).find((v) => v.lat === pasted.lat && v.lon === pasted.lon);
+          if (venue) f.address = venue.name;
+        }
+        renderManageEvent(eventId);
+      }, 0));
       paintLink();
       loc.appendChild(linkStatus);
       if (f.lat !== null && f.lon !== null) {
