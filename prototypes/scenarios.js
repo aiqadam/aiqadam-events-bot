@@ -85,7 +85,11 @@ PROTO.buildScenarios = function (opts) {
       { id: 'afterword', kind: 'bot', text: T('afterword.thanks'), trace: ['ADR-0017', 'ADR-0028'],
         buttons: [{ label: T('afterword.feedback_btn'), webApp: '#/feedback?event_id=' + ev.id, resume: 'afterword', primary: true }] },
 
-      { id: 'menu-guest', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
+      // Меню гостя — без грубого «Что дальше?» (общий menu.title живёт
+      // в продукте для всех ролей): целевая строка — предложение прототипа,
+      // в продукт переносится отдельным пакетом (ru.json + menu flow).
+      // Вердикт владельца 2026-09-18 (W49).
+      { id: 'menu-guest', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_guest') }, trace: ['ADR-0025'],
         buttons: menuButtonsGuest },
 
       // Отмена регистрации из чата — состояние (в to-be основной путь отмены
