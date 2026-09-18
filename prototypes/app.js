@@ -1,7 +1,6 @@
 // Прототип W41 — мок Mini App (ADR-0027).
 // Hash-роутер как у продукта: #/ticket, #/scan, #/manage, #/manage/:id,
-// #/events. Форма отзыва #/feedback — предложение (черновик ADR-0028),
-// пятого роута в продукте ещё нет. Фейковые данные, никаких вызовов
+// #/events, #/feedback (пятый роут принят ADR-0028, W45). Фейковые данные, никаких вызовов
 // (ADR-0026). Экраны — как продукт: брендовые токены, компоненты и иконки
 // Lucide; требования SPEC — в отдельном шите трассировки.
 'use strict';
@@ -305,7 +304,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (!ev) {
       screen.appendChild(emptyState(T('common.err.event_not_found'), 'ticket'));
       const acts = E('div', 'app-actions');
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events', 'btn-primary'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-primary'));
       screen.appendChild(acts);
       PROTO.setDemo(demoItems);
       return;
@@ -338,8 +337,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (finished) {
       screen.appendChild(ticketState('check-circle', T('reg.event_finished')));
       const acts = E('div', 'app-actions');
-      if (ticket && !ticket.feedbackGiven) acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events?tab=past', 'btn-primary'));
+      if (ticket && !ticket.feedbackGiven) acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events?tab=past', 'btn-primary'));
       screen.appendChild(acts);
       PROTO.setDemo(demoItems);
       return;
@@ -349,7 +348,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       screen.appendChild(ticketState('ticket', T('proto.ticket_none')));
       const acts = E('div', 'app-actions');
       acts.appendChild(btn(T('event.card.btn_register'), { kind: 'btn-primary', onClick: () => openRegistration(ev) }));
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events', 'btn-secondary'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-secondary'));
       screen.appendChild(acts);
       PROTO.setDemo(demoItems);
       return;
@@ -466,7 +465,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ic.appendChild(PROTO.icon(e.icon, 24));
       box.appendChild(ic);
       box.appendChild(E('div', 'state-title', T(e.text)));
-      box.appendChild(btn(e.action === 'close' ? T('proto.app_close') : T('scan.rescan'), {
+      box.appendChild(btn(e.action === 'close' ? T('common.btn.close') : T('scan.rescan'), {
         kind: 'btn-primary',
         onClick: () => { if (e.action === 'close') { go('#/events'); return; } scanError = null; renderScan(); },
       }));
@@ -648,10 +647,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
     const head = E('div', 'wizard-head');
     head.appendChild(stepDots(wizardStep, WIZARD_STEPS.length));
-    head.appendChild(E('div', 'wizard-step-label', T('proto.wizard_step', { n: wizardStep + 1, m: WIZARD_STEPS.length })));
+    head.appendChild(E('div', 'wizard-step-label', T('manage.step.label', { n: wizardStep + 1, m: WIZARD_STEPS.length })));
     body.appendChild(head);
 
-    const stepTitle = { main: T('proto.section_main'), where: T('proto.section_where'), capacity: T('proto.section_capacity'), review: T('proto.step_review') }[step];
+    const stepTitle = { main: T('manage.step.main'), where: T('manage.step.where'), capacity: T('manage.step.capacity'), review: T('manage.step.review') }[step];
     body.appendChild(E('div', 'wizard-title', stepTitle));
 
     if (step === 'main') renderWizardMain(body, f, errs.main, show);
@@ -667,7 +666,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (step !== 'review') {
       // Ошибки считаем в момент нажатия, а не из закрытия рендера: поля
       // обновляются без перерисовки, и старое состояние уже неактуально.
-      nav.appendChild(btn(T('proto.wizard_next'), { kind: 'btn-primary', onClick: () => {
+      nav.appendChild(btn(T('manage.btn.next'), { kind: 'btn-primary', onClick: () => {
         const fresh = wizardErrors(wizardFields(eventId));
         if (!stepValid(fresh, step)) { wizardTried = true; renderManageEvent(eventId); return; }
         wizardStep++;
@@ -731,12 +730,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const loc = E('div', 'app-field');
     loc.appendChild(E('label', 'label', T('field.geo')));
     const chips = E('div', 'chip-row');
-    chips.appendChild(btn(T('proto.paste_link'), { kind: 'btn-outline', size: 'btn-sm', icon: 'link', onClick: () => openLinkSheet(f) }));
+    chips.appendChild(btn(T('manage.geo.link'), { kind: 'btn-outline', size: 'btn-sm', icon: 'link', onClick: () => openLinkSheet(f) }));
     chips.appendChild(btn(T('proto.pick_on_map'), { kind: 'btn-outline', size: 'btn-sm', icon: 'map-pin', onClick: () => openMapSheet(f) }));
     loc.appendChild(chips);
     if (f.lat !== null && f.lon !== null) {
       loc.appendChild(locPreview(f));
-      loc.appendChild(E('div', 'helper', T('proto.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) })));
+      loc.appendChild(E('div', 'helper', T('manage.geo.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) })));
       const a = E('a', 'loc-link', T('event.card.btn_map'));
       a.href = mapUrl(f.lat, f.lon);
       a.target = '_blank';
@@ -744,7 +743,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       a.appendChild(PROTO.icon('external', 14));
       loc.appendChild(a);
     } else {
-      loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('proto.location_none')));
+      loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('manage.geo.none')));
     }
     sec.appendChild(loc);
 
@@ -781,7 +780,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const over = f.overbook === '' ? 40 : parseInt(f.overbook, 10);
       const limit = Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
       live.appendChild(E('div', 'capacity-live-value', String(limit)));
-      live.appendChild(E('div', 'app-muted', T('proto.capacity_limit', { limit: limit })));
+      live.appendChild(E('div', 'app-muted', T('manage.capacity.limit', { limit: limit })));
     }
     const sec = E('div', 'form-section');
     sec.appendChild(row2(
@@ -822,12 +821,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
 
   function renderWizardReview(body, f, isNew, errs, show) {
-    body.appendChild(E('div', 'app-muted', T('proto.review_hint')));
+    body.appendChild(E('div', 'app-muted', T('manage.review.hint')));
     body.appendChild(previewCard(f));
 
     const isDraft = isNew || String(eventId) === '5';
     if (isDraft) {
-      const saveDraft = btn(T('proto.save_draft'), { kind: 'btn-outline', block: true, onClick: () => PROTO.toast(T('manage.saved.draft')) });
+      const saveDraft = btn(T('manage.btn.save_draft'), { kind: 'btn-outline', block: true, onClick: () => PROTO.toast(T('manage.saved.draft')) });
       saveDraft.style.marginTop = '14px';
       body.appendChild(saveDraft);
     } else {
@@ -881,7 +880,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function openCancelEventSheet(f, id) {
     openSheet(T('owner.event.btn.cancel_event'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('proto.confirm_cancel_event', { title: f.title })));
+      body.appendChild(E('div', 'app-muted', T('manage.cancel.confirm', { title: f.title })));
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('common.btn.confirm'), { kind: 'btn-destructive', onClick: () => {
         closeSheet();
@@ -897,7 +896,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function openLinkSheet(f) {
     let error = '';
     let value = '';
-    openSheet(T('proto.paste_link'), (body) => {
+    openSheet(T('manage.geo.link'), (body) => {
       body.appendChild(E('div', 'app-muted', T('manage.hint.geo')));
       const input = E('input', 'input');
       input.type = 'url';
@@ -906,7 +905,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       input.addEventListener('input', () => { value = input.value; });
       body.appendChild(input);
       if (error) body.appendChild(E('div', 'helper error', error));
-      body.appendChild(E('div', 'section-label', T('proto.venue_recent')));
+      body.appendChild(E('div', 'section-label', T('manage.geo.recent')));
       const recent = E('div', 'sheet-actions');
       D.venues.forEach((v) => {
         if (v.lat === null || v.lon === null) return;
@@ -919,13 +918,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       });
       body.appendChild(recent);
       const acts = E('div', 'sheet-actions');
-      acts.appendChild(btn(T('proto.link_apply'), { kind: 'btn-primary', onClick: () => {
+      acts.appendChild(btn(T('manage.geo.link_apply'), { kind: 'btn-primary', onClick: () => {
         const parsed = parseYandexLink(value);
         if (!parsed) { error = T('proto.link_bad'); renderSheet(); return; }
         f.lat = parsed.lat;
         f.lon = parsed.lon;
         closeSheet();
-        PROTO.toast(T('proto.link_applied'));
+        PROTO.toast(T('manage.geo.link_applied'));
         renderManageEvent(eventId);
       } }));
       body.appendChild(acts);
@@ -948,7 +947,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         const y = Math.min(96, Math.max(4, ((41.38 - lat) / 0.14) * 100));
         pin.style.left = x + '%';
         pin.style.top = y + '%';
-        coords.textContent = T('proto.coords', { lat: fmtCoord(lat), lon: fmtCoord(lon) });
+        coords.textContent = T('manage.geo.coords', { lat: fmtCoord(lat), lon: fmtCoord(lon) });
       }
       map.addEventListener('click', (e) => {
         const r = map.getBoundingClientRect();
@@ -975,9 +974,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setTrace(['OWN-7', 'OWN-8']);
     const ed = eventData(eventId);
     const grid = E('div', 'stat-grid');
-    grid.appendChild(stat(ed.counts.registered, T('proto.registered_short'), ''));
-    grid.appendChild(stat(ed.counts.checkedIn, T('proto.checked_in_short'), 'ok'));
-    grid.appendChild(stat(ed.counts.cancelled, T('proto.cancelled_short'), 'warn'));
+    grid.appendChild(stat(ed.counts.registered, T('manage.parts.stat_registered'), ''));
+    grid.appendChild(stat(ed.counts.checkedIn, T('manage.parts.stat_checked_in'), 'ok'));
+    grid.appendChild(stat(ed.counts.cancelled, T('manage.parts.stat_cancelled'), 'warn'));
     body.appendChild(grid);
 
     const filters = E('div', 'segmented');
@@ -1086,7 +1085,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function openStaffPicker() {
     openSheet(T('proto.staff_add'), (body) => {
-      body.appendChild(searchField(T('proto.staff_search'), staffQuery, (e) => {
+      body.appendChild(searchField(T('manage.staff.search_placeholder'), staffQuery, (e) => {
         staffQuery = e.target.value;
         renderSheet();
         const inp = sheet.body.querySelector('input[type="search"]');
@@ -1132,11 +1131,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- роут: каталог — мои билеты / будущие / прошедшие ----------
   function renderEvents() {
     const tabsDef = [
-      ['mine', T('proto.tab_my_tickets')],
+      ['mine', T('events.tab.mine')],
       ['upcoming', T('events.list.btn.upcoming')],
       ['past', T('events.list.btn.past')],
     ];
-    setBar(catalogTab === 'mine' ? T('proto.tab_my_tickets') : catalogTab === 'upcoming' ? T('events.list.upcoming_title') : T('events.list.past_title'));
+    setBar(catalogTab === 'mine' ? T('events.tab.mine') : catalogTab === 'upcoming' ? T('events.list.upcoming_title') : T('events.list.past_title'));
     PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1']);
     clear();
 
@@ -1163,7 +1162,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
 
     PROTO.setDemo([
-      { label: T('proto.tab_my_tickets'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; catalogEmpty = false; renderEvents(); } },
+      { label: T('events.tab.mine'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; catalogEmpty = false; renderEvents(); } },
       { label: T('events.list.btn.upcoming'), active: catalogTab === 'upcoming', onClick: () => { catalogTab = 'upcoming'; catalogEmpty = false; renderEvents(); } },
       { label: T('events.list.btn.past'), active: catalogTab === 'past', onClick: () => { catalogTab = 'past'; catalogEmpty = false; renderEvents(); } },
       { label: 'Пустой срез', active: catalogEmpty, onClick: () => { catalogEmpty = !catalogEmpty; renderEvents(); } },
@@ -1192,7 +1191,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (t.upcoming) {
       acts.appendChild(linkBtn(T('reg.qr.button'), '#/ticket?event_id=' + t.eventId, 'btn-primary', 'qr'));
     } else if (!t.feedbackGiven) {
-      acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + t.eventId, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + t.eventId, 'btn-outline', 'message-square'));
     } else {
       acts.appendChild(E('span', 'badge badge-success', T('proto.feedback_given')));
     }
@@ -1233,7 +1232,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         acts.appendChild(btn(T('event.card.btn_register'), { kind: 'btn-primary', onClick: () => openRegistration(ev) }));
       }
     } else if (ev.attendedMe && !ev.feedbackGiven) {
-      acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
     } else if (ev.attendedMe && ev.feedbackGiven) {
       acts.appendChild(E('span', 'badge badge-success', T('proto.feedback_given')));
     }
@@ -1247,14 +1246,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     let pdn = false;
     let mkt = false;
     let done = false;
-    openSheet(T('proto.reg_title'), (body) => {
+    openSheet(T('reg.sheet.title'), (body) => {
       if (done) {
         const ok = E('div', 'sheet-success');
         const ic = E('div', 'success-icon');
         ic.appendChild(PROTO.icon('check-circle', 34));
         ok.appendChild(ic);
         ok.appendChild(E('div', 'success-title', T('reg.done.header')));
-        ok.appendChild(E('div', 'app-muted', T('proto.reg_done_hint')));
+        ok.appendChild(E('div', 'app-muted', T('reg.done.hint')));
         body.appendChild(ok);
         const acts = E('div', 'sheet-actions');
         acts.appendChild(btn(T('reg.qr.button'), { kind: 'btn-primary', icon: 'qr', onClick: () => {
@@ -1274,7 +1273,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       pdnBox.checked = pdn;
       pdnBox.addEventListener('change', () => { pdn = pdnBox.checked; renderSheet(); });
       pdnRow.appendChild(pdnBox);
-      pdnRow.appendChild(E('span', '', T('proto.reg_pdn')));
+      pdnRow.appendChild(E('span', '', T('reg.pdn.label')));
       body.appendChild(pdnRow);
 
       const mktRow = E('label', 'control-row');
@@ -1283,9 +1282,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       mktBox.checked = mkt;
       mktBox.addEventListener('change', () => { mkt = mktBox.checked; });
       mktRow.appendChild(mktBox);
-      mktRow.appendChild(E('span', '', T('proto.reg_mkt')));
+      mktRow.appendChild(E('span', '', T('reg.mkt.label')));
       body.appendChild(mktRow);
-      body.appendChild(E('div', 'helper', T('proto.reg_mkt_hint')));
+      body.appendChild(E('div', 'helper', T('reg.mkt.hint')));
 
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('event.card.btn_register'), {
@@ -1309,12 +1308,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     });
   }
 
-  // ---------- роут: форма отзыва (предложение, черновик ADR-0028) ----------
+  // ---------- роут: форма отзыва (пятый роут, принят ADR-0028) ----------
   function renderFeedback() {
     const id = hashParams.get('event_id') || D.feedback.eventId;
     const ev = eventById(id);
     const title = ev ? ev.title : D.feedback.eventTitle;
-    setBar(T('proto.feedback_title'));
+    setBar(T('feedback.title'));
     PROTO.setTrace(['ADR-0028', 'ADR-0017']);
     clear();
 
@@ -1323,22 +1322,22 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const ic = E('div', 'success-icon');
       ic.appendChild(PROTO.icon('check-circle', 34));
       ok.appendChild(ic);
-      ok.appendChild(E('div', 'success-title', T('proto.feedback_done_title')));
-      ok.appendChild(E('div', 'app-muted', T('proto.feedback_done')));
+      ok.appendChild(E('div', 'success-title', T('feedback.done_title')));
+      ok.appendChild(E('div', 'app-muted', T('feedback.done')));
       screen.appendChild(ok);
       const acts = E('div', 'app-actions');
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events?tab=past', 'btn-primary'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events?tab=past', 'btn-primary'));
       screen.appendChild(acts);
       PROTO.setDemo([]);
       return;
     }
 
-    screen.appendChild(E('div', 'app-title', T('proto.feedback_title')));
+    screen.appendChild(E('div', 'app-title', T('feedback.title')));
     screen.appendChild(E('div', 'app-sub', title));
-    screen.appendChild(E('div', 'app-muted', T('proto.feedback_lead')));
+    screen.appendChild(E('div', 'app-muted', T('feedback.lead')));
 
     const rate = E('div', 'form-section');
-    rate.appendChild(E('div', 'section-label', T('proto.feedback_rate')));
+    rate.appendChild(E('div', 'section-label', T('feedback.rate')));
     const stars = E('div', 'rating');
     for (let i = 1; i <= 5; i++) {
       const b = E('button', 'rating-star' + (i <= feedbackRating ? ' on' : ''));
@@ -1349,15 +1348,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       stars.appendChild(b);
     }
     rate.appendChild(stars);
-    if (feedbackRating === 0) rate.appendChild(E('div', 'helper', T('proto.feedback_rate_hint')));
+    if (feedbackRating === 0) rate.appendChild(E('div', 'helper', T('feedback.rate_hint')));
     screen.appendChild(rate);
 
     const text = E('div', 'form-section');
-    text.appendChild(field(T('proto.feedback_text'), '', { textarea: true, placeholder: T('proto.feedback_placeholder') }));
+    text.appendChild(field(T('feedback.text'), '', { textarea: true, placeholder: T('feedback.placeholder') }));
     screen.appendChild(text);
 
     const acts = E('div', 'app-actions');
-    acts.appendChild(btn(T('proto.feedback_submit'), {
+    acts.appendChild(btn(T('feedback.submit'), {
       kind: 'btn-primary btn-lg', block: true, disabled: feedbackRating === 0,
       onClick: () => {
         if (ev) ev.feedbackGiven = true;

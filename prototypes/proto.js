@@ -18,80 +18,40 @@ PROTO.protoDict = {
   'proto.to_start': 'На старт',
   'proto.theme_dark': 'Тёмная тема',
   'proto.theme_light': 'Светлая тема',
-  'proto.app_close': 'Закрыть',
   'proto.demo_hint': 'Демо-контролы прототипа. В продукте их нет.',
   // предложения продукта (ещё не в ru.json)
   'proto.tab_event': 'Ивент',
   'proto.forwarded_from': 'Переслано',
   'proto.broadcast_sample': 'Друзья, в пятницу встречаемся на AI Qadam #4. Вход свободный, регистрация обязательна.',
-  'proto.confirm_cancel_event': 'Отменить ивент «{title}»? Зарегистрированные получат уведомление.',
   'proto.broadcast_chat_hint': 'Составление — в чате: перешлите боту готовое сообщение.',
   'proto.open_chat': 'Перейти в чат',
   'proto.deep_link_note': 'переход по ссылке регистрации',
   'proto.staff_invite_note': 'переход по ссылке-инвайту',
-  'proto.registered_short': 'зарегистрировано',
-  'proto.checked_in_short': 'пришло',
-  'proto.cancelled_short': 'отменило',
-  'proto.section_main': 'Основное',
-  'proto.section_where': 'Где и когда',
-  'proto.section_capacity': 'Места',
   'proto.result_ok': 'Можно впускать',
   'proto.result_already': 'Пропустить повторно',
   'proto.result_denied': 'Не впускать',
   'proto.tab_hint': 'Проверьте данные и опубликуйте — участники увидят ивент после публикации.',
 
-  // каталог и мои билеты
-  'proto.tab_my_tickets': 'Мои билеты',
+  // каталог, регистрация и визард: тексты написаны, берутся из ru.json
 
-  // регистрация внутри Mini App (PAR-1, PAR-2)
-  'proto.reg_title': 'Регистрация на ивент',
-  'proto.reg_pdn': 'Согласен на обработку персональных данных',
-  'proto.reg_mkt': 'Присылать анонсы других ивентов',
-  'proto.reg_mkt_hint': 'Это отдельное согласие и на регистрацию не влияет.',
-  'proto.reg_done_hint': 'Билет уже готов — QR откроется на экране билета.',
-
-  // визард ивента
-  'proto.wizard_step': 'Шаг {n} из {m}',
-  'proto.wizard_next': 'Далее',
-  'proto.step_review': 'Проверка',
-  'proto.review_hint': 'Так ивент увидят участники. Всё на месте?',
-  'proto.save_draft': 'Сохранить черновик',
-  'proto.capacity_limit': 'Регистрация закроется на {limit} участниках.',
-
-  // гео: ссылка Яндекс.Карт и точка на карте
-  'proto.paste_link': 'Ссылка Яндекс.Карт',
+  // гео: ссылка Яндекс.Карт и точка на карте (остаток предложений;
+  // написанное уже живёт в ru.json: manage.geo.*, manage.btn.*, manage.step.*)
   'proto.pick_on_map': 'Указать на карте',
-  'proto.venue_recent': 'Недавние места',
   'proto.link_placeholder': 'https://yandex.ru/maps/...',
-  'proto.link_apply': 'Взять координаты',
-  'proto.link_applied': 'Координаты взяли из ссылки',
   'proto.link_bad': 'Не разобрали ссылку. Нужна ссылка Яндекс.Карт с координатами.',
-  'proto.coords': 'Координаты: {lat}, {lon}',
   'proto.map_hint': 'Тапните по карте, чтобы поставить точку.',
   'proto.map_apply': 'Готово',
-  'proto.location_none': 'Точка не задана — карты в карточке не будет.',
 
-  // контролёры: выбор из списка
+  // контролёры: выбор из списка (плейсхолдер поиска — из ru.json)
   'proto.staff_add': 'Добавить контролёра',
-  'proto.staff_search': 'Имя или @username',
   'proto.staff_nobody': 'Никого не нашли. Проверьте написание или пригласите ссылкой.',
   'proto.staff_hint': 'Права — на этот ивент; отозвать можно в любой момент.',
   'proto.staff_section_participants': 'Участники ивента',
   'proto.staff_invite_alt': 'Нет в списке? Пригласите ссылкой — она действует 24 часа и один раз.',
   'proto.staff_since': 'контролёр с {when}',
 
-  // послесловие и форма отзыва
-  'proto.afterword_feedback': 'Оставить отзыв',
-  'proto.feedback_title': 'Как прошёл ивент?',
-  'proto.feedback_lead': 'Пара слов — и следующий станет лучше. Это займёт минуту.',
-  'proto.feedback_rate': 'Оценка',
-  'proto.feedback_rate_hint': 'Выберите оценку, чтобы отправить.',
-  'proto.feedback_text': 'Комментарий',
-  'proto.feedback_placeholder': 'Что понравилось, что улучшить — можно не заполнять',
-  'proto.feedback_submit': 'Отправить отзыв',
-  'proto.feedback_done_title': 'Спасибо за отзыв',
-  'proto.feedback_done': 'Мы передадим его организаторам.',
-  'proto.feedback_to_events': 'К ивентам',
+  // послесловие: отметка об отправленном отзыве (тексты формы — из ru.json,
+  // приняты ADR-0028)
   'proto.feedback_given': 'Отзыв отправлен',
 
   // билет
@@ -143,7 +103,7 @@ PROTO.specMap = {
   'ADR-0023': 'Каталог ивентов — четвёртый роут #/events.',
   'ADR-0024': 'Права: глобальный staff по чаптеру, чекин — event_staff; events.staff_id — авторство.',
   'ADR-0025': 'Единственный командный вход — /start; дальше карточки и Mini App.',
-  'ADR-0028': 'Форма отзыва — предлагается пятым роутом #/feedback; требует нового ADR (черновик ADR-0028).',
+  'ADR-0028': 'Форма отзыва — пятый роут #/feedback (принят ADR-0028).',
 };
 
 // ---------- i18n ----------

@@ -241,6 +241,6 @@ PROTO.data = {
     { name: 'Astana Hub, Мангилик Ел 55/8', lat: 51.090488, lon: 71.418153 },
   ],
 
-  // Фидбек после ивента (предложение).
+  // Фидбек после ивента (принят ADR-0028, тексты — из ru.json).
   feedback: { eventId: '3', eventTitle: 'AI Qadam #3 · Embeddings & Vector DB Day' },
 };
