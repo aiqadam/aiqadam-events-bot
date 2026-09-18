@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 24 | [flows/](flows/) |
+| Флоу | 25 | [flows/](flows/) |
 | Таблицы | 13 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -26,7 +26,7 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
 | Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
-| Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) |
+| Регистрация участника | [reg-start](flows/reg-start.md) (вход + гейт профиля: заполнен — один тап, нет — онбординг), [reg-profile](flows/reg-profile.md) (онбординг C, PAR-8), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) (старые сессии `await_pdn`/`await_marketing` — новых касаний туда нет) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) (только заполненный профиль) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
 | Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+ивент; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |

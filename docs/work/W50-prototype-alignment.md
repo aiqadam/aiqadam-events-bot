@@ -21,6 +21,8 @@
 | flow `menu` | `1DORFhP9F3W00KpKz5wDw` | [catalog/flows/menu.md](../../catalog/flows/menu.md) |
 | flow `manage-api` (step_25) | `CcGPwuW4ws5hkcaOPerEG` | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
 | flow `staff-events-api` (новый) | `Ok7iXvrnJUUzNcR5OwH8x` | [catalog/flows/staff-events-api.md](../../catalog/flows/staff-events-api.md) |
+| flow `reg-profile` (новый) | `5U3Kv0cSrnvDTrbictA4L` | [catalog/flows/reg-profile.md](../../catalog/flows/reg-profile.md) |
+| таблица `users` +6 колонок | `gyMqrk23KWlFQweY3qDU0` | [catalog/tables/users.md](../../catalog/tables/users.md) |
 
 ## Чек-лист готовности
 
@@ -31,7 +33,10 @@
 - [x] SPA: список `#/manage` без создания + `#/manage/new` сразу форма; сканер в каталоге и списке — только контролёру (гейт сервером)
 - [x] SPA визард «Где и когда»: тогл Онлайн/Офлайн + голое поле ссылки (перенос из `prototypes/app.js`)
 - [ ] accept-карточка инвайта — за W10 (заморожен): флоу инвайтов нет, вердикт ждёт пакета
-- [ ] `reg-*` под онбординг C (ADR-0032): в продукте нет ни `onb.*`-ключей, ни полей профиля — отдельный срез (SPEC+DATA-MODEL+таблица+флоу)
+- [x] `reg-*` под онбординг C (ADR-0032): новый `reg-profile` (35 шагов),
+  `reg-start` — гейт профиля (`onboard`/`register`), роутер — ветка `reg_profile`,
+  `reg-api` — гейт `profile_required`; `users` +6 колонок; Q58 закрыт
+  (одно сообщение; `profile_first_name`/`profile_last_name`)
 - [x] левое удалено (в т.ч. временный `tmp-w15-e2e-probe`), каталог и `flows/*.json` тем же коммитом
 - [ ] `check-texts.py`, `check-commands.py`, `check-export-secrets.sh` чисты; `ap_validate_flow` чист
 - [ ] `catalog/` совпадает с живым проектом
@@ -95,6 +100,22 @@
   Черновик `localStorage` хранит и `{online, mapLink}` (старый формат
   выводится из координат). `tsc` чист, висячих ссылок ноль (`grep`).
   `#/manage/new` — сразу форма создания (раньше `'new'` трактовался как id).
+- **2026-09-18** — срез 5 (онбординг C, PAR-8/ADR-0032): `users` +6 колонок
+  (`profile_first_name`/`profile_last_name` — решение Q58, закрыт; одним
+  сообщением «должность, компания»); SPEC (PAR-8) и DATA-MODEL уже были
+  готовы PR #81–82 — правились только указатель на имена и статус Q58.
+  Новый `reg-profile` (35 шагов: parse → read → render → роутер 6 веток +
+  фолбэк; edit+фолбэк в каждой пишущей ветке по ADR-0017; `finish_lite`
+  не пишет `users`, чтобы не затереть профиль пустым). `reg-start`: чтение
+  профиля + исходы `onboard`/`register` (старая ветка `new` перепрофилирована,
+  шаги переиспользованы, а не удалены). Роутер: `ob:`-колбэки и свободный ввод
+  на `ob_await_*` → `reg_profile` (без новых сравнений команд — `check-commands`
+  чист); `reg-start` получает имена. `reg-api`: `register` без профиля →
+  `400 profile_required` (шит профиля в каталоге — срез 6).
+  Проверено: эвристика 7/7 (5 регрессов ADR-0032 + 2), матрица парсинга 17/17,
+  ключи 30/30 в `ru.json`, `check-texts` 207/0, `ap_validate_flow` ×4 чист.
+  Живой позитив чатом и позитив `staff-events-api` — хвосты на W15 (нужен
+  человек с Telegram). Старые сессии `await_pdn` дорабатывают старые флоу.
 
 ## Ревью
 
@@ -106,12 +127,11 @@
 
 ## Хвосты и блокеры
 
-- Позитив `staff-events-api` живым `initData` — на приёмку W15 (нужен человек
-  с контролёрскими правами в Telegram).
-- Срез 5 (онбординг C, ADR-0032): SPEC-правка (PAR-поля профиля) и DATA-MODEL
-  (`users`: новые поля) — сначала документы отдельными коммитами, потом
-  `reg-*`/`tg-router`; заодно закрывается Q58. В прототипе уже эталон
-  (`scenarios.js` obCore + `onboard.html`), в продукте — ноль.
+- Позитив `staff-events-api` живым `initData` и полный проход онбординга живым
+  чатом — на приёмку W15 (нужен человек с Telegram; матрица 17/17 и эвристика
+  7/7 — локально, негативы — там же).
+- Срез 6 (шит профиля в каталоге + таб «Профиль», ADR-0032): `reg-api` уже
+  отдаёт `profile_required`, `Events.tsx` шит и таб ещё не собирают.
 - SPA-срезы проверены `tsc` + глазами по эталону; живой клик-проход Mini App
   (все 5 роутов) — на приёмку W15: у агента нет живого `initData`.
 - Скриншоты прототипа лежат в `/tmp/opencode/roles-shots/` (не в репо).

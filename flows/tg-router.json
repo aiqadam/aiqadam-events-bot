@@ -58,7 +58,9 @@
                                     "exampleData": {
                                       "chatId": "322876545",
                                       "eventId": "demo",
-                                      "telegramId": "322876545"
+                                      "telegramId": "322876545",
+                                      "firstName": "Тест",
+                                      "lastName": "Тестов"
                                     },
                                     "externalId": "HGX7KPhFsyFrapBRvlIAT"
                                   },
@@ -69,10 +71,14 @@
                                       "chatId": "{{step_1['output'].chatId}}",
                                       "eventId": "{{step_10['output'].eventId}}",
                                       "telegramId": "{{step_1['output'].tgId}}",
-                                      "utm": "{{step_10['output'].utm}}"
+                                      "utm": "{{step_10['output'].utm}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "lastName": "{{step_1['output'].lastName}}"
                                     },
                                     "telegramId": "{{step_1['output'].tgId}}",
-                                    "utm": "{{step_10['output'].utm}}"
+                                    "utm": "{{step_10['output'].utm}}",
+                                    "firstName": "{{step_1['output'].firstName}}",
+                                    "lastName": "{{step_1['output'].lastName}}"
                                   },
                                   "mode": "simple",
                                   "waitForResponse": false
@@ -371,6 +377,68 @@
                               },
                               "type": "PIECE",
                               "valid": true
+                            },
+                            {
+                              "displayName": "call reg-profile",
+                              "name": "step_20",
+                              "nextAction": null,
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "ob:continue",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "firstName": "Тест",
+                                      "lastName": "Тестов",
+                                      "messageId": "0",
+                                      "messageText": "",
+                                      "sessionDraft": "{\"eventId\":\"demo\",\"step\":\"ob_consent\"}",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "bEd0cScLAymIT44Dmtnxu"
+                                  },
+                                  "flowProps": {
+                                    "callbackData": "{{step_1['output'].callbackData}}",
+                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                    "chatId": "{{step_1['output'].chatId}}",
+                                    "firstName": "{{step_1['output'].firstName}}",
+                                    "lastName": "{{step_1['output'].lastName}}",
+                                    "messageId": "{{step_1['output'].messageId}}",
+                                    "messageText": "{{step_1['output'].text}}",
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "lastName": "{{step_1['output'].lastName}}",
+                                      "messageId": "{{step_1['output'].messageId}}",
+                                      "messageText": "{{step_1['output'].text}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                    "telegramId": "{{step_1['output'].tgId}}"
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
                             }
                           ],
                           "displayName": "делегирование обработчику",
@@ -475,6 +543,19 @@
                                 ]
                               },
                               {
+                                "branchName": "reg_profile",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "reg_profile"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
                                 "branchName": "Otherwise",
                                 "branchType": "FALLBACK"
                               }
@@ -506,10 +587,11 @@
                             "sessionDraft": "{{step_8['output'].draft}}",
                             "sessionScenario": "{{step_8['output'].scenario}}",
                             "sessionStep": "{{step_8['output'].step}}",
-                            "startPayload": "{{step_1['output'].startPayload}}"
+                            "startPayload": "{{step_1['output'].startPayload}}",
+                            "messageText": "{{step_1['output'].text}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). Проверки стоят до командной цепочки, чтобы не сравнивать\n  // вычисленный маршрут ни с чем, кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s остаются в Otherwise: чекин — только сканером (Q41).\n  let badPayload = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true && fwdText !== '') {\n    route = 'bcast_draft';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
+                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const messageText = String(inputs.messageText === undefined || inputs.messageText === null ? '' : inputs.messageText);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). Проверки стоят до командной цепочки, чтобы не сравнивать\n  // вычисленный маршрут ни с чем, кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s остаются в Otherwise: чекин — только сканером (Q41).\n  let badPayload = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true && fwdText !== '') {\n    route = 'bcast_draft';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    }\n    } else if (starts(callbackData, 'ob:')) {\n      // W50 / PAR-8: онбординг C — колбэки ob:* ведёт reg-profile.\n      route = 'reg_profile';\n    } else if (callbackData === '' && messageText.trim() !== '' && starts(sessionStep, 'ob_await_')) {\n      // W50 / PAR-8: свободный ввод в онбординге (имя/работа/город) —\n      // тоже reg-profile; чужие тексты вне шагов — в Otherwise молча.\n      route = 'reg_profile';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
                             "packageJson": "{}"
                           }
                         },

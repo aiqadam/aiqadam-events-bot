@@ -37,7 +37,8 @@
 | step_6 | `tables-find-records registrations` | свои строки: `telegram_id eq <владелец initData>`, `limit 50`, проекция `telegram_id`+`status`+`registered_at`+`checked_in_at`+`event_id` |
 | step_7 | `tables-find-records registrations` | происхождение ивента: `event_id eq <id>`, `limit 200` (подсчёт занятости — OWN-15), проекция `event_id`+`telegram_id`+`status` |
 | step_8 | `tables-find-records events` | ивент по `id`, `limit 1` |
-| step_9 | CODE «decide» | решение: `mine` / `registered` / `existing` / `cancelled` / отказы; все тексты — во входе `texts` |
+| step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`), гейт PAR-8 (W50) |
+| step_9 | CODE «decide» | решение: `mine` / `registered` / `existing` / `cancelled` / отказы; `register` без заполненного профиля → `400 profile_required` (первое касание — чатом); все тексты — во входе `texts` |
 | step_10 | ROUTER по `outcome` | `register` / `cancel` / `Otherwise` (`mine` и отказы без записей) |
 | step_11 | `tables-upsert-records registrations` | создать/реактивировать: `id = <eventId>-<telegramId>`, `status = registered`, `registered_at = now`, ключ `(event_id, telegram_id)` |
 | step_12 | `tables-upsert-records users` | `consent_pdn = true` + время, `consent_marketing = true/false` + время (всегда записывается, PAR-2) |
