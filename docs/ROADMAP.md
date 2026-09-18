@@ -186,6 +186,7 @@ W38 → W43; **жизненный цикл** (`reg-afterword`, `reminders`) — 
 | **W10.** Инвайт-ссылки контролёров | OWN-14, токен-путь | полная версия: одноразовый токен, TTL 24 ч, в БД только sha256. В прототипе сценарий нарисован, но решением владельца 2026-09-16 оставлен в v0.2: в v0.1 права выдаются вручную (W36) и выбором из списка (W44) |
 | **W12b.** `dedup-report` | диагностика дублей | маленький, ни с кем не пересекается |
 | **W25 / W27.** i18n | возврат ru/uz/en | ждут [qadam-flow#420](https://github.com/aiqadam/qadam-flow/issues/420) |
+| **W47.** Mini App best practice | `BackButton`, `HapticFeedback`, closing confirmation, vertical swipes | заведён 2026-09-18 по ресёрчу; только клиентский слой SPA, не пересекается с Q48 (safe area) и ADR-0019 (MainButton/header color) |
 
 ---
 
