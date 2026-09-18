@@ -255,11 +255,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       { utm: 'friends', url: base + '-friends' },
     ];
   }
-  function mapUrl(lat, lon) {
-    return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
-  }
   const seatsLeft = PROTO.seatsLeft;
-  function fmtCoord(n) { return Number(n).toFixed(5); }
   function parseYandexLink(text) {
     const s = String(text || '');
     let m = /(?:pt|ll)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
@@ -809,15 +805,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       }, 0));
       paintLink();
       loc.appendChild(linkStatus);
-      if (f.lat !== null && f.lon !== null) {
-        loc.appendChild(locPreview(f));
-        const a = E('a', 'loc-link', T('event.card.btn_map'));
-        a.href = mapUrl(f.lat, f.lon);
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.appendChild(PROTO.icon('external', 14));
-        loc.appendChild(a);
-      }
+      // Превью-карты с пином и ссылки «Открыть на карте» здесь нет: в моке
+      // это театр без толку (вердикт владельца 2026-09-18). Успех вставки —
+      // тишина, битую ссылку показывает ошибка валидации.
     }
     sec.appendChild(loc);
 
@@ -830,17 +820,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       onInput: (e) => { f.deadlineLocal = e.target.value; },
     }));
     body.appendChild(sec);
-  }
-
-  function locPreview(f) {
-    const box = E('div', 'loc-preview');
-    box.appendChild(E('div', 'loc-grid'));
-    const pin = E('span', 'loc-pin');
-    pin.appendChild(PROTO.icon('map-pin', 20));
-    pin.style.left = '50%';
-    pin.style.top = '46%';
-    box.appendChild(pin);
-    return box;
   }
 
   function renderWizardCapacity(body, f, errors, show) {
