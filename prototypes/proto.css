@@ -401,6 +401,8 @@
 }
 .ev-row:hover { border-color: color-mix(in oklch, var(--primary) 40%, var(--border)); }
 .ev-row .ev-main { flex: 1; min-width: 0; }
+/* ссылка-обёртка строки: вся область кликабельна, вид — как у строки */
+a.ev-main { display: block; text-decoration: none; color: inherit; }
 .ev-row .ev-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.3; }
 .ev-row .ev-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
 .ev-row .ev-tail { color: var(--muted-foreground); display: inline-flex; }
@@ -605,33 +607,10 @@
 }
 .capacity-live-value { font-family: var(--font-display); font-weight: 600; font-size: 24px; color: var(--primary); }
 
-/* ---------- гео: ссылка и точка на карте ---------- */
+/* ---------- гео: ссылка ---------- */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
-.loc-preview {
-  position: relative; height: 150px; overflow: hidden;
-  border: 1px solid var(--border); border-radius: var(--radius-lg);
-  background: var(--muted); margin-bottom: 8px;
-}
-.loc-grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.loc-preview::after {
-  content: '';
-  position: absolute; left: -10%; right: -10%; top: 58%; height: 24px;
-  background: color-mix(in oklch, var(--foreground) 10%, transparent);
-  transform: rotate(-8deg);
-}
-.loc-pin {
-  position: absolute; transform: translate(-50%, -100%);
-  color: var(--primary);
-  filter: drop-shadow(0 2px 3px color-mix(in oklch, var(--foreground) 30%, transparent));
-}
-.loc-preview.pickable { cursor: crosshair; }
-.loc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--primary); margin-top: 2px; }
+/* Превью-карта (.loc-preview, .loc-grid, .loc-pin) и ссылка «Открыть на
+   карте» (.loc-link) удалены вердиктом 2026-09-18 вместе с JS. */
 
 /* ---------- выбор контролёра ---------- */
 .person-row {

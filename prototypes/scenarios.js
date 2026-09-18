@@ -33,15 +33,19 @@ PROTO.buildScenarios = function (opts) {
   // в чате: чат-карточка myreg из прототипа убрана вердиктом владельца.
   // «Мои билеты» — одно имя экрана и в табе, и в меню (вердикт владельца);
   // product-ключ menu.btn.my_registrations заменяется пакетом W43.
+  // Гость: одна кнопка «Ивенты» — каталог и «Мои билеты» это один экран
+  // (#/events открывается на первом табе «Мои билеты»), две кнопки не нужны.
+  // Вердикт владельца 2026-09-18 (W49).
   const menuButtonsGuest = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu-guest' },
-    { label: T('proto.tab_my_tickets'), webApp: '#/events?tab=mine', resume: 'menu-guest' },
   ];
+  // Овнер: «Ивенты» (каталог и «Мои билеты» — один экран), создание —
+  // сразу форма #/manage/new (в Mini App кнопки создания нет).
+  // Кнопки чекина в чате нет: сканер — рядом с ивентом в Mini App (STF-2).
+  // Вердикт владельца 2026-09-18 (W49).
   const menuButtonsOwner = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
-    { label: T('proto.tab_my_tickets'), webApp: '#/events?tab=mine', resume: 'menu' },
-    { label: T('menu.btn.new_event'), webApp: '#/manage', resume: 'menu' },
-    { label: T('menu.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'menu' },
+    { label: T('menu.btn.new_event'), webApp: '#/manage/new', resume: 'menu' },
   ];
 
   const guest = {
@@ -79,11 +83,15 @@ PROTO.buildScenarios = function (opts) {
       { id: 'reminders', kind: 'bot', text: T('remind.24h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       { id: 'reminder-2h', kind: 'bot', text: T('remind.2h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       // Послесловие — только благодарность; предложение следующего ивента убрано
-      // вердиктом владельца. Отзыв живёт экраном #/feedback (черновик ADR-0028).
+      // вердиктом владельца. Отзыв живёт экраном #/feedback (принят ADR-0028).
       { id: 'afterword', kind: 'bot', text: T('afterword.thanks'), trace: ['ADR-0017', 'ADR-0028'],
-        buttons: [{ label: P['proto.afterword_feedback'], webApp: '#/feedback?event_id=' + ev.id, resume: 'afterword', primary: true }] },
+        buttons: [{ label: T('afterword.feedback_btn'), webApp: '#/feedback?event_id=' + ev.id, resume: 'afterword', primary: true }] },
 
-      { id: 'menu-guest', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
+      // Меню гостя — без грубого «Что дальше?» (общий menu.title живёт
+      // в продукте для всех ролей): целевая строка — предложение прототипа,
+      // в продукт переносится отдельным пакетом (ru.json + menu flow).
+      // Вердикт владельца 2026-09-18 (W49).
+      { id: 'menu-guest', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_guest') }, trace: ['ADR-0025'],
         buttons: menuButtonsGuest },
 
       // Отмена регистрации из чата — состояние (в to-be основной путь отмены
@@ -121,7 +129,9 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Меню → создание ивента в Mini App → ссылка-приглашение → правка → участники и экспорт → рассылка пересылкой → контролёры.',
     steps: [
       { id: 'start', kind: 'user', text: '/start', trace: ['ADR-0025'] },
-      { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
+      // Меню овнера — без «Что дальше?» (см. меню гостя): целевая строка —
+      // предложение прототипа. Вердикт владельца 2026-09-18 (W49).
+      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_owner') }, trace: ['ADR-0025'],
         buttons: menuButtonsOwner },
 
       // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране ивента.
@@ -194,14 +204,15 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Инвайт-ссылка → права на ивент → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
+      // Кнопка сканера — сразу в сообщении: контролёр здесь конкретный,
+      // ивент известен (вердикт владельца 2026-09-18). Общие меню чата
+      // кнопок чекина не несут.
       { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'],
         buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'accept-ok', primary: true }] },
-      { id: 'notify', kind: 'bot', text: T('manage.staff.notify', { title: ev.title }), trace: ['OWN-14', 'STF-2'],
-        buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'notify', primary: true }] },
-      { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
+      // Меню контролёра — без «Что дальше?», как у гостя и овнера (W49).
+      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_controller') }, trace: ['ADR-0025'],
         buttons: [
           { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
-          { label: T('menu.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'menu' },
         ] },
       { id: 'st-accept-invalid', kind: 'card', state: true, card: { title: T('menu.title'), lines: [], body: T('staff.accept.invalid') }, trace: ['OWN-14'] },
       { id: 'st-accept-used', kind: 'card', state: true, card: { title: T('menu.title'), lines: [], body: T('staff.accept.used') }, trace: ['OWN-14'] },
