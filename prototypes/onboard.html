@@ -42,8 +42,8 @@
   <div class="proto-eyebrow">Шторм · онбординг первого касания</div>
   <h1>Первое касание — онбординг + регистрация. Дальше — регистрация в один тап</h1>
   <p class="proto-home-lead">Три варианта одной логики: объяснение «зачем данные» → лёгкое согласие на ПД → имя, фамилия, должность, компания, город. Второе касание везде одинаковое — без consent и без профиля. Тексты черновые, под голос (VOICE): коротко, на «вы» со строчной, ёлочки, без продающего тона.</p>
-  <p><a href="chat.html?s=guest">← эталонный сценарий гостя</a> · <a href="chat.html?s=onboard"><strong>вариант C end-to-end в чате →</strong></a> · <a href="app.html#/events">таб «Профиль» в каталоге →</a></p>
-  <p class="m-note">Карта целостности: эта страница — шторм; <a href="chat.html?s=onboard">сценарий onboard</a> — кликабельный вариант C слово в слово; таб «Профиль» в <a href="app.html#/events">#/events</a> — живая правка профиля; решение зафиксировано в <span class="mono">docs/adr/0032-*</span>.</p>
+  <p><a href="chat.html?s=guest">← сценарий гостя с онбордингом</a> · <a href="app.html#/events">таб «Профиль» в каталоге →</a></p>
+  <p class="m-note">Карта целостности: эта страница — шторм; онбординг C вшит в начало сценариев всех трёх ролей (<a href="chat.html?s=guest">гость</a>, <a href="chat.html?s=owner">овнер</a>, <a href="chat.html?s=controller">контролёр</a>); таб «Профиль» в <a href="app.html#/events">#/events</a> — живая правка профиля; решение зафиксировано в <span class="mono">docs/adr/0032-*</span>.</p>
 
   <div class="onb-grid">
     <!-- A -->
@@ -116,7 +116,7 @@
     <!-- C: принят (ADR-0032). Мок слово в слово повторяет сценарий onboard -->
     <section class="onb-col">
       <h2>Вариант C — гибрид с предзаполнением <span class="status">· принят</span></h2>
-      <div class="meta">Принят ADR-0032 · ниже — сценарий <a href="chat.html?s=onboard">onboard</a> слово в слово, для чтения целиком</div>
+      <div class="meta">Принят ADR-0032 и вшит в начало всех трёх ролей · ниже — чтение целиком</div>
       <div class="tg"><div class="tg-screen"><div class="tg-chat">
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
           <div class="tg-msg-title">AI Qadam #4 · LLM Engineering in Production</div>
@@ -138,7 +138,7 @@
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text"><div class="tg-msg-body">Из какого вы города?</div></div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Ташкент</button><button class="tg-kbd-btn" type="button">Алматы</button><button class="tg-kbd-btn" type="button">Написать</button></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
           <div class="tg-msg-title">Всё верно</div>
-          <div class="tg-msg-body">Проверьте: Дилшод Азимов · ML-инженер, Payme · Ташкент. Регистрация пока не создана — можно поправить.</div>
+          <div class="tg-msg-body">Проверьте: Дилшод Азимов · ML-инженер, Payme · Ташкент. Пока ничего не записано — можно поправить.</div>
         </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Всё верно</button><button class="tg-kbd-btn" type="button">Исправить</button></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
           <div class="tg-msg-title">✅ Вы зарегистрированы</div>
