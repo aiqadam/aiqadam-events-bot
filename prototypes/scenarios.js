@@ -39,11 +39,13 @@ PROTO.buildScenarios = function (opts) {
   const menuButtonsGuest = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu-guest' },
   ];
+  // Овнер: «Ивенты» (каталог и «Мои билеты» — один экран), создание —
+  // сразу форма #/manage/new (в Mini App кнопки создания нет).
+  // Кнопки чекина в чате нет: сканер — рядом с ивентом в Mini App (STF-2).
+  // Вердикт владельца 2026-09-18 (W49).
   const menuButtonsOwner = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
-    { label: T('events.tab.mine'), webApp: '#/events?tab=mine', resume: 'menu' },
-    { label: T('menu.btn.new_event'), webApp: '#/manage', resume: 'menu' },
-    { label: T('menu.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'menu' },
+    { label: T('menu.btn.new_event'), webApp: '#/manage/new', resume: 'menu' },
   ];
 
   const guest = {
@@ -200,14 +202,12 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Инвайт-ссылка → права на ивент → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
-      { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'],
-        buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'accept-ok', primary: true }] },
-      { id: 'notify', kind: 'bot', text: T('manage.staff.notify', { title: ev.title }), trace: ['OWN-14', 'STF-2'],
-        buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'notify', primary: true }] },
+      { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'] },
+      // Уведомление — без кнопки сканера: чекин только из Mini App (STF-2).
+      { id: 'notify', kind: 'bot', text: T('manage.staff.notify', { title: ev.title }), trace: ['OWN-14', 'STF-2'] },
       { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
         buttons: [
           { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
-          { label: T('menu.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'menu' },
         ] },
       { id: 'st-accept-invalid', kind: 'card', state: true, card: { title: T('menu.title'), lines: [], body: T('staff.accept.invalid') }, trace: ['OWN-14'] },
       { id: 'st-accept-used', kind: 'card', state: true, card: { title: T('menu.title'), lines: [], body: T('staff.accept.used') }, trace: ['OWN-14'] },

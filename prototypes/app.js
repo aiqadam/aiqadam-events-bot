@@ -514,21 +514,23 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- роут: список ивентов овнера ----------
   function renderManageList() {
-    PROTO.setTrace(['OWN-4', 'ADR-0024', 'ADR-0025']);
+    PROTO.setTrace(['OWN-4', 'ADR-0024', 'ADR-0025', 'STF-2']);
     clear();
-    const add = linkBtn(T('manage.btn.new'), '#/manage/new', 'btn-primary btn-lg', 'plus');
-    add.style.marginBottom = '14px';
-    screen.appendChild(add);
-
+    // Кнопки «Создать ивент» здесь нет: на форму создания овнер попадает
+    // из чата (кнопка меню → #/manage/new). Вердикт владельца 2026-09-18.
     if (!D.ownerEvents.length) screen.appendChild(emptyState(T('manage.list.empty'), 'calendar'));
     D.ownerEvents.forEach((ev) => screen.appendChild(manageRow(ev)));
     PROTO.setDemo([]);
   }
 
   function manageRow(ev) {
-    const a = E('a', 'ev-row');
+    // Овнер — всегда staff своих ивентов: кнопка сканера рядом с ивентом.
+    // В продукте видимость — по правам (STF-2); здесь показана всегда.
+    const row = E('div', 'ev-row');
+    row.style.flexWrap = 'wrap';
+    const a = E('a', 'ev-main');
     a.href = appHref('#/manage/' + ev.id);
-    const main = E('div', 'ev-main');
+    const main = E('div', '');
     main.appendChild(E('div', 'ev-title', ev.title));
     const meta = E('div', 'ev-row-meta');
     meta.appendChild(statusBadge(ev.statusKey));
@@ -536,10 +538,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     main.appendChild(meta);
     main.appendChild(E('div', 'app-muted', T('participants.counters', { registered: ev.registered, checked_in: ev.checkedIn, cancelled: ev.cancelled })));
     a.appendChild(main);
+    row.appendChild(a);
     const tail = E('span', 'ev-tail');
     tail.appendChild(PROTO.icon('chevron-right', 18));
-    a.appendChild(tail);
-    return a;
+    row.appendChild(tail);
+    const scan = linkBtn(T('menu.btn.scanner'), '#/scan?event_id=' + ev.id, 'btn-outline btn-sm', 'qr');
+    scan.style.width = '100%';
+    scan.style.marginTop = '10px';
+    row.appendChild(scan);
+    return row;
   }
 
   // ---------- роут: ивент овнера — визард ----------
@@ -1132,7 +1139,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ['upcoming', T('events.list.btn.upcoming')],
       ['past', T('events.list.btn.past')],
     ];
-    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1']);
+    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2']);
     clear();
 
     const tw = E('div', 'tabs-wrap');
@@ -1227,6 +1234,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       } else {
         acts.appendChild(btn(T('event.card.btn_register'), { kind: 'btn-primary', onClick: () => openRegistration(ev) }));
       }
+      // Кнопка чекина рядом с ивентом — только staff этого ивента (STF-2).
+      // В продукте видимость решает сервер по правам; в моке флаг в данных.
+      // Вердикт владельца 2026-09-18: из чата кнопка чекина убрана.
+      if (ev.staff) acts.appendChild(linkBtn(T('menu.btn.scanner'), '#/scan?event_id=' + ev.id, 'btn-outline btn-sm', 'qr'));
     } else if (ev.attendedMe && !ev.feedbackGiven) {
       acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
     } else if (ev.attendedMe && ev.feedbackGiven) {
