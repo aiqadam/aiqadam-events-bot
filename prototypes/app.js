@@ -555,7 +555,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function wizardFields(id) {
     if (wizardDraft) return wizardDraft;
     const src = id === 'new' ? null : D.ownerEvents.find((e) => String(e.id) === String(id));
+    const hasCoords = !!src && src.lat !== null && src.lat !== undefined && src.lon !== null && src.lon !== undefined;
     wizardDraft = {
+      // Формат участия (вердикт 2026-09-18): новое событие — офлайн
+      // по умолчанию; у существующего с координатами — тоже офлайн.
+      online: src ? !hasCoords : false,
+      mapLink: '',
       title: src ? src.title : '',
       description: src ? (src.description || '') : '',
       address: src ? (src.address || '') : '',
@@ -580,8 +585,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (!f.endsLocal) e.where.ends = T('manage.err.datetime');
     if (!f.deadlineLocal) e.where.deadline = T('manage.err.datetime');
     else if (f.startsLocal && f.deadlineLocal > f.startsLocal) e.where.deadline = T('manage.err.deadline_after_starts');
-    if (f.startsLocal && f.endsLocal && f.endsLocal < f.startsLocal) e.where.ends = T('manage.err.ends_before_starts');
-    if ((f.lat === null) !== (f.lon === null)) e.where.geo = T('manage.err.geo_pair');
+    // Офлайн без координат не публикуется: ожидается ссылка Яндекс.Карт
+    // (или недавнее место). Онлайн — гео не требуется вовсе.
+    if (!f.online && (f.lat === null || f.lon === null)) e.where.geo = T('manage.geo.link_bad');
     if (f.capacity !== '') {
       const cap = parseInt(f.capacity, 10);
       if (isNaN(cap) || cap < 1) e.capacity.capacity = T('manage.err.capacity');
@@ -731,23 +737,60 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       onInput: (e) => { f.address = e.target.value; },
     }));
 
+    // Формат участия (вердикт владельца 2026-09-18): два варианта вместо
+    // гео-конструктора. Онлайн — никакой ссылки; офлайн — ожидается ссылка
+    // Яндекс.Карт (валидация требует координаты: ссылка или недавнее место).
+    // Указания точки на карте и шитов больше нет.
     const loc = E('div', 'app-field');
-    loc.appendChild(E('label', 'label', T('field.geo')));
-    const chips = E('div', 'chip-row');
-    chips.appendChild(btn(T('manage.geo.link'), { kind: 'btn-outline', size: 'btn-sm', icon: 'link', onClick: () => openLinkSheet(f) }));
-    chips.appendChild(btn(T('proto.pick_on_map'), { kind: 'btn-outline', size: 'btn-sm', icon: 'map-pin', onClick: () => openMapSheet(f) }));
-    loc.appendChild(chips);
-    if (f.lat !== null && f.lon !== null) {
-      loc.appendChild(locPreview(f));
-      loc.appendChild(E('div', 'helper', T('manage.geo.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) })));
-      const a = E('a', 'loc-link', T('event.card.btn_map'));
-      a.href = mapUrl(f.lat, f.lon);
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.appendChild(PROTO.icon('external', 14));
-      loc.appendChild(a);
-    } else {
-      loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('manage.geo.none')));
+    loc.appendChild(E('label', 'label', T('proto.geo_mode')));
+    const mode = E('div', 'segmented');
+    [['online', T('proto.geo_online')], ['offline', T('proto.geo_offline')]].forEach(([key, label]) => {
+      const on = (key === 'online') === !!f.online;
+      const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { f.online = (key === 'online'); renderManageEvent(eventId); } });
+      if (on) b.classList.add('active');
+      mode.appendChild(b);
+    });
+    loc.appendChild(mode);
+    if (!f.online) {
+      const linkInput = E('input', 'input');
+      linkInput.type = 'url';
+      linkInput.placeholder = T('manage.geo.link_placeholder');
+      linkInput.value = f.mapLink || '';
+      linkInput.addEventListener('input', (e) => { f.mapLink = e.target.value; });
+      loc.appendChild(linkInput);
+      const applyRow = E('div', 'chip-row');
+      applyRow.appendChild(btn(T('manage.geo.link_apply'), { kind: 'btn-primary', size: 'btn-sm', icon: 'link', onClick: () => {
+        const parsed = parseYandexLink(f.mapLink || '');
+        if (!parsed) { PROTO.toast(T('manage.geo.link_bad')); return; }
+        f.lat = parsed.lat;
+        f.lon = parsed.lon;
+        PROTO.toast(T('manage.geo.link_applied'));
+        renderManageEvent(eventId);
+      } }));
+      loc.appendChild(applyRow);
+      if (f.lat !== null && f.lon !== null) {
+        loc.appendChild(locPreview(f));
+        loc.appendChild(E('div', 'helper', T('manage.geo.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) })));
+        const a = E('a', 'loc-link', T('event.card.btn_map'));
+        a.href = mapUrl(f.lat, f.lon);
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.appendChild(PROTO.icon('external', 14));
+        loc.appendChild(a);
+      } else {
+        loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('manage.geo.none')));
+      }
+      loc.appendChild(E('div', 'section-label', T('manage.geo.recent')));
+      const recent = E('div', 'chip-row');
+      D.venues.forEach((v) => {
+        if (v.lat === null || v.lon === null) return;
+        recent.appendChild(btn(v.name, { kind: 'btn-outline', size: 'btn-sm', onClick: () => {
+          f.lat = v.lat;
+          f.lon = v.lon;
+          renderManageEvent(eventId);
+        } }));
+      });
+      loc.appendChild(recent);
     }
     sec.appendChild(loc);
 
@@ -892,83 +935,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         location.href = PROTO.chatUrl('owner', 'cancelled', true, id);
       } }));
       acts.appendChild(btn(T('common.btn.cancel'), { kind: 'btn-secondary', onClick: closeSheet }));
-      body.appendChild(acts);
-    });
-  }
-
-  // ---------- гео: ссылка Яндекс.Карт и точка на карте ----------
-  function openLinkSheet(f) {
-    let error = '';
-    let value = '';
-    openSheet(T('manage.geo.link'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('manage.hint.geo')));
-      const input = E('input', 'input');
-      input.type = 'url';
-      input.placeholder = T('proto.link_placeholder');
-      input.value = value;
-      input.addEventListener('input', () => { value = input.value; });
-      body.appendChild(input);
-      if (error) body.appendChild(E('div', 'helper error', error));
-      body.appendChild(E('div', 'section-label', T('manage.geo.recent')));
-      const recent = E('div', 'sheet-actions');
-      D.venues.forEach((v) => {
-        if (v.lat === null || v.lon === null) return;
-        recent.appendChild(btn(v.name, { kind: 'btn-outline', onClick: () => {
-          f.lat = v.lat;
-          f.lon = v.lon;
-          closeSheet();
-          renderManageEvent(eventId);
-        } }));
-      });
-      body.appendChild(recent);
-      const acts = E('div', 'sheet-actions');
-      acts.appendChild(btn(T('manage.geo.link_apply'), { kind: 'btn-primary', onClick: () => {
-        const parsed = parseYandexLink(value);
-        if (!parsed) { error = T('proto.link_bad'); renderSheet(); return; }
-        f.lat = parsed.lat;
-        f.lon = parsed.lon;
-        closeSheet();
-        PROTO.toast(T('manage.geo.link_applied'));
-        renderManageEvent(eventId);
-      } }));
-      body.appendChild(acts);
-    });
-  }
-
-  function openMapSheet(f) {
-    let lat = f.lat !== null ? f.lat : 41.311081;
-    let lon = f.lon !== null ? f.lon : 69.279737;
-    openSheet(T('proto.pick_on_map'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('proto.map_hint')));
-      const map = E('div', 'loc-preview pickable');
-      map.appendChild(E('div', 'loc-grid'));
-      const pin = E('span', 'loc-pin');
-      pin.appendChild(PROTO.icon('map-pin', 20));
-      map.appendChild(pin);
-      const coords = E('div', 'helper');
-      function paint() {
-        const x = Math.min(96, Math.max(4, ((lon - 69.15) / 0.3) * 100));
-        const y = Math.min(96, Math.max(4, ((41.38 - lat) / 0.14) * 100));
-        pin.style.left = x + '%';
-        pin.style.top = y + '%';
-        coords.textContent = T('manage.geo.coords', { lat: fmtCoord(lat), lon: fmtCoord(lon) });
-      }
-      map.addEventListener('click', (e) => {
-        const r = map.getBoundingClientRect();
-        lon = 69.15 + ((e.clientX - r.left) / r.width) * 0.3;
-        lat = 41.38 - ((e.clientY - r.top) / r.height) * 0.14;
-        paint();
-      });
-      paint();
-      body.appendChild(map);
-      body.appendChild(coords);
-      const acts = E('div', 'sheet-actions');
-      acts.appendChild(btn(T('proto.map_apply'), { kind: 'btn-primary', onClick: () => {
-        f.lat = lat;
-        f.lon = lon;
-        closeSheet();
-        renderManageEvent(eventId);
-      } }));
       body.appendChild(acts);
     });
   }
