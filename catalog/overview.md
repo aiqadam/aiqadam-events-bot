@@ -130,6 +130,12 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   брендовый, шапка клиента своя, шов между ними виден. Это следствие
   ADR-0019 (свои цвета не заводим, цвета клиента — не наши), принятая цена;
   в живом WebView не проверялось.
+- **Safe Area учтена в одном месте** (W48): `viewport-fit=cover` в
+  `index.html`, переменные `--safe-top`/`--safe-bottom` в `index.css`
+  (`max()` от `env(safe-area-inset-*)` и `--tg-content-safe-area-inset-*`,
+  Bot API 8.0+) — паддинг сверху на `#root`, снизу на `.sticky-actions`/
+  `.app-sheet-panel`. Живая проверка на устройстве с вырезом — не сделана
+  ([Q48](../docs/OPEN-QUESTIONS.md#q48)).
 
 - **`miniapp/src/vendor/brand/tokens.css` + `components.css`** — дословные
   файлы бренда с зафиксированным в шапке `BRAND_COMMIT`
