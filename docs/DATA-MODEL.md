@@ -44,12 +44,20 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `lang` | text | `ru` \| `uz` \| `en` |
 | `consent_pdn` | bool | согласие на обработку данных (PAR-1) |
 | `consent_pdn_at` | timestamp | когда дано |
+| `position` | text | должность из онбординга (PAR-8, [ADR-0032](../docs/adr/0032-onboarding-first-touch-profile.md)) |
+| `company` | text | компания, может отсутствовать (фриланс/студент) |
+| `city` | text | город из онбординга |
+| `profile_completed_at` | timestamp | когда профиль заполнен полностью |
 | `consent_marketing` | bool | отдельное и необязательное (PAR-2), по умолчанию `false` |
 | `consent_marketing_at` | timestamp | |
 | `blocked_bot` | bool | выставляется при `403` (OWN-12), снимается при новом апдейте от пользователя |
 | `created_at` | timestamp | |
 
 `consent_marketing` **никогда** не проставляется как побочный эффект `consent_pdn`.
+
+Имя/фамилия профиля (PAR-8) хранятся **отдельно** от `first_name`/`last_name` —
+те перезаписываются каждым апдейтом из Telegram; имена новых полей решает
+пакет реализации онбординга ([Q58](../docs/OPEN-QUESTIONS.md#q58)).
 
 ## `events`
 
