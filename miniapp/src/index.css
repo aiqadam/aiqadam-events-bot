@@ -6,6 +6,19 @@
    длины — по 4-пиксельной шкале бренда, ни одного литерала цвета и шрифта. */
 [hidden] { display: none !important; }
 
+/* Safe Area (W48, Q48): `--tg-content-safe-area-inset-*` — зона под собственной
+   шапкой Telegram (три точки, имя приложения), отдаёт сам клиент как CSS-переменную
+   на `:root` (Bot API 8.0+, старые клиенты — переменная не определена, `max()`
+   тогда берёт `env()`). `env(safe-area-inset-*)` — вырезы/жестовая зона устройства,
+   работает только с `viewport-fit=cover` в `<meta name="viewport">` (без него всегда 0).
+   Правится в одном месте (`#root` — верх, `.sticky-actions`/`.app-sheet-panel` — низ,
+   там же уже жил `env()` до этого), не по роутам. */
+:root {
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px));
+}
+#root { padding-top: var(--safe-top); }
+
 /* Плита QR принудительно в светлой теме бренда. Правило бренда, тот же
    раздел «Event stands → QR codes»: «Dark code on light ground. Never teal.»
    padding 32px — зона покоя «four modules, always» — правило бренда, не наше. */
@@ -73,7 +86,7 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 16px;
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 0 calc(12px + var(--safe-bottom));
   background: var(--card);
   border-top: 1px solid var(--border);
 }
@@ -95,7 +108,7 @@
   border-top: 1px solid var(--border);
   border-radius: 20px 20px 0 0;
   box-shadow: var(--shadow-lg);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--safe-bottom);
 }
 .app-sheet-grab { width: 36px; height: 4px; border-radius: 999px; background: var(--border); margin: 8px auto 0; flex-shrink: 0; }
 .app-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px 6px; }
