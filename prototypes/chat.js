@@ -156,10 +156,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- демо-контролы (в шите обвязки, не на экране) ----------
   const quickIndex = {
-    guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
-    owner: [['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
-    controller: [['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
-    onboard: [['event', 'Карточка ивента'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['city', 'Город'], ['review', 'Всё верно?'], ['done', 'Билет']],
+    guest: [['event', 'Карточка ивента'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['review', 'Всё верно?'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
+    owner: [['ob-event', 'Онбординг'], ['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
+    controller: [['ob-event', 'Онбординг'], ['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
   };
 
   function renderDemo() {
