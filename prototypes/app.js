@@ -8,7 +8,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
 (function () {
   const screen = document.getElementById('screen');
-  const barTitle = document.getElementById('app-bar-title');
   const D = PROTO.data;
   const T = (k, v) => PROTO.t(k, v);
   const E = PROTO.el;
@@ -46,7 +45,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
   function go(route) { location.href = appHref(route); }
   function clear() { PROTO.clear(screen); screen.scrollTop = 0; }
-  function setBar(title) { if (barTitle) barTitle.textContent = title; }
+  // Шапка мока — хром клиента: всегда имя приложения, как в настоящем
+  // Telegram. Заголовок несёт сам экран (H1), setBar-пер-экран убран
+  // вердиктом владельца 2026-09-18 (дублирование заголовка).
 
   // ---------- хелперы ----------
   function card(children, cls) {
@@ -290,7 +291,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderTicket() {
     const id = hashParams.get('event_id') || D.main.id;
     const ev = eventById(id);
-    setBar(T('ticket.title'));
     PROTO.setTrace(['PAR-6', 'IDM-2', 'ADR-0007', 'PAR-5']);
     clear();
 
@@ -437,7 +437,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   };
 
   function renderScan() {
-    setBar(T('scan.title'));
     PROTO.setTrace(['STF-1', 'STF-2', 'STF-4', 'IDM-2']);
     clear();
 
@@ -515,7 +514,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- роут: список ивентов овнера ----------
   function renderManageList() {
-    setBar(T('manage.list.title'));
     PROTO.setTrace(['OWN-4', 'ADR-0024', 'ADR-0025']);
     clear();
     const add = linkBtn(T('manage.btn.new'), '#/manage/new', 'btn-primary btn-lg', 'plus');
@@ -608,7 +606,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderManageEvent(id) {
     eventId = id;
     const isNew = id === 'new';
-    setBar(isNew ? T('manage.title.new') : T('manage.title.edit'));
     clear();
 
     const back = E('button', 'btn btn-ghost btn-sm', T('manage.btn.back'));
@@ -1135,7 +1132,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ['upcoming', T('events.list.btn.upcoming')],
       ['past', T('events.list.btn.past')],
     ];
-    setBar(catalogTab === 'mine' ? T('events.tab.mine') : catalogTab === 'upcoming' ? T('events.list.upcoming_title') : T('events.list.past_title'));
     PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1']);
     clear();
 
@@ -1313,7 +1309,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const id = hashParams.get('event_id') || D.feedback.eventId;
     const ev = eventById(id);
     const title = ev ? ev.title : D.feedback.eventTitle;
-    setBar(T('feedback.title'));
     PROTO.setTrace(['ADR-0028', 'ADR-0017']);
     clear();
 
