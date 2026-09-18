@@ -24,6 +24,13 @@
 .m-btn{padding:12px;border-radius:12px;text-align:center;font-weight:600}
 .m-btn.primary{background:var(--primary);color:var(--primary-foreground)}
 .m-btn.ghost{border:1px solid var(--border)}
+.m-chips{display:flex;gap:8px;margin:2px 0 4px}
+.m-chip{padding:8px 14px;border-radius:999px;border:1px solid var(--border);font-size:14px}
+.m-chip.on{border-color:var(--primary);color:var(--primary)}
+.m-lock{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted-foreground)}
+.m-head-row{display:flex;align-items:center;gap:10px}
+.m-ava{width:44px;height:44px;border-radius:999px;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-weight:600}
+.status{font-size:12px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.04em}
 .m-note{font-size:13px;color:var(--muted-foreground)}
 .tg-mini{transform:scale(1)}
 .cmp{width:100%;border-collapse:collapse;margin-top:20px;font-size:14px}
@@ -35,13 +42,14 @@
   <div class="proto-eyebrow">Шторм · онбординг первого касания</div>
   <h1>Первое касание — онбординг + регистрация. Дальше — регистрация в один тап</h1>
   <p class="proto-home-lead">Три варианта одной логики: объяснение «зачем данные» → лёгкое согласие на ПД → имя, фамилия, должность, компания, город. Второе касание везде одинаковое — без consent и без профиля. Тексты черновые, под голос (VOICE): коротко, на «вы» со строчной, ёлочки, без продающего тона.</p>
-  <p><a href="chat.html?s=guest">← эталонный сценарий гостя</a> · <a href="chat.html?s=onboard"><strong>пройти вариант C end-to-end в чате →</strong></a></p>
+  <p><a href="chat.html?s=guest">← эталонный сценарий гостя</a> · <a href="chat.html?s=onboard"><strong>вариант C end-to-end в чате →</strong></a> · <a href="app.html#/events">таб «Профиль» в каталоге →</a></p>
+  <p class="m-note">Карта целостности: эта страница — шторм; <a href="chat.html?s=onboard">сценарий onboard</a> — кликабельный вариант C слово в слово; таб «Профиль» в <a href="app.html#/events">#/events</a> — живая правка профиля; решение зафиксировано в <span class="mono">docs/adr/0032-*</span>.</p>
 
   <div class="onb-grid">
     <!-- A -->
     <section class="onb-col">
-      <h2>Вариант A — чат по шагам</h2>
-      <div class="meta">Всё в чате, 0 новых экранов Mini App · ближе всего к нынешним reg-start / reg-consent-pdn</div>
+      <h2>Вариант A — чат по шагам <span class="status">· запасной</span></h2>
+      <div class="meta">Всё в чате, 0 новых экранов Mini App · запасной: в него схлопывается C удалением предзаполнения имени, если приёмка покажет мусор в фамилиях</div>
       <div class="tg"><div class="tg-screen"><div class="tg-chat">
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
           <div class="tg-msg-title">AI Qadam #4 · LLM Engineering in Production</div>
@@ -79,93 +87,99 @@
       <div class="m-note">Второе касание: карточка ивента → кнопка «Зарегистрироваться» → сразу «✅ Вы зарегистрированы». Профиль молча подтянут, consent не спрашиваем.</div>
     </section>
 
-    <!-- B -->
+    <!-- B: отложен; живой след — таб «Профиль», нарисован как построен -->
     <section class="onb-col">
-      <h2>Вариант B — форма в Mini App</h2>
-      <div class="meta">Одно касание — один экран · согласие-чекбокс + 5 полей + маркетинг-чекбокс отдельно</div>
+      <h2>Вариант B — форма в Mini App <span class="status">· отложен</span></h2>
+      <div class="meta">Отложен, не отвергнут (ADR-0032): доделывается вторым шагом внутри каталога. Живой след решения — таб «Профиль» в #/events: та же форма, но для правки, а не для регистрации</div>
+      <div class="mini-phone"><div class="m-head">Профиль</div><div class="m-body">
+        <div class="m-head-row"><div class="m-ava">ДА</div><div><div><strong>Дилшод Азимов</strong></div><div class="m-note">ML-инженер, Payme · Ташкент</div></div></div>
+        <div class="m-note">Так вас увидят в списке участников и назовут на входе.</div>
+        <div class="m-field"><label>Имя</label><input value="Дилшод" /></div>
+        <div class="m-field"><label>Фамилия</label><input value="Азимов" /></div>
+        <div class="m-field"><label>Должность</label><input value="ML-инженер" /></div>
+        <div class="m-field"><label>Компания</label><input value="Payme" /><div class="m-note">Можно пропустить — фриланс, студент.</div></div>
+        <div class="m-field"><label>Город</label><input value="Ташкент" /><div class="m-note">Ташкент и Алматы — одной кнопкой, другой напишите руками.</div>
+          <div class="m-chips"><span class="m-chip on">Ташкент</span><span class="m-chip">Алматы</span></div>
+        </div>
+        <label class="m-lock"><input type="checkbox" checked disabled /> Согласие на обработку данных дано 26 сентября. Храним у себя, третьим не отдаём.</label>
+        <label class="m-check"><input type="checkbox" /> Присылать анонсы других ивентов</label>
+        <div class="m-btn primary">Сохранить</div>
+      </div></div>
+      <table>
+        <tr><td>Тапов</td><td>Открыл таб — поправил — сохранил</td></tr>
+        <tr><td>Плюс</td><td>Построен как таб каталога (без нового роута); валидация на месте; согласие залочено, маркетинг отдельно (PAR-2)</td></tr>
+        <tr><td>Минус</td><td>Регистрация целиком в Mini App не переехала: нет приложения — нет регистрации, поэтому первым шагом остался чат C</td></tr>
+      </table>
+      <div class="m-note">Живой таб: <a href="app.html#/events">app.html#/events → «Профиль»</a> (инициалы, валидация и тост — кликабельны).</div>
+    </section>
+
+    <!-- C: принят (ADR-0032). Мок слово в слово повторяет сценарий onboard -->
+    <section class="onb-col">
+      <h2>Вариант C — гибрид с предзаполнением <span class="status">· принят</span></h2>
+      <div class="meta">Принят ADR-0032 · ниже — сценарий <a href="chat.html?s=onboard">onboard</a> слово в слово, для чтения целиком</div>
       <div class="tg"><div class="tg-screen"><div class="tg-chat">
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
           <div class="tg-msg-title">AI Qadam #4 · LLM Engineering in Production</div>
-          <div class="tg-msg-body">Впервые у нас? Заполните профиль один раз — дальше регистрация будет в один тап. Данные нужны для жизни сообщества, не для продажи.</div>
-        </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Заполнить профиль</button></div></div></div>
-      </div></div></div>
-      <div class="mini-phone"><div class="m-head">Регистрация · AI Qadam #4</div><div class="m-body">
-        <div class="m-note">Участие в жизни сообщества AI Qadam — поимённое. Данные не продаём и не используем в корыстных целях.</div>
-        <div class="m-field"><label>Имя</label><input value="Дилшод" /></div>
-        <div class="m-field"><label>Фамилия</label><input value="Азимов" /></div>
-        <div class="m-field"><label>Должность</label><input placeholder="ML-инженер" /></div>
-        <div class="m-field"><label>Компания</label><input placeholder="Payme" /></div>
-        <div class="m-field"><label>Город</label><input placeholder="Ташкент" /></div>
-        <label class="m-check"><input type="checkbox" checked /> Согласен на обработку персональных данных: имя, фамилия, должность, компания, город и telegram_id. Без этого зарегистрировать не сможем.</label>
-        <label class="m-check"><input type="checkbox" /> Присылать анонсы следующих ивентов. Необязательно.</label>
-        <div class="m-btn primary">Зарегистрироваться</div>
-      </div></div>
-      <table>
-        <tr><td>Тапов</td><td>1 кнопка + форма + 1 отправка</td></tr>
-        <tr><td>Плюс</td><td>Быстрее всего; валидация на месте; имя/фамилия предзаполнены из Telegram; маркетинг — отдельным чекбоксом (PAR-2)</td></tr>
-        <tr><td>Минус</td><td>Нужен экран/шит в #/events (влезет ли без 6-го экрана — вопрос к ADR-0017); не работает без Mini App</td></tr>
-        <tr><td>Юр-гигиена</td><td>Чисто, если кнопка неактивна без чекбокса ПД; два чекбокса нельзя сливать в один</td></tr>
-      </table>
-      <div class="m-note">Второе касание: тот же шит, но поля уже заполнены, чекбокс ПД отмечен и задизейблен («согласие дано 26 сентября»), кнопка «Зарегистрироваться» сразу активна.</div>
-    </section>
-
-    <!-- C -->
-    <section class="onb-col">
-      <h2>Вариант C — гибрид с предзаполнением</h2>
-      <div class="meta">Имя/фамилия — из Telegram одной кнопкой, остальное — три коротких вопроса</div>
-      <div class="tg"><div class="tg-screen"><div class="tg-chat">
+          <div class="tg-msg-line">Когда: суббота, 26 сентября · 18:30</div>
+          <div class="tg-msg-line">Где: Ташкент, IT Park, ул. Афросиаб, 1</div>
+          <div class="tg-msg-body">Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем.</div>
+        </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Дальше</button></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
-          <div class="tg-msg-body">Впервые у нас? Коротко: участие в жизни сообщества — поимённое, данные не продаём. Согласны на обработку данных?</div>
+          <div class="tg-msg-body">Согласны на обработку данных: имя, фамилия, должность, компания, город и telegram_id. Храним у себя, третьим не отдаём. Без согласия оформить не сможем.</div>
         </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Согласен</button><button class="tg-kbd-btn" type="button">Подробнее</button></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
-          <div class="tg-msg-body">Вы — Дилшод Азимов? Взяли из профиля Telegram. Если там никнейм или фигня — не жмите «Это я», поправьте.</div>
+          <div class="tg-msg-body">Что храним и зачем: имя, фамилия, должность, компания, город и telegram_id — чтобы вести список участников и пускать на ивенты. Храним у себя, третьим лицам не передаём, в продажу не пускаем. Согласие можно отозвать — напишите нам, данные удалим.</div>
+        </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Понятно, согласен</button><button class="tg-kbd-btn" type="button">Не сейчас</button></div></div></div>
+        <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
+          <div class="tg-msg-body">Вы — Дилшод Азимов? Подтянули из профиля Telegram. Если там никнейм — не жмите «Это я», поправьте.</div>
         </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Это я</button><button class="tg-kbd-btn" type="button">Поправить имя</button></div></div></div>
-        <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text"><div class="tg-msg-body">Где работаете? Напишите должность и компанию одним сообщением. Например: ML-инженер, Payme.</div></div></div></div></div>
+        <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text"><div class="tg-msg-body">Где работаете? Пришлите должность и компанию одним сообщением. Пример: ML-инженер, Payme. Компанию можно пропустить.</div></div></div></div></div>
         <div class="tg-row out"><div class="tg-msg"><div class="tg-bubble tg-out"><div class="tg-text">ML-инженер, Payme</div></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text"><div class="tg-msg-body">Из какого вы города?</div></div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Ташкент</button><button class="tg-kbd-btn" type="button">Алматы</button><button class="tg-kbd-btn" type="button">Написать</button></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
-          <div class="tg-msg-title">Всё верно?</div>
-          <div class="tg-msg-body">Дилшод Азимов · ML-инженер, Payme · Ташкент. Регистрация пока не создана — можно исправить.</div>
+          <div class="tg-msg-title">Всё верно</div>
+          <div class="tg-msg-body">Проверьте: Дилшод Азимов · ML-инженер, Payme · Ташкент. Регистрация пока не создана — можно поправить.</div>
         </div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Всё верно</button><button class="tg-kbd-btn" type="button">Исправить</button></div></div></div>
         <div class="tg-row in"><div class="tg-msg"><div class="tg-bubble tg-in"><div class="tg-text">
           <div class="tg-msg-title">✅ Вы зарегистрированы</div>
-          <div class="tg-msg-body">Анонсы следующих ивентов присылать? На регистрацию это никак не влияет.</div></div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Да, присылайте</button><button class="tg-kbd-btn" type="button">Не нужно</button></div></div></div>
+          <div class="tg-msg-line">Когда: суббота, 26 сентября · 18:30</div>
+          <div class="tg-msg-line">Где: Ташкент, IT Park, ул. Афросиаб, 1</div>
+          <div class="tg-msg-body">Вы зарегистрированы на «AI Qadam #4 · LLM Engineering in Production». Присылать анонсы следующих ивентов? На регистрацию это никак не влияет.</div></div></div><div class="tg-kbd"><button class="tg-kbd-btn" type="button">Да, присылайте</button><button class="tg-kbd-btn" type="button">Не нужно</button></div></div></div>
       </div></div></div>
       <table>
-        <tr><td>Тапов</td><td>~6 (согласие → «это я» → работа строкой → город → проверка → маркетинг)</td></tr>
-        <tr><td>Плюс</td><td>Короче A за счёт предзаполнения и склейки «должность + компания»; экран «Всё верно?» ловит мусор перед записью</td></tr>
-        <tr><td>Минус</td><td>Имя из Telegram бывает никнеймом («Crypto King 👑», пустая фамилия). Лечится тремя мерами ниже, но не до нуля</td></tr>
-        <tr><td>Юр-гигиена</td><td>Чисто: согласие до «Это я»; «Подробнее» раскрывает полный текст согласия без ухода со сценария</td></tr>
+        <tr><td>Тапов</td><td>~6 (зачем → согласие → «это я» → работа строкой → город → проверка → маркетинг)</td></tr>
+        <tr><td>Имя из Telegram</td><td>Только через эвристику (CODE-шаг): подозрительное — без кнопки «Это я», только ручной ввод. Проверки: короче 2 букв, цифра, эмодзи, символ вне букв/дефиса/апострофов, длиннее 40. Словарей нет; <span class="mono">Oʻzbek</span> проходит</td></tr>
+        <tr><td>Второе касание</td><td>Карточка → «Зарегистрироваться» → готово, без consent и профиля. Правка — таб «Профиль» в <a href="app.html#/events">#/events</a></td></tr>
+        <tr><td>Юр-гигиена</td><td>Согласие раньше первого поля ПД; регистрация только после «Всё верно»; маркетинг отдельно (PAR-2); отказ «Не сейчас» закрывает без регистрации</td></tr>
       </table>
-      <div class="m-note">Второе касание: как в A — карточка → «Зарегистрироваться» → готово. Рядом тихая строка «Дилшод · ML-инженер · изменить» для правки профиля.</div>
     </section>
   </div>
 
-  <h2>Сравнение</h2>
+  <h2>Сравнение и статус</h2>
   <table class="cmp">
     <tr><th></th><th>A · чат по шагам</th><th>B · форма</th><th>C · гибрид</th></tr>
+    <tr><td>Статус</td><td>Запасной</td><td>Отложен (построен таб «Профиль»)</td><td><strong>Принят (ADR-0032)</strong></td></tr>
     <tr><td>Длина первого касания</td><td>Длинно, 5 вопросов</td><td>Коротко, 1 экран</td><td>Средне, 3 вопроса</td></tr>
-    <tr><td>Качество данных</td><td>Среднее: опечатки свободного ввода</td><td>Высокое: валидация, предзаполнение</td><td>Среднее-высокое: имя из Telegram, город кнопками</td></tr>
-    <tr><td>Цена сборки</td><td>Дешевле: те же reg-флоу + sessions</td><td>Дороже: шит в #/events, reg-api расширяется</td><td>Средняя: чат + разбор одной строки</td></tr>
-    <tr><td>Зависимость от Mini App</td><td>Нет</td><td>Полная</td><td>Нет</td></tr>
-    <tr><td>Риски</td><td>Бросят на 3-м поле</td><td>Не откроется Mini App = нет регистрации</td><td>Мусор в склеенной строке</td></tr>
+    <tr><td>Качество данных</td><td>Среднее: опечатки свободного ввода</td><td>Высокое: валидация, свободный ввод</td><td>Среднее-высокое: эвристика имени + «Всё верно?»</td></tr>
+    <tr><td>Зависимость от Mini App</td><td>Нет</td><td>Полная</td><td>Нет (профиль правится в Mini App отдельно)</td></tr>
   </table>
 
-  <h2>Что одинаково для всех вариантов (предложение)</h2>
+  <h2>Что одинаково и решено (ADR-0032)</h2>
   <ul>
     <li>Порядок: сначала «зачем данные», потом согласие, потом поля. Наоборот нельзя: спрашивать ПД до согласия — нарушение PAR-1 по духу.</li>
     <li>Регистрация создаётся только после полного профиля. Недозаполненное — это сессия, не регистрация.</li>
     <li>Маркетинг — всегда отдельно и после (PAR-2), никогда чекбоксом «по умолчанию включён».</li>
     <li>Таблица <span class="mono">users</span>: новые поля <span class="mono">position, company, city</span> + <span class="mono">profile_completed_at</span>. Имя/фамилию профиля нельзя хранить в <span class="mono">first_name/last_name</span> — их перезаписывает каждый апдейт из Telegram.</li>
-    <li>Второе касание: consent и профиль не спрашиваем. Тихо показываем «Дилшод · ML-инженер · изменить», чтобы правка была, но не мешала.</li>
-    <li>Город — кнопками Ташкент / Алматы / написать свой: покрывает 80% и держит данные чистыми без справочника городов.</li>
+    <li>Второе касание: consent и профиль не спрашиваем, регистрация в один тап.</li>
+    <li>Правка профиля — таб «Профиль» в <a href="app.html#/events">#/events</a>: шапка с инициалами, 5 полей, город вводом с чипами-подсказками, согласие залочено.</li>
+    <li>Город — ввод с чипами Ташкент / Алматы: покрывает большинство и держит данные чистыми без справочника городов.</li>
+    <li>Компания — необязательна (фриланс/студент), остальные четыре поля обязательны.</li>
+    <li>Полный текст согласия — за кнопкой «Подробнее», без ухода со сценария.</li>
   </ul>
-  <h2>Вопросы к вам</h2>
+  <h2>Открыто</h2>
   <ol>
-    <li>Базовый — <strong>C</strong> (зафиксировано <span class="mono">ADR-0032</span>). Если приёмка покажет мусор в фамилиях — схлопываемся в A удалением предзаполнения имени.</li>
-    <li>Должность + компания — одним сообщением (C) или двумя отдельными (A)?</li>
-    <li>Полный текст согласия за кнопкой «Подробнее» — достаточно, или нужен отдельный экран?</li>
-    <li>Компания — необязательна (фриланс/студент), остальные четыре поля обязательны. Возражения?</li>
+    <li>Должность + компания — одним сообщением (меньше тапов, нужен разбор запятой) или двумя отдельными (проще, длиннее)?</li>
+    <li>Таб «Профиль» четвёртым в каталоге — подтверждаете размещение, или правка должна жить отдельным экраном?</li>
   </ol>
 </div>
 </body>
