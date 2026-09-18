@@ -86,7 +86,7 @@ function routeName(hash) {
 const ENTRIES = {
   guest: ['reminders'],
   owner: ['published', 'updated', 'cancelled', 'broadcast', 'staff-invite', 'finished'],
-  controller: ['menu', 'notify'],
+  controller: ['menu'],
 };
 
 for (const [sid, sc] of Object.entries(scenarios)) {

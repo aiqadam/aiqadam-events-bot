@@ -129,7 +129,9 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Меню → создание ивента в Mini App → ссылка-приглашение → правка → участники и экспорт → рассылка пересылкой → контролёры.',
     steps: [
       { id: 'start', kind: 'user', text: '/start', trace: ['ADR-0025'] },
-      { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
+      // Меню овнера — без «Что дальше?» (см. меню гостя): целевая строка —
+      // предложение прототипа. Вердикт владельца 2026-09-18 (W49).
+      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_owner') }, trace: ['ADR-0025'],
         buttons: menuButtonsOwner },
 
       // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране ивента.
@@ -202,9 +204,11 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Инвайт-ссылка → права на ивент → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
-      { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'] },
-      // Уведомление — без кнопки сканера: чекин только из Mini App (STF-2).
-      { id: 'notify', kind: 'bot', text: T('manage.staff.notify', { title: ev.title }), trace: ['OWN-14', 'STF-2'] },
+      // Кнопка сканера — сразу в сообщении: контролёр здесь конкретный,
+      // ивент известен (вердикт владельца 2026-09-18). Общие меню чата
+      // кнопок чекина не несут.
+      { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'],
+        buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'accept-ok', primary: true }] },
       { id: 'menu', kind: 'card', card: { title: T('menu.title'), lines: [], body: '' }, trace: ['ADR-0025'],
         buttons: [
           { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
