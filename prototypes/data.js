@@ -9,6 +9,12 @@ PROTO.data = {
 
   // Гость, который проходит регистрацию.
   guest: { name: 'Дилшод' },
+  // Профиль гостя (таб «Профиль» в #/events): то, что собрал онбординг C.
+  // first/last/username из Telegram лежат отдельно и здесь не дублируются.
+  profile: {
+    first: 'Дилшод', last: 'Азимов', position: 'ML-инженер',
+    company: 'Payme', city: 'Ташкент', pdnAt: '26 сентября', mkt: false,
+  },
   // Организатор (staff чаптера Ташкент).
   owner: { name: 'Азиза' },
 

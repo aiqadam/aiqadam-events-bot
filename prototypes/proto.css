@@ -619,6 +619,19 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
 }
 .person-row:hover { background: var(--muted); }
 .person-add { color: var(--primary); display: inline-flex; margin-left: auto; flex-shrink: 0; }
+
+/* ---------- профиль гостя (таб в #/events) ---------- */
+.profile-head { display: flex; align-items: center; gap: 14px; padding: 16px; }
+.profile-avatar {
+  width: 56px; height: 56px; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--primary-foreground);
+  font-family: var(--font-display); font-weight: 600; font-size: 20px;
+}
+.profile-name { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.profile-sub { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; }
+.profile-note { font-size: 12px; color: var(--muted-foreground); padding: 0 16px 12px; }
+.city-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
 /* В списке контролёров кнопка отзыва длинная — имя переносится, а не режется. */
 .staff-row .name { white-space: normal; overflow: visible; }
 

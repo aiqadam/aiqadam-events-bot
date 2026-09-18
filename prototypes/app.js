@@ -21,6 +21,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let participantsEmpty = false;
   let catalogTab = 'mine';
   let catalogEmpty = false;
+  let profileTried = false;
   let ticketDemo = null;
   let backUrl = '';
   let hashParams = new URLSearchParams('');
@@ -1111,6 +1112,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ['mine', T('events.tab.mine')],
       ['upcoming', T('events.list.btn.upcoming')],
       ['past', T('events.list.btn.past')],
+      ['profile', T('profile.tab')],
     ];
     PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2']);
     clear();
@@ -1132,6 +1134,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     } else if (catalogTab === 'upcoming') {
       if (catalogEmpty) screen.appendChild(emptyState(T('events.list.empty_upcoming'), 'calendar'));
       else D.catalog.upcoming.forEach((ev) => screen.appendChild(eventCardEl(ev)));
+    } else if (catalogTab === 'profile') {
+      renderProfile();
     } else {
       if (catalogEmpty) screen.appendChild(emptyState(T('events.list.empty_past'), 'calendar'));
       else D.catalog.past.forEach((ev) => screen.appendChild(eventCardEl(ev)));
@@ -1141,6 +1145,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       { label: T('events.tab.mine'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; catalogEmpty = false; renderEvents(); } },
       { label: T('events.list.btn.upcoming'), active: catalogTab === 'upcoming', onClick: () => { catalogTab = 'upcoming'; catalogEmpty = false; renderEvents(); } },
       { label: T('events.list.btn.past'), active: catalogTab === 'past', onClick: () => { catalogTab = 'past'; catalogEmpty = false; renderEvents(); } },
+      { label: T('profile.tab'), active: catalogTab === 'profile', onClick: () => { catalogTab = 'profile'; catalogEmpty = false; renderEvents(); } },
       { label: 'Пустой срез', active: catalogEmpty, onClick: () => { catalogEmpty = !catalogEmpty; renderEvents(); } },
     ]);
   }
@@ -1222,6 +1227,92 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
 
   // ---------- регистрация внутри Mini App (PAR-1, PAR-2) ----------
+  // ---------- таб «Профиль» в каталоге: правка данных онбординга ----------
+  function renderProfile() {
+    PROTO.setTrace(['PAR-1', 'PAR-2', 'DAT-1', 'ADR-0017']);
+    const p = D.profile;
+    const initials = ((p.first || '').trim().slice(0, 1) + (p.last || '').trim().slice(0, 1)).toUpperCase() || '•';
+
+    const head = E('div', 'card profile-head');
+    head.appendChild(E('div', 'profile-avatar', initials));
+    const who = E('div', '');
+    const fullName = ((p.first || '') + ' ' + (p.last || '')).trim();
+    who.appendChild(E('div', 'profile-name', fullName || T('common.value.none')));
+    const sub = [p.position, p.company].filter(Boolean).join(', ') + (p.city ? ' · ' + p.city : '');
+    if (sub) who.appendChild(E('div', 'profile-sub', sub));
+    head.appendChild(who);
+    screen.appendChild(head);
+    screen.appendChild(E('div', 'profile-note', T('profile.head_note')));
+
+    const form = E('div', 'form-section');
+    form.appendChild(field(T('manage.parts.col_name'), p.first, {
+      error: profileTried && !(p.first || '').trim() ? T('profile.err') : '',
+      onInput: (e) => { p.first = e.target.value; },
+    }));
+    form.appendChild(field(T('profile.last'), p.last, {
+      error: profileTried && !(p.last || '').trim() ? T('profile.err') : '',
+      onInput: (e) => { p.last = e.target.value; },
+    }));
+    form.appendChild(field(T('profile.position'), p.position, {
+      onInput: (e) => { p.position = e.target.value; },
+    }));
+    form.appendChild(field(T('profile.company'), p.company, {
+      hint: T('profile.company_hint'),
+      onInput: (e) => { p.company = e.target.value; },
+    }));
+    // Город — сначала свободный ввод, чипы ниже как подсказки:
+    // клик подставляет значение в поле, руками пишется любой.
+    const cityWrap = E('div', 'app-field');
+    cityWrap.appendChild(E('label', 'label', T('profile.city')));
+    const cityInput = E('input', 'input');
+    cityInput.value = p.city || '';
+    cityInput.addEventListener('input', (e) => { p.city = e.target.value; });
+    cityWrap.appendChild(cityInput);
+    cityWrap.appendChild(E('div', 'helper', T('profile.city_hint')));
+    const chips = E('div', 'segmented');
+    ['Ташкент', 'Алматы'].forEach((c) => {
+      const b = btn(c, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { p.city = c; profileTried = false; renderEvents(); } });
+      if (p.city === c) b.classList.add('active');
+      chips.appendChild(b);
+    });
+    cityWrap.appendChild(chips);
+    form.appendChild(cityWrap);
+    screen.appendChild(form);
+
+    // Согласие на ПД — показано залоченным: дано один раз, здесь не меняется.
+    const pdnRow = E('label', 'control-row');
+    const pdnBox = E('input', 'checkbox');
+    pdnBox.type = 'checkbox';
+    pdnBox.checked = true;
+    pdnBox.disabled = true;
+    pdnRow.appendChild(pdnBox);
+    pdnRow.appendChild(E('span', '', T('profile.pdn_done', { when: p.pdnAt })));
+    screen.appendChild(pdnRow);
+
+    // Рассылка — отдельное согласие (PAR-2), меняется здесь же.
+    const mktRow = E('label', 'control-row');
+    const mktBox = E('input', 'checkbox');
+    mktBox.type = 'checkbox';
+    mktBox.checked = !!p.mkt;
+    mktBox.addEventListener('change', () => { p.mkt = mktBox.checked; });
+    mktRow.appendChild(mktBox);
+    mktRow.appendChild(E('span', '', T('reg.mkt.label')));
+    screen.appendChild(mktRow);
+    screen.appendChild(E('div', 'helper', T('reg.mkt.hint')));
+
+    const acts = E('div', 'sticky-actions');
+    acts.appendChild(btn(T('manage.btn.save'), {
+      kind: 'btn-primary', onClick: () => {
+        profileTried = true;
+        if (!(p.first || '').trim() || !(p.last || '').trim()) { renderEvents(); return; }
+        profileTried = false;
+        PROTO.toast(T('manage.saved.updated'));
+        renderEvents();
+      },
+    }));
+    screen.appendChild(acts);
+  }
+
   function openRegistration(ev) {
     let pdn = false;
     let mkt = false;
