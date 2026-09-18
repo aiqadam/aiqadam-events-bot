@@ -803,9 +803,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     sec.appendChild(loc);
 
     sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
-    sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.ends : '', onInput: (e) => { f.endsLocal = e.target.value; } }));
+    // Подпись «Время ташкентское» — один раз, у первого поля: три повтора
+    // подряд — лишние (вердикт владельца 2026-09-18, W49).
+    sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: '', error: show ? errors.ends : '', onInput: (e) => { f.endsLocal = e.target.value; } }));
     sec.appendChild(field(T('field.reg_deadline_at'), f.deadlineLocal, {
-      type: 'datetime-local', hint: T('manage.hint.datetime'),
+      type: 'datetime-local', hint: '',
       error: show ? errors.deadline : '',
       onInput: (e) => { f.deadlineLocal = e.target.value; },
     }));
