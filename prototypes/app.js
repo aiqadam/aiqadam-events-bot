@@ -585,9 +585,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (!f.endsLocal) e.where.ends = T('manage.err.datetime');
     if (!f.deadlineLocal) e.where.deadline = T('manage.err.datetime');
     else if (f.startsLocal && f.deadlineLocal > f.startsLocal) e.where.deadline = T('manage.err.deadline_after_starts');
-    // Офлайн без координат не публикуется: ожидается ссылка Яндекс.Карт
-    // (или недавнее место). Онлайн — гео не требуется вовсе.
-    if (!f.online && (f.lat === null || f.lon === null)) e.where.geo = T('manage.geo.link_bad');
+    // Офлайн без ссылки не публикуется: ссылка обязательна
+    // (вердикт владельца 2026-09-18), проверяется сама ссылка, не координаты.
+    if (!f.online && !parseYandexLink(f.mapLink || '')) e.where.geo = T('manage.geo.link_bad');
     if (f.capacity !== '') {
       const cap = parseInt(f.capacity, 10);
       if (isNaN(cap) || cap < 1) e.capacity.capacity = T('manage.err.capacity');
@@ -752,45 +752,53 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     });
     loc.appendChild(mode);
     if (!f.online) {
+      // Ссылка — единственный ввод: вставка сразу разбирается, кнопки
+      // «Взять координаты» нет. Адрес ссылка не даёт (в ней только точка) —
+      // его овнер пишет руками в поле выше. Недавних мест нет: без ссылки
+      // офлайн не публикуется, а у мест из списка ссылок нет.
+      if (!f.mapLink && f.lat !== null && f.lon !== null) {
+        f.mapLink = 'https://yandex.ru/maps/?pt=' + f.lon + ',' + f.lat + '&z=17';
+      }
       const linkInput = E('input', 'input');
       linkInput.type = 'url';
       linkInput.placeholder = T('manage.geo.link_placeholder');
       linkInput.value = f.mapLink || '';
-      linkInput.addEventListener('input', (e) => { f.mapLink = e.target.value; });
       loc.appendChild(linkInput);
-      const applyRow = E('div', 'chip-row');
-      applyRow.appendChild(btn(T('manage.geo.link_apply'), { kind: 'btn-primary', size: 'btn-sm', icon: 'link', onClick: () => {
+      const linkStatus = E('div', 'helper');
+      function paintLink() {
         const parsed = parseYandexLink(f.mapLink || '');
-        if (!parsed) { PROTO.toast(T('manage.geo.link_bad')); return; }
-        f.lat = parsed.lat;
-        f.lon = parsed.lon;
-        PROTO.toast(T('manage.geo.link_applied'));
-        renderManageEvent(eventId);
-      } }));
-      loc.appendChild(applyRow);
+        linkStatus.classList.remove('error');
+        if (!parsed) {
+          f.lat = null;
+          f.lon = null;
+          if (f.mapLink) {
+            linkStatus.textContent = T('manage.geo.link_bad');
+            linkStatus.classList.add('error');
+          } else {
+            linkStatus.textContent = T('manage.geo.none');
+          }
+        } else {
+          f.lat = parsed.lat;
+          f.lon = parsed.lon;
+          linkStatus.textContent = T('manage.geo.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) });
+        }
+        if (!parsed && show && errors.geo) {
+          linkStatus.textContent = errors.geo;
+          linkStatus.classList.add('error');
+        }
+      }
+      linkInput.addEventListener('input', (e) => { f.mapLink = e.target.value; paintLink(); });
+      paintLink();
+      loc.appendChild(linkStatus);
       if (f.lat !== null && f.lon !== null) {
         loc.appendChild(locPreview(f));
-        loc.appendChild(E('div', 'helper', T('manage.geo.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) })));
         const a = E('a', 'loc-link', T('event.card.btn_map'));
         a.href = mapUrl(f.lat, f.lon);
         a.target = '_blank';
         a.rel = 'noopener';
         a.appendChild(PROTO.icon('external', 14));
         loc.appendChild(a);
-      } else {
-        loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('manage.geo.none')));
       }
-      loc.appendChild(E('div', 'section-label', T('manage.geo.recent')));
-      const recent = E('div', 'chip-row');
-      D.venues.forEach((v) => {
-        if (v.lat === null || v.lon === null) return;
-        recent.appendChild(btn(v.name, { kind: 'btn-outline', size: 'btn-sm', onClick: () => {
-          f.lat = v.lat;
-          f.lon = v.lon;
-          renderManageEvent(eventId);
-        } }));
-      });
-      loc.appendChild(recent);
     }
     sec.appendChild(loc);
 
