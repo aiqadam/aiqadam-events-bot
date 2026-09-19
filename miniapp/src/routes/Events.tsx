@@ -190,6 +190,12 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   }, [dictLoaded, tab]);
 
   // Таб живёт в hash — диплинк `#/events?tab=…` (кнопки меню W43).
+  // W51: вход из бота (`#/events` без таба = «Мои билеты») при уже открытом
+  // каталоге обязан переключать таб — routeTab синхронизируется, а не только
+  // читается на монтировании.
+  useEffect(() => {
+    setTab(routeTab);
+  }, [routeTab]);
   const switchTab = useCallback((key: EventsTab) => {
     setTab(key);
     try {
@@ -206,10 +212,20 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   }, [upcoming, past]);
 
   // Регистрации вызывающего известны → на карточке «Показать QR», а не «Зарегистрироваться».
+  // Повтор даёт QR, а не отказ: reg-api проверяет existing раньше гейтов (ревью W50).
   const registeredIds = useMemo(() => {
     const set: Record<string, boolean> = {};
     mine.forEach((r) => {
       if (r.status === 'registered' || r.status === 'checked_in') set[r.eventId] = true;
+    });
+    return set;
+  }, [mine]);
+
+  // Прошлый ивент с чекином — вход на отзыв (прототип ticketRow/eventCardEl).
+  const attendedIds = useMemo(() => {
+    const set: Record<string, boolean> = {};
+    mine.forEach((r) => {
+      if (r.checkedInAt) set[r.eventId] = true;
     });
     return set;
   }, [mine]);
@@ -287,6 +303,8 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     [openSheet],
   );
 
+  // W51: заголовка над табами нет — как в прототипе (renderEvents: сразу
+  // табы, активный таб и есть название экрана). document.title — для истории.
   const tabTitle =
     tab === 'mine'
       ? 'events.tab.mine'
@@ -312,10 +330,6 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <h1 className="empty-heading" id="title">
-        {dictLoaded ? t(tabTitle) : ''}
-      </h1>
-
       <div className="tabs" id="events-tabs" style={{ marginBottom: 16 }}>
         <button type="button" className={`tab${tab === 'mine' ? ' active' : ''}`} id="tab-mine" onClick={() => switchTab('mine')}>
           {dictLoaded ? t('events.tab.mine') : ''}
@@ -393,6 +407,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
                 ev={ev}
                 past={tab === 'past'}
                 registered={Boolean(registeredIds[ev.id])}
+                attended={Boolean(attendedIds[ev.id])}
                 canScan={Boolean(staffIds[ev.id])}
                 inTelegram={inTelegram}
                 onRegister={openRegister}
@@ -493,10 +508,13 @@ function MineTab({
 function MineCard({ row, ev, onOpenTicket }: { row: MineRow; ev: CatalogEvent; onOpenTicket: (eventId: string) => () => void }) {
   const p = utcToPlate(ev.startsAt);
   const when = utcToWhen(ev.startsAt);
-  const ms = utcMs(ev.startsAt);
-  const upcoming = isFinite(ms) && ms > Date.now();
-  const statusKey = row.status === 'checked_in' ? 'myreg.status.checked_in' : upcoming ? 'myreg.status.registered' : 'myreg.status.registered';
-  const showQr = row.status === 'registered' && upcoming;
+  // W51: билет живёт до конца ивента, а не до старта — иначе в дверях зала
+  // (ивент уже начался) QR открыть нельзя. Прошлое с чекином ведёт на отзыв.
+  const endMs = utcMs(ev.endsAt || ev.startsAt);
+  const ended = isFinite(endMs) ? endMs <= Date.now() : false;
+  const attended = row.checkedInAt !== '';
+  const statusKey = row.status === 'checked_in' ? 'myreg.status.checked_in' : 'myreg.status.registered';
+  const showQr = !ended;
   return (
     <div className="event-card">
       <div className="date-plate">
@@ -526,6 +544,13 @@ function MineCard({ row, ev, onOpenTicket }: { row: MineRow; ev: CatalogEvent; o
             </a>
           </div>
         )}
+        {!showQr && attended && (
+          <div className="app-actions" style={{ marginTop: 0 }}>
+            <a className="btn btn-outline" href={`#/feedback?event_id=${encodeURIComponent(ev.id)}`}>
+              {t('afterword.feedback_btn')}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -535,6 +560,7 @@ function EventCard({
   ev,
   past,
   registered,
+  attended,
   canScan,
   inTelegram,
   onRegister,
@@ -542,6 +568,7 @@ function EventCard({
   ev: CatalogEvent;
   past: boolean;
   registered: boolean;
+  attended: boolean;
   canScan: boolean;
   inTelegram: boolean;
   onRegister: (ev: CatalogEvent) => (e: MouseEvent<HTMLAnchorElement>) => void;
@@ -552,7 +579,21 @@ function EventCard({
   // (reg-api перепроверяет срок: опоздавший запрос получает понятный отказ).
   const deadlineMs = utcMs(ev.regDeadlineAt);
   const deadlineOpen = !isFinite(deadlineMs) || deadlineMs > Date.now();
-  const action = !past && (registered ? 'qr' : ev.registerLink && deadlineOpen ? 'register' : '');
+  // W51: зарегистрированному — всегда QR (повтор даёт QR, а не profile_required);
+  // с закрытым дедлайном — объяснение вместо пустого места; прошлое с чекином —
+  // отзыв (прототип eventCardEl).
+  const action =
+    past
+      ? attended
+        ? 'feedback'
+        : ''
+      : registered
+        ? 'qr'
+        : ev.registerLink && deadlineOpen
+          ? 'register'
+          : ev.registerLink
+            ? 'closed'
+            : '';
   // Вкладка «Прошедшие» показывает завершённые: статус `finished` в таблице
   // ставит ещё не собранный lifecycle (W12), а событие уже прошло — выводим
   // его из времени, чтобы не показывать «опубликован» на прошедшем ивенте.
@@ -591,6 +632,18 @@ function EventCard({
             <a className="btn btn-primary" id="register" href={ev.registerLink} onClick={onRegister(ev)}>
               <Icon name="external" />
               {t('event.card.btn_register')}
+            </a>
+          </div>
+        )}
+        {action === 'closed' && (
+          <div className="app-muted" id="reg-closed" style={{ marginTop: 8 }}>
+            {t('reg.deadline_passed', { when: utcToWhen(ev.regDeadlineAt) })}
+          </div>
+        )}
+        {action === 'feedback' && (
+          <div className="app-actions" style={{ marginTop: 0 }}>
+            <a className="btn btn-outline" id="feedback" href={`#/feedback?event_id=${encodeURIComponent(ev.id)}`}>
+              {t('afterword.feedback_btn')}
             </a>
           </div>
         )}

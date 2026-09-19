@@ -3,7 +3,7 @@ import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
-import { utcMs } from '../lib/dates';
+import { utcMs, utcToWhen } from '../lib/dates';
 import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
 
@@ -31,6 +31,12 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
   // Для заголовка после i18n
   const [title, setTitle] = useState('AI Qadam Events');
+
+  // W51: контекст ивента над QR (прототип ticket-top) — название/дата/адрес
+  // из публичной афиши, чтобы при нескольких билетах было видно, чей QR открыт.
+  const [evTitle, setEvTitle] = useState('');
+  const [evWhen, setEvWhen] = useState('');
+  const [evAddress, setEvAddress] = useState('');
 
   const qrSize = useCallback(() => {
     const el = qrElRef.current;
@@ -210,6 +216,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   }, [tg]);
 
   // Запрос QR сразу, не дожидаясь словаря — на плохой связи это единственное, ради чего страницу открыли.
+  // Контекст ивента — тем же жизненным циклом из публичной афиши (initData не нужен).
   const qrRequestRef = useRef<Promise<{ kind: string; data?: Record<string, unknown> }> | null>(null);
   useEffect(() => {
     if (tg && initData && eventId) {
@@ -217,6 +224,19 @@ export default function Ticket({ eventId }: { eventId: string }) {
       void loadCancelInfo();
     } else {
       qrRequestRef.current = null;
+    }
+    if (eventId) {
+      void postJson(EVENTS_API, {}).then((res) => {
+        if (res.kind !== 'json') return;
+        const list = ([] as Array<Record<string, unknown>>)
+          .concat(Array.isArray(res.data['upcoming']) ? (res.data['upcoming'] as Array<Record<string, unknown>>) : [])
+          .concat(Array.isArray(res.data['past']) ? (res.data['past'] as Array<Record<string, unknown>>) : []);
+        const ev = list.find((e) => String(e['id'] || '') === eventId);
+        if (!ev) return;
+        setEvTitle(String(ev['title'] || ''));
+        setEvWhen(utcToWhen(String(ev['startsAt'] || '')));
+        setEvAddress(String(ev['address'] || ''));
+      });
     }
   }, [tg, initData, eventId, requestQr, loadCancelInfo]);
 
@@ -260,6 +280,8 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
   const statusText = cancelled || (statusKey ? t(statusKey) : errorText);
   const retryLabel = t('ticket.retry');
+  // Название для подтверждения отмены — как в прототипе: без «ёлочек».
+  const cancelTitle = (evTitle || '').replace(/[«»]/g, '').trim() || title;
 
   return (
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
@@ -267,6 +289,23 @@ export default function Ticket({ eventId }: { eventId: string }) {
         <h1 className="empty-heading" id="title">
           {title}
         </h1>
+        {evTitle && (
+          <div className="ticket-top" id="ticket-event">
+            <div className="ticket-event">{evTitle}</div>
+            {evWhen && (
+              <div className="ticket-when">
+                <Icon name="calendar" size={15} />
+                <span>{evWhen}</span>
+              </div>
+            )}
+            {evAddress && (
+              <div className="ticket-when">
+                <Icon name="map-pin" size={15} />
+                <span>{evAddress}</span>
+              </div>
+            )}
+          </div>
+        )}
         {!cancelled && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         <p className="empty-desc msg" id="status" role="status" style={{ margin: '16px 0 0' }}>
           {statusText}
@@ -291,7 +330,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
       <Sheet open={cancelConfirm} title={t('myreg.btn.cancel')} onClose={() => setCancelConfirm(false)}>
         <div className="app-muted" id="cancel-confirm-text">
-          {t('cancel.confirm', { title })}
+          {t('cancel.confirm', { title: cancelTitle })}
         </div>
         {cancelError && (
           <div className="card result bad" id="cancel-error">
