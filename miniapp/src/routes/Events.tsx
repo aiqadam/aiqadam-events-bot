@@ -303,6 +303,8 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     [openSheet],
   );
 
+  // W51: заголовка над табами нет — как в прототипе (renderEvents: сразу
+  // табы, активный таб и есть название экрана). document.title — для истории.
   const tabTitle =
     tab === 'mine'
       ? 'events.tab.mine'
@@ -328,10 +330,6 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <h1 className="empty-heading" id="title">
-        {dictLoaded ? t(tabTitle) : ''}
-      </h1>
-
       <div className="tabs" id="events-tabs" style={{ marginBottom: 16 }}>
         <button type="button" className={`tab${tab === 'mine' ? ' active' : ''}`} id="tab-mine" onClick={() => switchTab('mine')}>
           {dictLoaded ? t('events.tab.mine') : ''}
