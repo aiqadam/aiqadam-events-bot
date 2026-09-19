@@ -6,6 +6,9 @@ interface TelegramWebApp {
   colorScheme: 'light' | 'dark';
   ready: () => void;
   expand: () => void;
+  // W53: таб рассылки — «Перейти в чат»: страница закрывается, пользователь
+  // возвращается в чат с ботом и пересылает ему сообщение (сценарий W14).
+  close: () => void;
   openTelegramLink?: (url: string) => void;
   closeScanQrPopup: () => void;
   showScanQrPopup: (params: Record<string, unknown>, cb: (...args: unknown[]) => void) => void;

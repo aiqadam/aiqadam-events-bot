@@ -17,7 +17,8 @@ export type IconName =
   | 'navigation'
   | 'ticket'
   | 'search'
-  | 'star';
+  | 'star'
+  | 'clock';
 
 const PATHS: Record<IconName, ReactNode> = {
   'arrow-left': (
@@ -100,6 +101,13 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
+  // W53: часы заблокированного сегмента (прототип renderBroadcastTab).
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </>
+  ),
 };
 
 // filled — заливка текущим цветом (W45: закрашенная звезда оценки); остальные

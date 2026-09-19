@@ -120,6 +120,21 @@ function plateFromLocal(s: string): { month: string; day: string; weekday: strin
   return { month: MONTHS_NOM[p.mo], day: String(p.d), weekday: WEEKDAYS[wd] };
 }
 
+// W53: конец ивента из локальной («ташкентской», UTC+5 без DST) строки формы.
+function tashMs(local: string): number {
+  const p = localParts(local);
+  if (!p) return NaN;
+  return Date.UTC(p.y, p.mo, p.d, +p.h, +p.mi) - 5 * 3600 * 1000;
+}
+
+// «сб, 26 сентября · 22:00» — форма меты каталога, но из локальной строки.
+function endsWhen(local: string): string {
+  const p = plateFromLocal(local);
+  const lp = localParts(local);
+  if (!p || !lp) return '';
+  return `${p.weekday}, ${p.day} ${p.month} · ${lp.h}:${lp.mi}`;
+}
+
 function humanLocal(s: string): string {
   const p = localParts(s);
   if (!p) return String(s || '');
@@ -336,6 +351,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // W50: ивенты, где вызывающий — действующий контролёр (гейт кнопок сканера).
   const [staffIds, setStaffIds] = useState<Record<string, boolean>>({});
   const [retryTarget, setRetryTarget] = useState<'list' | 'form'>('form');
+
+  // W53: табы правки (прототип tabs()) — только при открытом ивенте;
+  // создание идёт визардом без табов. Порядок — как в эталоне.
+  type ManageTab = 'event' | 'participants' | 'broadcast' | 'staff';
+  const [manageTab, setManageTab] = useState<ManageTab>('event');
   const [inviteLink, setInviteLink] = useState<{ eventId: string; url: string } | null>(null);
 
   const showToast = useCallback((text: string, sticky = false) => {
@@ -555,6 +575,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const backToList = useCallback(() => {
     if (!done && eventId && isDirty()) {
       setConfirmExit(true);
+      // W53: диалог подтверждения живёт в табе «Ивент» — уводим туда же,
+      // иначе с других табов выход виснет без отзыва (ревью W53).
+      setManageTab('event');
       return;
     }
     leaveForm();
@@ -1056,6 +1079,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   const canPublish = !origStatus || origStatus === 'draft';
   const plate = plateFromLocal(fields['starts_at']);
+  // W53: таб рассылки — сегменты из загруженных участников (прототип
+  // renderBroadcastTab; строки all_consent в ответе participants нет —
+  // пропущена осознанно, см. журнал W53).
+  const bcastNoShow = parts ? parts.rows.filter((p) => p.status === 'registered' && p.checked_in_at === '').length : 0;
+  const bcastEndsMs = tashMs(fields['ends_at']);
+  const bcastNoShowLocked = !isFinite(bcastEndsMs) || bcastEndsMs > Date.now();
+  const bcastEndsWhen = endsWhen(fields['ends_at']);
   const previewStatus = origStatus || 'draft';
   const capLimit = capacityLimit(fields['capacity'], fields['overbook_pct']);
   // «Опубликовать» включена только на валидной форме — состояние эталона.
@@ -1155,7 +1185,38 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             </button>
           )}
 
-          {confirmExit ? (
+          {/* W53: табы правки — как в эталоне (tabs-wrap/tabs-scroll/tabs).
+              Только при открытом ивенте; создание — визард без табов. */}
+          {showForm && eventId && (
+            <div className="tabs-wrap" id="manage-tabs">
+              <div className="tabs-scroll">
+                <div className="tabs" role="tablist">
+                  {(
+                    [
+                      ['event', t('proto.tab_event')],
+                      ['participants', t('owner.event.btn.participants')],
+                      ['broadcast', t('owner.event.btn.broadcast')],
+                      ['staff', t('manage.staff.title')],
+                    ] as [ManageTab, string][]
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={manageTab === key}
+                      className={`tab${manageTab === key ? ' active' : ''}`}
+                      id={`mtab-${key}`}
+                      onClick={() => setManageTab(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(!eventId || manageTab === 'event') && (confirmExit ? (
             <div className="card result bad" id="exit-confirm">
               <p className="empty-heading">{t('manage.exit.confirm')}</p>
               <div className="chip-row" style={{ marginBottom: 0 }}>
@@ -1570,7 +1631,36 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     </p>
                   )}
 
-              {eventId && (
+                </div>
+              )}
+
+              <div className="sticky-actions">
+                {step > 0 && (
+                  <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
+                    {t('common.btn.back')}
+                  </button>
+                )}
+                {step < LAST_STEP ? (
+                  <button type="button" className="btn btn-primary btn-lg" id="wizard-next" onClick={nextStep}>
+                    {t('manage.btn.next')}
+                  </button>
+                ) : canPublish ? (
+                  <button type="button" className="btn btn-primary btn-lg" id="publish" disabled={busy || !publishReady} onClick={publish}>
+                    {t('manage.btn.publish')}
+                  </button>
+                ) : origStatus === 'published' ? (
+                  <button type="button" className="btn btn-primary btn-lg" id="save-published" disabled={busy} onClick={() => void submit('published')}>
+                    {t('manage.btn.save')}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary btn-lg" id="save-status" disabled={busy} onClick={() => void submit(origStatus)}>
+                    {t('manage.btn.save')}
+                  </button>
+                )}
+              </div>
+            </>
+          ))}
+{eventId && manageTab === 'participants' && (
                 <section className="card" id="participants" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="parts-title">
                     {t('participants.title', { title: fields['title'] })}
@@ -1667,7 +1757,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   )}
                 </section>
               )}
-              {eventId && (
+              {eventId && manageTab === 'participants' && (
                 <section className="card" id="feedback" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="feedback-title">
                     {t('manage.feedback.title', { title: fields['title'] })}
@@ -1723,11 +1813,83 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   )}
                 </section>
               )}
-              {eventId && (
+                            {eventId && manageTab === 'broadcast' && (
+                <>
+                  <div className="card" id="bcast-hint" style={{ marginTop: 16 }}>
+                    <p className="app-muted">{t('proto.broadcast_chat_hint')}</p>
+                  </div>
+                  {tg && (
+                    <div className="sheet-actions" style={{ marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-lg btn-block"
+                        id="bcast-open-chat"
+                        onClick={() => {
+                          try {
+                            tg.close();
+                          } catch {}
+                        }}
+                      >
+                        {t('proto.open_chat')}
+                      </button>
+                    </div>
+                  )}
+                  <section className="card list-card" id="bcast-segments" style={{ marginTop: 16 }}>
+                    <div className="card-title" id="bcast-segments-title" style={{ padding: '16px 16px 4px' }}>
+                      {t('bcast.ask.segment')}
+                    </div>
+                    {partsError ? (
+                      <>
+                        <p className="helper error" id="bcast-error" role="alert">
+                          {partsError}
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          id="bcast-retry"
+                          style={{ margin: '0 16px 16px' }}
+                          onClick={() => void loadParts()}
+                        >
+                          {t('manage.btn.retry')}
+                        </button>
+                      </>
+                    ) : !parts ? (
+                      <p className="empty-desc" id="bcast-loading" style={{ padding: 16 }}>
+                        {t('manage.loading')}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.registered')}</span>
+                          <span className="tail">{parts.counters.registered}</span>
+                        </div>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.checked_in')}</span>
+                          <span className="tail">{parts.counters.checked_in}</span>
+                        </div>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.no_show')}</span>
+                          <span className="tail">{bcastNoShowLocked ? '—' : bcastNoShow}</span>
+                          {bcastNoShowLocked && <Icon name="clock" size={15} />}
+                        </div>
+                        {bcastNoShowLocked && bcastEndsWhen !== '' && (
+                          <div className="helper" id="bcast-noshow-locked" style={{ padding: '4px 16px 12px' }}>
+                            {t('bcast.segment.no_show_locked', { when: bcastEndsWhen })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </section>
+                </>
+              )}
+{eventId && manageTab === 'staff' && (
                 <section className="card" id="staff" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="staff-title">
                     {t('manage.staff.title')}
                   </h2>
+                  <p className="app-muted" id="staff-hint" style={{ margin: '8px 0 0' }}>
+                    {t('proto.staff_hint')}
+                  </p>
                   {staffItems.length === 0 ? (
                     <p className="empty-desc" id="staff-empty">
                       {t('manage.staff.empty')}
@@ -1789,35 +1951,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   </button>
                 </section>
               )}
-                </div>
-              )}
-
-              <div className="sticky-actions">
-                {step > 0 && (
-                  <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
-                    {t('common.btn.back')}
-                  </button>
-                )}
-                {step < LAST_STEP ? (
-                  <button type="button" className="btn btn-primary btn-lg" id="wizard-next" onClick={nextStep}>
-                    {t('manage.btn.next')}
-                  </button>
-                ) : canPublish ? (
-                  <button type="button" className="btn btn-primary btn-lg" id="publish" disabled={busy || !publishReady} onClick={publish}>
-                    {t('manage.btn.publish')}
-                  </button>
-                ) : origStatus === 'published' ? (
-                  <button type="button" className="btn btn-primary btn-lg" id="save-published" disabled={busy} onClick={() => void submit('published')}>
-                    {t('manage.btn.save')}
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn-primary btn-lg" id="save-status" disabled={busy} onClick={() => void submit(origStatus)}>
-                    {t('manage.btn.save')}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
         </section>
       )}
 

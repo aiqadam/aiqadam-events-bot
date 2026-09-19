@@ -52,6 +52,19 @@
 .tabs { overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs .tab { white-space: nowrap; flex: 0 0 auto; }
+/* W53: обёртка табов правки — как в эталоне (`.tabs-wrap`/`.tabs-scroll`
+   в proto.css): скролл в одну строку. Только раскладка и токен границы. */
+.tabs-wrap { border-bottom: 1px solid var(--border); margin: 0 -16px 12px; padding: 0 16px; }
+.tabs-scroll { overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px; }
+.tabs-scroll .tabs { border-bottom: 0; min-width: max-content; }
+.tabs-scroll .tab { padding: 0 12px; }
+/* W53: строки сегментов рассылки — как в эталоне (`.list-card`/`.list-row`
+   в proto.css). Только раскладка и токены. */
+.list-card { padding: 0; overflow: hidden; }
+.list-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.list-row:last-child { border-bottom: 0; }
+.list-row .body { flex: 1; min-width: 0; }
+.list-row .tail { margin-left: auto; flex-shrink: 0; font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground); }
 /* W42: визард формы ивента — только раскладка, цвет и шрифт токенами бренда. */
 .form-section .field { margin-bottom: 16px; }
 .wizard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
