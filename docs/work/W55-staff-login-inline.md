@@ -62,6 +62,14 @@
   резолв username→ID клиентский через `staff_search`; серверный `staff_add`
   с username потребовал бы правки `step_20` + публикации ради того, что клиент
   уже умеет.
+- **2026-09-19** — прототип приведён к W55 (ветка `w55-proto-staff`): `renderStaff`
+  переписан — поле логина + «Добавить» инлайн, совпадения списком ниже, шит
+  `openStaffPicker` и хелпер `searchField` удалены, мёртвые ключи `protoDict`
+  (`staff_add`, `staff_nobody`, `staff_section_participants`, `staff_invite_alt`)
+  вычищены. `check.mjs`: новых ошибок ноль (одна ушла — `search_placeholder`;
+  остальные 70 предсуществующие на main). Стенд Playwright: 4 скрина
+  (пусто / «бек» → Бекзод+Отабек / `@bekzod` → добавлен+тост / неизвестный →
+  текст), альбом отправлен владельцу в Telegram.
 
 ## Ревью
 
