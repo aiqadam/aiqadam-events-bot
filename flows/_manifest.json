@@ -73,12 +73,13 @@
   {
     "flow": "manage-api",
     "flowId": "CcGPwuW4ws5hkcaOPerEG",
-    "publishedVersionId": "3D5PXRyYjF0b9vIyEkibw"
+    "publishedVersionId": "v0tiGL7ibOvOJR1Hh0ixm",
+    "source": "mcp"
   },
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "2AIvpiedKLmSPVD7kdLJk",
+    "publishedVersionId": "Ro3DOSZ08CxjRWKU1Tp7S",
     "source": "mcp"
   },
   {
@@ -94,7 +95,7 @@
   {
     "flow": "reg-api",
     "flowId": "SiYL8m6k4oy4YunAdZ1W7",
-    "publishedVersionId": "ECW0Mr5tK2X6pWnq70UNh",
+    "publishedVersionId": "FG1kYjgzwQTjMhNQQWlhQ",
     "source": "mcp"
   },
   {
@@ -112,7 +113,7 @@
   {
     "flow": "reg-start",
     "flowId": "FkxtgayOK5QubyqqMd9q4",
-    "publishedVersionId": "OG6KuKP6uNRJvF2KGAnyK",
+    "publishedVersionId": "lCuTzwKR3OKtDBmgsfnLm",
     "source": "mcp"
   },
   {
@@ -124,7 +125,19 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "A63TRUo7SLc8JZvHidtwx",
+    "publishedVersionId": "FFKnm4p4qxR78BxVJ0NQA",
+    "source": "mcp"
+  },
+  {
+    "flow": "staff-events-api",
+    "flowId": "Ok7iXvrnJUUzNcR5OwH8x",
+    "publishedVersionId": "oDbBIFQ7i1LMqcW7gd7os",
+    "source": "mcp"
+  },
+  {
+    "flow": "reg-profile",
+    "flowId": "5U3Kv0cSrnvDTrbictA4L",
+    "publishedVersionId": "R0JobjgIJ8WBgOMWeCTdR",
     "source": "mcp"
   }
 ]

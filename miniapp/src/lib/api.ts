@@ -49,3 +49,5 @@ export const EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/wEdKdE4R
 export const REG_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync';
 // W45 (Q53): форма отзыва #/feedback — initData обязателен, доступ по факту участия.
 export const FEEDBACK_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/DgmYgxiEXBz0roebYRBUj/sync';
+// W50 (вердикт W49): чьи кнопки сканера в каталоге — решает сервер по event_staff.
+export const STAFF_EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/Ok7iXvrnJUUzNcR5OwH8x/sync';

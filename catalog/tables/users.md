@@ -19,6 +19,12 @@
 | lang | TEXT | `wW12TT5X2kFgLryWbnnm5` | `XzWbggBmUBAYSMxGkaTYs` | `ru` / `uz` / `en` |
 | consent_pdn | STATIC_DROPDOWN | `KtdV8plfevjdnKlLko08q` | `mtWROpZrIW5v1Aqv3dM5U` | `true` / `false` — согласие на обработку данных (PAR-1) |
 | consent_pdn_at | DATE | `LeY6BeUOzWIyEtUFfKNbI` | `tw8cz1KCjEp91HhCTvIGS` | когда дано, UTC |
+| profile_first_name | TEXT | `SVQHL3bEpU9x9mMe5vuwV` | `SVQHL3bEpU9x9mMe5vuwV` | имя из онбординга (PAR-8, W50); отдельно от `first_name` — то перезаписывается апдейтами |
+| profile_last_name | TEXT | `B0bP8keR2vuyH0G4p1HYv` | `B0bP8keR2vuyH0G4p1HYv` | фамилия из онбординга (имена решены W50, Q58) |
+| position | TEXT | `uey0e0Uv13EGEwIqo3kod` | `uey0e0Uv13EGEwIqo3kod` | должность из онбординга |
+| company | TEXT | `DJw9ie9ZMuVvX6V3CHefm` | `DJw9ie9ZMuVvX6V3CHefm` | компания, может отсутствовать |
+| city | TEXT | `WUxzEvTHUI2IHcAGEGiG0` | `WUxzEvTHUI2IHcAGEGiG0` | город из онбординга |
+| profile_completed_at | DATE | `LTv6dhg23SgfyzTpIRGkT` | `LTv6dhg23SgfyzTpIRGkT` | когда профиль заполнен; гейт повторного касания |
 | consent_marketing | STATIC_DROPDOWN | `FpWznk9Fgl8wUXXUKolRu` | `p5kwWMUyrOXRvQx4oTH29` | `true` / `false` — отдельное согласие (PAR-2) |
 | consent_marketing_at | DATE | `3t75byELQCZ1ejfTADsvp` | `43TyWVNELRXBlud9Iuziy` | |
 | blocked_bot | STATIC_DROPDOWN | `ja2S7DwVun5AKs3Jk7jK6` | `9u6qoAhEOXOp00K5AjshG` | `true` / `false` — ставится при `403` (OWN-12) |

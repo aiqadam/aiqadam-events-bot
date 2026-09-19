@@ -35,10 +35,13 @@
      визарда в `sessions`) обработчика не имеют: их сообщения уходят в
    `Otherwise` молча.
 8. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
-    `scenario/step` не `-`) со `scenario='registration'`:
+   `scenario/step` не `-`) со `scenario='registration'`:
     - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
-      любой другой `reg:*` → **ничего** (не угадываем обработчик).
-    Сообщений без колбэка в рамках `registration` нет — все касания диалога кнопочные.
+      любой другой `reg:*` → **ничего** (не угадываем обработчик);
+    - колбэк с префиксом `ob:` → `reg_profile` (онбординг C, W50);
+    - текст без колбэка на шаге `ob_await_*` → `reg_profile` (свободный ввод
+      имени/работы/города); чужие тексты — в `Otherwise` молча.
+    Сообщений без колбэка в рамках `registration` вне онбординга нет.
 9. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink/staff-accept — W9/W10, вне области W26).
 
 ## Шаги
@@ -53,9 +56,10 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — три исхода (deep link / меню / молчание), любая другая команда — `menu` (ADR-0025); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, а не по `sessions.step`; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`) |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
-| step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft` |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — три исхода (deep link / меню / молчание), любая другая команда — `menu` (ADR-0025); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`) |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
+| step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
+| step_20 | `callFlow reg-profile` (`queue`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
 | step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start` и любая незнакомая команда (ADR-0025); получает `chatId`, `firstName`, `badPayload`, `telegramId` |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |

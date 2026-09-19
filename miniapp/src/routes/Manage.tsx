@@ -4,7 +4,7 @@ import Icon from '../components/Icon';
 import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, MANAGE_API } from '../lib/api';
+import { postJson, MANAGE_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
 const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
@@ -65,7 +65,6 @@ type ListItem = {
   lat?: string;
   lon?: string;
 };
-type RecentPlace = { address: string; lat: string; lon: string };
 type StepError = { step: number; field: string; text: string };
 
 function genNewId(): string {
@@ -93,17 +92,14 @@ function coordsInRange(lat: number, lon: number): boolean {
 }
 
 // Орг-ссылка (её даёт «Поделиться»): https://yandex.com/maps/org/<slug>/<oid>…
-// Координат в ней нет — их достаёт сервер через Геокодер (W42, Q55).
-const ORG_LINK_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\/org\//i;
+// Орг-ссылка координат не несёт — её разбирает только сервер через
+// Геокодер (Q55); resolveOrgLink ниже.
 const YANDEX_MAPS_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\//i;
 
-function mapUrl(lat: string, lon: string): string {
-  return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
-}
-
-function fmtCoord(v: string): string {
-  const n = Number(String(v).replace(',', '.'));
-  return isFinite(n) ? n.toFixed(5) : String(v);
+// Эквивалентная ссылка на точку — ею предзаполняем поле правки, когда ссылка
+// неизвестна, а координаты есть (вердикт W49: проверяется сама ссылка).
+function equivLink(lat: string, lon: string): string {
+  return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17';
 }
 
 // --- предпросмотр карточки: локальное «YYYY-MM-DDTHH:mm» — ташкентское ------
@@ -136,7 +132,11 @@ function humanLocal(s: string): string {
 // черновик можно вести по шагам недозаполненным.
 // strict=true — то же плюс обязательные поля (для «Опубликовать»).
 // Серверная валидация manage-api остаётся источником правды: это только UX.
-function clientErrors(f: Record<string, string>, strict: boolean): StepError[] {
+function clientErrors(
+  f: Record<string, string>,
+  strict: boolean,
+  geo?: { online: boolean; mapLink: string },
+): StepError[] {
   const out: StepError[] = [];
   const add = (step: number, field: string, key: string, vars?: Record<string, string | number>) => {
     out.push({ step, field, text: t(key, vars) });
@@ -160,6 +160,11 @@ function clientErrors(f: Record<string, string>, strict: boolean): StepError[] {
   if ((lat === '') !== (lon === '')) add(1, 'geo', 'manage.err.geo_pair');
   else if (lat !== '' && !coordsInRange(Number(lat.replace(',', '.')), Number(lon.replace(',', '.')))) {
     add(1, 'geo', 'manage.err.geo_range');
+  }
+  // Вердикт W49 (W50): офлайн без разбираемой ссылки не публикуется —
+  // проверяется сама ссылка, не координаты.
+  if (strict && geo && !geo.online && !parseYandexLink(geo.mapLink.trim())) {
+    add(1, 'geo', 'manage.geo.link_bad');
   }
 
   if ((f['capacity'] || '') !== '') {
@@ -289,13 +294,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // form fields
   const [fields, setFields] = useState<Record<string, string>>({ ...EMPTY_FIELDS });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [locateVisible, setLocateVisible] = useState(false);
 
-  // гео: шит ссылки, недавние места
-  const [geoSheet, setGeoSheet] = useState(false);
-  const [geoInput, setGeoInput] = useState('');
-  const [geoError, setGeoError] = useState('');
-  const [geoBusy, setGeoBusy] = useState(false);
+  // гео (вердикт W49): формат Онлайн/Офлайн + голое поле ссылки с живым
+  // разбором. Отдельного хранилища нет: онлайн ⟺ пустые lat/lon.
+  const [online, setOnline] = useState(false);
+  const [mapLink, setMapLink] = useState('');
 
   // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
@@ -330,6 +333,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // которая живёт на экране (сервер отдаёт её в `load` и `save`).
   const [listItems, setListItems] = useState<ListItem[]>([]);
   const [listLoaded, setListLoaded] = useState(false);
+  // W50: ивенты, где вызывающий — действующий контролёр (гейт кнопок сканера).
+  const [staffIds, setStaffIds] = useState<Record<string, boolean>>({});
   const [retryTarget, setRetryTarget] = useState<'list' | 'form'>('form');
   const [inviteLink, setInviteLink] = useState<{ eventId: string; url: string } | null>(null);
 
@@ -410,6 +415,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setFields(next);
       loadedRef.current = next;
       applyStatus(String(ev['status'] || 'draft'));
+      // Вердикт W49: формат выводится из координат (онлайн ⟺ точки нет);
+      // правка с координатами предзаполняет ссылку эквивалентной.
+      const hasCoords = String(next['lat'] || '').trim() !== '' && String(next['lon'] || '').trim() !== '';
+      setOnline(!hasCoords);
+      setMapLink(hasCoords ? equivLink(next['lon'], next['lat']) : '');
     },
     [applyStatus],
   );
@@ -488,6 +498,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setListItems(res.data['events'] as ListItem[]);
     setListLoaded(true);
     setStatusText('');
+    // W50 (вердикт W49): сканер — в строках списка, видно только контролёру.
+    // Создание автора контролёром не делает (staff — только явной выдачей),
+    // поэтому гейт — тем же staff-events-api, что в каталоге. Тихо нет —
+    // значит нет.
+    try {
+      const se = await postJson(STAFF_EVENTS_API, { initData });
+      if (se.kind === 'json' && se.data['ok'] && Array.isArray(se.data['eventIds'])) {
+        const set: Record<string, boolean> = {};
+        (se.data['eventIds'] as unknown[]).forEach((id) => {
+          if (typeof id === 'string' && id) set[id] = true;
+        });
+        setStaffIds(set);
+      }
+    } catch {}
   }, [initData, errorTextFor, showLoadFail]);
 
   const resetFormState = useCallback(() => {
@@ -499,17 +523,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setCancelSheet(false);
     setConfirmExit(false);
     geoReqRef.current += 1; // ответ resolve_geo в полёте уже не применяется
-    setGeoSheet(false);
-    setGeoInput('');
-    setGeoError('');
-    setGeoBusy(false);
-  }, []);
-
-  // Закрытие шита ссылки: отменяет и поздний ответ resolve_geo (круг 6).
-  const closeGeoSheet = useCallback(() => {
-    geoReqRef.current += 1;
-    setGeoBusy(false);
-    setGeoSheet(false);
+    setOnline(false);
+    setMapLink('');
   }, []);
 
   const leaveForm = useCallback(() => {
@@ -555,19 +570,34 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     let next = { ...EMPTY_FIELDS };
     let nextStep = 0;
     let restored = false;
+    // Вердикт W49: новое — офлайн с пустой ссылкой.
+    let nextOnline = false;
+    let nextLink = '';
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {
-        const d = JSON.parse(raw) as { fields?: Record<string, string>; step?: number };
+        const d = JSON.parse(raw) as { fields?: Record<string, string>; step?: number; online?: boolean; mapLink?: string };
         if (d && d.fields && typeof d.fields === 'object') {
           next = { ...EMPTY_FIELDS, ...d.fields };
           nextStep = Math.min(LAST_STEP, Math.max(0, Number(d.step) || 0));
           restored = true;
+          // Черновик нового формата хранит и гео-состояние; старый (только
+          // поля) — выводится из координат, как правка существующего.
+          if (typeof d.online === 'boolean') {
+            nextOnline = d.online;
+            nextLink = typeof d.mapLink === 'string' ? d.mapLink : '';
+          } else {
+            const hasCoords =
+              String(next['lat'] || '').trim() !== '' && String(next['lon'] || '').trim() !== '';
+            nextLink = hasCoords ? equivLink(next['lon'], next['lat']) : '';
+          }
         }
       }
     } catch {}
     setFields(next);
     loadedRef.current = next;
+    setOnline(nextOnline);
+    setMapLink(nextLink);
     setStep(nextStep);
     setErrs([]);
     setFieldErrors({});
@@ -647,14 +677,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // Шаг проверяется на «Далее» — как в эталоне (дизайн-ревью W42): пустые
   // обязательные поля не пропускаем, точки шагов с ошибками помечаются.
   const nextStep = useCallback(() => {
-    const e = clientErrors(fields, true).filter((x) => x.step === step);
+    const e = clientErrors(fields, true, { online, mapLink }).filter((x) => x.step === step);
     if (e.length) {
       setErrs(e);
       return;
     }
     setErrs([]);
     setStep((s) => Math.min(LAST_STEP, s + 1));
-  }, [fields, step]);
+  }, [fields, step, online, mapLink]);
 
   const prevStep = useCallback(() => {
     setErrs([]);
@@ -662,77 +692,82 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   const publish = useCallback(() => {
-    const e = clientErrors(fields, true);
+    const e = clientErrors(fields, true, { online, mapLink });
     if (e.length) {
       setErrs(e);
       setStep(e[0].step);
       return;
     }
     void submit('published');
-  }, [fields, submit]);
+  }, [fields, online, mapLink, submit]);
 
-  // W42: ссылку на место разбираем на клиенте; орг-ссылка (в ней координат
-  // нет) уходит на сервер — Геокодер возвращает точку и адрес (Q55). Пока
-  // идёт запрос, кнопка выключена, чтобы не отправить два.
-  const applyGeoLink = useCallback(async () => {
-    if (geoBusy) return;
-    const raw = geoInput.trim();
-    // Орг-ссылка всегда уходит на сервер: координат в ней нет, а `ll`/`pt`
-    // в такой ссылке задают центр карты, а не точку (ревью W42, круг 5).
-    if (!ORG_LINK_RE.test(raw)) {
-      const parsed = parseYandexLink(raw);
+  // W50 (вердикт W49, перенос из prototypes/app.js): ссылка — голое поле
+  // с живым разбором на вводе. Успех — тишина, битая ссылка — ошибка,
+  // пустое — подсказка. Орг-ссылка координат не несёт — уходит на сервер
+  // (Геокодер возвращает точку и адрес, Q55); после успеха поле хранит
+  // эквивалентную ссылку, чтобы правило «проверяется сама ссылка» сходилось.
+  const onLinkChange = useCallback(
+    (v: string) => {
+      setMapLink(v);
+      const parsed = parseYandexLink(v.trim());
       if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
         setGeo(parsed.lat, parsed.lon);
-        setGeoInput('');
-        setGeoError('');
-        setGeoSheet(false);
-        showToast(t('manage.geo.link_applied'));
-        return;
+      } else {
+        // Как в эталоне: битая ссылка сносит координаты, а не оставляет
+        // прежнюю точку под чужим текстом.
+        setFields((prev) => ({ ...prev, lat: '', lon: '' }));
+        setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon'));
       }
-      if (!YANDEX_MAPS_RE.test(raw)) {
-        setGeoError(t('manage.geo.link_bad'));
-        return;
-      }
-    }
-    // Пока идёт запрос, кнопка, поле и «Недавние места» выключены, а поздний
-    // ответ не применяется, если шит уже закрыли (дизайн-ревью, круг 6) —
-    // иначе ответ перетирал бы выбор, сделанный после нажатия.
-    const reqId = ++geoReqRef.current;
-    setGeoBusy(true);
-    setGeoError('');
-    const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
-    if (geoReqRef.current !== reqId) return;
-    setGeoBusy(false);
-    if (res.kind === 'json' && res.data['ok']) {
-      const la = Number(res.data['lat']);
-      const lo = Number(res.data['lon']);
-      if (coordsInRange(la, lo)) {
-        setGeo(la, lo);
-        // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
-        const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
-        if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
-        setGeoInput('');
-        setGeoError('');
-        setGeoSheet(false);
-        showToast(t('manage.geo.link_applied'));
-        return;
-      }
-    }
-    const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
-    const errFields = d && d['fields'] && typeof d['fields'] === 'object' ? (d['fields'] as Record<string, unknown>) : null;
-    const key = errFields && typeof errFields['geo'] === 'string' ? String(errFields['geo']) : '';
-    setGeoError(key ? t(key) : errorTextFor(res as never));
-  }, [geoBusy, geoInput, initData, setGeo, showToast, errorTextFor]);
-
-  const applyRecent = useCallback(
-    (r: RecentPlace) => {
-      const la = Number(String(r.lat || '').replace(',', '.'));
-      const lo = Number(String(r.lon || '').replace(',', '.'));
-      if (r.lat !== '' && r.lon !== '' && coordsInRange(la, lo)) setGeo(la, lo);
-      setFields((prev) => ({ ...prev, address: r.address }));
-      closeGeoSheet();
     },
-    [setGeo, closeGeoSheet],
+    [setGeo],
+  );
+
+  const resolveOrgLink = useCallback(
+    async (raw: string) => {
+      const reqId = ++geoReqRef.current;
+      const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
+      if (geoReqRef.current !== reqId) return;
+      if (res.kind === 'json' && res.data['ok']) {
+        const la = Number(res.data['lat']);
+        const lo = Number(res.data['lon']);
+        if (coordsInRange(la, lo)) {
+          setGeo(la, lo);
+          setMapLink(equivLink(String(lo), String(la)));
+          // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
+          const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
+          if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
+          return;
+        }
+      }
+      // Не разобралось даже сервером — поле хранит ввод, статус покажет ошибку.
+    },
+    [initData, setGeo],
+  );
+
+  const onLinkPaste = useCallback(() => {
+    // Вставка: клиентский разбор — в onChange; здесь — добор сервером.
+    // Набор руками фокус не теряет: живого ререндера по буквам нет.
+    setTimeout(() => {
+      const el = document.getElementById('f-geolink') as HTMLInputElement | null;
+      const raw = (el ? el.value : mapLink).trim();
+      if (!raw) return;
+      setMapLink(raw);
+      if (parseYandexLink(raw)) return; // координаты уже встали в onChange
+      if (YANDEX_MAPS_RE.test(raw)) void resolveOrgLink(raw); // орг-ссылка — только сервер
+    }, 0);
+  }, [mapLink, resolveOrgLink]);
+
+  const setFormat = useCallback(
+    (nextOnline: boolean) => {
+      setOnline(nextOnline);
+      if (nextOnline) {
+        // Онлайн — никакой ссылки: точку сносим, поле ссылки чистим.
+        setFields((prev) => ({ ...prev, lat: '', lon: '' }));
+        setMapLink('');
+        setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon'));
+      }
+    },
+    [],
   );
 
   // Копирование ссылки — тост «Скопировано» (эталон); если буфер недоступен,
@@ -938,54 +973,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     return i >= 0 ? s.slice(i + 1) : s;
   }, []);
 
-  // locate setup
-  useEffect(() => {
-    if (!dictLoaded) return;
-    const tg2 = getTelegram();
-    const lm = tg2?.LocationManager;
-    if (lm && typeof lm.init === 'function') {
-      setLocateVisible(true);
-    } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      setLocateVisible(true);
-    } else {
-      setLocateVisible(false);
-    }
-  }, [dictLoaded]);
-
-  // Отказ/недоступность геолокации не оставляем молча (дизайн-ревью W42,
-  // круг 4): «кнопка не работает» — худший из возможных исходов.
-  const handleLocate = useCallback(() => {
-    const tg2 = getTelegram();
-    const lm = tg2?.LocationManager;
-    if (lm && typeof lm.init === 'function') {
-      try {
-        lm.init(() => {
-          if (!lm.isLocationAvailable || (!lm.isAccessGranted && lm.isAccessRequested)) {
-            showToast(t('manage.geo.locate_failed'));
-            if (typeof lm.openSettings === 'function') lm.openSettings();
-            return;
-          }
-          lm.getLocation((loc) => {
-            if (loc && typeof loc.latitude === 'number') setGeo(loc.latitude, loc.longitude);
-            else showToast(t('manage.geo.locate_failed'));
-          });
-        });
-      } catch {
-        showToast(t('manage.geo.locate_failed'));
-      }
-      return;
-    }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setGeo(pos.coords.latitude, pos.coords.longitude),
-        () => showToast(t('manage.geo.locate_failed')),
-        { timeout: 10000 },
-      );
-      return;
-    }
-    showToast(t('manage.geo.locate_failed'));
-  }, [setGeo, showToast]);
-
   // Подтверждение выхода заменяет содержимое — наверх.
   useEffect(() => {
     if (confirmExit) window.scrollTo(0, 0);
@@ -1018,7 +1005,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         showLoadFail(t('manage.err.not_in_telegram'));
         return;
       }
-      if (propEventId) {
+      if (propEventId === 'new') {
+        // Вердикт W49 (W50): создание — из чата сразу на форму, кнопки
+        // создания в списке нет. 'new' — не id ивента, а новая запись.
+        setEventId('');
+        startNew();
+      } else if (propEventId) {
         setEventId(propEventId);
         void load(propEventId);
       } else {
@@ -1058,38 +1050,16 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   useEffect(() => {
     if (!showForm || eventId || done) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ fields, step }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ fields, step, online, mapLink }));
     } catch {}
-  }, [showForm, eventId, done, fields, step]);
-
-  // W42: недавние места — адреса своих ивентов из уже загруженного списка
-  // (сервер отдаёт address/lat/lon только для isAuthor-строк).
-  const recents = useMemo<RecentPlace[]>(() => {
-    const seen = new Set<string>();
-    const out: RecentPlace[] = [];
-    listItems
-      .filter((e) => e.isAuthor && String(e.address || '').trim() !== '')
-      .slice()
-      .sort((a, b) => {
-        const am = utcMs(a.starts_at);
-        const bm = utcMs(b.starts_at);
-        return (isFinite(bm) ? bm : 0) - (isFinite(am) ? am : 0);
-      })
-      .forEach((e) => {
-        const address = String(e.address || '').trim();
-        if (seen.has(address)) return;
-        seen.add(address);
-        out.push({ address, lat: String(e.lat || ''), lon: String(e.lon || '') });
-      });
-    return out.slice(0, 5);
-  }, [listItems]);
+  }, [showForm, eventId, done, fields, step, online, mapLink]);
 
   const canPublish = !origStatus || origStatus === 'draft';
   const plate = plateFromLocal(fields['starts_at']);
   const previewStatus = origStatus || 'draft';
   const capLimit = capacityLimit(fields['capacity'], fields['overbook_pct']);
   // «Опубликовать» включена только на валидной форме — состояние эталона.
-  const publishReady = clientErrors(fields, true).length === 0;
+  const publishReady = clientErrors(fields, true, { online, mapLink }).length === 0;
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, paddingBottom: showForm ? 120 : 16 }}>
@@ -1120,12 +1090,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
       {dictLoaded && !eventId && !showForm && !showLoadfail && (
         <section id="events">
-          <div className="field actions" style={{ marginBottom: 14 }}>
-            <button type="button" className="btn btn-primary btn-lg" id="new-event" onClick={startNew}>
-              <Icon name="plus" />
-              {t('manage.btn.new')}
-            </button>
-          </div>
+          {/* Вердикт W49 (W50): кнопки создания в списке нет — создание
+              приходит из чата сразу на форму #/manage/new. */}
           {listLoaded && listItems.length === 0 && (
             <div className="empty-state" id="events-empty">
               <div className="empty-icon">
@@ -1157,6 +1123,19 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         <div className="event-meta">
                           <span className="meta-item">{utcToTime(ev.starts_at)}</span>
                         </div>
+                        {/* W50 (вердикт W49): сканер — в строке списка, видно
+                            только контролёру (гейт — staffIds с сервера). */}
+                        {staffIds[ev.id] && !past && (
+                          <div className="app-actions" style={{ marginTop: 8 }}>
+                            <a
+                              className="btn btn-secondary"
+                              href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {t('menu.btn.scanner')}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </a>
                   </li>
@@ -1316,47 +1295,57 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
                   <div className="field">
                     <span className="label">{t('field.geo')}</span>
-                    <div className="chip-row">
+                    {/* W50 (вердикт W49, перенос из prototypes/app.js): тогл
+                        формата вместо гео-конструктора. Онлайн — никакой
+                        ссылки; офлайн — голое поле ссылки с живым разбором.
+                        Успех — тишина, пустое — подсказка, битая — ошибка. */}
+                    <div className="chip-row" role="group" aria-label={t('manage.geo.format')}>
                       <button
                         type="button"
-                        className="btn btn-outline"
-                        id="geo-link"
-                        onClick={() => {
-                          setGeoSheet(true);
-                          setGeoError('');
-                        }}
+                        className={`btn btn-secondary btn-sm${online ? ' active' : ''}`}
+                        aria-pressed={online}
+                        onClick={() => setFormat(true)}
                       >
-                        <Icon name="link" />
-                        {t('manage.geo.link')}
+                        {t('manage.geo.online')}
                       </button>
-                      {locateVisible && (
-                        <button type="button" className="btn btn-outline" id="locate" onClick={handleLocate}>
-                          <Icon name="navigation" />
-                          {t('manage.btn.locate')}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className={`btn btn-secondary btn-sm${!online ? ' active' : ''}`}
+                        aria-pressed={!online}
+                        onClick={() => setFormat(false)}
+                      >
+                        {t('manage.geo.offline')}
+                      </button>
                     </div>
-
-                    {fields['lat'] !== '' && fields['lon'] !== '' ? (
+                    {!online && (
                       <>
-                        <div className="loc-preview" aria-hidden="true">
-                          <div className="loc-grid" />
-                          <span className="loc-pin">
-                            <Icon name="map-pin" size={20} />
-                          </span>
-                        </div>
-                        <p className="helper" id="geo-coords">
-                          {t('manage.geo.coords', { lat: fmtCoord(fields['lat']), lon: fmtCoord(fields['lon']) })}
-                        </p>
-                        <a className="loc-link" id="geo-map" href={mapUrl(fields['lat'], fields['lon'])} target="_blank" rel="noreferrer">
-                          {t('event.card.btn_map')}
-                          <Icon name="external" size={14} />
-                        </a>
+                        <input
+                          className={`input ${fieldError('geo') ? 'error' : ''}`}
+                          id="f-geolink"
+                          type="url"
+                          inputMode="url"
+                          autoComplete="off"
+                          placeholder={t('manage.geo.link_placeholder')}
+                          value={mapLink}
+                          onChange={(e) => onLinkChange(e.target.value)}
+                          onPaste={() => onLinkPaste()}
+                        />
+                        {(() => {
+                          // Ошибка валидации («Далее»/«Опубликовать») уже
+                          // показана строкой ниже — не дублируем.
+                          if (fieldError('geo')) return null;
+                          const parsed = parseYandexLink(mapLink.trim());
+                          if (parsed) return null;
+                          if (mapLink.trim()) {
+                            return (
+                              <p className="helper error" id="e-geolink">
+                                {t('manage.geo.link_bad')}
+                              </p>
+                            );
+                          }
+                          return <p className="helper">{t('manage.geo.none')}</p>;
+                        })()}
                       </>
-                    ) : (
-                      <p className="helper" id="geo-none">
-                        {t('manage.geo.none')}
-                      </p>
                     )}
                     {fieldError('geo') && (
                       <p className="helper error" id="e-geo">
@@ -1831,59 +1820,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           )}
         </section>
       )}
-
-      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={closeGeoSheet}>
-        <p className="app-muted">{t('manage.hint.geo')}</p>
-        <input
-          className={`input ${geoError ? 'error' : ''}`}
-          id="f-geo-link"
-          type="url"
-          inputMode="url"
-          autoComplete="off"
-          placeholder={t('manage.geo.link_placeholder')}
-          value={geoInput}
-          disabled={geoBusy}
-          onChange={(e) => {
-            setGeoInput(e.target.value);
-            setGeoError('');
-          }}
-        />
-        {geoError && (
-          <p className="helper error" id="e-geo-link" role="alert">
-            {geoError}
-          </p>
-        )}
-        {recents.length > 0 && (
-          <>
-            <div className="section-label">{t('manage.geo.recent')}</div>
-            <div className="sheet-actions" id="geo-recent">
-              {recents.map((r) => (
-                <button
-                  key={r.address}
-                  type="button"
-                  className="btn btn-outline"
-                  disabled={geoBusy}
-                  onClick={() => applyRecent(r)}
-                >
-                  <span className="chip-label">{r.address}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        <div className="sheet-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            id="geo-apply"
-            disabled={geoInput.trim() === '' || geoBusy}
-            aria-busy={geoBusy}
-            onClick={() => void applyGeoLink()}
-          >
-            {geoBusy ? t('manage.geo.searching') : t('manage.geo.link_apply')}
-          </button>
-        </div>
-      </Sheet>
 
       <Sheet open={cancelSheet} title={t('owner.event.btn.cancel_event')} onClose={() => setCancelSheet(false)}>
         <p className="app-muted">{t('manage.cancel.confirm', { title: fields['title'] })}</p>

@@ -3,35 +3,49 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
   на `/start e<eventId>-<utm>` (ADR-0015: касание = один вопрос/вход)
-- **Назначение**: вход участника по deep link. Проверяет доступность мест (OWN-15)
-  и показывает **карточку-экран**: факты ивента и вопрос о согласии на ПД
-  в одном сообщении, которое дальше редактируется на месте ([ADR-0017](../../docs/adr/0017-screen-not-message.md)).
+- **Назначение**: вход участника по deep link. Проверяет доступность мест (OWN-15),
+  читает профиль (`users.profile_completed_at`) и разводит: заполнен —
+  **регистрация в один тап** (`register`, PAR-8, повторное касание без consent),
+  нет — **вход в онбординг** (`onboard`, why-карточка + `Дальше`). Карточка-экран
+  дальше редактируется на месте ([ADR-0017](../../docs/adr/0017-screen-not-message.md)).
+  Старый путь `new` (согласие ПД на каждое касание) снят W50.
 - **Flow ID (MCP)**: `FkxtgayOK5QubyqqMd9q4` · **externalId**: `HGX7KPhFsyFrapBRvlIAT`
 
 ## Шаги
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId` |
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId`, `firstName`, `lastName` (имена — для эвристики онбординга, W50) |
 | step_1 | `tables-find-records events` | ивент по `id` |
 | step_2 | `tables-find-records registrations` | регистрации ивента — кормят и подсчёт занятости, и поиск своей строки |
-| step_3 | CODE «decide outcome» | `existing` / `new` / `declined` (семь причин, включая `internal_error`); отдаёт поля карточки и `photoFileId` |
-| step_4 | ROUTER по `outcome` | `declined` / `existing` / `new` / `Otherwise` |
+| step_12 | `tables-find-records users` | строка пользователя: `profile_completed_at`, `consent_pdn`, имя/должность (W50) |
+| step_3 | CODE «decide outcome» | `existing` / `onboard` / `register` / `declined` (семь причин, включая `internal_error`); гейт профиля: заполнен → `register` со строкой профиля, иначе `onboard` |
+| step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
-| step_9 (`new`) | CODE «build card: ивент + вопрос ПД» | один текст на весь экран + inline-кнопки `reg:pdn:yes` / `reg:pdn:no` |
-| step_10 (`new`) | `send_text_message` | **единственная отправка карточки за весь диалог** |
-| step_15 (`new`) | CODE «draft JSON + cardMessageId» | собирает черновик сессии вместе с id карточки |
-| step_11 (`new`) | `tables-upsert-records sessions` | `scenario=registration`, `step=await_pdn` |
+| step_9 (`onboard`) | CODE «build ob entry card» | карточка ивента + `onb.why` + `Дальше` (`ob:continue`); согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля |
+| step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
+| step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии (шаг — в `step_11`) |
+| step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_consent` |
+| step_14 (`register`) | CODE «build card: ивент + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`) |
+| step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
+| step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
+| step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
 
 ## Зависимости
 
-- **Таблицы**: `events`, `registrations` (чтение), `sessions` (запись)
+- **Таблицы**: `events`, `registrations`, `users` (чтение), `sessions` (запись)
+- **Флоу**: вызывается из `tg-router`; продолжает `reg-profile` (ветки `onboard`/`register`)
 - **Переменные**: `MINIAPP_URL` (кнопка QR в ветке `existing`)
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
 
 ## Заметки
 
+- **Онбординг C (PAR-8, W50)**: `step_12` читает профиль до решения; `step_3`
+  отдаёт `onboard` всем без `profile_completed_at` (даже с `consent_pdn=true` —
+  старые регистрации) и `register` с готовой строкой профиля. Старые сессии
+  `await_pdn` дорабатывают прежние `reg-consent-pdn`/`reg-consent-mkt` — флоу
+  оставлены намеренно, новые касания туда не попадают.
 - **`cardMessageId` живёт в JSON внутри `sessions.draft`, а не отдельной колонкой.**
   Схема таблиц заморожена с W1, а срок жизни поля равен сроку жизни сессии.
   Читают его `reg-consent-pdn`, `reg-consent-mkt` — каждый через
