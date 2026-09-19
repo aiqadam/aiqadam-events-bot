@@ -575,6 +575,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const backToList = useCallback(() => {
     if (!done && eventId && isDirty()) {
       setConfirmExit(true);
+      // W53: диалог подтверждения живёт в табе «Ивент» — уводим туда же,
+      // иначе с других табов выход виснет без отзыва (ревью W53).
+      setManageTab('event');
       return;
     }
     leaveForm();
@@ -1865,8 +1868,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           <span className="tail">{parts.counters.checked_in}</span>
                         </div>
                         <div className="list-row">
-                          <span className="body">{t('participants.filter.btn.no_show')}</span>
+                          <span className="body">{t('bcast.segment.no_show')}</span>
                           <span className="tail">{bcastNoShowLocked ? '—' : bcastNoShow}</span>
+                          {bcastNoShowLocked && <Icon name="clock" size={15} />}
                         </div>
                         {bcastNoShowLocked && bcastEndsWhen !== '' && (
                           <div className="helper" id="bcast-noshow-locked" style={{ padding: '4px 16px 12px' }}>
