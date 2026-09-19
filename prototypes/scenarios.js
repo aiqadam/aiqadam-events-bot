@@ -43,8 +43,11 @@ PROTO.buildScenarios = function (opts) {
   // сразу форма #/manage/new (в Mini App кнопки создания нет).
   // Кнопки чекина в чате нет: сканер — рядом с ивентом в Mini App (STF-2).
   // Вердикт владельца 2026-09-18 (W49).
+  // W51 (решение владельца 2026-09-19, поправка к вердикту): овнеру вернули
+  // вход в свой список — «Управление ивентами» сразу на #/manage.
   const menuButtonsOwner = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
+    { label: T('menu.btn.manage'), webApp: '#/manage', resume: 'menu' },
     { label: T('menu.btn.new_event'), webApp: '#/manage/new', resume: 'menu' },
   ];
 
