@@ -233,6 +233,7 @@
   "manage.staff.search_open": "Выбрать из списка",
   "manage.staff.search_placeholder": "Имя или @username",
   "manage.staff.search_title": "Выбор контролёра",
+  "manage.staff.since": "контролёр с {when}",
   "manage.staff.title": "Контролёры",
   "manage.step.capacity": "Места",
   "manage.step.label": "Шаг {n} из {m}",
