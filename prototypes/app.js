@@ -183,18 +183,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
   function closeSheet() { if (sheet) sheet.root.setAttribute('hidden', ''); }
 
-  function searchField(placeholder, value, onInput) {
-    const wrap = E('div', 'input-wrap');
-    wrap.appendChild(PROTO.icon('search', 16));
-    const input = E('input', 'input');
-    input.type = 'search';
-    input.placeholder = placeholder;
-    input.value = value || '';
-    input.addEventListener('input', onInput);
-    wrap.appendChild(input);
-    return wrap;
-  }
-
   function mulberry32(a) {
     return function () {
       a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -1027,7 +1015,24 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setDemo([]);
   }
 
-  // ---------- таб «Контролёры»: выбор из списка, не ID руками ----------
+  // ---------- таб «Контролёры»: ввод по логину инлайн, без шита (W55) ----------
+  // Резолв логин→id — точным совпадением username среди известных боту
+  // (D.people); запись — по id (DAT-1). Кого бот не видел — добавить нельзя.
+  let staffLoginError = '';
+  function normLogin(s) {
+    return String(s || '').trim().replace(/^@+/, '').toLowerCase();
+  }
+  function staffMatches(ed, q) {
+    const needle = normLogin(q);
+    if (needle.length < 2) return [];
+    const known = {};
+    ed.controllers.forEach((c) => { known[c.id] = true; });
+    return D.people.filter((p) => {
+      if (known[p.id]) return false;
+      return p.name.toLowerCase().indexOf(needle) >= 0
+        || String(p.username || '').toLowerCase().replace(/^@/, '').indexOf(needle) >= 0;
+    });
+  }
   function renderStaff(body) {
     PROTO.setTrace(['OWN-14', 'STF-2', 'DAT-1']);
     const ed = eventData(eventId);
@@ -1054,56 +1059,91 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       body.appendChild(box);
     }
 
-    const add = btn(T('proto.staff_add'), { kind: 'btn-primary btn-lg', block: true, icon: 'plus', onClick: openStaffPicker });
-    add.style.marginTop = '14px';
-    body.appendChild(add);
-    body.appendChild(E('div', 'helper', T('proto.staff_invite_alt')));
-    PROTO.setDemo([]);
-  }
+    const wrap = E('div', 'app-field');
+    wrap.style.marginTop = '16px';
+    wrap.appendChild(E('label', 'label', T('manage.staff.login_label')));
+    const row = E('div', 'app-row2');
+    const input = E('input', 'input');
+    input.type = 'text';
+    input.id = 'f-staff-login';
+    input.placeholder = T('manage.staff.login_placeholder');
+    input.value = staffQuery;
+    input.setAttribute('aria-label', T('manage.staff.login_label'));
+    row.appendChild(input);
+    const addBtn = btn(T('manage.staff.btn.add'), { kind: 'btn-primary', size: 'btn-sm', onClick: addByLogin });
+    addBtn.id = 'staff-add';
+    row.appendChild(addBtn);
+    wrap.appendChild(row);
+    wrap.appendChild(E('div', 'helper', T('manage.staff.login_hint')));
+    const errBox = E('div', '');
+    wrap.appendChild(errBox);
+    body.appendChild(wrap);
+    const feed = E('div', '');
+    body.appendChild(feed);
 
-  function openStaffPicker() {
-    openSheet(T('proto.staff_add'), (body) => {
-      body.appendChild(searchField(T('manage.staff.search_placeholder'), staffQuery, (e) => {
-        staffQuery = e.target.value;
-        renderSheet();
-        const inp = sheet.body.querySelector('input[type="search"]');
-        if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
-      }));
-      const q = staffQuery.trim().toLowerCase().replace(/^@/, '');
-      const known = eventData(eventId).controllers.map((c) => c.id);
-      const found = D.people.filter((p) => {
-        if (known.indexOf(p.id) >= 0) return false;
-        if (!q) return true;
-        return p.name.toLowerCase().indexOf(q) >= 0 || p.username.toLowerCase().replace(/^@/, '').indexOf(q) >= 0;
-      });
-      body.appendChild(E('div', 'section-label', T('proto.staff_section_participants')));
-      if (!found.length) {
-        body.appendChild(emptyState(T('proto.staff_nobody'), 'users'));
+    function paintError() {
+      PROTO.clear(errBox);
+      if (staffLoginError) {
+        errBox.appendChild(E('div', 'helper error', staffLoginError));
+        input.classList.add('error');
+      } else {
+        input.classList.remove('error');
+      }
+    }
+    function paintFeed() {
+      PROTO.clear(feed);
+      const list = staffMatches(ed, staffQuery);
+      if (normLogin(staffQuery).length >= 2 && !list.length) {
+        feed.appendChild(emptyState(T('manage.staff.login_not_found'), 'users'));
         return;
       }
+      if (!list.length) return;
       const box = card([], 'list-card');
-      found.forEach((p) => {
-        const r = E('button', 'list-row person-row');
-        r.type = 'button';
+      list.forEach((p) => {
+        const r = E('div', 'list-row');
         r.appendChild(avatar(p.name, 'avatar-md'));
         const b = E('div', 'body');
         b.appendChild(E('div', 'name', p.name));
         b.appendChild(E('div', 'sub', p.username));
         r.appendChild(b);
-        const plus = E('span', 'person-add');
-        plus.appendChild(PROTO.icon('plus', 18));
-        r.appendChild(plus);
-        r.addEventListener('click', () => {
-          eventData(eventId).controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
+        r.appendChild(btn(T('manage.staff.btn.add'), { kind: 'btn-primary', size: 'btn-sm', onClick: () => {
+          ed.controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
           staffQuery = '';
-          closeSheet();
+          staffLoginError = '';
           PROTO.toast(T('manage.staff.added'));
           renderManageEvent(eventId);
-        });
+        } }));
         box.appendChild(r);
       });
-      body.appendChild(box);
+      feed.appendChild(box);
+    }
+    function addByLogin() {
+      const login = normLogin(staffQuery);
+      if (!login) return;
+      const hit = staffMatches(ed, staffQuery).find(
+        (p) => String(p.username || '').toLowerCase().replace(/^@/, '') === login
+      );
+      if (!hit) {
+        staffLoginError = T('manage.staff.login_not_found');
+        paintError();
+        paintFeed();
+        return;
+      }
+      ed.controllers.push({ id: hit.id, name: hit.name, username: hit.username, since: '26 сентября, 12:00' });
+      staffQuery = '';
+      staffLoginError = '';
+      PROTO.toast(T('manage.staff.added'));
+      renderManageEvent(eventId);
+    }
+    input.addEventListener('input', () => {
+      staffQuery = input.value;
+      staffLoginError = '';
+      paintError();
+      paintFeed();
     });
+    paintError();
+    paintFeed();
+    PROTO.setDemo([]);
   }
 
   // ---------- роут: каталог — мои билеты / будущие / прошедшие ----------
