@@ -31,7 +31,7 @@ type MineRow = {
   checkedInAt: string;
 };
 
-export type EventsTab = 'mine' | 'upcoming' | 'past';
+export type EventsTab = 'mine' | 'upcoming' | 'past' | 'profile';
 
 type MineState = 'off' | 'loading' | 'ready' | 'error';
 
@@ -49,6 +49,14 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [mine, setMine] = useState<MineRow[]>([]);
   const [mineState, setMineState] = useState<MineState>(inTelegram ? 'loading' : 'off');
   const [mineError, setMineError] = useState('');
+  // W50 / PAR-8: профиль для шита регистрации и таба «Профиль».
+  const [profile, setProfile] = useState({ first: '', last: '', position: '', company: '', city: '' });
+  const [profileState, setProfileState] = useState<MineState>(inTelegram ? 'loading' : 'off');
+  const [profileMsg, setProfileMsg] = useState('');
+  const [pdnDone, setPdnDone] = useState('');
+  // Шит регистрации: поля профиля (видны, пока профиль неполон).
+  const [sheetProf, setSheetProf] = useState({ first: '', last: '', position: '', company: '', city: '' });
+  const [profileNeeded, setProfileNeeded] = useState(false);
   // W50 (вердикт W49): сканер — рядом с ивентом, видно только контролёру.
   // Чьи кнопки — решает staff-events-api, страница только рисует; тихо нет —
   // значит нет (ошибка здесь — не отказ экрана).
@@ -122,6 +130,43 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     }
   }, [inTelegram, initData]);
 
+  const loadProfile = useCallback(async () => {
+    if (!inTelegram) return;
+    setProfileState('loading');
+    const res = await postJson(REG_API, { action: 'profile_get', initData });
+    if (res.kind !== 'json' || !res.data['ok']) {
+      setProfileState('error');
+      return;
+    }
+    const p = (res.data['profile'] || {}) as Record<string, unknown>;
+    const s = (v: unknown) => (typeof v === 'string' ? v : '');
+    setProfile({ first: s(p['first']), last: s(p['last']), position: s(p['position']), company: s(p['company']), city: s(p['city']) });
+    setPdnDone(s(res.data['pdnDone']));
+    setProfileState('ready');
+  }, [inTelegram, initData]);
+
+  const saveProfile = useCallback(async () => {
+    setProfileMsg('');
+    const res = await postJson(REG_API, {
+      action: 'profile_save',
+      initData,
+      profileFirst: profile.first,
+      profileLast: profile.last,
+      profilePosition: profile.position,
+      profileCompany: profile.company,
+      profileCity: profile.city,
+    });
+    if (res.kind !== 'json' || !res.data['ok']) {
+      const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
+      setProfileMsg(d && typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
+      return;
+    }
+    const p = (res.data['profile'] || {}) as Record<string, unknown>;
+    const s = (v: unknown) => (typeof v === 'string' ? v : '');
+    setProfile({ first: s(p['first']), last: s(p['last']), position: s(p['position']), company: s(p['company']), city: s(p['city']) });
+    setProfileMsg(t('manage.saved.updated'));
+  }, [initData, profile]);
+
   useEffect(() => {
     setupThemeListener();
     if (tg) {
@@ -134,7 +179,8 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     void loadEvents();
     void loadMine();
     void loadStaffEvents();
-  }, [tg, loadEvents, loadMine, loadStaffEvents]);
+    void loadProfile();
+  }, [tg, loadEvents, loadMine, loadStaffEvents, loadProfile]);
 
   useEffect(() => {
     if (dictLoaded) {
@@ -175,7 +221,11 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setSheetError('');
     setSheetBusy(false);
     setSheetDone(false);
-  }, []);
+    // Шит знает профиль: заполнен — не показываем поля, нет — предзаполняем
+    // сохранённым и просим дописать (сервер примет вместе с регистрацией).
+    setSheetProf({ ...profile });
+    setProfileNeeded(profile.first === '' || profile.last === '' || profile.position === '' || profile.city === '');
+  }, [profile]);
 
   const closeSheet = useCallback(() => {
     setSheetEvent(null);
@@ -191,6 +241,11 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       eventId: sheetEvent.id,
       consentPdn: true,
       consentMarketing: mkt,
+      profileFirst: sheetProf.first,
+      profileLast: sheetProf.last,
+      profilePosition: sheetProf.position,
+      profileCompany: sheetProf.company,
+      profileCity: sheetProf.city,
     });
     setSheetBusy(false);
     if (res.kind === 'network') {
@@ -206,10 +261,12 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       // IDM-1: повтор даёт тот же результат — «уже зарегистрированы», без второго подтверждения.
       setSheetDone(true);
       void loadMine();
+      void loadProfile();
       return;
     }
+    if (d['error'] === 'profile_required') setProfileNeeded(true);
     setSheetError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
-  }, [sheetEvent, sheetBusy, initData, mkt, loadMine]);
+  }, [sheetEvent, sheetBusy, initData, mkt, sheetProf, loadMine, loadProfile]);
 
   const openTicket = useCallback(
     (eventId: string) => () => {
@@ -230,7 +287,14 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     [openSheet],
   );
 
-  const tabTitle = tab === 'mine' ? 'events.tab.mine' : tab === 'past' ? 'events.list.past_title' : 'events.list.upcoming_title';
+  const tabTitle =
+    tab === 'mine'
+      ? 'events.tab.mine'
+      : tab === 'past'
+        ? 'events.list.past_title'
+        : tab === 'profile'
+          ? 'profile.tab'
+          : 'events.list.upcoming_title';
   const mineRows = mine
     .map((r) => ({ row: r, ev: eventsById[r.eventId] }))
     .filter((x) => Boolean(x.ev));
@@ -262,6 +326,9 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
         <button type="button" className={`tab${tab === 'past' ? ' active' : ''}`} id="tab-past" onClick={() => switchTab('past')}>
           {dictLoaded ? t('events.list.btn.past') : ''}
         </button>
+        <button type="button" className={`tab${tab === 'profile' ? ' active' : ''}`} id="tab-profile" onClick={() => switchTab('profile')}>
+          {dictLoaded ? t('profile.tab') : ''}
+        </button>
       </div>
 
       {loadfail && (
@@ -287,13 +354,29 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
         />
       )}
 
-      {!loadfail && tab !== 'mine' && !eventsLoaded && (
+      {!loadfail && tab === 'profile' && (
+        <ProfileTab
+          dictLoaded={dictLoaded}
+          inTelegram={inTelegram}
+          state={profileState}
+          profile={profile}
+          pdnDone={pdnDone}
+          msg={profileMsg}
+          onChange={(k, v) => {
+            setProfile((p) => ({ ...p, [k]: v }));
+            setProfileMsg('');
+          }}
+          onSave={() => void saveProfile()}
+        />
+      )}
+
+      {!loadfail && (tab === 'upcoming' || tab === 'past') && !eventsLoaded && (
         <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
           {dictLoaded ? t('events.loading') : ''}
         </p>
       )}
 
-      {!loadfail && tab !== 'mine' && eventsLoaded && (tab === 'upcoming' ? upcoming : past).length === 0 && (
+      {!loadfail && (tab === 'upcoming' || tab === 'past') && eventsLoaded && (tab === 'upcoming' ? upcoming : past).length === 0 && (
         <div className="empty-state" id="events-empty">
           <div className="empty-icon">
             <Icon name="calendar" size={22} />
@@ -302,7 +385,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
         </div>
       )}
 
-      {!loadfail && tab !== 'mine' && eventsLoaded && (tab === 'upcoming' ? upcoming : past).length > 0 && (
+      {!loadfail && (tab === 'upcoming' || tab === 'past') && eventsLoaded && (tab === 'upcoming' ? upcoming : past).length > 0 && (
         <ul id="events-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {(tab === 'upcoming' ? upcoming : past).map((ev, i) => (
             <li key={ev.id || String(i)}>
@@ -328,6 +411,9 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
             busy={sheetBusy}
             error={sheetError}
             done={sheetDone}
+            profileNeeded={profileNeeded}
+            prof={sheetProf}
+            onProf={(k, v) => setSheetProf((p) => ({ ...p, [k]: v }))}
             onPdn={() => setPdn(!pdn)}
             onMkt={() => setMkt(!mkt)}
             onSubmit={() => void submitRegistration()}
@@ -522,6 +608,90 @@ function EventCard({
   );
 }
 
+function ProfileTab({
+  dictLoaded,
+  inTelegram,
+  state,
+  profile,
+  pdnDone,
+  msg,
+  onChange,
+  onSave,
+}: {
+  dictLoaded: boolean;
+  inTelegram: boolean;
+  state: MineState;
+  profile: { first: string; last: string; position: string; company: string; city: string };
+  pdnDone: string;
+  msg: string;
+  onChange: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
+  onSave: () => void;
+}) {
+  if (!inTelegram) {
+    return (
+      <div className="card result bad">
+        <div className="empty-heading">{t('ticket.not_in_telegram')}</div>
+      </div>
+    );
+  }
+  if (state === 'loading' || !dictLoaded) {
+    return (
+      <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
+        {t('events.loading')}
+      </p>
+    );
+  }
+  if (state === 'error') {
+    return (
+      <div className="card result bad">
+        <div className="empty-heading">{t('events.err.server')}</div>
+      </div>
+    );
+  }
+  const field = (
+    id: string,
+    label: string,
+    k: 'first' | 'last' | 'position' | 'company' | 'city',
+    hint?: string,
+  ) => (
+    <div className="field">
+      <label className="label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        className="input"
+        id={id}
+        type="text"
+        autoComplete="off"
+        value={profile[k]}
+        onChange={(e) => onChange(k, e.target.value)}
+      />
+      {hint && <div className="helper">{hint}</div>}
+    </div>
+  );
+  return (
+    <div className="form-section">
+      <p className="app-muted">{t('profile.head_note')}</p>
+      {field('pf-first', t('profile.first'), 'first')}
+      {field('pf-last', t('profile.last'), 'last')}
+      {field('pf-position', t('profile.position'), 'position')}
+      {field('pf-company', t('profile.company'), 'company', t('profile.company_hint'))}
+      {field('pf-city', t('profile.city'), 'city', t('profile.city_hint'))}
+      {pdnDone && <p className="helper">{pdnDone}</p>}
+      {msg && (
+        <p className="helper" role="status">
+          {msg}
+        </p>
+      )}
+      <div className="sheet-actions">
+        <button type="button" className="btn btn-primary btn-lg" id="profile-save" onClick={onSave}>
+          {t('manage.btn.save')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RegistrationSheet({
   ev,
   pdn,
@@ -529,6 +699,9 @@ function RegistrationSheet({
   busy,
   error,
   done,
+  profileNeeded,
+  prof,
+  onProf,
   onPdn,
   onMkt,
   onSubmit,
@@ -540,6 +713,9 @@ function RegistrationSheet({
   busy: boolean;
   error: string;
   done: boolean;
+  profileNeeded: boolean;
+  prof: { first: string; last: string; position: string; company: string; city: string };
+  onProf: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
   onPdn: () => void;
   onMkt: () => void;
   onSubmit: () => void;
@@ -569,6 +745,41 @@ function RegistrationSheet({
     <>
       <div className="card-title">{ev.title}</div>
       <div className="app-muted">{when}{ev.address ? ' · ' + ev.address : ''}</div>
+      {profileNeeded && (
+        <>
+          <div className="field">
+            <label className="label" htmlFor="reg-first">
+              {t('profile.first')}
+            </label>
+            <input id="reg-first" className="input" type="text" autoComplete="off" value={prof.first} onChange={(e) => onProf('first', e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="reg-last">
+              {t('profile.last')}
+            </label>
+            <input id="reg-last" className="input" type="text" autoComplete="off" value={prof.last} onChange={(e) => onProf('last', e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="reg-position">
+              {t('profile.position')}
+            </label>
+            <input id="reg-position" className="input" type="text" autoComplete="off" value={prof.position} onChange={(e) => onProf('position', e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="reg-company">
+              {t('profile.company')}
+            </label>
+            <input id="reg-company" className="input" type="text" autoComplete="off" value={prof.company} onChange={(e) => onProf('company', e.target.value)} />
+            <div className="helper">{t('profile.company_hint')}</div>
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="reg-city">
+              {t('profile.city')}
+            </label>
+            <input id="reg-city" className="input" type="text" autoComplete="off" value={prof.city} onChange={(e) => onProf('city', e.target.value)} />
+          </div>
+        </>
+      )}
       <label className="control-row" htmlFor="reg-pdn">
         <input id="reg-pdn" type="checkbox" className="checkbox" checked={pdn} onChange={onPdn} />
         <span>{t('reg.pdn.label')}</span>

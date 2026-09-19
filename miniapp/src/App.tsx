@@ -13,7 +13,7 @@ type Route =
   | { name: 'ticket'; eventId: string }
   | { name: 'scan'; eventId: string }
   | { name: 'manage'; eventId: string }
-  | { name: 'events'; tab: 'mine' | 'upcoming' | 'past' }
+  | { name: 'events'; tab: 'mine' | 'upcoming' | 'past' | 'profile' }
   | { name: 'feedback'; eventId: string }
   | { name: 'notfound'; hash: string };
 
@@ -45,8 +45,9 @@ function parseHash(hash: string): Route {
   if (pathPart === '/events' || pathPart === '/events/') {
     // W38/W43: каталог; `?tab=past` открывает прошедшие, `?tab=mine` — «Мои билеты»,
     // без параметра — «Мои билеты» первым табом (вердикт W41, прототип).
+    // W50: четвёртый таб `profile` — правка профиля (PAR-8, ADR-0032).
     const q = search.get('tab');
-    const tab = q === 'past' ? 'past' : q === 'upcoming' ? 'upcoming' : 'mine';
+    const tab = q === 'past' ? 'past' : q === 'upcoming' ? 'upcoming' : q === 'profile' ? 'profile' : 'mine';
     return { name: 'events', tab };
   }
   if (pathPart === '/feedback' || pathPart === '/feedback/') {
