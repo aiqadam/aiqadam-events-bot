@@ -319,7 +319,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
   const [staffLoaded, setStaffLoaded] = useState(false);
   const [staffBusy, setStaffBusy] = useState(false);
-  const [staffIdInput, setStaffIdInput] = useState('');
   const [staffFieldError, setStaffFieldError] = useState('');
   const [staffResult, setStaffResult] = useState('');
 
@@ -336,10 +335,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [feedback, setFeedback] = useState<{ average: number; count: number; rows: FeedbackRow[] } | null>(null);
   const [feedbackError, setFeedbackError] = useState('');
 
-  // W44: поиск кандидатов в контролёры — шит с выбором тапом (вердикт W41).
-  // Источник — участники ивента + staff чаптера (Q51); кого нет в списке —
-  // ручной ввод ID ниже остаётся запасным путём.
-  const [searchSheet, setSearchSheet] = useState(false);
+  // W55 (вердикт владельца 2026-09-19, отмена Q51-фолбэка): ввод контролёра —
+  // логин Telegram инлайн в секции, без шита. Источник совпадений — участники
+  // ивента + staff чаптера (Q51); резолв логин→ID — точным совпадением
+  // username среди кандидатов, запись — тем же staff_add по telegram_id (DAT-1).
   const [searchQuery, setSearchQuery] = useState('');
   const [candidates, setCandidates] = useState<StaffCandidate[]>([]);
   const [searchBusy, setSearchBusy] = useState(false);
@@ -818,12 +817,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [eventId, initData]);
 
-  const addStaff = useCallback(async (id?: string) => {
-    if (staffBusy) return;
-    // W44: из шита поиска приходит готовый telegram_id кандидата; запись идёт
-    // тем же staff_add — решение и запись только по telegram_id (DAT-1).
-    const target = (id === undefined ? staffIdInput : id).trim();
-    if (target === '') return;
+  // W55: добавление — только по telegram_id кандидата (DAT-1). Логин
+  // резолвится в addByLogin точным совпадением username; цифры ID больше
+  // не принимаем (вердикт владельца 2026-09-19).
+  const addStaff = useCallback(async (telegramId: string) => {
+    const target = telegramId.trim();
+    if (staffBusy || target === '') return;
     setStaffFieldError('');
     setStaffResult('');
     setStaffBusy(true);
@@ -833,13 +832,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const d = res.data as Record<string, unknown>;
       if (d['ok']) {
         if (Array.isArray(d['staff'])) setStaffItems(d['staff'] as StaffItem[]);
-        if (id === undefined) setStaffIdInput('');
-        else {
-          // Добавление из поиска: шит закрываем, итог — строкой в секции.
-          setSearchSheet(false);
-          setSearchQuery('');
-          setCandidates([]);
-        }
+        setSearchQuery('');
+        setCandidates([]);
         setStaffResult(typeof d['text'] === 'string' ? String(d['text']) : '');
         return;
       }
@@ -851,11 +845,44 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       }
     }
     setStaffResult(errorTextFor(res as never));
-  }, [eventId, initData, staffBusy, staffIdInput, errorTextFor]);
+  }, [eventId, initData, staffBusy, errorTextFor]);
 
-  // W44: поиск кандидатов (manage-api action staff_search). Сервер отдаёт
-  // только совпадения (топ-20); запрос короче 2 символов не отправляем вовсе —
-  // базу без запроса не светим (решение при взятии пакета).
+  const normLogin = (s: string): string => s.trim().replace(/^@+/, '').toLowerCase();
+
+  // W55: кнопка «Добавить» при вводе: точный логин среди кандидатов (уже
+  // загруженных или свежим запросом) → addStaff; иначе — login_not_found.
+  const addByLogin = useCallback(async () => {
+    const login = normLogin(searchQuery);
+    if (staffBusy || searchBusy || login === '') return;
+    const matchIn = (list: StaffCandidate[]): StaffCandidate | undefined =>
+      list.find((c) => c.username.replace(/^@/, '').toLowerCase() === login);
+    const loaded = matchIn(candidates);
+    if (loaded) {
+      void addStaff(loaded.telegram_id);
+      return;
+    }
+    setSearchBusy(true);
+    const res = await postJson(MANAGE_API, { initData, action: 'staff_search', eventId, query: searchQuery.trim() });
+    setSearchBusy(false);
+    let list: StaffCandidate[] = [];
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && Array.isArray(d['candidates'])) {
+        list = d['candidates'] as StaffCandidate[];
+        setCandidates(list);
+      }
+    }
+    const hit = matchIn(list);
+    if (hit) {
+      void addStaff(hit.telegram_id);
+      return;
+    }
+    setStaffFieldError(t('manage.staff.login_not_found'));
+  }, [searchQuery, candidates, eventId, initData, staffBusy, searchBusy, addStaff]);
+
+  // W55: живой инлайн-поиск с дебаунсом — отдельный запрос на каждое
+  // нажатие не шлём. Запрос короче 2 символов не отправляем вовсе —
+  // базу без запроса не светим (решение W44, сохранено).
   const searchStaff = useCallback(async (q: string) => {
     const query = q.trim();
     if (query.length < 2 || staffBusy || searchBusy) {
@@ -875,16 +902,15 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setCandidates([]);
   }, [eventId, initData, staffBusy, searchBusy]);
 
-  // W44: живой поиск с дебаунсом — отдельный запрос на каждое нажатие не шлём.
+  // W55: живой инлайн-поиск с дебаунсом — запрос уходит из секции, без шита.
   useEffect(() => {
-    if (!searchSheet) return;
     if (searchQuery.trim().length < 2) {
       setCandidates([]);
       return;
     }
     const timer = window.setTimeout(() => void searchStaff(searchQuery), 400);
     return () => window.clearTimeout(timer);
-  }, [searchSheet, searchQuery, searchStaff]);
+  }, [searchQuery, searchStaff]);
 
   const revokeStaff = useCallback(
     async (id: string) => {
@@ -1054,7 +1080,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // W13: участники грузятся тем же жизненным циклом (один запрос на ивент).
   useEffect(() => {
     setStaffItems([]);
-    setStaffIdInput('');
+    setSearchQuery('');
+    setCandidates([]);
     setStaffFieldError('');
     setStaffResult('');
     setParts(null);
@@ -1918,44 +1945,35 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       ))}
                     </ul>
                   )}
-                  {/* W54: выбор из списка — primary-кнопка первой (прототип);
-                      ручной ввод ниже — запасной путь для тех, кого нет в users. */}
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-lg btn-block"
-                    id="staff-search-open"
-                    disabled={staffBusy}
-                    style={{ marginTop: 16 }}
-                    onClick={() => {
-                      setSearchQuery('');
-                      setCandidates([]);
-                      setSearchSheet(true);
-                    }}
-                  >
-                    <Icon name="plus" />
-                    {t('manage.staff.search_open')}
-                  </button>
-                  <div className="field" style={{ marginTop: 12 }}>
-                    <label className="label" htmlFor="f-staff-id">
-                      {t('manage.staff.add_label')}
+                  {/* W55: ввод по логину инлайн (вердикт владельца 2026-09-19):
+                      поле + кнопка в секции, совпадения — списком ниже, шита нет. */}
+                  <div className="field" style={{ marginTop: 16 }}>
+                    <label className="label" htmlFor="f-staff-login">
+                      {t('manage.staff.login_label')}
                     </label>
                     <div className="row" style={{ display: 'flex', gap: 12 }}>
                       <input
                         className={`input ${staffFieldError ? 'error' : ''}`}
-                        id="f-staff-id"
-                        name="staff_telegram_id"
-                        inputMode="numeric"
-                        maxLength={16}
+                        id="f-staff-login"
+                        name="staff_username"
+                        type="text"
                         autoComplete="off"
-                        value={staffIdInput}
-                        onChange={(e) => setStaffIdInput(e.target.value)}
+                        maxLength={33}
+                        placeholder={t('manage.staff.login_placeholder')}
+                        value={searchQuery}
+                        disabled={staffBusy}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setStaffFieldError('');
+                        }}
                       />
-                      <button type="button" className="btn btn-secondary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
+                      <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || searchBusy || searchQuery.trim() === ''} onClick={() => void addByLogin()}>
                         {t('manage.staff.btn.add')}
                       </button>
                     </div>
+                    <p className="helper">{t('manage.staff.login_hint')}</p>
                     {staffFieldError && (
-                      <p className="helper error" id="e-staff-id">
+                      <p className="helper error" id="e-staff-login">
                         {staffFieldError}
                       </p>
                     )}
@@ -1965,6 +1983,39 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </p>
                     )}
                   </div>
+                  {searchQuery.trim().length >= 2 && (
+                    candidates.length === 0 && !searchBusy ? (
+                      <p className="empty-desc" id="staff-search-empty">
+                        {t('manage.staff.login_not_found')}
+                      </p>
+                    ) : (
+                      <ul id="staff-search-list" style={{ listStyle: 'none', margin: '12px 0 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {candidates.map((c) => (
+                          <li key={c.telegram_id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span className="avatar-initials" aria-hidden="true">
+                              {candidateInitials(c.name, c.username)}
+                            </span>
+                            <span style={{ flexGrow: 1, minWidth: 0 }}>
+                              <span style={{ display: 'block' }}>{c.name === '' ? `@${c.username.replace(/^@/, '')}` : c.name}</span>
+                              {c.username !== '' && (
+                                <span className="app-muted" style={{ display: 'block' }}>
+                                  @{c.username.replace(/^@/, '')}
+                                </span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              disabled={staffBusy}
+                              onClick={() => void addStaff(c.telegram_id)}
+                            >
+                              {t('manage.staff.btn.add')}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )
+                  )}
                 </section>
               )}
         </section>
@@ -1980,62 +2031,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
             {t('common.btn.cancel')}
           </button>
         </div>
-      </Sheet>
-
-      <Sheet open={searchSheet} title={t('manage.staff.search_title')} onClose={() => setSearchSheet(false)}>
-        <div className="field">
-          <label className="label" htmlFor="f-staff-search">
-            {t('manage.staff.search_label')}
-          </label>
-          <div className="row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ display: 'flex', flexShrink: 0 }} aria-hidden="true">
-              <Icon name="search" size={18} />
-            </span>
-            <input
-              className="input"
-              id="f-staff-search"
-              type="search"
-              autoComplete="off"
-              maxLength={100}
-              placeholder={t('manage.staff.search_placeholder')}
-              value={searchQuery}
-              disabled={staffBusy}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <p className="helper">{t('manage.staff.search_hint')}</p>
-        </div>
-        {searchQuery.trim().length >= 2 && candidates.length === 0 && !searchBusy ? (
-          <p className="empty-desc" id="staff-search-empty">
-            {t('manage.staff.search_nobody')}
-          </p>
-        ) : (
-          <ul id="staff-search-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {candidates.map((c) => (
-              <li key={c.telegram_id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span className="avatar-initials" aria-hidden="true">
-                  {candidateInitials(c.name, c.username)}
-                </span>
-                <span style={{ flexGrow: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block' }}>{c.name === '' ? `@${c.username.replace(/^@/, '')}` : c.name}</span>
-                  {c.username !== '' && (
-                    <span className="app-muted" style={{ display: 'block' }}>
-                      @{c.username.replace(/^@/, '')}
-                    </span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={staffBusy}
-                  onClick={() => void addStaff(c.telegram_id)}
-                >
-                  {t('manage.staff.btn.add')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
       </Sheet>
 
       {toast && (
