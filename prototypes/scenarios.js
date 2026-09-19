@@ -45,9 +45,10 @@ PROTO.buildScenarios = function (opts) {
   // Вердикт владельца 2026-09-18 (W49).
   // W51 (решение владельца 2026-09-19, поправка к вердикту): овнеру вернули
   // вход в свой список — «Управление ивентами» сразу на #/manage.
+  // W52 (решение владельца 2026-09-19): у овнера первой кнопкой — Управление.
   const menuButtonsOwner = [
-    { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
     { label: T('menu.btn.manage'), webApp: '#/manage', resume: 'menu' },
+    { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
     { label: T('menu.btn.new_event'), webApp: '#/manage/new', resume: 'menu' },
   ];
 
