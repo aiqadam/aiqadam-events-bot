@@ -38,7 +38,7 @@
 | step_7 | `tables-find-records registrations` | происхождение ивента: `event_id eq <id>`, `limit 200` (подсчёт занятости — OWN-15), проекция `event_id`+`telegram_id`+`status` |
 | step_8 | `tables-find-records events` | ивент по `id`, `limit 1` |
 | step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`), гейт PAR-8 (W50) |
-| step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required` (первое касание — чатом); все тексты — во входе `texts` |
+| step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); все тексты — во входе `texts` |
 | step_10 | ROUTER по `outcome` | `register` / `registered_profile` / `cancel` / `profile` / `profile_saved` / `Otherwise` (`mine` и отказы без записей) |
 | step_11 | `tables-upsert-records registrations` | создать/реактивировать: `id = <eventId>-<telegramId>`, `status = registered`, `registered_at = now`, ключ `(event_id, telegram_id)` |
 | step_12 | `tables-upsert-records users` | `consent_pdn = true` + время, `consent_marketing = true/false` + время (всегда записывается, PAR-2); профиль НЕ пишет — для него ветка `registered_profile` |

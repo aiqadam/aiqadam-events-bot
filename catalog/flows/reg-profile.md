@@ -15,7 +15,7 @@
 |------|----------------|-----------|
 | trigger | `callableFlow` | `callbackData`, `messageText`, `messageId`, `sessionDraft`, `callbackQueryId`, `firstName`, `lastName`, `chatId`, `telegramId` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack колбэка; текстовый путь (пустой id) — мимо, без останова |
-| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; чужое — `ignore` |
+| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
 | step_2 | `tables-find-records events` | ивент по `id` из draft (после парсинга — ссылка вперёд невозможна) |
 | step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); тексты — вход `texts` (ADR-0014) |
 | step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `Otherwise` |
