@@ -48,6 +48,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action`; `fields` |
 | step_18 (valid) | `tables-find-records staff` | строка `staff` вызывающего по `telegram_id` (`limit: 1`) |
 | step_19 (staff) | `tables-find-records event_staff` | строки ивента (`event_id`, проекция, `limit: 200`) — список и поиск активной строки |
+| step_52 (staff) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+имя+`username`) — join имён для строк списка; при росте упрётся в Q31, как и широкое чтение на `/start` |
 | step_20 (staff) | CODE «staff: decide» | права повторно по полям, валидация `telegram_id`, идемпотентность add/remove, тексты и строки списка; `outcome` = `list` / `add` / `remove` / `error` |
 | step_21 (staff) | ROUTER: `add` / `remove` / `Otherwise` | по `{{step_20['output'].outcome}}` |
 | step_22 (add) | `tables-create-records event_staff` | `event_id`, `telegram_id`, `granted_by`, `granted_at` |
@@ -225,8 +226,9 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   Отправка `continueOnFailure` — ошибка Bot API (403, бот заблокирован) не
   отменяет добавление.
 - **Строки списка собирает сервер** (`manage.staff.item`: `ID <id> — контролёр
-  с <когда>`, Asia/Tashkent): имён нет — их пришлось бы читать из `users`
-  вторым запросом, а контролёра staff добавляет по ID. Список и `text` приходят
+  с <когда>`, Asia/Tashkent) плюс `name`/`username`/`sub` из join с `users`
+  (W54: `username · контролёр с <когда>`; кого нет в `users` — пустые поля,
+  страница показывает `item`). Список и `text` приходят
   и в ответах add/remove — страница не перезапрашивает.
 - **Запись**: `tables-create-records` (`event_id`, `telegram_id`, `granted_by` —
   кто выдал, `granted_at` — UTC) и `tables-update-record` по `record_id` из
@@ -271,7 +273,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 - **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение и upsert),
   `staff` (`PnDy6gw9tlLUqTGk2EOUn`, чтение), `registrations`
   (`SM8tMxfQuQCHRDdAiNJyQ`, чтение), `event_staff` (`t1g8Vae3iEoDk93D6Rle7`,
-  чтение / create / update), `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение)
+  чтение / create / update), `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение:
+  имена участников, кандидатов, отзывов и контролёров)
 - **Флоу**: `fn-hmac-init-data`
 - **Переменные**: `BOT_TOKEN` (ADR-0008, передаётся в `fn-hmac-init-data`),
   `BOT_USERNAME` (`inviteLink` в ответах `load`/`save`, W37), `MINIAPP_URL`

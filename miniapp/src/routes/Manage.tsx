@@ -46,7 +46,7 @@ const EMPTY_FIELDS: Record<string, string> = {
 };
 
 type EventData = Record<string, unknown>;
-type StaffItem = { telegram_id: string; item: string };
+type StaffItem = { telegram_id: string; item: string; name: string; username: string; sub: string };
 type StaffCandidate = { telegram_id: string; name: string; username: string };
 // W13: строка участника от manage-api (action participants): status — ключ
 // ('registered'|'cancelled'), checked_in_at — «DD.MM.YYYY HH:mm» Tashkent или ''.
@@ -1898,7 +1898,19 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     <ul id="staff-list" style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {staffItems.map((s) => (
                         <li key={s.telegram_id} data-telegram-id={s.telegram_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                          <span>{s.item}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                            <span className="avatar-initials" aria-hidden="true">
+                              {candidateInitials(s.name, s.username) || '?'}
+                            </span>
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: 'block', fontWeight: 500, overflowWrap: 'anywhere' }}>{s.name || s.item}</span>
+                              {s.sub !== '' && (
+                                <span className="app-muted" style={{ display: 'block', fontSize: 12 }}>
+                                  {s.sub}
+                                </span>
+                              )}
+                            </span>
+                          </span>
                           <button type="button" className="btn btn-outline btn-sm" disabled={staffBusy} onClick={() => void revokeStaff(s.telegram_id)}>
                             {t('manage.staff.btn.revoke')}
                           </button>
@@ -1906,7 +1918,24 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       ))}
                     </ul>
                   )}
-                  <div className="field">
+                  {/* W54: выбор из списка — primary-кнопка первой (прототип);
+                      ручной ввод ниже — запасной путь для тех, кого нет в users. */}
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-lg btn-block"
+                    id="staff-search-open"
+                    disabled={staffBusy}
+                    style={{ marginTop: 16 }}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setCandidates([]);
+                      setSearchSheet(true);
+                    }}
+                  >
+                    <Icon name="plus" />
+                    {t('manage.staff.search_open')}
+                  </button>
+                  <div className="field" style={{ marginTop: 12 }}>
                     <label className="label" htmlFor="f-staff-id">
                       {t('manage.staff.add_label')}
                     </label>
@@ -1921,7 +1950,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         value={staffIdInput}
                         onChange={(e) => setStaffIdInput(e.target.value)}
                       />
-                      <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
+                      <button type="button" className="btn btn-secondary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
                         {t('manage.staff.btn.add')}
                       </button>
                     </div>
@@ -1936,19 +1965,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    id="staff-search-open"
-                    disabled={staffBusy}
-                    onClick={() => {
-                      setSearchQuery('');
-                      setCandidates([]);
-                      setSearchSheet(true);
-                    }}
-                  >
-                    {t('manage.staff.search_open')}
-                  </button>
                 </section>
               )}
         </section>

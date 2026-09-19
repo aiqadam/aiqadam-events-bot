@@ -295,62 +295,94 @@
                         "displayName": "read event staff",
                         "name": "step_19",
                         "nextAction": {
-                          "displayName": "staff: decide",
-                          "name": "step_20",
+                          "displayName": "read staff names",
+                          "name": "step_52",
                           "nextAction": {
-                            "children": [
-                              {
-                                "displayName": "create staff row",
-                                "name": "step_22",
-                                "nextAction": {
-                                  "displayName": "respond (staff added) and continue",
-                                  "name": "step_23",
+                            "displayName": "staff: decide",
+                            "name": "step_20",
+                            "nextAction": {
+                              "children": [
+                                {
+                                  "displayName": "create staff row",
+                                  "name": "step_22",
                                   "nextAction": {
-                                    "displayName": "read new controller in users",
-                                    "name": "step_24",
+                                    "displayName": "respond (staff added) and continue",
+                                    "name": "step_23",
                                     "nextAction": {
-                                      "displayName": "staff: notify targets",
-                                      "name": "step_25",
+                                      "displayName": "read new controller in users",
+                                      "name": "step_24",
                                       "nextAction": {
-                                        "displayName": "staff notify loop",
-                                        "firstLoopAction": {
-                                          "displayName": "notify new controller",
-                                          "name": "step_27",
-                                          "settings": {
-                                            "actionName": "send_text_message",
-                                            "errorHandlingOptions": {
-                                              "continueOnFailure": {
-                                                "value": true
+                                        "displayName": "staff: notify targets",
+                                        "name": "step_25",
+                                        "nextAction": {
+                                          "displayName": "staff notify loop",
+                                          "firstLoopAction": {
+                                            "displayName": "notify new controller",
+                                            "name": "step_27",
+                                            "settings": {
+                                              "actionName": "send_text_message",
+                                              "errorHandlingOptions": {
+                                                "continueOnFailure": {
+                                                  "value": true
+                                                },
+                                                "retryOnFailure": {
+                                                  "value": false
+                                                }
                                               },
-                                              "retryOnFailure": {
-                                                "value": false
-                                              }
+                                              "input": {
+                                                "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
+                                                "chat_id": "{{step_26['output'].item}}",
+                                                "disable_notification": false,
+                                                "format": "None",
+                                                "message": "{{step_25['output'].text}}",
+                                                "protect_content": false,
+                                                "reply_markup": "{{step_25['output'].reply_markup}}",
+                                                "web_page_preview": false
+                                              },
+                                              "propertySettings": {},
+                                              "qadamName": "@aiqadam/qadam-telegram-bot",
+                                              "qadamVersion": "0.8.0"
                                             },
-                                            "input": {
-                                              "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
-                                              "chat_id": "{{step_26['output'].item}}",
-                                              "disable_notification": false,
-                                              "format": "None",
-                                              "message": "{{step_25['output'].text}}",
-                                              "protect_content": false,
-                                              "reply_markup": "{{step_25['output'].reply_markup}}",
-                                              "web_page_preview": false
-                                            },
-                                            "propertySettings": {},
-                                            "qadamName": "@aiqadam/qadam-telegram-bot",
-                                            "qadamVersion": "0.8.0"
+                                            "type": "PIECE",
+                                            "valid": true
                                           },
-                                          "type": "PIECE",
+                                          "name": "step_26",
+                                          "settings": {
+                                            "items": "{{step_25['output'].targets}}"
+                                          },
+                                          "type": "LOOP_ON_ITEMS",
                                           "valid": true
                                         },
-                                        "name": "step_26",
                                         "settings": {
-                                          "items": "{{step_25['output'].targets}}"
+                                          "errorHandlingOptions": {
+                                            "continueOnFailure": {
+                                              "value": false
+                                            },
+                                            "retryOnFailure": {
+                                              "value": false
+                                            }
+                                          },
+                                          "input": {
+                                            "eventId": "{{step_20['output'].eventId}}",
+                                            "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                                            "staffTelegramId": "{{step_20['output'].newStaffId}}",
+                                            "texts": {
+                                              "manage.staff.notify": "Вы контролёр ивента «{title}». Сканер — по кнопке ниже.",
+                                              "staff.accept.btn.scanner": "Открыть сканер"
+                                            },
+                                            "title": "{{step_20['output'].title}}",
+                                            "userRows": "{{step_24['output']}}"
+                                          },
+                                          "sourceCode": {
+                                            "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n\n  const title = str(inputs.title);\n  const eventId = str(inputs.eventId);\n  const staffTelegramId = str(inputs.staffTelegramId);\n  // Список целей — 0 или 1 элемент. Уведомляем только тех, кого бот уже видел\n  // (строка в users, DAT-1): отправка в неизвестный chat_id — заведомо\n  // провальный вызов. Цикл по пустому списку не делает ни одной отправки,\n  // поэтому ветка «человека нет в users» не требует отдельного ROUTER'а.\n  const targets = (arr(inputs.userRows).length > 0 && staffTelegramId !== '') ? [staffTelegramId] : [];\n\n  // Вердикт W49 (W50): кнопка — «Открыть сканер» на конкретный ивент.\n  // Исключение из «чекина нет в чате»: событие здесь известно.\n  const base = str(inputs.miniappUrl).replace(/\\/+$/, '');\n  const scanUrl = eventId !== '' ? base + '/#/scan?event_id=' + encodeURIComponent(eventId) : '';\n\n  return {\n    targets: targets,\n    text: t('manage.staff.notify', { title: title }),\n    reply_markup: scanUrl !== '' ? { inline_keyboard: [[{ text: t('staff.accept.btn.scanner'), web_app: { url: scanUrl } }]] } : {}\n  };\n};",
+                                            "packageJson": "{}"
+                                          }
                                         },
-                                        "type": "LOOP_ON_ITEMS",
+                                        "type": "CODE",
                                         "valid": true
                                       },
                                       "settings": {
+                                        "actionName": "tables-find-records",
                                         "errorHandlingOptions": {
                                           "continueOnFailure": {
                                             "value": false
@@ -360,26 +392,35 @@
                                           }
                                         },
                                         "input": {
-                                          "eventId": "{{step_20['output'].eventId}}",
-                                          "miniappUrl": "{{variables['MINIAPP_URL']}}",
-                                          "staffTelegramId": "{{step_20['output'].newStaffId}}",
-                                          "texts": {
-                                            "manage.staff.notify": "Вы контролёр ивента «{title}». Сканер — по кнопке ниже.",
-                                            "staff.accept.btn.scanner": "Открыть сканер"
+                                          "columns": [
+                                            "JtylZU291K7TuMn9c9F2t"
+                                          ],
+                                          "filters": {
+                                            "filters": [
+                                              {
+                                                "field": {
+                                                  "id": "JtylZU291K7TuMn9c9F2t",
+                                                  "name": "telegram_id",
+                                                  "type": "TEXT"
+                                                },
+                                                "operator": "eq",
+                                                "value": "{{step_20['output'].newStaffId}}"
+                                              }
+                                            ]
                                           },
-                                          "title": "{{step_20['output'].title}}",
-                                          "userRows": "{{step_24['output']}}"
+                                          "limit": 1,
+                                          "record_ids": [],
+                                          "table_id": "xHhYjhwqKdONkrYJGcBsz"
                                         },
-                                        "sourceCode": {
-                                          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n\n  const title = str(inputs.title);\n  const eventId = str(inputs.eventId);\n  const staffTelegramId = str(inputs.staffTelegramId);\n  // Список целей — 0 или 1 элемент. Уведомляем только тех, кого бот уже видел\n  // (строка в users, DAT-1): отправка в неизвестный chat_id — заведомо\n  // провальный вызов. Цикл по пустому списку не делает ни одной отправки,\n  // поэтому ветка «человека нет в users» не требует отдельного ROUTER'а.\n  const targets = (arr(inputs.userRows).length > 0 && staffTelegramId !== '') ? [staffTelegramId] : [];\n\n  // Вердикт W49 (W50): кнопка — «Открыть сканер» на конкретный ивент.\n  // Исключение из «чекина нет в чате»: событие здесь известно.\n  const base = str(inputs.miniappUrl).replace(/\\/+$/, '');\n  const scanUrl = eventId !== '' ? base + '/#/scan?event_id=' + encodeURIComponent(eventId) : '';\n\n  return {\n    targets: targets,\n    text: t('manage.staff.notify', { title: title }),\n    reply_markup: scanUrl !== '' ? { inline_keyboard: [[{ text: t('staff.accept.btn.scanner'), web_app: { url: scanUrl } }]] } : {}\n  };\n};",
-                                          "packageJson": "{}"
-                                        }
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.4.5"
                                       },
-                                      "type": "CODE",
+                                      "type": "PIECE",
                                       "valid": true
                                     },
                                     "settings": {
-                                      "actionName": "tables-find-records",
+                                      "actionName": "return_response",
                                       "errorHandlingOptions": {
                                         "continueOnFailure": {
                                           "value": false
@@ -389,35 +430,31 @@
                                         }
                                       },
                                       "input": {
-                                        "columns": [
-                                          "JtylZU291K7TuMn9c9F2t"
-                                        ],
-                                        "filters": {
-                                          "filters": [
-                                            {
-                                              "field": {
-                                                "id": "JtylZU291K7TuMn9c9F2t",
-                                                "name": "telegram_id",
-                                                "type": "TEXT"
-                                              },
-                                              "operator": "eq",
-                                              "value": "{{step_20['output'].newStaffId}}"
-                                            }
-                                          ]
+                                        "fields": {
+                                          "body": {
+                                            "error": "{{step_20['output'].error}}",
+                                            "event": "{{step_20['output'].event}}",
+                                            "eventId": "{{step_20['output'].eventId}}",
+                                            "fields": "{{step_20['output'].fields}}",
+                                            "ok": "{{step_20['output'].ok}}",
+                                            "staff": "{{step_20['output'].staff}}",
+                                            "text": "{{step_20['output'].text}}"
+                                          },
+                                          "headers": {},
+                                          "status": "{{step_20['output'].httpStatus}}"
                                         },
-                                        "limit": 1,
-                                        "record_ids": [],
-                                        "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                                        "respond": "respond",
+                                        "responseType": "json"
                                       },
                                       "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-tables",
-                                      "qadamVersion": "0.4.5"
+                                      "qadamName": "@aiqadam/qadam-webhook",
+                                      "qadamVersion": "0.1.35"
                                     },
                                     "type": "PIECE",
                                     "valid": true
                                   },
                                   "settings": {
-                                    "actionName": "return_response",
+                                    "actionName": "tables-create-records",
                                     "errorHandlingOptions": {
                                       "continueOnFailure": {
                                         "value": false
@@ -427,65 +464,93 @@
                                       }
                                     },
                                     "input": {
-                                      "fields": {
-                                        "body": {
-                                          "error": "{{step_20['output'].error}}",
-                                          "event": "{{step_20['output'].event}}",
-                                          "eventId": "{{step_20['output'].eventId}}",
-                                          "fields": "{{step_20['output'].fields}}",
-                                          "ok": "{{step_20['output'].ok}}",
-                                          "staff": "{{step_20['output'].staff}}",
-                                          "text": "{{step_20['output'].text}}"
-                                        },
-                                        "headers": {},
-                                        "status": "{{step_20['output'].httpStatus}}"
-                                      },
-                                      "respond": "respond",
-                                      "responseType": "json"
+                                      "table_id": "t1g8Vae3iEoDk93D6Rle7",
+                                      "values": {
+                                        "values": [
+                                          {
+                                            "0wfqdr7vveoyWxJqjymZP": "{{step_20['output'].grantedBy}}",
+                                            "QaIIhE43IKDzM34FDP8VP": "{{step_20['output'].grantedAt}}",
+                                            "Rs62LH1YLr1QBsnpIrJzH": "{{step_20['output'].newStaffId}}",
+                                            "r5WohfFLBagrxVrPDgB9s": "{{step_20['output'].eventId}}"
+                                          }
+                                        ]
+                                      }
                                     },
                                     "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-webhook",
-                                    "qadamVersion": "0.1.35"
+                                    "qadamName": "@aiqadam/qadam-tables",
+                                    "qadamVersion": "0.4.5"
                                   },
                                   "type": "PIECE",
                                   "valid": true
                                 },
-                                "settings": {
-                                  "actionName": "tables-create-records",
-                                  "errorHandlingOptions": {
-                                    "continueOnFailure": {
-                                      "value": false
-                                    },
-                                    "retryOnFailure": {
-                                      "value": false
-                                    }
-                                  },
-                                  "input": {
-                                    "table_id": "t1g8Vae3iEoDk93D6Rle7",
-                                    "values": {
-                                      "values": [
-                                        {
-                                          "0wfqdr7vveoyWxJqjymZP": "{{step_20['output'].grantedBy}}",
-                                          "QaIIhE43IKDzM34FDP8VP": "{{step_20['output'].grantedAt}}",
-                                          "Rs62LH1YLr1QBsnpIrJzH": "{{step_20['output'].newStaffId}}",
-                                          "r5WohfFLBagrxVrPDgB9s": "{{step_20['output'].eventId}}"
+                                {
+                                  "displayName": "revoke staff row",
+                                  "name": "step_28",
+                                  "nextAction": {
+                                    "displayName": "respond (staff removed)",
+                                    "name": "step_29",
+                                    "settings": {
+                                      "actionName": "return_response",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
                                         }
-                                      ]
-                                    }
+                                      },
+                                      "input": {
+                                        "fields": {
+                                          "body": {
+                                            "error": "{{step_20['output'].error}}",
+                                            "event": "{{step_20['output'].event}}",
+                                            "eventId": "{{step_20['output'].eventId}}",
+                                            "fields": "{{step_20['output'].fields}}",
+                                            "ok": "{{step_20['output'].ok}}",
+                                            "staff": "{{step_20['output'].staff}}",
+                                            "text": "{{step_20['output'].text}}"
+                                          },
+                                          "headers": {},
+                                          "status": "{{step_20['output'].httpStatus}}"
+                                        },
+                                        "respond": "stop",
+                                        "responseType": "json"
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-webhook",
+                                      "qadamVersion": "0.1.35"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
                                   },
-                                  "propertySettings": {},
-                                  "qadamName": "@aiqadam/qadam-tables",
-                                  "qadamVersion": "0.4.5"
+                                  "settings": {
+                                    "actionName": "tables-update-record",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "only_if": {},
+                                      "record_id": "{{step_20['output'].recordId}}",
+                                      "table_id": "t1g8Vae3iEoDk93D6Rle7",
+                                      "values": {
+                                        "zX2FO3bZZJuAZcVyZHiRw": "{{step_20['output'].revokedAt}}"
+                                      }
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-tables",
+                                    "qadamVersion": "0.4.5"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
                                 },
-                                "type": "PIECE",
-                                "valid": true
-                              },
-                              {
-                                "displayName": "revoke staff row",
-                                "name": "step_28",
-                                "nextAction": {
-                                  "displayName": "respond (staff removed)",
-                                  "name": "step_29",
+                                {
+                                  "displayName": "respond (staff list or error)",
+                                  "name": "step_30",
                                   "settings": {
                                     "actionName": "return_response",
                                     "errorHandlingOptions": {
@@ -519,111 +584,87 @@
                                   },
                                   "type": "PIECE",
                                   "valid": true
-                                },
-                                "settings": {
-                                  "actionName": "tables-update-record",
-                                  "errorHandlingOptions": {
-                                    "continueOnFailure": {
-                                      "value": false
-                                    },
-                                    "retryOnFailure": {
-                                      "value": false
-                                    }
-                                  },
-                                  "input": {
-                                    "only_if": {},
-                                    "record_id": "{{step_20['output'].recordId}}",
-                                    "table_id": "t1g8Vae3iEoDk93D6Rle7",
-                                    "values": {
-                                      "zX2FO3bZZJuAZcVyZHiRw": "{{step_20['output'].revokedAt}}"
-                                    }
-                                  },
-                                  "propertySettings": {},
-                                  "qadamName": "@aiqadam/qadam-tables",
-                                  "qadamVersion": "0.4.5"
-                                },
-                                "type": "PIECE",
-                                "valid": true
-                              },
-                              {
-                                "displayName": "respond (staff list or error)",
-                                "name": "step_30",
-                                "settings": {
-                                  "actionName": "return_response",
-                                  "errorHandlingOptions": {
-                                    "continueOnFailure": {
-                                      "value": false
-                                    },
-                                    "retryOnFailure": {
-                                      "value": false
-                                    }
-                                  },
-                                  "input": {
-                                    "fields": {
-                                      "body": {
-                                        "error": "{{step_20['output'].error}}",
-                                        "event": "{{step_20['output'].event}}",
-                                        "eventId": "{{step_20['output'].eventId}}",
-                                        "fields": "{{step_20['output'].fields}}",
-                                        "ok": "{{step_20['output'].ok}}",
-                                        "staff": "{{step_20['output'].staff}}",
-                                        "text": "{{step_20['output'].text}}"
-                                      },
-                                      "headers": {},
-                                      "status": "{{step_20['output'].httpStatus}}"
-                                    },
-                                    "respond": "stop",
-                                    "responseType": "json"
-                                  },
-                                  "propertySettings": {},
-                                  "qadamName": "@aiqadam/qadam-webhook",
-                                  "qadamVersion": "0.1.35"
-                                },
-                                "type": "PIECE",
-                                "valid": true
-                              }
-                            ],
-                            "displayName": "staff outcome",
-                            "name": "step_21",
-                            "settings": {
-                              "branches": [
-                                {
-                                  "branchName": "add",
-                                  "branchType": "CONDITION",
-                                  "conditions": [
-                                    [
-                                      {
-                                        "firstValue": "{{step_20['output'].outcome}}",
-                                        "operator": "TEXT_EXACTLY_MATCHES",
-                                        "secondValue": "add"
-                                      }
-                                    ]
-                                  ]
-                                },
-                                {
-                                  "branchName": "remove",
-                                  "branchType": "CONDITION",
-                                  "conditions": [
-                                    [
-                                      {
-                                        "firstValue": "{{step_20['output'].outcome}}",
-                                        "operator": "TEXT_EXACTLY_MATCHES",
-                                        "secondValue": "remove"
-                                      }
-                                    ]
-                                  ]
-                                },
-                                {
-                                  "branchName": "Otherwise",
-                                  "branchType": "FALLBACK"
                                 }
                               ],
-                              "executionType": "EXECUTE_FIRST_MATCH"
+                              "displayName": "staff outcome",
+                              "name": "step_21",
+                              "settings": {
+                                "branches": [
+                                  {
+                                    "branchName": "add",
+                                    "branchType": "CONDITION",
+                                    "conditions": [
+                                      [
+                                        {
+                                          "firstValue": "{{step_20['output'].outcome}}",
+                                          "operator": "TEXT_EXACTLY_MATCHES",
+                                          "secondValue": "add"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "branchName": "remove",
+                                    "branchType": "CONDITION",
+                                    "conditions": [
+                                      [
+                                        {
+                                          "firstValue": "{{step_20['output'].outcome}}",
+                                          "operator": "TEXT_EXACTLY_MATCHES",
+                                          "secondValue": "remove"
+                                        }
+                                      ]
+                                    ]
+                                  },
+                                  {
+                                    "branchName": "Otherwise",
+                                    "branchType": "FALLBACK"
+                                  }
+                                ],
+                                "executionType": "EXECUTE_FIRST_MATCH"
+                              },
+                              "type": "ROUTER",
+                              "valid": true
                             },
-                            "type": "ROUTER",
+                            "settings": {
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "event": "{{step_6['output']}}",
+                                "hmac": "{{step_1['output'].data}}",
+                                "req": "{{step_5['output']}}",
+                                "staff": "{{step_18['output']}}",
+                                "staffRecords": "{{step_19['output']}}",
+                                "texts": {
+                                  "manage.err.bad_telegram_id": "ID — только цифры, от 8 до 16 знаков.",
+                                  "manage.err.forbidden": "Нет прав на правку этого ивента",
+                                  "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже.",
+                                  "manage.err.validation": "Проверьте отмеченные поля.",
+                                  "manage.staff.added": "Контролёр добавлен.",
+                                  "manage.staff.already": "Этот ID уже контролёр этого ивента.",
+                                  "manage.staff.gone": "Активных прав у этого ID нет.",
+                                  "manage.staff.item": "ID {id} — контролёр с {when}",
+                                  "manage.staff.revoked": "Права контролёра отозваны.",
+                                  "manage.staff.since": "контролёр с {when}"
+                                },
+                                "userRows": "{{step_52['output']}}"
+                              },
+                              "sourceCode": {
+                                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const eventId = str(req.eventId);\n  const staffTelegramId = str(req.staffTelegramId);\n  const nowIso = new Date().toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в step_7).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', staff: [],\n    recordId: '-', newStaffId: '', grantedBy: '', grantedAt: '', revokedAt: ''\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7 -------------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи (Q25):\n  // «не staff», «чужой чаптер» и «нет ивента» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- текущий список: активные строки по полям, а не по позиции выборки ------\n  const rows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.event_id) === eventId);\n  const active = rows.filter((r) => str(r.revoked_at) === '');\n  const isActive = (id) => active.some((r) => str(r.telegram_id) === id);\n\n  // Строку списка собирает сервер и отдаёт готовой: в словаре SPA интерполяции\n  // нет, а дата нужна ташкентская (OWN-3). Имена — join с users по telegram_id\n  // (W54: отмена решения W36 «имён нет намеренно»; как participants/search);\n  // кого нет в users — fallback на item без имени.\n  const DATE_FMT = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    const s = str(iso);\n    if (s === '') return '—';\n    const ms = Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n    return isFinite(ms) ? DATE_FMT.format(new Date(ms)) : '—';\n  };\n  const item = (id, grantedAt) => t('manage.staff.item', { id: id, when: fmt(grantedAt) });\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((u) => {\n    const id = str(u.telegram_id);\n    if (id !== '' && usersById[id] === undefined) {\n      const nm = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n      usersById[id] = { name: nm, username: str(u.username) };\n    }\n  });\n  const shape = (id, grantedAt) => {\n    const w = usersById[id] || { name: '', username: '' };\n    const since = fmt(grantedAt);\n    return {\n      telegram_id: id,\n      item: item(id, grantedAt),\n      name: w.name,\n      username: w.username,\n      sub: w.username !== '' ? w.username + ' · ' + t('manage.staff.since', { when: since }) : ''\n    };\n  };\n  const listOut = (extraIds) => active\n    .map((r) => shape(str(r.telegram_id), r.granted_at))\n    .concat((extraIds || []).map((id) => shape(id, nowIso)));\n\n  if (action === 'staff_list') {\n    return respond('list', 200, { ok: true, title: title, staff: listOut() });\n  }\n\n  // --- валидация telegram_id --------------------------------------------------\n  // Только цифры 8–16: telegram_id — единственный ключ (DAT-1), username не годится.\n  if (!/^[0-9]{8,16}$/.test(staffTelegramId)) {\n    return respond('error', 422, {\n      error: 'validation', text: t('manage.err.validation'),\n      fields: { telegram_id: 'manage.err.bad_telegram_id' },\n      title: title, staff: listOut()\n    });\n  }\n\n  if (action === 'staff_add') {\n    // Идемпотентность добавления (ADR-0003): активная строка уже есть — вторую\n    // не создаём, отвечаем тем же списком. Гонка двух одновременных добавлений\n    // остаётся возможной ценой ADR-0003: уникальности в БД нет.\n    if (isActive(staffTelegramId)) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.already'), title: title, staff: listOut() });\n    }\n    return respond('add', 200, {\n      ok: true,\n      text: t('manage.staff.added'),\n      newStaffId: staffTelegramId,\n      grantedBy: telegramId,\n      grantedAt: nowIso,\n      title: title,\n      staff: listOut([staffTelegramId])\n    });\n  }\n\n  if (action === 'staff_remove') {\n    const row = active.filter((r) => str(r.telegram_id) === staffTelegramId)[0] || null;\n    // Отзывать нечего — не ошибка: повторный отзыв идемпотентен (ADR-0003),\n    // отвечаем текущим списком и текстом «активных прав нет».\n    if (!row) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.gone'), title: title, staff: listOut() });\n    }\n    const recordId = str(row.__recordId);\n    if (recordId === '') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n    return respond('remove', 200, {\n      ok: true,\n      text: t('manage.staff.revoked'),\n      recordId: recordId,\n      revokedAt: nowIso,\n      title: title,\n      staff: listOut().filter((r) => r.telegram_id !== staffTelegramId)\n    });\n  }\n\n  return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n};\n",
+                                "packageJson": "{}"
+                              }
+                            },
+                            "type": "CODE",
                             "valid": true
                           },
                           "settings": {
+                            "actionName": "tables-find-records",
                             "errorHandlingOptions": {
                               "continueOnFailure": {
                                 "value": false
@@ -633,29 +674,22 @@
                               }
                             },
                             "input": {
-                              "event": "{{step_6['output']}}",
-                              "hmac": "{{step_1['output'].data}}",
-                              "req": "{{step_5['output']}}",
-                              "staff": "{{step_18['output']}}",
-                              "staffRecords": "{{step_19['output']}}",
-                              "texts": {
-                                "manage.err.bad_telegram_id": "ID — только цифры, от 8 до 16 знаков.",
-                                "manage.err.forbidden": "Нет прав на правку этого ивента",
-                                "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже.",
-                                "manage.err.validation": "Проверьте отмеченные поля.",
-                                "manage.staff.added": "Контролёр добавлен.",
-                                "manage.staff.already": "Этот ID уже контролёр этого ивента.",
-                                "manage.staff.gone": "Активных прав у этого ID нет.",
-                                "manage.staff.item": "ID {id} — контролёр с {when}",
-                                "manage.staff.revoked": "Права контролёра отозваны."
-                              }
+                              "columns": [
+                                "JtylZU291K7TuMn9c9F2t",
+                                "nWPJjEcVpqMUaMwdEpPX5",
+                                "yd5CbkPctz2GXmBabZeVV",
+                                "QCFLn2jRQPxB4RpMKxAKH"
+                              ],
+                              "filters": {},
+                              "limit": 200,
+                              "record_ids": [],
+                              "table_id": "xHhYjhwqKdONkrYJGcBsz"
                             },
-                            "sourceCode": {
-                              "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const eventId = str(req.eventId);\n  const staffTelegramId = str(req.staffTelegramId);\n  const nowIso = new Date().toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в step_7).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', staff: [],\n    recordId: '-', newStaffId: '', grantedBy: '', grantedAt: '', revokedAt: ''\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7 -------------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи (Q25):\n  // «не staff», «чужой чаптер» и «нет ивента» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- текущий список: активные строки по полям, а не по позиции выборки ------\n  const rows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.event_id) === eventId);\n  const active = rows.filter((r) => str(r.revoked_at) === '');\n  const isActive = (id) => active.some((r) => str(r.telegram_id) === id);\n\n  // Строку списка собирает сервер и отдаёт готовой: в словаре SPA интерполяции\n  // нет, а дата нужна ташкентская (OWN-3). Имён нет намеренно — их пришлось бы\n  // читать из users вторым запросом, а контролёра овнер добавляет по ID.\n  const DATE_FMT = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    const s = str(iso);\n    if (s === '') return '—';\n    const ms = Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n    return isFinite(ms) ? DATE_FMT.format(new Date(ms)) : '—';\n  };\n  const item = (id, grantedAt) => t('manage.staff.item', { id: id, when: fmt(grantedAt) });\n  const listOut = (extra) => active\n    .map((r) => ({ telegram_id: str(r.telegram_id), item: item(str(r.telegram_id), r.granted_at) }))\n    .concat(extra || []);\n\n  if (action === 'staff_list') {\n    return respond('list', 200, { ok: true, title: title, staff: listOut() });\n  }\n\n  // --- валидация telegram_id --------------------------------------------------\n  // Только цифры 8–16: telegram_id — единственный ключ (DAT-1), username не годится.\n  if (!/^[0-9]{8,16}$/.test(staffTelegramId)) {\n    return respond('error', 422, {\n      error: 'validation', text: t('manage.err.validation'),\n      fields: { telegram_id: 'manage.err.bad_telegram_id' },\n      title: title, staff: listOut()\n    });\n  }\n\n  if (action === 'staff_add') {\n    // Идемпотентность добавления (ADR-0003): активная строка уже есть — вторую\n    // не создаём, отвечаем тем же списком. Гонка двух одновременных добавлений\n    // остаётся возможной ценой ADR-0003: уникальности в БД нет.\n    if (isActive(staffTelegramId)) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.already'), title: title, staff: listOut() });\n    }\n    return respond('add', 200, {\n      ok: true,\n      text: t('manage.staff.added'),\n      newStaffId: staffTelegramId,\n      grantedBy: telegramId,\n      grantedAt: nowIso,\n      title: title,\n      staff: listOut([{ telegram_id: staffTelegramId, item: item(staffTelegramId, nowIso) }])\n    });\n  }\n\n  if (action === 'staff_remove') {\n    const row = active.filter((r) => str(r.telegram_id) === staffTelegramId)[0] || null;\n    // Отзывать нечего — не ошибка: повторный отзыв идемпотентен (ADR-0003),\n    // отвечаем текущим списком и текстом «активных прав нет».\n    if (!row) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.gone'), title: title, staff: listOut() });\n    }\n    const recordId = str(row.__recordId);\n    if (recordId === '') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n    return respond('remove', 200, {\n      ok: true,\n      text: t('manage.staff.revoked'),\n      recordId: recordId,\n      revokedAt: nowIso,\n      title: title,\n      staff: listOut().filter((r) => r.telegram_id !== staffTelegramId)\n    });\n  }\n\n  return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n};\n",
-                              "packageJson": "{}"
-                            }
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.4.5"
                           },
-                          "type": "CODE",
+                          "type": "PIECE",
                           "valid": true
                         },
                         "settings": {
