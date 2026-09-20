@@ -720,9 +720,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     // Формат — первое поле шага (решение владельца 2026-09-20): онлайн —
     // только даты, офлайн — адрес + ссылка Яндекс.Карт.
     const loc = E('div', 'app-field');
-    loc.appendChild(E('label', 'label', T('proto.geo_mode')));
+    loc.appendChild(E('label', 'label', T('manage.geo.format')));
     const mode = E('div', 'segmented');
-    [['online', T('proto.geo_online')], ['offline', T('proto.geo_offline')]].forEach(([key, label]) => {
+    [['online', T('manage.geo.online')], ['offline', T('manage.geo.offline')]].forEach(([key, label]) => {
       const on = (key === 'online') === !!f.online;
       const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { f.online = (key === 'online'); renderManageEvent(eventId); } });
       if (on) b.classList.add('active');
@@ -995,7 +995,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- таб «Рассылка» ----------
   function renderBroadcastTab(body) {
     PROTO.setTrace(['OWN-9', 'OWN-10', 'OWN-11', 'OWN-12', 'OWN-13']);
-    body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
+    body.appendChild(card([muted(T('proto.broadcast_chat_hint'))]));
     // Чат открывается про этот же событие: название, сегменты и обратный путь.
     body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true, eventId); } }));
 
@@ -1051,7 +1051,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         r.appendChild(avatar(s.name, 'avatar-md'));
         const b = E('div', 'body');
         b.appendChild(E('div', 'name', s.name));
-        b.appendChild(E('div', 'sub', s.username + ' · ' + T('proto.staff_since', { when: s.since })));
+        b.appendChild(E('div', 'sub', s.username + ' · ' + T('manage.staff.since', { when: s.since })));
         r.appendChild(b);
         r.appendChild(btn(T('manage.staff.btn.revoke'), { kind: 'btn-outline', size: 'btn-sm', onClick: () => {
           ed.controllers = ed.controllers.filter((x) => x.id !== s.id);
