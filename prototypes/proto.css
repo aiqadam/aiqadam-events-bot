@@ -541,7 +541,7 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
 
 /* =========================================================
    Продуктовые экраны v2 (вердикт владельца 2026-09-16):
-   каталог с «Моими билетами», регистрация, визард ивента, гео,
+   каталог с «Моими билетами», регистрация, визард события, гео,
    выбор контролёра, форма отзыва. Только брендовые токены.
    ========================================================= */
 
@@ -592,7 +592,7 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
 .ticket-card .event-body { gap: 4px; }
 .ticket-cancel { margin-top: 18px; }
 
-/* ---------- визард ивента ---------- */
+/* ---------- визард события ---------- */
 .wizard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .step-dots { display: flex; gap: 5px; }
 .step-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }

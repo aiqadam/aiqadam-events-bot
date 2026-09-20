@@ -5,7 +5,7 @@
   (пересланное сообщение без команды), payload
   `{chatId, telegramId, firstName, fwdText, messageId}`
 - **Назначение**: пересылка овнера → черновик рассылки в `sessions` + выбор
-  ивента кнопками (OWN-9, headline-UX W14).
+  события кнопками (OWN-9, headline-UX W14).
 - **Flow ID (MCP)**: `2AUeMeakjrrjUqZ0RuGpL` · **externalId**: `uvBaBR9JmEUQV2qKEngnX`
 
 ## Шаги
@@ -21,7 +21,7 @@
 | step_6 | ROUTER: `empty` / `Otherwise` | |
 | step_7 | `@aiqadam/qadam-telegram-bot : send_text_message` | `owner.events.empty` (ветка `empty`) |
 | step_8 | `tables-upsert-records sessions` | `scenario='broadcast'`, `step='await_event'`, `draft` — тело черновика |
-| step_9 | `send_text_message` | `bcast.ask.event` + клавиатура ивентов |
+| step_9 | `send_text_message` | `bcast.ask.event` + клавиатура событий |
 | step_10 | CODE «non-staff forward ignored» | лог тишины (`Otherwise` от `step_3`) |
 
 ## Зависимости
@@ -35,15 +35,15 @@
 
 ## Заметки
 
-- **Черновик между пересылкой и выбором ивента живёт в `sessions.draft`**
+- **Черновик между пересылкой и выбором события живёт в `sessions.draft`**
   (JSON строкой), а не в строке `broadcasts`: `callback_data` не вмещает
   текст (лимит 64 байта), а строка рассылки создаётся только когда известен
-  ивент. Отмена до выбора ивента (`bcast:cancel` без `bid`) чистит только сессию.
-- **Черновик всегда привязан к ивенту** — сегмента «все с consent» без ивента
+  событие. Отмена до выбора события (`bcast:cancel` без `bid`) чистит только сессию.
+- **Черновик всегда привязан к событию** — сегмента «все с consent» без события
   нет (пустой `event_id` не используется); `all_consent` выбирается на экране
-  сегментов уже в привязке к ивенту.
+  сегментов уже в привязке к событию.
 - **Доступ — граница `manage-api`** (ADR-0024): строка `staff` + (`chapter_id`
-  staff пуст или равен чаптеру ивента). События `draft`/`cancelled`/`finished`
+  staff пуст или равен чаптеру события). События `draft`/`cancelled`/`finished`
   мимо `published`/`finished` не предлагаются; `finished` нужен для `no_show`.
 - **`flowProps` вызова — обёртка `{"payload": {...}}`** (глобальная гоча 7a);
   `exampleData` вызова совпадает с триггером callee.

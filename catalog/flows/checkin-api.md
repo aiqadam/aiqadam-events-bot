@@ -4,14 +4,14 @@
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
   `POST /api/v1/webhooks/rKoDYtiIVdbzlW59b57uH/sync`
 - **Назначение**: основной путь чекина через Mini App-сканер. Проверяет
-  `initData` контролёра (STF-2), права на конкретный ивент, подпись QR,
+  `initData` контролёра (STF-2), права на конкретное событие, подпись QR,
   состояние регистрации; пишет `checked_in_at` атомарно (IDM-2).
 - **Flow ID (MCP)**: `rKoDYtiIVdbzlW59b57uH`
 
 ## Вход
 
 `POST` тела: `{ initData, payload, eventId }` — `payload` это `c<eventId>-<userId>-<sig>`
-из QR участника, `eventId` — какой ивент сканирует контролёр (из Mini App URL).
+из QR участника, `eventId` — какое событие сканирует контролёр (из Mini App URL).
 
 ## Шаги
 
@@ -82,6 +82,6 @@
   Для этого флоу цена ошибки максимальна: незагейченная ветка `valid` — это
   чекин без проверки `initData`.
 - **В таблицах `events`/`registrations` намеренно оставлена фикстура
-  `demo`** (ивент `id: demo`, регистрация `demo-322876545`, staff-запись
+  `demo`** (событие `id: demo`, регистрация `demo-322876545`, staff-запись
   в `event_staff` на того же контролёра) — нужна, чтобы STF-2 можно было
   проверить вживую без пересборки окружения.

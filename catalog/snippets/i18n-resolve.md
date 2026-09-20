@@ -99,7 +99,7 @@ export const code = async (inputs) => {
   const varsByKey = obj(inputs.varsByKey);
 
   // Подстановки для конкретного ключа перекрывают общие: одно и то же имя ({when})
-  // в разных ключах карточки ивента означает разное время.
+  // в разных ключах карточки события означает разное время.
   const substFor = (key, tpl) => {
     const local = obj(varsByKey[key]);
     return String(tpl).replace(/\{([A-Za-z0-9_.]+)\}/g, (m, name) => {

@@ -214,10 +214,10 @@
                           "bcast.btn.seg_noshow": "Не пришедшие",
                           "bcast.btn.seg_registered": "Зарегистрированные",
                           "bcast.segment.all_consent": "Все, кто согласился на анонсы",
-                          "bcast.segment.checked_in": "Пришедшие на ивент",
+                          "bcast.segment.checked_in": "Пришедшие на событие",
                           "bcast.segment.no_show": "Зарегистрировались, но не пришли",
-                          "bcast.segment.registered": "Зарегистрированные на ивент",
-                          "common.err.event_not_found": "Ивент не найден.",
+                          "bcast.segment.registered": "Зарегистрированные на событие",
+                          "common.err.event_not_found": "Событие не найдено.",
                           "common.err.forbidden": "Недостаточно прав для этого действия.",
                           "common.err.session_expired": "Диалог прервался. Начнём заново: /start"
                         }
@@ -541,8 +541,8 @@
                                     "bcast.btn.test": "Отправить тест себе",
                                     "bcast.preview.count": "Получателей: {count}",
                                     "bcast.preview.title": "Предпросмотр:",
-                                    "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания ивента — {when}. Пока часть людей ещё в дороге.",
-                                    "common.err.event_not_found": "Ивент не найден.",
+                                    "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
+                                    "common.err.event_not_found": "Событие не найдено.",
                                     "common.err.forbidden": "Недостаточно прав для этого действия.",
                                     "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
                                   },
@@ -1328,10 +1328,10 @@
                         "texts": {
                           "bcast.finished": "Рассылка завершена: отправлено {sent}, ошибок {failed}.",
                           "bcast.interrupted": "Рассылка была прервана. Продолжаем с места остановки — повторно никому не отправляем.",
-                          "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания ивента — {when}. Пока часть людей ещё в дороге.",
+                          "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
                           "bcast.send.blocked_no_test": "Сначала отправьте тест себе — без этого рассылку не запускаем.",
                           "bcast.send_after_stop": "Рассылка остановлена, повторный запуск невозможен. Для новой рассылки перешлите сообщение боту.",
-                          "common.err.event_not_found": "Ивент не найден.",
+                          "common.err.event_not_found": "Событие не найдено.",
                           "common.err.forbidden": "Недостаточно прав для этого действия.",
                           "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
                         }

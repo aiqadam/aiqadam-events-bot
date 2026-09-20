@@ -40,7 +40,7 @@ Subflow-«функции» именуются `fn-*` и лежат там же.
 | `e` | `e<id>-<utm>` | `registration` (OWN-6) |
 | `c` | `c<eventId>-<userId>-<sig>` | `Otherwise` без обработчика — `checkin-deeplink` не строится (STF-3 снято, [Q41](OPEN-QUESTIONS.md#q41)) |
 | `s` | `s<eventId>-<token>` | `staff-accept` (OWN-14) |
-| — | пусто/мусор | `menu` — приветствие + меню-хаб (ролевые кнопки, [W34](BACKLOG.md#w34-стартовое-меню-на-холостой-start)); мусор — с преамбулой `start.bad_payload`. Список ивентов — за кнопкой, не в ответе |
+| — | пусто/мусор | `menu` — приветствие + меню-хаб (ролевые кнопки, [W34](BACKLOG.md#w34-стартовое-меню-на-холостой-start)); мусор — с преамбулой `start.bad_payload`. Список событий — за кнопкой, не в ответе |
 
 ---
 
@@ -52,7 +52,7 @@ Subflow-«функции» именуются `fn-*` и лежат там же.
    `now < reg_deadline_at`, есть места:
    `count(status=registered) < ceil(capacity × (1 + overbook_pct/100))` (OWN-15).
    Мест нет → вежливый отказ, строка в `registrations` не создаётся.
-2. **A** `call-flow fn-event-card` → карточка ивента.
+2. **A** `call-flow fn-event-card` → карточка события.
 3. **A** `telegram sendVenue` (OWN-2) + `sendMessage` с ссылкой на Я.Карты.
 4. **Шаг согласия на обработку данных** — кнопка «Согласен» (PAR-1).
    Отказ → регистрация **не создаётся**, диалог закрывается вежливо.
@@ -86,9 +86,9 @@ PAR-3/4/5 живут экраном каталога, чат-путь `myreg` в
   `now < starts_at`; `status = cancelled`, `cancelled_at = now`.
   После старта — отказ, запись не трогается.
 
-Список ивентов (PAR-3) живёт экраном каталога `#/events`
+Список событий (PAR-3) живёт экраном каталога `#/events`
 ([ADR-0023](adr/0023-fourth-miniapp-page-event-catalog.md), W38): его читает
-`events-api`, тап по ивенту ведёт в `reg-start` по deep link; чат-флоу
+`events-api`, тап по событию ведёт в `reg-start` по deep link; чат-флоу
 `events-list` выведен из эксплуатации. Таб «Мои билеты» и регистрация
 прямо из каталога — W43.
 
@@ -112,7 +112,7 @@ PAR-3/4/5 живут экраном каталога, чат-путь `myreg` в
 
 | Условие | Ответ Mini App |
 | --- | --- |
-| `payload.eventId ≠ eventId` | `wrong_event` → «другой ивент» |
+| `payload.eventId ≠ eventId` | `wrong_event` → «другое событие» |
 | подпись не сошлась | `invalid` |
 | нет строки в `registrations` или `status = cancelled` | `not_registered` → «нет регистрации» |
 | `checked_in_at` уже стоит | `already` + время в Asia/Tashkent → «уже отмечен в 18:42» |
@@ -155,11 +155,11 @@ PAR-3/4/5 живут экраном каталога, чат-путь `myreg` в
 
 ---
 
-## `event-wizard` — создание и правка ивента (owner)
+## `event-wizard` — создание и правка события (owner)
 
 > **Заменено** формой `manage` в Mini App ([ADR-0017](adr/0017-screen-not-message.md) п. 3,
 > пакет W31): флоу `event-wizard-*` удалены, страницу открывает кнопка
-> «Создать ивент» в карточке меню (`web_app` на `#/manage`); команд у бота нет
+> «Новое событие» в карточке меню (`web_app` на `#/manage`); команд у бота нет
 > ([ADR-0025](adr/0025-start-only-commands-ban.md)), вход в правку — W37.
 > Описание ниже — исходный замысел чатового визарда.
 

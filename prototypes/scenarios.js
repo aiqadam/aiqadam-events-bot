@@ -10,12 +10,12 @@ PROTO.buildScenarios = function (opts) {
   const D = PROTO.data;
   const P = PROTO.protoDict;
   const o = opts || {};
-  // Сценарий овнера открывается на конкретный ивент (кнопка «Перейти в чат»
-  // из рассылки передаёт event); без параметра — главный ивент.
+  // Сценарий овнера открывается на конкретное событие (кнопка «Перейти в чат»
+  // из рассылки передаёт event); без параметра — главное событие.
   const ev = (o.eventId && D.ownerEvents.find((e) => String(e.id) === String(o.eventId))) || D.main;
   const ed = D.eventData[String(ev.id)] || D.eventData[D.main.id];
 
-  // Карточка ивента — общий каркас гостевого пути. Строки — формат VOICE
+  // Карточка события — общий каркас гостевого пути. Строки — формат VOICE
   // «Метка: значение», как их отдаёт i18n.
   const eventCard = (extraBody) => ({
     title: T('event.card.header', { title: ev.title }),
@@ -33,18 +33,18 @@ PROTO.buildScenarios = function (opts) {
   // в чате: чат-карточка myreg из прототипа убрана вердиктом владельца.
   // «Мои билеты» — одно имя экрана и в табе, и в меню (вердикт владельца);
   // product-ключ menu.btn.my_registrations заменяется пакетом W43.
-  // Гость: одна кнопка «Ивенты» — каталог и «Мои билеты» это один экран
+  // Гость: одна кнопка «События» — каталог и «Мои билеты» это один экран
   // (#/events открывается на первом табе «Мои билеты»), две кнопки не нужны.
   // Вердикт владельца 2026-09-18 (W49).
   const menuButtonsGuest = [
     { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu-guest' },
   ];
-  // Овнер: «Ивенты» (каталог и «Мои билеты» — один экран), создание —
+  // Овнер: «События» (каталог и «Мои билеты» — один экран), создание —
   // сразу форма #/manage/new (в Mini App кнопки создания нет).
-  // Кнопки чекина в чате нет: сканер — рядом с ивентом в Mini App (STF-2).
+  // Кнопки чекина в чате нет: сканер — рядом с событием в Mini App (STF-2).
   // Вердикт владельца 2026-09-18 (W49).
   // W51 (решение владельца 2026-09-19, поправка к вердикту): овнеру вернули
-  // вход в свой список — «Управление ивентами» сразу на #/manage.
+  // вход в свой список — «Панель администратора» сразу на #/manage.
   // W52 (решение владельца 2026-09-19): у овнера первой кнопкой — Управление.
   const menuButtonsOwner = [
     { label: T('menu.btn.manage'), webApp: '#/manage', resume: 'menu' },
@@ -130,7 +130,7 @@ PROTO.buildScenarios = function (opts) {
 
       { id: 'reminders', kind: 'bot', text: T('remind.24h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
       { id: 'reminder-2h', kind: 'bot', text: T('remind.2h', { title: ev.title, when: '18:30', address: ev.address }), trace: ['OWN-16', 'IDM-3'] },
-      // Послесловие — только благодарность; предложение следующего ивента убрано
+      // Послесловие — только благодарность; предложение следующего события убрано
       // вердиктом владельца. Отзыв живёт экраном #/feedback (принят ADR-0028).
       { id: 'afterword', kind: 'bot', text: T('afterword.thanks'), trace: ['ADR-0017', 'ADR-0028'],
         buttons: [{ label: T('afterword.feedback_btn'), webApp: '#/feedback?event_id=' + ev.id, resume: 'afterword', primary: true }] },
@@ -177,7 +177,7 @@ PROTO.buildScenarios = function (opts) {
   const owner = {
     id: 'owner',
     title: 'Организатор',
-    hint: 'Первое касание — тот же онбординг, дальше меню → создание ивента в Mini App → ссылка-приглашение → правка → участники и экспорт → рассылка пересылкой → контролёры.',
+    hint: 'Первое касание — тот же онбординг, дальше меню → создание события в Mini App → ссылка-приглашение → правка → участники и экспорт → рассылка пересылкой → контролёры.',
     steps: [
       { id: 'start', kind: 'user', text: '/start', trace: ['ADR-0025'] },
       { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
@@ -192,7 +192,7 @@ PROTO.buildScenarios = function (opts) {
       { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_owner') }, trace: ['ADR-0025'],
         buttons: menuButtonsOwner },
 
-      // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране ивента.
+      // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране события.
       { id: 'published', kind: 'bot', text: T('manage.chat.published', { title: ev.title }), trace: ['OWN-1', 'OWN-4', 'OWN-6'],
         buttons: [{ label: T('owner.event.btn.edit'), webApp: '#/manage/' + ev.id, resume: 'published' }] },
 
@@ -258,7 +258,7 @@ PROTO.buildScenarios = function (opts) {
   const controller = {
     id: 'controller',
     title: 'Контролёр',
-    hint: 'Первое касание — тот же онбординг, дальше инвайт-ссылка → права на ивент → сканер Mini App: четыре исхода, луп без закрытия.',
+    hint: 'Первое касание — тот же онбординг, дальше инвайт-ссылка → права на событие → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
       { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
@@ -266,7 +266,7 @@ PROTO.buildScenarios = function (opts) {
 
       ...obCore('accept-ok', 'menu'),
       // Кнопка сканера — сразу в сообщении: контролёр здесь конкретный,
-      // ивент известен (вердикт владельца 2026-09-18). Общие меню чата
+      // событие известен (вердикт владельца 2026-09-18). Общие меню чата
       // кнопок чекина не несут.
       { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'],
         buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'accept-ok', primary: true }] },
@@ -289,9 +289,9 @@ PROTO.stateIndex = {
     ['st-already', 'Повторная регистрация'],
     ['st-no-seats', 'Мест нет (OWN-15)'],
     ['st-deadline', 'Дедлайн прошёл'],
-    ['st-not-published', 'Ивент не опубликован'],
-    ['st-cancelled', 'Ивент отменён'],
-    ['st-finished', 'Ивент завершён'],
+    ['st-not-published', 'Событие не опубликован'],
+    ['st-cancelled', 'Событие отменён'],
+    ['st-finished', 'Событие завершён'],
     ['st-bad-payload', 'Ссылка не разобрана'],
     ['suspect', 'Подозрительное имя — без «Это я»'],
     ['declined', 'Отказ от согласия'],

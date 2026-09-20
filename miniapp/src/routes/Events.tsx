@@ -57,7 +57,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   // Шит регистрации: поля профиля (видны, пока профиль неполон).
   const [sheetProf, setSheetProf] = useState({ first: '', last: '', position: '', company: '', city: '' });
   const [profileNeeded, setProfileNeeded] = useState(false);
-  // W50 (вердикт W49): сканер — рядом с ивентом, видно только контролёру.
+  // W50 (вердикт W49): сканер — рядом с событием, видно только контролёру.
   // Чьи кнопки — решает staff-events-api, страница только рисует; тихо нет —
   // значит нет (ошибка здесь — не отказ экрана).
   const [staffIds, setStaffIds] = useState<Record<string, boolean>>({});
@@ -221,7 +221,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     return set;
   }, [mine]);
 
-  // Прошлый ивент с чекином — вход на отзыв (прототип ticketRow/eventCardEl).
+  // Прошлое событие с чекином — вход на отзыв (прототип ticketRow/eventCardEl).
   const attendedIds = useMemo(() => {
     const set: Record<string, boolean> = {};
     mine.forEach((r) => {
@@ -508,8 +508,8 @@ function MineTab({
 function MineCard({ row, ev, onOpenTicket }: { row: MineRow; ev: CatalogEvent; onOpenTicket: (eventId: string) => () => void }) {
   const p = utcToPlate(ev.startsAt);
   const when = utcToWhen(ev.startsAt);
-  // W51: билет живёт до конца ивента, а не до старта — иначе в дверях зала
-  // (ивент уже начался) QR открыть нельзя. Прошлое с чекином ведёт на отзыв.
+  // W51: билет живёт до конца события, а не до старта — иначе в дверях зала
+  // (событие уже начался) QR открыть нельзя. Прошлое с чекином ведёт на отзыв.
   const endMs = utcMs(ev.endsAt || ev.startsAt);
   const ended = isFinite(endMs) ? endMs <= Date.now() : false;
   const attended = row.checkedInAt !== '';
@@ -596,7 +596,7 @@ function EventCard({
             : '';
   // Вкладка «Прошедшие» показывает завершённые: статус `finished` в таблице
   // ставит ещё не собранный lifecycle (W12), а событие уже прошло — выводим
-  // его из времени, чтобы не показывать «опубликован» на прошедшем ивенте.
+  // его из времени, чтобы не показывать «опубликован» на прошедшем событии.
   const statusKey = past ? 'status.finished' : 'status.published';
   return (
     <div className={`event-card${past ? ' past' : ''}`}>
@@ -647,7 +647,7 @@ function EventCard({
             </a>
           </div>
         )}
-        {/* W50 (вердикт W49): сканер — рядом с ивентом, видно только
+        {/* W50 (вердикт W49): сканер — рядом с событием, видно только
             контролёру (canScan — из staff-events-api, решает сервер). */}
         {canScan && !past && (
           <div className="app-actions" style={{ marginTop: 8 }}>

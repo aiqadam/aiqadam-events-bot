@@ -38,7 +38,7 @@
 | `YANDEX_GEOCODER_API_KEY` | [manage-api](flows/manage-api.md) | `http` Геокодера, `queryParams.apikey` (ветка `geo_link`, Q55) |
 | `BOT_USERNAME` | [manage-api](flows/manage-api.md) | `inviteLink` в ответах `load`/`save` — ссылка на форме, не в чате (W37) |
 | `BOT_USERNAME` | [events-api](flows/events-api.md) | вход `botUsername` у CODE — `registerLink` каждой карточки каталога (W38) |
-| `BOT_USERNAME` | [reg-afterword](flows/reg-afterword.md) | deep link на следующий ивент в послесловии (`?start=e<id>-afterword`) |
+| `BOT_USERNAME` | [reg-afterword](flows/reg-afterword.md) | deep link на следующее событие в послесловии (`?start=e<id>-afterword`) |
 
 `fn-hmac-init-data`/`fn-sign-qr`/`fn-verify-qr` сами переменных не читают —
 секрет читает и передаёт вызывающий флоу (`{{variables['NAME']}}`), функция

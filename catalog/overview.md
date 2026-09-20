@@ -29,7 +29,7 @@ W26 закрыт («готов», независимое ревью, три кр
 | Регистрация участника | [reg-start](flows/reg-start.md) (вход + гейт профиля: заполнен — один тап, нет — онбординг), [reg-profile](flows/reg-profile.md) (онбординг C, PAR-8), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) (старые сессии `await_pdn`/`await_marketing` — новых касаний туда нет) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) (только заполненный профиль) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
-| Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+ивент; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
+| Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+событие; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
 | Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт) |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
@@ -45,7 +45,7 @@ W26 закрыт («готов», независимое ревью, три кр
 [tables/README.md](tables/README.md).
 `staff` — глобальные права организаторов по чаптеру
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
-`feedback` — отзывы участников об ивенте, оценка 1–5 + комментарий
+`feedback` — отзывы участников об событии, оценка 1–5 + комментарий
 ([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
 `strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
 не построен (см. Flows выше); источник правды для строк —
@@ -74,18 +74,18 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Роут | Роль | API |
 |---|---|---|
-| `#/ticket?event_id=` | гость показывает QR на входе; над кодом — название/дата/адрес ивента, текст подтверждения отмены — с названием | [my-qr-api](flows/my-qr-api.md) |
+| `#/ticket?event_id=` | гость показывает QR на входе; над кодом — название/дата/адрес события, текст подтверждения отмены — с названием | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их табами `Ивент / Участники / Рассылка / Контролёры` (OWN-1…OWN-5, OWN-15; таб рассылки — хинт + выход в чат + сегменты, сам сценарий — пересылка боту в чате, W14; табы — W53); ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), видит
+| `#/manage` и `#/manage/:id` | staff чаптера видит список своих событий и правит их табами `Событие / Участники / Рассылка / Контролёры` (OWN-1…OWN-5, OWN-15; таб рассылки — хинт + выход в чат + сегменты, сам сценарий — пересылка боту в чате, W14; табы — W53); ведёт список контролёров события (W36: выдача/отзыв по `telegram_id`), видит
 участников со счётчиками и выгружает CSV/JSON (W13), получает ссылку
 регистрации (W37), видит отзывы участников (W45) | [manage-api](flows/manage-api.md) |
 | `#/manage/new` | создание — сразу форма визарда из чата (кнопки создания в списке нет, вердикт W49/W50) | [manage-api](flows/manage-api.md) |
-| `#/events?tab=mine\|upcoming\|past\|profile` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; билет живёт до конца ивента (QR доступен и после старта); карточка с закрытым дедлайном объясняет это текстом, а не молчит; прошлый ивент с чекином ведёт на отзыв; регистрация — шитом PAR-1/PAR-2 на месте (+ поля профиля, если пуст, PAR-8), подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)); вход из бота (`#/events` без таба) переключает таб на «Мои билеты», даже если каталог уже открыт; таб «Профиль» (четвёртый) — правка имени/должности/компании/города, согласие залочено; кнопка сканера — на карточке, видно только контролёру (гейт — [staff-events-api](flows/staff-events-api.md), W50) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
-| `#/feedback?event_id=` | гость, который был на ивенте, оставляет оценку 1–5 и необязательный комментарий; вход из послесловия ([reg-afterword](flows/reg-afterword.md)) и из «Прошедших» в `#/events`; доступ — по факту участия, решает сервер (W45, ADR-0028, [Q53](../docs/OPEN-QUESTIONS.md#q53)) | [feedback-api](flows/feedback-api.md) |
+| `#/events?tab=mine\|upcoming\|past\|profile` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; билет живёт до конца события (QR доступен и после старта); карточка с закрытым дедлайном объясняет это текстом, а не молчит; прошлое событие с чекином ведёт на отзыв; регистрация — шитом PAR-1/PAR-2 на месте (+ поля профиля, если пуст, PAR-8), подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)); вход из бота (`#/events` без таба) переключает таб на «Мои билеты», даже если каталог уже открыт; таб «Профиль» (четвёртый) — правка имени/должности/компании/города, согласие залочено; кнопка сканера — на карточке, видно только контролёру (гейт — [staff-events-api](flows/staff-events-api.md), W50) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
+| `#/feedback?event_id=` | гость, который был на событии, оставляет оценку 1–5 и необязательный комментарий; вход из послесловия ([reg-afterword](flows/reg-afterword.md)) и из «Прошедших» в `#/events`; доступ — по факту участия, решает сервер (W45, ADR-0028, [Q53](../docs/OPEN-QUESTIONS.md#q53)) | [feedback-api](flows/feedback-api.md) |
 
-Роут `manage` открывается кнопками карточки [menu](flows/menu.md): «Создать ивент»
+Роут `manage` открывается кнопками карточки [menu](flows/menu.md): «Новое событие»
 (`web_app` сразу на `#/manage/new`; W50: кнопки создания в списке нет) и
-«Управление ивентами» (`web_app` на `#/manage` — список с входом в правку, W51).
+«Панель администратора» (`web_app` на `#/manage` — список с входом в правку, W51).
 Список `#/manage` — экран без кнопки создания (вердикт W49). Права на создание
 **и** правку решает `manage-api` по `initData`,
 таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
@@ -152,7 +152,7 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   редактированием на месте; обновление — отдельный коммит с переснятием.
 - **Веб-шрифтов нет ни на одном из роутов** (включая `manage`).
   Три брендовых семейства — 444 КиБ, и `ticket`/`scan` открываются на площадке
-  ивента, где связь плохая ([Q40](../docs/OPEN-QUESTIONS.md#q40),
+  события, где связь плохая ([Q40](../docs/OPEN-QUESTIONS.md#q40),
   [ADR-0020](../docs/adr/0020-no-web-fonts-on-venue-pages.md)). Для `manage`
   решение принято отдельно и тем же замером (ADR-0020 п. 3): 444 КиБ шрифтов
   против ~35 КиБ страницы с CSS, и вторая типографика внутри одной Mini App —

@@ -9,7 +9,7 @@ import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
 const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
 
-// Черновик нового ивента переживает уход со страницы (W42): localStorage,
+// Черновик нового события переживает уход со страницы (W42): localStorage,
 // ключ один — второй формы создания на устройстве быть не может.
 const DRAFT_KEY = 'manage.new.draft';
 
@@ -120,7 +120,7 @@ function plateFromLocal(s: string): { month: string; day: string; weekday: strin
   return { month: MONTHS_NOM[p.mo], day: String(p.d), weekday: WEEKDAYS[wd] };
 }
 
-// W53: конец ивента из локальной («ташкентской», UTC+5 без DST) строки формы.
+// W53: конец события из локальной («ташкентской», UTC+5 без DST) строки формы.
 function tashMs(local: string): number {
   const p = localParts(local);
   if (!p) return NaN;
@@ -281,7 +281,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [busy, setBusy] = useState(false);
 
   const [dictLoaded, setDictLoaded] = useState(false);
-  const [titleText, setTitleText] = useState('Новый ивент');
+  const [titleText, setTitleText] = useState('Новое событие');
   const [statusText, setStatusText] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showLoadfail, setShowLoadfail] = useState(false);
@@ -315,21 +315,21 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [online, setOnline] = useState(false);
   const [mapLink, setMapLink] = useState('');
 
-  // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
+  // W36: секция «Контролёры» — только у существующего события (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
   const [staffLoaded, setStaffLoaded] = useState(false);
   const [staffBusy, setStaffBusy] = useState(false);
   const [staffFieldError, setStaffFieldError] = useState('');
   const [staffResult, setStaffResult] = useState('');
 
-  // W13: секция «Участники» (OWN-7, OWN-8) — только у существующего ивента.
+  // W13: секция «Участники» (OWN-7, OWN-8) — только у существующего события.
   // Срезы (все/пришли/не пришли/отмены) режет страница из одного ответа, как
   // эталон; файлы csv/json собирает сервер — страница их только скачивает.
   const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
   const [partsError, setPartsError] = useState('');
   const [partsFilter, setPartsFilter] = useState<PartsFilter>('all');
 
-  // W45 (Q53): секция «Отзывы» — только у существующего ивента, читает
+  // W45 (Q53): секция «Отзывы» — только у существующего события, читает
   // feedback-api через manage-api (action feedback_list), та же граница прав,
   // что у участников.
   const [feedback, setFeedback] = useState<{ average: number; count: number; rows: FeedbackRow[] } | null>(null);
@@ -337,21 +337,21 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   // W55 (вердикт владельца 2026-09-19, отмена Q51-фолбэка): ввод контролёра —
   // логин Telegram инлайн в секции, без шита. Источник совпадений — участники
-  // ивента + staff чаптера (Q51); резолв логин→ID — точным совпадением
+  // события + staff чаптера (Q51); резолв логин→ID — точным совпадением
   // username среди кандидатов, запись — тем же staff_add по telegram_id (DAT-1).
   const [searchQuery, setSearchQuery] = useState('');
   const [candidates, setCandidates] = useState<StaffCandidate[]>([]);
   const [searchBusy, setSearchBusy] = useState(false);
 
-  // W37: список ивентов чаптера (#/manage без :id) и ссылка регистрации,
+  // W37: список событий чаптера (#/manage без :id) и ссылка регистрации,
   // которая живёт на экране (сервер отдаёт её в `load` и `save`).
   const [listItems, setListItems] = useState<ListItem[]>([]);
   const [listLoaded, setListLoaded] = useState(false);
-  // W50: ивенты, где вызывающий — действующий контролёр (гейт кнопок сканера).
+  // W50: события, где вызывающий — действующий контролёр (гейт кнопок сканера).
   const [staffIds, setStaffIds] = useState<Record<string, boolean>>({});
   const [retryTarget, setRetryTarget] = useState<'list' | 'form'>('form');
 
-  // W53: табы правки (прототип tabs()) — только при открытом ивенте;
+  // W53: табы правки (прототип tabs()) — только при открытом событии;
   // создание идёт визардом без табов. Порядок — как в эталоне.
   type ManageTab = 'event' | 'participants' | 'broadcast' | 'staff';
   const [manageTab, setManageTab] = useState<ManageTab>('event');
@@ -492,9 +492,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setStatusText('');
       setStep(0);
       setErrs([]);
-      // Серверные ошибки полей не переезжают на другой ивент (ревью W42,
-      // круг 4): карта ключей не привязана к шагу, «starts_past» с ивента A
-      // горел бы под валидной датой ивента B, пока поле не тронут.
+      // Серверные ошибки полей не переезжают на другое событие (ревью W42,
+      // круг 4): карта ключей не привязана к шагу, «starts_past» с события A
+      // горел бы под валидной датой события B, пока поле не тронут.
       setFieldErrors({});
       setDone(false);
       setDraftRestored(false);
@@ -503,7 +503,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [eventId, initData, errorTextFor, fillForm, showLoadFail],
   );
 
-  // W37: список ивентов своего чаптера — вход в правку без команд (ADR-0025).
+  // W37: список событий своего чаптера — вход в правку без команд (ADR-0025).
   const loadList = useCallback(async () => {
     setShowLoadfail(false);
     setShowForm(false);
@@ -548,7 +548,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   const leaveForm = useCallback(() => {
     resetFormState();
-    // Если форма открыта из списка, hash ведёт на ивент — возвращаем его
+    // Если форма открыта из списка, hash ведёт на событие — возвращаем его
     // на #/manage (App пересоберёт роут); после создания hash не менялся.
     if (window.location.hash && window.location.hash !== '#/manage') {
       window.location.hash = '#/manage';
@@ -569,12 +569,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   // «К списку» не теряет несохранённые правки молча: спрашиваем (дизайн-ревью).
   // У создания правки не теряются — черновик лежит в localStorage, поэтому
-  // подтверждение выхода нужно только у существующего ивента (эталон не
+  // подтверждение выхода нужно только у существующего события (эталон не
   // спрашивает вовсе; это исправление дефекта, см. журнал W42).
   const backToList = useCallback(() => {
     if (!done && eventId && isDirty()) {
       setConfirmExit(true);
-      // W53: диалог подтверждения живёт в табе «Ивент» — уводим туда же,
+      // W53: диалог подтверждения живёт в табе «Событие» — уводим туда же,
       // иначе с других табов выход виснет без отзыва (ревью W53).
       setManageTab('event');
       return;
@@ -587,7 +587,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const startNew = useCallback(() => {
     // Ключ идемпотентности — один на открытие формы (ADR-0003): повторное
     // «Сохранить» апсертит ту же запись. Новое открытие формы — новый ключ,
-    // иначе второе создание перезаписало бы первый ивент (ревью W42, блокер).
+    // иначе второе создание перезаписало бы первое событие (ревью W42, блокер).
     newIdRef.current = genNewId();
     let next = { ...EMPTY_FIELDS };
     let nextStep = 0;
@@ -660,8 +660,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         loadedRef.current = collecting;
         if (d['eventId']) setEventId(String(d['eventId']));
         applyStatus(status);
-        // После публикации экран успеха живёт как «Новый ивент» (прототип);
-        // после черновика/правки форма — уже правка существующего ивента.
+        // После публикации экран успеха живёт как «Новое событие» (прототип);
+        // после черновика/правки форма — уже правка существующего события.
         setTitleText(t(status === 'published' && origStatus !== 'published' ? 'manage.title.new' : 'manage.title.edit'));
         const inv = typeof d['inviteLink'] === 'string' ? String(d['inviteLink']) : '';
         setInviteLink(inv ? { eventId: String(d['eventId'] || eventId), url: inv } : null);
@@ -808,7 +808,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [showToast],
   );
 
-  // W36: список контролёров ивента. Ответ staff_* всегда несёт `staff`
+  // W36: список контролёров события. Ответ staff_* всегда несёт `staff`
   // (готовые строки для показа) — им и обновляем состояние, без перезапроса.
   const loadStaff = useCallback(async () => {
     const res = await postJson(MANAGE_API, { initData, action: 'staff_list', eventId });
@@ -933,7 +933,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [eventId, initData, staffBusy, errorTextFor],
   );
 
-  // W13: участники ивента. Ответ всегда несёт counters+rows+csv+json —
+  // W13: участники события. Ответ всегда несёт counters+rows+csv+json —
   // ими и обновляем состояние, без перезапроса (как staff_list у W36).
   const loadParts = useCallback(async () => {
     setPartsError('');
@@ -953,7 +953,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setPartsError(errorTextFor(res as never));
   }, [eventId, initData, errorTextFor]);
 
-  // W45 (Q53): отзывы ивента — один запрос, без срезов (список обычно
+  // W45 (Q53): отзывы события — один запрос, без срезов (список обычно
   // короткий); average уже посчитан сервером.
   const loadFeedback = useCallback(async () => {
     setFeedbackError('');
@@ -1046,7 +1046,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setDictLoaded(true);
       const isEdit = Boolean(propEventId);
       const key = isEdit ? 'manage.title.edit' : 'manage.list.title';
-      const tt = d[key] || (isEdit ? 'Правка ивента' : 'Ивенты');
+      const tt = d[key] || (isEdit ? 'Правка события' : 'События');
       setTitleText(tt);
       document.title = t(key);
 
@@ -1056,14 +1056,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       }
       if (propEventId === 'new') {
         // Вердикт W49 (W50): создание — из чата сразу на форму, кнопки
-        // создания в списке нет. 'new' — не id ивента, а новая запись.
+        // создания в списке нет. 'new' — не id события, а новая запись.
         setEventId('');
         startNew();
       } else if (propEventId) {
         setEventId(propEventId);
         void load(propEventId);
       } else {
-        // W37: без :id — список ивентов чаптера, форма создания — по кнопке.
+        // W37: без :id — список событий чаптера, форма создания — по кнопке.
         setEventId('');
         setShowForm(false);
         setListLoaded(false);
@@ -1074,10 +1074,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propEventId]);
 
-  // W36: список контролёров — один раз на ивент: после загрузки формы и после
+  // W36: список контролёров — один раз на событие: после загрузки формы и после
   // создания (eventId появляется из ответа save). Ошибка загрузки списка форму
   // не трогает — секция останется пустой.
-  // W13: участники грузятся тем же жизненным циклом (один запрос на ивент).
+  // W13: участники грузятся тем же жизненным циклом (один запрос на событие).
   useEffect(() => {
     setStaffItems([]);
     setSearchQuery('');
@@ -1096,7 +1096,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [showForm, eventId, initData, loadStaff, loadParts, loadFeedback]);
 
-  // W42: черновик создания — в localStorage, пока ивента нет на сервере.
+  // W42: черновик создания — в localStorage, пока события нет на сервере.
   useEffect(() => {
     if (!showForm || eventId || done) return;
     try {
@@ -1213,7 +1213,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           )}
 
           {/* W53: табы правки — как в эталоне (tabs-wrap/tabs-scroll/tabs).
-              Только при открытом ивенте; создание — визард без табов. */}
+              Только при открытом событии; создание — визард без табов. */}
           {showForm && eventId && (
             <div className="tabs-wrap" id="manage-tabs">
               <div className="tabs-scroll">

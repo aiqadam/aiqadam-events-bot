@@ -5,7 +5,7 @@
   (колбэки `bcast:*`, кроме `bcast:unsub:`); payload
   `{chatId, telegramId, callbackData, callbackQueryId}`
 - **Назначение**: один флоу на последовательность структурно одинаковых
-  вопросов рассылки (ADR-0016): выбор ивента → сегмент → превью → тест →
+  вопросов рассылки (ADR-0016): выбор события → сегмент → превью → тест →
   отправка/отмена (OWN-9, OWN-10).
 - **Flow ID (MCP)**: `Sr1e3imXkI8sN0lXyROtA` · **externalId**: `aoPOkCesQhbnxSP2Yv7ul`
 
@@ -38,12 +38,12 @@
 | step_1 | `answer_callback_query` | ack; `continueOnFailure` |
 | step_2 | CODE «parse callback» | `{op, bid, arg, valid}` |
 | step_3 | ROUTER `by op` | `ev`/`seg`/`test`/`send`/`cancel`/`Otherwise` |
-| step_4→6 | `tables-find-records` | ветка `ev`: сессия, ивент, staff |
-| step_7 | CODE «gate + segment keyboard» | гейты сессии/ивента/staff, генерация `bid`, клавиатура сегментов |
+| step_4→6 | `tables-find-records` | ветка `ev`: сессия, событие, staff |
+| step_7 | CODE «gate + segment keyboard» | гейты сессии/события/staff, генерация `bid`, клавиатура сегментов |
 | step_8 | ROUTER `ev gate` | `ok` → создать строку + сессия + экран; иначе текст отказа |
 | step_9→11 | `create broadcasts`, `upsert sessions`, `send_text_message` | строка черновика, сессия `await_segment` (`draft={bid}`), экран сегментов |
 | step_12 | `send_text_message` | текст отказа `ev` |
-| step_13→20 | `tables-find-records` ×5 + CODE | ветка `seg`: рассылка, контекст (`bid/eventId`), ивент, staff, регистрации, `memberCsv`, `users in-csv`, consent-база |
+| step_13→20 | `tables-find-records` ×5 + CODE | ветка `seg`: рассылка, контекст (`bid/eventId`), событие, staff, регистрации, `memberCsv`, `users in-csv`, consent-база |
 | step_21 | CODE «decide preview» | гейты + подсчёт тем же правилом, что материализация (`attended`-множество, дедуп, `blocked_bot` вне игры); `locked` для `no_show` до `ends_at` |
 | step_22 | ROUTER `seg verdict` | `ok` / `locked` / иначе-отказ |
 | step_23→24 | `upsert broadcasts`, `send_text_message` | сохранить сегмент, превью с кнопками |

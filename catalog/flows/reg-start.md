@@ -16,18 +16,18 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId`, `firstName`, `lastName` (имена — для эвристики онбординга, W50) |
-| step_1 | `tables-find-records events` | ивент по `id` |
-| step_2 | `tables-find-records registrations` | регистрации ивента — кормят и подсчёт занятости, и поиск своей строки |
+| step_1 | `tables-find-records events` | событие по `id` |
+| step_2 | `tables-find-records registrations` | регистрации события — кормят и подсчёт занятости, и поиск своей строки |
 | step_12 | `tables-find-records users` | строка пользователя: `profile_completed_at`, `consent_pdn`, имя/должность (W50) |
 | step_3 | CODE «decide outcome» | `existing` / `onboard` / `register` / `declined` (семь причин, включая `internal_error`); гейт профиля: заполнен → `register` со строкой профиля, иначе `onboard` |
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
-| step_9 (`onboard`) | CODE «build ob entry card» | карточка ивента + `onb.why` + `Дальше` (`ob:continue`); согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля |
+| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `Дальше` (`ob:continue`); согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля |
 | step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
 | step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии (шаг — в `step_11`) |
 | step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_consent` |
-| step_14 (`register`) | CODE «build card: ивент + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`) |
+| step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`) |
 | step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
 | step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
 | step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
@@ -68,8 +68,8 @@
   там нечего.
 - **Лимит мест** — `capacity × (1 + overbook_pct/100)`, округление вверх.
   Пустой `overbook_pct` читается как **40**, пустой `capacity` — как «лимита нет».
-- **Ветка `existing` проверяется раньше состояния ивента**: у уже
-  зарегистрированного участника отменённый или завершённый ивент всё равно
+- **Ветка `existing` проверяется раньше состояния события**: у уже
+  зарегистрированного участника отменённое или завершённое событие всё равно
   даёт `existing` с кнопкой QR, а не отказ.
 - **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)).
   `step_1`/`step_2` — `continueOnFailure`; `step_3` читает их `error` и, если

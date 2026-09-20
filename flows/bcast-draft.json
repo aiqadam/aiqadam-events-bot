@@ -162,9 +162,9 @@
                     "fwdText": "{{trigger['output'].data.fwdText}}",
                     "telegramId": "{{trigger['output'].data.telegramId}}",
                     "texts": {
-                      "bcast.ask.event": "К какому ивенту относится рассылка?",
+                      "bcast.ask.event": "К какому событию относится рассылка?",
                       "bcast.btn.cancel": "Отменить рассылку",
-                      "owner.events.empty": "Вы пока не создали ни одного ивента."
+                      "owner.events.empty": "Вы пока не создали ни одного события."
                     }
                   },
                   "sourceCode": {
