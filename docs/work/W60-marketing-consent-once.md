@@ -28,7 +28,17 @@
 |----------|----------|---------|
 | flow `reg-profile` | `5U3Kv0cSrnvDTrbictA4L` | [catalog/flows/reg-profile.md](../../catalog/flows/reg-profile.md) |
 | flow `reg-api` | `SiYL8m6k4oy4YunAdZ1W7` | [catalog/flows/reg-api.md](../../catalog/flows/reg-api.md) |
-| SPA `Events.tsx` (`ProfileTab`) | — | `miniapp/src/routes/Events.tsx` |
+| SPA `Events.tsx` (`ProfileTab`, `RegistrationSheet`) | — | `miniapp/src/routes/Events.tsx` |
+
+**Второй заход (тем же пакетом):** тот же баг нашёлся в каталоге Mini App —
+`RegistrationSheet` при каждой повторной регистрации показывал чекбоксы ПД
+и рассылки заново, а сервер (`reg-api/step_12`) на каждой регистрации
+безусловно перезаписывал `users.consent_pdn`/`consent_marketing`. Чекбокс
+рассылки в шите сбрасывается в снятое состояние при каждом открытии — то
+есть вторая и последующие регистрации **молча откатывали** ранее данное
+согласие на рассылку обратно на `false`, даже если человек согласился
+в чате. Хуже, чем в `reg-profile`: там просто раздражало, здесь портило
+данные о согласии (PAR-2). Исправлено симметрично.
 
 ## Чек-лист готовности
 
@@ -40,6 +50,9 @@
 - [x] Валидация (`ap_validate_flow`), публикация, экспорт `flows/`, миграции
 - [x] Офлайн-чекеры (`check-texts.py`, `check-commands.py`,
       `check-export-secrets.sh`), сборка Mini App
+- [x] Каталог Mini App (`RegistrationSheet`): повторная регистрация не
+      перезаписывает `consent_pdn`/`consent_marketing` и не требует заново
+      тикать чекбоксы, если профиль уже полон
 - [ ] Независимое ревью
 
 ## Как проверено
@@ -85,8 +98,22 @@
 - **Офлайн**: `check-texts.py` — 25 флоу, 222 пары, 0 расхождений;
   `check-commands.py` — самопроверка ok, 0 нарушений; `check-export-secrets.sh`
   — чисто; `cd miniapp && npm ci && npm run build` — зелёно (tsc + vite).
-- **`migrations`**: 2 строки (`reg-profile`/`reg-api`, `action: publish`,
-  `version_id` из `flows/_manifest.json`, `commit: 07bcf8a`).
+- **`migrations`**: 3 строки (`reg-profile`, `reg-api` × 2 — второй заход
+  правил `step_9`/`step_12`, `action: publish`, `version_id` из
+  `flows/_manifest.json`, `commit: 07bcf8a` / `2468f8f`).
+- **Второй заход по `reg-api`** — статический разбор (тот же предел: живой
+  прогон `register`/`registered_profile` требует подписанного `initData`,
+  которого у этой сессии нет): `step_9` — `alreadyConsentedPdn =
+  str(userRow.consent_pdn) === 'true'`, гейт `if (!consentPdn &&
+  !alreadyConsentedPdn)`; ответ для `outcome: 'registered'` (не
+  `'registered_profile'`) отдаёт `consentMarketing` из `userRow`, а не из
+  тела запроса — тело для этой ветки больше ничего не пишет, врать в ответе
+  не о чем; ветка `registered_profile` (`step_18→20`, первая регистрация из
+  каталога с профилем) не тронута — `step_19` по-прежнему пишет согласия,
+  это первый и единственный раз для неё. `ap_validate_flow` после
+  `skip: true` на `step_12` — 23 из 24 валидных, 1 пропущенный, 0 ошибок.
+  Сборка `miniapp` (чекбоксы под `{profileNeeded && …}`, кнопка
+  `disabled={(profileNeeded && !pdn) || busy}`) — зелёная.
 
 ## Журнал
 
@@ -122,3 +149,31 @@
   и переподключался в процессе работы (видно по системным уведомлениям
   харнесса) — после каждого реконнекта `ap_validate_flow`/`ap_flow_structure`
   подтверждали, что состояние черновика не пострадало.
+- **2026-09-20** — Владелец, проверяя первый заход, заметил тот же класс
+  бага в каталоге Mini App: `RegistrationSheet` каждый раз просит согласие
+  на ПД и рассылку заново. Разбор показал: `reg-api/step_12` в ветке
+  `register` (не `registered_profile`) безусловно перезаписывал
+  `users.consent_pdn`/`consent_marketing` при **любой** регистрации, включая
+  повторную, а `openSheet` сбрасывает чекбоксы в `false` при каждом
+  открытии шита — то есть согласие на рассылку могло откатиться назад без
+  ведома человека. Это достижимо только когда `profileDone === true`
+  (иначе `writeProfile` уходит в другую ветку, `registered_profile`), а
+  `profileDone` по всем текущим путям записи означает, что `consent_pdn`
+  уже `true` и рассылка уже хоть раз отвечена — тот же инвариант, что
+  оправдал пропуск `users` в `reg-profile/finish_lite`. Исправлено: `step_9`
+  требует `consentPdn` из тела только если `!alreadyConsentedPdn`; `step_12`
+  помечен `skip: true` (не удалён — риск неправильной релинковки середины
+  цепочки при удалении шага с и родителем, и потомком; `skip` даёт тот же
+  эффект без риска осиротить `step_13`). На клиенте чекбоксы ПД/рассылки и
+  требование тикнуть ПД для активации кнопки — только пока `profileNeeded`.
+  Опубликовано, экспортировано, офлайн-чекеры и сборка — зелёные.
+
+## Хвосты и блокеры
+
+- Живой позитивный прогон `reg-api` (`register` на пользователе с
+  `profileDone`, `registered_profile` на новом) не выполнялся: нужен
+  подписанный `initData` (реальный бот-токен), у этой сессии его нет. То же
+  ограничение отмечали живые прогоны `reg-api` в прежних пакетах (W32, W50).
+  Проверено статически: код прочитан, `ap_validate_flow` зелёный, ветки
+  `register`/`registered_profile` не пересекаются по `step_10`.
+- Независимое ревью запущено, вердикт ещё не пришёл.
