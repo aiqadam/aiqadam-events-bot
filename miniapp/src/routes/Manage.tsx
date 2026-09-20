@@ -1208,7 +1208,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
       {showForm && (
         <section id="wizard">
-          {!confirmExit && (
+          {/* «К списку» — только правка: из создания убрано по решению владельца. */}
+          {!confirmExit && !!eventId && (
             <button type="button" className="btn btn-ghost btn-sm" id="back-to-list" onClick={backToList} style={{ marginBottom: 10 }}>
               <Icon name="arrow-left" />
               {t('manage.btn.back')}

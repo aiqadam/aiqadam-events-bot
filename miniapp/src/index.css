@@ -19,6 +19,11 @@
 }
 #root { padding-top: var(--safe-top); }
 
+/* Зум запрещён на всех экранах (решение владельца): viewport выше режет
+   pinch в WebView, `touch-action` без `pinch-zoom` — жест щипка и дабл-тап
+   на уровне CSS. Скролл (`pan-x pan-y`) сохранён. */
+html, body { touch-action: pan-x pan-y; }
+
 /* Плита QR принудительно в светлой теме бренда. Правило бренда, тот же
    раздел «Event stands → QR codes»: «Dark code on light ground. Never teal.»
    padding 32px — зона покоя «four modules, always» — правило бренда, не наше. */
