@@ -12,11 +12,9 @@
     "displayName": "callableFlow",
     "name": "trigger",
     "nextAction": {
-      "continueOnFailureBranches": {},
       "displayName": "read event",
       "name": "step_1",
       "nextAction": {
-        "continueOnFailureBranches": {},
         "displayName": "read event registrations",
         "name": "step_2",
         "nextAction": {
@@ -270,7 +268,7 @@
                           "utm": "{{trigger['output'].data.utm}}"
                         },
                         "sourceCode": {
-                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // cardMessageId и шаг сессии живут в JSON внутри sessions.draft, а не\n  // отдельными колонками (схема заморожена с W1). Шаг ob_consent — вход\n  // онбординга: reg-profile ждёт ob:continue/ob:agree/ob:details.\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // cardMessageId и шаг сессии живут в JSON внутри sessions.draft, а не\n  // отдельными колонками (схема заморожена с W1). Шаг ob_consent — вход\n  // онбординга: reg-profile ждёт ob:continue/ob:agree/ob:details.\n  // Правка (2026-09-20): `step` реально не писался в draft — reg-profile\n  // читает step из draft.step, а не из отдельной колонки sessions.step,\n  // поэтому каждый колбэк уходил в ignore (онбординг выглядел «скипнутым»).\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: 'ob_consent'\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
                           "packageJson": "{}"
                         }
                       },
@@ -328,28 +326,7 @@
                       "title": "{{step_3['output'].title}}"
                     },
                     "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  // W50 / PAR-8: вход в онбординг — карточка события + «зачем данные» + Дальше.\n  // Согласие переспрашиваем даже при consent_pdn=true: старый объём согласия\n  // покрывал регистрацию, а не поля профиля (должность/компания/город).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\\\-=|{}.!])/g, '\\\\$1');\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const lat = Number(inputs.lat);\n  const lon = Number(inputs.lon);\n  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  const lines = [];\n  if (str(inputs.title)) lines.push('*' + esc(str(inputs.title)) + '*');\n  if (str(inputs.description)) lines.push(esc(str(inputs.description)));\n  const facts = [];\n  if (str(inputs.startsAt)) facts.push('📅 ' + esc(fmt(str(inputs.startsAt))) + (str(inputs.endsAt) ? ' — ' + esc(fmt(str(inputs.endsAt))) : ''));\n  if (str(inputs.address)) facts.push('📍 ' + esc(str(inputs.address)));\n  if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (str(inputs.regDeadlineAt)) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(str(inputs.regDeadlineAt)) })));\n  if (facts.length) lines.push(facts.join('\\n'));\n  lines.push(esc(t('onb.why')));\n  const replyMarkup = {\n    inline_keyboard: [[{ text: t('onb.btn.continue'), callback_data: 'ob:continue' }]]\n  };\n  return { text: lines.join('\\n\\n'), replyMarkup: replyMarkup, mapsUrl: mapsUrl, now: new Date().toISOString() };\n};",
-                      "packageJson": "{}"
-                    }
-                  },
-                  "type": "CODE",
-                  "valid": true
-                },
-                {
-                  "displayName": "unexpected outcome — ничего не делаем",
-                  "name": "step_13",
-                  "settings": {
-                    "errorHandlingOptions": {
-                      "continueOnFailure": {
-                        "value": false
-                      },
-                      "retryOnFailure": {
-                        "value": false
-                      }
-                    },
-                    "input": {},
-                    "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  return { ignored: true };\n};",
+                      "code": "export const code = async (inputs) => {\n  // W50 / PAR-8: вход в онбординг — карточка события + «зачем данные» + Дальше.\n  // Согласие переспрашиваем даже при consent_pdn=true: старый объём согласия\n  // покрывал регистрацию, а не поля профиля (должность/компания/город).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const lat = Number(inputs.lat);\n  const lon = Number(inputs.lon);\n  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  const lines = [];\n  if (str(inputs.title)) lines.push('*' + esc(str(inputs.title)) + '*');\n  if (str(inputs.description)) lines.push(esc(str(inputs.description)));\n  const facts = [];\n  if (str(inputs.startsAt)) facts.push('📅 ' + esc(fmt(str(inputs.startsAt))) + (str(inputs.endsAt) ? ' — ' + esc(fmt(str(inputs.endsAt))) : ''));\n  if (str(inputs.address)) facts.push('📍 ' + esc(str(inputs.address)));\n  if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (str(inputs.regDeadlineAt)) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(str(inputs.regDeadlineAt)) })));\n  if (facts.length) lines.push(facts.join('\\n'));\n  lines.push(esc(t('onb.why')));\n  const replyMarkup = {\n    inline_keyboard: [[{ text: t('onb.btn.continue'), callback_data: 'ob:continue' }]]\n  };\n  return { text: lines.join('\\n\\n'), replyMarkup: replyMarkup, mapsUrl: mapsUrl, now: new Date().toISOString() };\n};",
                       "packageJson": "{}"
                     }
                   },
@@ -368,7 +345,6 @@
                       "nextAction": {
                         "displayName": "start session ob_register",
                         "name": "step_20",
-                        "nextAction": null,
                         "settings": {
                           "actionName": "tables-upsert-records",
                           "errorHandlingOptions": {
@@ -418,7 +394,7 @@
                           "utm": "{{trigger['output'].data.utm}}"
                         },
                         "sourceCode": {
-                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: str(inputs.eventId),\n    utm: str(inputs.utm),\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: 'ob_register'\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
                           "packageJson": "{}"
                         }
                       },
@@ -441,7 +417,8 @@
                         "format": "MarkdownV2",
                         "message": "{{step_14['output'].text}}",
                         "protect_content": false,
-                        "reply_markup": "{{step_14['output'].replyMarkup}}"
+                        "reply_markup": "{{step_14['output'].replyMarkup}}",
+                        "web_page_preview": false
                       },
                       "propertySettings": {},
                       "qadamName": "@aiqadam/qadam-telegram-bot",
@@ -475,7 +452,28 @@
                       "title": "{{step_3['output'].title}}"
                     },
                     "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  // W50 / PAR-8: повторное касание — карточка события + строка профиля +\n  // регистрация в один тап (consent и профиль не переспрашиваем, ADR-0032).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\\\-=|{}.!])/g, '\\\\$1');\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const lat = Number(inputs.lat);\n  const lon = Number(inputs.lon);\n  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  const lines = [];\n  if (str(inputs.title)) lines.push('*' + esc(str(inputs.title)) + '*');\n  if (str(inputs.description)) lines.push(esc(str(inputs.description)));\n  const facts = [];\n  if (str(inputs.startsAt)) facts.push('📅 ' + esc(fmt(str(inputs.startsAt))) + (str(inputs.endsAt) ? ' — ' + esc(fmt(str(inputs.endsAt))) : ''));\n  if (str(inputs.address)) facts.push('📍 ' + esc(str(inputs.address)));\n  if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (str(inputs.regDeadlineAt)) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(str(inputs.regDeadlineAt)) })));\n  if (facts.length) lines.push(facts.join('\\n'));\n  if (str(inputs.profileLine)) lines.push(esc(str(inputs.profileLine)));\n  const replyMarkup = {\n    inline_keyboard: [[{ text: t('event.card.btn_register'), callback_data: 'ob:register' }]]\n  };\n  return { text: lines.join('\\n\\n'), replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                      "code": "export const code = async (inputs) => {\n  // W50 / PAR-8: повторное касание — карточка события + строка профиля +\n  // регистрация в один тап (consent и профиль не переспрашиваем, ADR-0032).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] || key);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const lat = Number(inputs.lat);\n  const lon = Number(inputs.lon);\n  const hasGeo = isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  const lines = [];\n  if (str(inputs.title)) lines.push('*' + esc(str(inputs.title)) + '*');\n  if (str(inputs.description)) lines.push(esc(str(inputs.description)));\n  const facts = [];\n  if (str(inputs.startsAt)) facts.push('📅 ' + esc(fmt(str(inputs.startsAt))) + (str(inputs.endsAt) ? ' — ' + esc(fmt(str(inputs.endsAt))) : ''));\n  if (str(inputs.address)) facts.push('📍 ' + esc(str(inputs.address)));\n  if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (str(inputs.regDeadlineAt)) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(str(inputs.regDeadlineAt)) })));\n  if (facts.length) lines.push(facts.join('\\n'));\n  if (str(inputs.profileLine)) lines.push(esc(str(inputs.profileLine)));\n  const replyMarkup = {\n    inline_keyboard: [[{ text: t('event.card.btn_register'), callback_data: 'ob:register' }]]\n  };\n  return { text: lines.join('\\n\\n'), replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                },
+                {
+                  "displayName": "unexpected outcome — ничего не делаем",
+                  "name": "step_13",
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {},
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  return { ignored: true };\n};",
                       "packageJson": "{}"
                     }
                   },
@@ -588,10 +586,11 @@
               "columns": [
                 "JtylZU291K7TuMn9c9F2t",
                 "KtdV8plfevjdnKlLko08q",
-                "SVQHL3bEpU9x9mMe5vuwV",
-                "uey0e0Uv13EGEwIqo3kod",
-                "DJw9ie9ZMuVvX6V3CHefm",
-                "LTv6dhg23SgfyzTpIRGkT"
+                "em7af2g9kyaNXC2tPNvXF",
+                "KsKN4eTmjZN2IxrZxm5qZ",
+                "p5TNNHUYCrHv3L6SWCRWb",
+                "wz2jSqAxfldiP8b0YOokJ",
+                "EAlXy4XsXGAeM7UrS0TIQ"
               ],
               "filters": {
                 "filters": [
