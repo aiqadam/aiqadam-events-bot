@@ -1,5 +1,6 @@
-# Claude Code: локальные настройки игнорируем, адаптеры ролей и общий
-# permissions-конфиг коммитим (docs/agents/README.md, ADR-0029)
+# Claude Code: игнорируем всё личное (settings.local.json и т.п.),
+# коммитим адаптеры ролей и общий permissions-конфиг settings.json
+# (docs/agents/README.md, ADR-0029)
 .claude/*
 !.claude/agents/
 !.claude/settings.json
