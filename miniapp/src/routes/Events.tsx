@@ -51,6 +51,9 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [mineError, setMineError] = useState('');
   // W50 / PAR-8: профиль для шита регистрации и таба «Профиль».
   const [profile, setProfile] = useState({ first: '', last: '', position: '', company: '', city: '' });
+  // W60: согласие на рассылку — таб «Профиль» позволяет переключить его без
+  // новой регистрации (чат больше не переспрашивает при повторной записи).
+  const [profileMkt, setProfileMkt] = useState(false);
   const [profileState, setProfileState] = useState<MineState>(inTelegram ? 'loading' : 'off');
   const [profileMsg, setProfileMsg] = useState('');
   const [pdnDone, setPdnDone] = useState('');
@@ -141,6 +144,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     const p = (res.data['profile'] || {}) as Record<string, unknown>;
     const s = (v: unknown) => (typeof v === 'string' ? v : '');
     setProfile({ first: s(p['first']), last: s(p['last']), position: s(p['position']), company: s(p['company']), city: s(p['city']) });
+    setProfileMkt(Boolean(res.data['consentMarketing']));
     setPdnDone(s(res.data['pdnDone']));
     setProfileState('ready');
   }, [inTelegram, initData]);
@@ -155,6 +159,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       profilePosition: profile.position,
       profileCompany: profile.company,
       profileCity: profile.city,
+      consentMarketing: profileMkt,
     });
     if (res.kind !== 'json' || !res.data['ok']) {
       const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
@@ -164,8 +169,9 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     const p = (res.data['profile'] || {}) as Record<string, unknown>;
     const s = (v: unknown) => (typeof v === 'string' ? v : '');
     setProfile({ first: s(p['first']), last: s(p['last']), position: s(p['position']), company: s(p['company']), city: s(p['city']) });
+    setProfileMkt(Boolean(res.data['consentMarketing']));
     setProfileMsg(t('manage.saved.updated'));
-  }, [initData, profile]);
+  }, [initData, profile, profileMkt]);
 
   useEffect(() => {
     setupThemeListener();
@@ -374,10 +380,15 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
           inTelegram={inTelegram}
           state={profileState}
           profile={profile}
+          mkt={profileMkt}
           pdnDone={pdnDone}
           msg={profileMsg}
           onChange={(k, v) => {
             setProfile((p) => ({ ...p, [k]: v }));
+            setProfileMsg('');
+          }}
+          onMktChange={() => {
+            setProfileMkt((v) => !v);
             setProfileMsg('');
           }}
           onSave={() => void saveProfile()}
@@ -666,18 +677,22 @@ function ProfileTab({
   inTelegram,
   state,
   profile,
+  mkt,
   pdnDone,
   msg,
   onChange,
+  onMktChange,
   onSave,
 }: {
   dictLoaded: boolean;
   inTelegram: boolean;
   state: MineState;
   profile: { first: string; last: string; position: string; company: string; city: string };
+  mkt: boolean;
   pdnDone: string;
   msg: string;
   onChange: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
+  onMktChange: () => void;
   onSave: () => void;
 }) {
   if (!inTelegram) {
@@ -730,6 +745,11 @@ function ProfileTab({
       {field('pf-position', t('profile.position'), 'position')}
       {field('pf-company', t('profile.company'), 'company', t('profile.company_hint'))}
       {field('pf-city', t('profile.city'), 'city', t('profile.city_hint'))}
+      <label className="control-row" htmlFor="pf-mkt">
+        <input id="pf-mkt" type="checkbox" className="checkbox" checked={mkt} onChange={onMktChange} />
+        <span>{t('reg.mkt.label')}</span>
+      </label>
+      <div className="helper">{t('reg.mkt.hint')}</div>
       {pdnDone && <p className="helper">{pdnDone}</p>}
       {msg && (
         <p className="helper" role="status">
