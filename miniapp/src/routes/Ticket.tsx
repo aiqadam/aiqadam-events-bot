@@ -22,7 +22,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   const [retryable, setRetryable] = useState(false);
   const [showRetry, setShowRetry] = useState(false);
 
-  // W43: отмена регистрации (PAR-5) — с экрана билета, до старта ивента.
+  // W43: отмена регистрации (PAR-5) — с экрана билета, до старта события.
   const [canCancel, setCanCancel] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -32,7 +32,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   // Для заголовка после i18n
   const [title, setTitle] = useState('AI Qadam Events');
 
-  // W51: контекст ивента над QR (прототип ticket-top) — название/дата/адрес
+  // W51: контекст события над QR (прототип ticket-top) — название/дата/адрес
   // из публичной афиши, чтобы при нескольких билетах было видно, чей QR открыт.
   const [evTitle, setEvTitle] = useState('');
   const [evWhen, setEvWhen] = useState('');
@@ -152,7 +152,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
     return res;
   }, [initData, eventId]);
 
-  // Отмена показывается только для активной регистрации до старта ивента:
+  // Отмена показывается только для активной регистрации до старта события:
   // статус и старт — из reg-api (`mine`) и events-api (публичная афиша).
   const loadCancelInfo = useCallback(async () => {
     if (!tg || !initData || !eventId) return;
@@ -216,7 +216,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   }, [tg]);
 
   // Запрос QR сразу, не дожидаясь словаря — на плохой связи это единственное, ради чего страницу открыли.
-  // Контекст ивента — тем же жизненным циклом из публичной афиши (initData не нужен).
+  // Контекст события — тем же жизненным циклом из публичной афиши (initData не нужен).
   const qrRequestRef = useRef<Promise<{ kind: string; data?: Record<string, unknown> }> | null>(null);
   useEffect(() => {
     if (tg && initData && eventId) {

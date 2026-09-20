@@ -411,7 +411,7 @@
                   "rating": "{{trigger['output'].body.rating}}",
                   "reg": "{{step_5['output'].data}}",
                   "texts": {
-                    "feedback.err.forbidden": "Отзыв доступен только тем, кто был на ивенте.",
+                    "feedback.err.forbidden": "Отзыв доступен только тем, кто был на событии.",
                     "feedback.err.rating": "Поставьте оценку от 1 до 5.",
                     "feedback.thanks": "Спасибо за отзыв!"
                   }

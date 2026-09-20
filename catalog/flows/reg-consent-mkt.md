@@ -16,7 +16,7 @@
 | step_2 | CODE «decide yes/no + разбор draft» | `isYes`, `cardMessageId`, `eventId`, `utm` |
 | step_3 | `tables-upsert-records users` (`continueOnFailure`) | `consent_marketing = true/false` + отметка времени **всегда** |
 | step_6 | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
-| step_4 | `tables-find-records events` (`continueOnFailure`) | ивент для финальной карточки (`title`, `starts_at`, `address`) |
+| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки (`title`, `starts_at`, `address`) |
 | step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic` |
 | step_7 | `edit_message_text` (`continueOnFailure`) | карточка → итог диалога, **кнопки сняты** |
 | step_8 (On failure) | `send_text_message` | фолбэк: новая карточка если редактирование не удалось |

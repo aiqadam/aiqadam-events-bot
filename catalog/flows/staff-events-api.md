@@ -16,8 +16,8 @@
 | trigger | `catch_webhook` | приём sync-запроса SPA (`body.initData`) |
 | step_1 | `callFlow fn-hmac-init-data` (`inline`) | проверка `initData`, `telegram_id` только оттуда (STF-2); окно 300 c |
 | step_2 | `tables-find-records event_staff` | строки вызывающего (`telegram_id`, limit 200) |
-| step_3 | `tables-find-records events` | опубликованные ивенты (status = `published`, limit 200) |
-| step_4 | CODE «shape staff events» | активные строки (`revoked_at` пуст) на не прошедшие опубликованные ивенты → `eventIds[]`; невалидный `initData` → `401 invalid_init_data` |
+| step_3 | `tables-find-records events` | опубликованные события (status = `published`, limit 200) |
+| step_4 | CODE «shape staff events» | активные строки (`revoked_at` пуст) на не прошедшие опубликованные события → `eventIds[]`; невалидный `initData` → `401 invalid_init_data` |
 | step_5 | `return_response` (`stop`) | `200 {ok, eventIds[]}` |
 
 ## Зависимости

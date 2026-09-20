@@ -67,7 +67,7 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | --- | --- | --- |
 | `id` | text, **PK** | короткий slug в алфавите `A-Za-z0-9_` — влезает в 64 символа deep link |
 | `staff_id` | text → `staff.telegram_id` | **автор** (кто создал); не гейт прав ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)) |
-| `chapter_id` | text → `chapters.id` | чаптер ивента; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
+| `chapter_id` | text → `chapters.id` | чаптер события; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
@@ -90,7 +90,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ```
 
 Дефолт `overbook_pct = 40` выбран под бесплатные митапы, где неявка обычно
-30–50%. Значение правится у каждого ивента: у камерного воркшопа с ограниченным
+30–50%. Значение правится у каждого события: у камерного воркшопа с ограниченным
 залом перебор в 40% — это люди, которым негде сесть. Как накопится своя
 статистика неявок, дефолт стоит пересмотреть на фактах.
 
@@ -117,15 +117,15 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `note` | text | справочно |
 | `added_at` | timestamp | UTC |
 
-Строка в `staff` — право **создавать и править** ивенты своего чаптера
-([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)). Доступ к ивенту:
+Строка в `staff` — право **создавать и править** события своего чаптера
+([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)). Доступ к событию:
 `staff.chapter_id === '' ` или `staff.chapter_id === event.chapter_id`. Нет строки —
 отказ и на создание, и на правку, одним `403 forbidden`. Ведётся человеком в UI
-платформы; это не `users` (реестр контактов) и не `event_staff` (контролёры ивента).
+платформы; это не `users` (реестр контактов) и не `event_staff` (контролёры события).
 
 ### notify-on-change
 
-Правка опубликованного ивента рассылает уведомление зарегистрированным (OWN-5),
+Правка опубликованного события рассылает уведомление зарегистрированным (OWN-5),
 если изменилось любое из: `starts_at`, `ends_at`, `address`, `lat`, `lon`, `title`,
 `reg_deadline_at`, `status`.
 
@@ -152,7 +152,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 Счётчики owner'а (OWN-7): зарегистрировано = `status=registered`;
 пришло = `checked_in_at` не пусто; отменило = `status=cancelled`.
 Сегмент «зарегались, но не пришли» = `status=registered` и `checked_in_at` пусто.
-Доступен **только после `ends_at`** (OWN-9) — до конца ивента он означает
+Доступен **только после `ends_at`** (OWN-9) — до конца события он означает
 «ещё не дошёл», а не «не пришёл».
 
 ## `event_staff`
@@ -169,7 +169,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 Проверка прав контролёра (STF-2) — это ровно «есть строка с этим `event_id`,
 этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
 глобальный `staff` — это команда/организаторы, к чекину отношения не имеет.
-Выдаёт и отзывает права **любой staff с доступом к ивенту** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
+Выдаёт и отзывает права **любой staff с доступом к событию** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
 
 ## `staff_invites`
 
@@ -215,7 +215,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ## `sessions`
 
 Состояние многошаговых диалогов в чате (регистрация, составление рассылки). Памяти процесса нет.
-Создание и правка ивента сессий не используют — это форма `manage` (ADR-0017 п. 3, W31);
+Создание и правка события сессий не используют — это форма `manage` (ADR-0017 п. 3, W31);
 строки `event_create`/`event_edit` — остатки удалённого чатового визарда.
 
 | Поле | Тип | Примечание |
@@ -240,7 +240,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 
 ## `feedback`
 
-Отзывы участников об ивенте — оценка и необязательный комментарий
+Отзывы участников об событии — оценка и необязательный комментарий
 ([ADR-0028](adr/0028-feedback-screen-fifth-miniapp-page.md), [Q53](OPEN-QUESTIONS.md#q53), W45).
 
 | Поле | Тип | Примечание |
@@ -256,7 +256,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 `tables-upsert-records` с ключом по этой паре — повторная отправка
 перезаписывает прежний отзыв, а не создаёт второй. Пишет только
 `feedback-api`, после проверки участия (регистрация с чекином на конкретный
-`event_id`). Читают — автор/staff ивента через `#/manage` (та же граница
+`event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
 уведомления организатору отдельным сообщением.
 

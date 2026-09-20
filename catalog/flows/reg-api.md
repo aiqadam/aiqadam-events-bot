@@ -35,8 +35,8 @@
 | step_4 | CODE «invalid initData response» | `401 {ok:false, error:'invalid_init_data'}` |
 | step_5 | `return_response` (`stop`) | ответ неавторизованному |
 | step_6 | `tables-find-records registrations` | свои строки: `telegram_id eq <владелец initData>`, `limit 50`, проекция `telegram_id`+`status`+`registered_at`+`checked_in_at`+`event_id` |
-| step_7 | `tables-find-records registrations` | происхождение ивента: `event_id eq <id>`, `limit 200` (подсчёт занятости — OWN-15), проекция `event_id`+`telegram_id`+`status` |
-| step_8 | `tables-find-records events` | ивент по `id`, `limit 1` |
+| step_7 | `tables-find-records registrations` | происхождение события: `event_id eq <id>`, `limit 200` (подсчёт занятости — OWN-15), проекция `event_id`+`telegram_id`+`status` |
+| step_8 | `tables-find-records events` | событие по `id`, `limit 1` |
 | step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`), гейт PAR-8 (W50) |
 | step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); все тексты — во входе `texts` |
 | step_10 | ROUTER по `outcome` | `register` / `registered_profile` / `cancel` / `profile` / `profile_saved` / `Otherwise` (`mine` и отказы без записей) |
@@ -83,7 +83,7 @@
   договорённость Q15 для точности `no_seats`.
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
-  прогона `telegram_id` каждого участника ивента на любой вызов `register`/
+  прогона `telegram_id` каждого участника события на любой вызов `register`/
   `cancel`, доступный любому пользователю с валидным `initData` на произвольный
   `eventId`. Набор колонок — ровно то, что читает `step_9` (`decide`); не
   переносить на другие чтения без сверки с их собственным CODE-шагом (тот же

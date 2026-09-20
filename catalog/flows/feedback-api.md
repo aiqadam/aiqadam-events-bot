@@ -20,7 +20,7 @@
 | Поле | Что |
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
-| `eventId` | ивент, о котором отзыв (из query-параметра `#/feedback?event_id=`) |
+| `eventId` | событие, о котором отзыв (из query-параметра `#/feedback?event_id=`) |
 | `action` | `load` — отдать уже сохранённый отзыв (если есть); `submit` — записать/перезаписать |
 | `rating` | только при `submit`: целое 1–5 |
 | `comment` | только при `submit`: строка, необязательна, обрезается до 2000 символов |
@@ -56,7 +56,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | Ситуация | HTTP | Тело |
 |---|---|---|
 | `initData` невалиден/просрочен | 401 | `{ok:false, error:"invalid_init_data", text}` |
-| не был на ивенте (нет регистрации или нет чекина на этот `eventId`) | 403 | `{ok:false, error:"forbidden", text}` |
+| не был на событии (нет регистрации или нет чекина на этот `eventId`) | 403 | `{ok:false, error:"forbidden", text}` |
 | `submit` с `rating` вне 1–5 | 422 | `{ok:false, error:"validation", text, fields:{rating:"feedback.err.rating"}}` |
 | `submit` успех | 200 | `{ok:true, text}` |
 | `load` успех | 200 | `{ok:true, given, rating, comment}` — `given:false` и пустые поля, если отзыва ещё нет |
@@ -80,7 +80,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   разбирать причины отдельно незачем ([SECURITY](../../docs/SECURITY.md)).
 - **`tables-upsert-records` с ключом по паре `event_id`+`telegram_id`** —
   решение [Q53](../../docs/OPEN-QUESTIONS.md#q53): второй `submit` от того же
-  человека на тот же ивент обновляет ту же запись (`action: "updated"`,
+  человека на тот же событие обновляет ту же запись (`action: "updated"`,
   тот же `record id`), а не создаёт вторую. Проверено различающим прогоном:
   первый `submit` → `created`; второй `submit` с другой оценкой/комментарием
   → `updated`, тот же `record id`, значения перезаписаны.

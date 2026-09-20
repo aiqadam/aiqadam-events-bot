@@ -124,12 +124,12 @@
                           "staffRows": "{{step_3['output']}}",
                           "texts": {
                             "checkin.already": "Уже отмечен в {time}",
-                            "checkin.forbidden": "Нет прав на чекин этого ивента",
+                            "checkin.forbidden": "Нет прав на чекин этого события",
                             "checkin.invalid": "Код не распознан",
                             "checkin.name_unknown": "участник без имени",
                             "checkin.not_registered": "Нет регистрации",
                             "checkin.ok": "{name} — отмечен",
-                            "checkin.wrong_event": "Другой ивент"
+                            "checkin.wrong_event": "Другое событие"
                           }
                         },
                         "sourceCode": {

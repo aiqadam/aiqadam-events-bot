@@ -5,10 +5,10 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, FEEDBACK_API } from '../lib/api';
 import Icon from '../components/Icon';
 
-// W45 (ADR-0028, Q53): пятая страница SPA — форма отзыва после ивента.
+// W45 (ADR-0028, Q53): пятая страница SPA — форма отзыва после события.
 // Вход — только по факту участия (регистрация с чекином на конкретный
 // eventId); сервер (feedback-api) решает права, страница только показывает
-// то, что он ответил. Один ивент — один отзыв: повторное открытие
+// то, что он ответил. Одно событие — один отзыв: повторное открытие
 // подгружает уже отправленный отзыв, повторная отправка перезаписывает его
 // (Q53), а не создаёт второй.
 
@@ -65,7 +65,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
       return;
     }
     const txt = typeof d['text'] === 'string' && d['text'] ? d['text'] : t('feedback.error.unknown');
-    // forbidden (не был на ивенте) и invalid_init_data — не чинятся повтором.
+    // forbidden (не был на событии) и invalid_init_data — не чинятся повтором.
     showError(txt, false);
   }, [tg, initData, eventId, showError]);
 

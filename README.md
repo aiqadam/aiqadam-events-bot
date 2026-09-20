@@ -1,6 +1,6 @@
 # aiqadam-events-bot
 
-Telegram-бот событий AI Qadam: публикация ивентов, регистрация участников, чекин по QR
+Telegram-бот событий AI Qadam: публикация событий, регистрация участников, чекин по QR
 через Telegram Mini App, сегментные рассылки. Несущий стек — [Qadam Flow](https://github.com/aiqadam/qadam-flow).
 
 > Events bot for AI Qadam meetups — registration, QR check-in via Telegram Mini App,

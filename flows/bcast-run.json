@@ -1569,9 +1569,9 @@
                 "phase": "{{trigger['output'].data.phase}}",
                 "telegramId": "{{trigger['output'].data.telegramId}}",
                 "texts": {
-                  "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания ивента — {when}. Пока часть людей ещё в дороге.",
+                  "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
                   "bcast.send.blocked_no_test": "Сначала отправьте тест себе — без этого рассылку не запускаем.",
-                  "common.err.event_not_found": "Ивент не найден.",
+                  "common.err.event_not_found": "Событие не найдено.",
                   "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
                 }
               },

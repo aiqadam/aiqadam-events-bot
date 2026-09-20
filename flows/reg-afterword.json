@@ -25,7 +25,7 @@
               "nextAction": {
                 "children": [
                   {
-                    "displayName": "текст послесловия + ближайший ивент",
+                    "displayName": "текст послесловия + ближайшее событие",
                     "name": "step_9",
                     "nextAction": {
                       "displayName": "send послесловие",
@@ -67,9 +67,7 @@
                         }
                       },
                       "input": {
-                        "botUsername": "",
                         "eventId": "{{trigger['output'].data.eventId}}",
-                        "events": "",
                         "miniappUrl": "{{variables['MINIAPP_URL']}}",
                         "texts": {
                           "afterword.feedback_btn": "Оставить отзыв",
@@ -77,7 +75,7 @@
                         }
                       },
                       "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n\n  // W45 (PAR-7, вердикт владельца): послесловие — только благодарность.\n  // Предложение следующего ивента убрано; кнопка ведёт на форму отзыва\n  // #/feedback (ADR-0028).\n  const eventId = str(inputs.eventId);\n  const miniappUrl = str(inputs.miniappUrl);\n\n  const text = esc(t('afterword.thanks'));\n  const replyMarkup = { inline_keyboard: [[{ text: t('afterword.feedback_btn'), web_app: { url: miniappUrl + '#/feedback?event_id=' + eventId } }]] };\n\n  return { text: text, replyMarkup: replyMarkup };\n};",
+                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  // Эталон экранирования MarkdownV2 — catalog/snippets/markdown-v2.md.\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n\n  // W45 (PAR-7, вердикт владельца): послесловие — только благодарность.\n  // Предложение следующего события убрано; кнопка ведёт на форму отзыва\n  // #/feedback (ADR-0028).\n  const eventId = str(inputs.eventId);\n  const miniappUrl = str(inputs.miniappUrl);\n\n  const text = esc(t('afterword.thanks'));\n  const replyMarkup = { inline_keyboard: [[{ text: t('afterword.feedback_btn'), web_app: { url: miniappUrl + '#/feedback?event_id=' + eventId } }]] };\n\n  return { text: text, replyMarkup: replyMarkup };\n};",
                         "packageJson": "{}"
                       }
                     },
