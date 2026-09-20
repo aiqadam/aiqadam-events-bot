@@ -565,7 +565,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const title = String(f.title || '').trim();
     if (title.length < 2 || title.length > 200) e.main.title = T('manage.err.title_length');
     if (String(f.description || '').length > 4000) e.main.description = T('manage.err.description_length');
-    if (String(f.address || '').trim().length < 2) e.where.address = T('manage.err.address_length');
+    // Адрес — только офлайну (онлайн — только даты, решение 2026-09-20).
+    if (!f.online && String(f.address || '').trim().length < 2) e.where.address = T('manage.err.address_length');
     if (!f.startsLocal) e.where.starts = T('manage.err.datetime');
     if (!f.endsLocal) e.where.ends = T('manage.err.datetime');
     if (!f.deadlineLocal) e.where.deadline = T('manage.err.datetime');
@@ -716,39 +717,42 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function renderWizardWhere(body, f, errors, show) {
     const sec = E('div', 'form-section');
-    sec.appendChild(field(T('field.address'), f.address, {
-      hint: T('manage.hint.address'),
-      error: show ? errors.address : '',
-      onInput: (e) => { f.address = e.target.value; },
-    }));
-
-    // Формат участия (вердикт владельца 2026-09-18): два варианта вместо
-    // гео-конструктора. Онлайн — никакой ссылки; офлайн — ожидается ссылка
-    // Яндекс.Карт (валидация требует координаты: ссылка или недавнее место).
-    // Указания точки на карте и шитов больше нет.
+    // Формат — первое поле шага (решение владельца 2026-09-20): онлайн —
+    // только даты, офлайн — адрес + ссылка Яндекс.Карт.
     const loc = E('div', 'app-field');
-    loc.appendChild(E('label', 'label', T('proto.geo_mode')));
+    loc.appendChild(E('label', 'label', T('manage.geo.format')));
     const mode = E('div', 'segmented');
-    [['online', T('proto.geo_online')], ['offline', T('proto.geo_offline')]].forEach(([key, label]) => {
+    [['online', T('manage.geo.online')], ['offline', T('manage.geo.offline')]].forEach(([key, label]) => {
       const on = (key === 'online') === !!f.online;
       const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { f.online = (key === 'online'); renderManageEvent(eventId); } });
       if (on) b.classList.add('active');
       mode.appendChild(b);
     });
     loc.appendChild(mode);
+    sec.appendChild(loc);
+
     if (!f.online) {
-      // Ссылка — единственный ввод: вставка сразу разбирается, кнопки
-      // «Взять координаты» нет. Адрес ссылка не даёт (в ней только точка) —
-      // его овнер пишет руками в поле выше. Недавних мест нет: без ссылки
-      // офлайн не публикуется, а у мест из списка ссылок нет.
+      // Адрес овнер пишет руками («Как его прочтёт участник»): ссылка несёт
+      // только точку, имени места в ней нет.
+      sec.appendChild(field(T('field.address'), f.address, {
+        hint: T('manage.hint.address'),
+        error: show ? errors.address : '',
+        onInput: (e) => { f.address = e.target.value; },
+      }));
+
+      // Ссылка — единственный ввод точки: вставка сразу разбирается, кнопки
+      // «Взять координаты» нет. Недавних мест нет: без ссылки офлайн не
+      // публикуется, а у мест из списка ссылок нет.
       if (!f.mapLink && f.lat !== null && f.lon !== null) {
         f.mapLink = 'https://yandex.ru/maps/?pt=' + f.lon + ',' + f.lat + '&z=17';
       }
+      const linkWrap = E('div', 'app-field');
+      linkWrap.appendChild(E('label', 'label', T('manage.geo.link')));
       const linkInput = E('input', 'input');
       linkInput.type = 'url';
       linkInput.placeholder = T('manage.geo.link_placeholder');
       linkInput.value = f.mapLink || '';
-      loc.appendChild(linkInput);
+      linkWrap.appendChild(linkInput);
       const linkStatus = E('div', 'helper');
       function paintLink() {
         // Очевидное не показываем (вердикт 2026-09-18): координаты не дублируем —
@@ -793,12 +797,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         renderManageEvent(eventId);
       }, 0));
       paintLink();
-      loc.appendChild(linkStatus);
+      linkWrap.appendChild(linkStatus);
+      sec.appendChild(linkWrap);
       // Превью-карты с пином и ссылки «Открыть на карте» здесь нет: в моке
       // это театр без толку (вердикт владельца 2026-09-18). Успех вставки —
       // тишина, битую ссылку показывает ошибка валидации.
     }
-    sec.appendChild(loc);
 
     // Время ташкентское — очевидно, хинта нет вовсе (вердикт 2026-09-18, W49).
     sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: '', error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
@@ -991,7 +995,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- таб «Рассылка» ----------
   function renderBroadcastTab(body) {
     PROTO.setTrace(['OWN-9', 'OWN-10', 'OWN-11', 'OWN-12', 'OWN-13']);
-    body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
+    body.appendChild(card([muted(T('proto.broadcast_chat_hint'))]));
     // Чат открывается про этот же событие: название, сегменты и обратный путь.
     body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true, eventId); } }));
 
@@ -1047,7 +1051,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         r.appendChild(avatar(s.name, 'avatar-md'));
         const b = E('div', 'body');
         b.appendChild(E('div', 'name', s.name));
-        b.appendChild(E('div', 'sub', s.username + ' · ' + T('proto.staff_since', { when: s.since })));
+        b.appendChild(E('div', 'sub', s.username + ' · ' + T('manage.staff.since', { when: s.since })));
         r.appendChild(b);
         r.appendChild(btn(T('manage.staff.btn.revoke'), { kind: 'btn-outline', size: 'btn-sm', onClick: () => {
           ed.controllers = ed.controllers.filter((x) => x.id !== s.id);

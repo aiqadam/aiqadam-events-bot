@@ -72,7 +72,7 @@ PROTO.buildScenarios = function (opts) {
     { id: 'declined', kind: 'card', edit: true, markup: true, card: { title: ev.title, lines: [], body: T('reg.consent_pdn.declined') }, trace: ['PAR-1'],
       buttons: [{ label: T('common.btn.menu'), go: declinedGo }] },
 
-    { id: 'name-ok', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.name_ok')), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
+    { id: 'name-ok', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.name_ok', { name: 'Дилшод Азимов' })), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
       buttons: [
         { label: T('onb.btn.itsme'), go: 'work' },
         { label: T('onb.btn.fix_name'), go: 'ask-name' },
@@ -92,7 +92,7 @@ PROTO.buildScenarios = function (opts) {
       ] },
     { id: 'user-city', kind: 'user', text: 'Бишкек', trace: ['PAR-1'] },
 
-    { id: 'review', kind: 'card', edit: true, markup: true, card: { title: T('onb.btn.all_good'), lines: [], body: T('onb.review') }, trace: ['PAR-1', 'ADR-0017'],
+    { id: 'review', kind: 'card', edit: true, markup: true, card: { title: T('onb.btn.all_good'), lines: [], body: T('onb.review', { profile: 'Дилшод Азимов · ML-инженер, Payme · Ташкент' }) }, trace: ['PAR-1', 'ADR-0017'],
       buttons: [
         { label: T('onb.btn.all_good'), go: after, primary: true },
         { label: T('onb.btn.fix'), go: 'ask-name' },
@@ -136,10 +136,10 @@ PROTO.buildScenarios = function (opts) {
         buttons: [{ label: T('afterword.feedback_btn'), webApp: '#/feedback?event_id=' + ev.id, resume: 'afterword', primary: true }] },
 
       // Меню гостя — без грубого «Что дальше?» (общий menu.title живёт
-      // в продукте для всех ролей): целевая строка — предложение прототипа,
-      // в продукт переносится отдельным пакетом (ru.json + menu flow).
+      // в продукте для всех ролей): целевая строка — из ru.json
+      // (W50 сгенерировал тексты меню из ru.json).
       // Вердикт владельца 2026-09-18 (W49).
-      { id: 'menu-guest', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_guest') }, trace: ['ADR-0025'],
+      { id: 'menu-guest', kind: 'card', card: { title: '', lines: [], body: T('menu.lead_guest') }, trace: ['ADR-0025'],
         buttons: menuButtonsGuest },
 
       // Отмена регистрации из чата — состояние (в to-be основной путь отмены
@@ -169,7 +169,7 @@ PROTO.buildScenarios = function (opts) {
       { id: 'st-bad-payload', kind: 'card', state: true, card: { title: T('menu.title'), lines: [], body: T('start.bad_payload') }, trace: ['ADR-0025'],
         buttons: menuButtonsGuest },
       // Подозрительное имя: кнопки «Это я» нет, только ручной ввод.
-      { id: 'suspect', kind: 'card', state: true, markup: true, card: eventCard(T('onb.suspect')), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
+      { id: 'suspect', kind: 'card', state: true, markup: true, card: eventCard(T('onb.suspect', { name: 'Crypto King 👑' })), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
         buttons: [{ label: T('onb.btn.write_name'), go: 'ask-name', primary: true }] },
     ],
   };
@@ -188,8 +188,8 @@ PROTO.buildScenarios = function (opts) {
       { id: 'profile-saved', kind: 'card', edit: true, markup: true, card: { title: T('profile.tab'), lines: [], body: T('onb.profile_saved') }, trace: ['PAR-1', 'ADR-0017'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
       // Меню овнера — без «Что дальше?» (см. меню гостя): целевая строка —
-      // предложение прототипа. Вердикт владельца 2026-09-18 (W49).
-      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_owner') }, trace: ['ADR-0025'],
+      // из ru.json. Вердикт владельца 2026-09-18 (W49).
+      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('menu.lead_owner') }, trace: ['ADR-0025'],
         buttons: menuButtonsOwner },
 
       // W37 / MINIAPP-UX п. 7: чат несёт факт, ссылка живёт на экране события.
@@ -271,7 +271,7 @@ PROTO.buildScenarios = function (opts) {
       { id: 'accept-ok', kind: 'card', card: { title: ev.title, lines: [], body: T('staff.accept.ok', { title: ev.title }) }, trace: ['OWN-14', 'STF-2'],
         buttons: [{ label: T('staff.accept.btn.scanner'), webApp: '#/scan?event_id=' + ev.id, resume: 'accept-ok', primary: true }] },
       // Меню контролёра — без «Что дальше?», как у гостя и овнера (W49).
-      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('proto.menu_controller') }, trace: ['ADR-0025'],
+      { id: 'menu', kind: 'card', card: { title: '', lines: [], body: T('menu.lead_controller') }, trace: ['ADR-0025'],
         buttons: [
           { label: T('menu.btn.events'), webApp: '#/events', resume: 'menu' },
         ] },

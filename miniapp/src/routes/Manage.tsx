@@ -161,9 +161,11 @@ function clientErrors(
   else if (title && (title.length < 2 || title.length > 200)) add(0, 'title', 'manage.err.title_length');
   if ((f['description'] || '').length > 4000) add(0, 'description', 'manage.err.description_length');
 
+  // Адрес обязателен только офлайну (онлайн — только даты, решение
+  // владельца 2026-09-20): формат приходит в geo, без него — старое правило.
   const address = (f['address'] || '').trim();
-  if (strict && !address) add(1, 'address', 'manage.err.required');
-  else if (address && (address.length < 2 || address.length > 300)) add(1, 'address', 'manage.err.address_length');
+  if (address && (address.length < 2 || address.length > 300)) add(1, 'address', 'manage.err.address_length');
+  else if (strict && !address && (!geo || !geo.online)) add(1, 'address', 'manage.err.required');
   (['starts_at', 'ends_at', 'reg_deadline_at'] as const).forEach((k) => {
     if (strict && !f[k]) add(1, k, 'manage.err.datetime');
   });
@@ -783,10 +785,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     (nextOnline: boolean) => {
       setOnline(nextOnline);
       if (nextOnline) {
-        // Онлайн — никакой ссылки: точку сносим, поле ссылки чистим.
-        setFields((prev) => ({ ...prev, lat: '', lon: '' }));
+        // Онлайн — только даты (решение владельца 2026-09-20): точку сносим,
+        // поле ссылки и адрес чистим, их ошибки снимаем.
+        setFields((prev) => ({ ...prev, address: '', lat: '', lon: '' }));
         setMapLink('');
-        setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon'));
+        setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon' && e.field !== 'address'));
       }
     },
     [],
@@ -1361,32 +1364,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               {step === 1 && (
                 <div className="form-section">
                   <div className="field">
-                    <label className="label" htmlFor="f-address">
-                      {t('field.address')}
-                    </label>
-                    <input
-                      className={`input ${fieldError('address') ? 'error' : ''}`}
-                      id="f-address"
-                      name="address"
-                      maxLength={300}
-                      autoComplete="street-address"
-                      value={fields['address']}
-                      onChange={(e) => setField('address', e.target.value)}
-                    />
-                    <p className="helper">{t('manage.hint.address')}</p>
-                    {fieldError('address') && (
-                      <p className="helper error" id="e-address">
-                        {fieldError('address')}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="field">
-                    <span className="label">{t('field.geo')}</span>
-                    {/* W50 (вердикт W49, перенос из prototypes/app.js): тогл
-                        формата вместо гео-конструктора. Онлайн — никакой
-                        ссылки; офлайн — голое поле ссылки с живым разбором.
-                        Успех — тишина, пустое — подсказка, битая — ошибка. */}
+                    <span className="label">{t('manage.geo.format')}</span>
+                    {/* Формат — первое поле шага (решение владельца 2026-09-20):
+                        онлайн — только даты, офлайн — адрес + ссылка. */}
                     <div className="chip-row" role="group" aria-label={t('manage.geo.format')}>
                       <button
                         type="button"
@@ -1405,8 +1385,35 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         {t('manage.geo.offline')}
                       </button>
                     </div>
-                    {!online && (
-                      <>
+                  </div>
+
+                  {!online && (
+                    <>
+                      <div className="field">
+                        <label className="label" htmlFor="f-address">
+                          {t('field.address')}
+                        </label>
+                        <input
+                          className={`input ${fieldError('address') ? 'error' : ''}`}
+                          id="f-address"
+                          name="address"
+                          maxLength={300}
+                          autoComplete="street-address"
+                          value={fields['address']}
+                          onChange={(e) => setField('address', e.target.value)}
+                        />
+                        <p className="helper">{t('manage.hint.address')}</p>
+                        {fieldError('address') && (
+                          <p className="helper error" id="e-address">
+                            {fieldError('address')}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="field">
+                        <label className="label" htmlFor="f-geolink">
+                          {t('manage.geo.link')}
+                        </label>
                         <input
                           className={`input ${fieldError('geo') ? 'error' : ''}`}
                           id="f-geolink"
@@ -1433,14 +1440,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           }
                           return <p className="helper">{t('manage.geo.none')}</p>;
                         })()}
-                      </>
-                    )}
-                    {fieldError('geo') && (
-                      <p className="helper error" id="e-geo">
-                        {fieldError('geo')}
-                      </p>
-                    )}
-                  </div>
+                        {fieldError('geo') && (
+                          <p className="helper error" id="e-geo">
+                            {fieldError('geo')}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   <div className="field">
                     <label className="label" htmlFor="f-starts_at">
