@@ -19,12 +19,12 @@
 | lang | TEXT | `wW12TT5X2kFgLryWbnnm5` | `XzWbggBmUBAYSMxGkaTYs` | `ru` / `uz` / `en` |
 | consent_pdn | STATIC_DROPDOWN | `KtdV8plfevjdnKlLko08q` | `mtWROpZrIW5v1Aqv3dM5U` | `true` / `false` — согласие на обработку данных (PAR-1) |
 | consent_pdn_at | DATE | `LeY6BeUOzWIyEtUFfKNbI` | `tw8cz1KCjEp91HhCTvIGS` | когда дано, UTC |
-| profile_first_name | TEXT | `SVQHL3bEpU9x9mMe5vuwV` | `SVQHL3bEpU9x9mMe5vuwV` | имя из онбординга (PAR-8, W50); отдельно от `first_name` — то перезаписывается апдейтами |
-| profile_last_name | TEXT | `B0bP8keR2vuyH0G4p1HYv` | `B0bP8keR2vuyH0G4p1HYv` | фамилия из онбординга (имена решены W50, Q58) |
-| position | TEXT | `uey0e0Uv13EGEwIqo3kod` | `uey0e0Uv13EGEwIqo3kod` | должность из онбординга |
-| company | TEXT | `DJw9ie9ZMuVvX6V3CHefm` | `DJw9ie9ZMuVvX6V3CHefm` | компания, может отсутствовать |
-| city | TEXT | `WUxzEvTHUI2IHcAGEGiG0` | `WUxzEvTHUI2IHcAGEGiG0` | город из онбординга |
-| profile_completed_at | DATE | `LTv6dhg23SgfyzTpIRGkT` | `LTv6dhg23SgfyzTpIRGkT` | когда профиль заполнен; гейт повторного касания |
+| profile_first_name | TEXT | `em7af2g9kyaNXC2tPNvXF` | `SVQHL3bEpU9x9mMe5vuwV` | имя из онбординга (PAR-8, W50); отдельно от `first_name` — то перезаписывается апдейтами |
+| profile_last_name | TEXT | `KsKN4eTmjZN2IxrZxm5qZ` | `B0bP8keR2vuyH0G4p1HYv` | фамилия из онбординга (имена решены W50, Q58) |
+| position | TEXT | `p5TNNHUYCrHv3L6SWCRWb` | `uey0e0Uv13EGEwIqo3kod` | должность из онбординга |
+| company | TEXT | `wz2jSqAxfldiP8b0YOokJ` | `DJw9ie9ZMuVvX6V3CHefm` | компания, может отсутствовать |
+| city | TEXT | `t89wutkSapoK3QKmZ0Vb8` | `WUxzEvTHUI2IHcAGEGiG0` | город из онбординга |
+| profile_completed_at | DATE | `EAlXy4XsXGAeM7UrS0TIQ` | `LTv6dhg23SgfyzTpIRGkT` | когда профиль заполнен; гейт повторного касания |
 | consent_marketing | STATIC_DROPDOWN | `FpWznk9Fgl8wUXXUKolRu` | `p5kwWMUyrOXRvQx4oTH29` | `true` / `false` — отдельное согласие (PAR-2) |
 | consent_marketing_at | DATE | `3t75byELQCZ1ejfTADsvp` | `43TyWVNELRXBlud9Iuziy` | |
 | blocked_bot | STATIC_DROPDOWN | `ja2S7DwVun5AKs3Jk7jK6` | `9u6qoAhEOXOp00K5AjshG` | `true` / `false` — ставится при `403` (OWN-12) |
@@ -36,3 +36,10 @@
   Пусто ≠ `false`: непроставленный `consent_marketing` читается как `null`, и это
   тоже «нет согласия» (PAR-2), но фильтр `eq false` его **не** найдёт — только `not_exists`.
 - Уникальности по `telegram_id` БД не даёт (ADR-0003), запись идёт через find-then-write.
+- **Шесть профильных полей (`profile_first_name`…`profile_completed_at`)
+  раньше числились в этой таблице с `externalId`, равным `field id`** —
+  ошибка с W50, найденная и исправленная в W58 в живых флоу
+  (`reg-start`/`reg-profile`/`reg-api` читали и писали профиль по этим
+  неверным значениям: чтение `columns` терпит `id` молча, запись `values`
+  — нет, отбрасывает несовпадающий ключ без ошибки). Значения выше сверены
+  с `ap_export_table` напрямую, не переписаны с прежней строки этого файла.

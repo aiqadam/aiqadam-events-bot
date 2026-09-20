@@ -24,7 +24,8 @@ const esc = (v) => String(v === undefined || v === null ? '' : v)
 
 | Флоу | Шаг |
 |---|---|
-| `reg-start` | CODE «build card: событие + вопрос ПД» |
+| `reg-start` | CODE «build ob entry card», CODE «build card: событие + профиль + регистрация» |
+| `reg-profile` | CODE «render ob card» |
 | `reg-consent-pdn` | CODE «card text: зарегистрирован + вопрос о рассылке», CODE «card text: отказ от ПД» |
 | `reg-consent-mkt` | CODE «тексты: финальная карточка и билет» |
 | `reg-afterword` | CODE «текст послесловия + ближайшее событие» |
