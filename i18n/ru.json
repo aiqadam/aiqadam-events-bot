@@ -301,7 +301,6 @@
   "participants.item": "{name} — {status}",
   "participants.title": "Участники: «{title}»",
   "profile.city": "Город",
-  "profile.city_hint": "Ташкент и Алматы — одной кнопкой, другой напишите руками.",
   "profile.company": "Компания",
   "profile.company_hint": "Можно пропустить — фриланс, студент.",
   "profile.first": "Имя",

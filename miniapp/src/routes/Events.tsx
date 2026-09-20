@@ -744,12 +744,11 @@ function ProfileTab({
       {field('pf-last', t('profile.last'), 'last')}
       {field('pf-position', t('profile.position'), 'position')}
       {field('pf-company', t('profile.company'), 'company', t('profile.company_hint'))}
-      {field('pf-city', t('profile.city'), 'city', t('profile.city_hint'))}
+      {field('pf-city', t('profile.city'), 'city')}
       <label className="control-row" htmlFor="pf-mkt">
         <input id="pf-mkt" type="checkbox" className="checkbox" checked={mkt} onChange={onMktChange} />
         <span>{t('reg.mkt.label')}</span>
       </label>
-      <div className="helper">{t('reg.mkt.hint')}</div>
       {pdnDone && <p className="helper">{pdnDone}</p>}
       {msg && (
         <p className="helper" role="status">
