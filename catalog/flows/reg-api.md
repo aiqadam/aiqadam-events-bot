@@ -44,8 +44,8 @@
 | step_12 | `tables-upsert-records users` | `consent_pdn = true` + время, `consent_marketing = true/false` + время (всегда записывается, PAR-2); профиль НЕ пишет — для него ветка `registered_profile` |
 | step_13 | `return_response` (`stop`) | `200 {ok, outcome:'registered', text}` |
 | step_18→20 (`registered_profile`) | upsert `registrations` → upsert `users` (согласия + профиль + `profile_completed_at`) → respond | регистрация из каталога с одновременным заполнением профиля (W50) |
-| step_21 (`profile`) | `return_response` (`stop`) | таб «Профиль»: `{ok, outcome:'profile', profile, pdnDone}` без записей |
-| step_22→23 (`profile_saved`) | upsert `users` (профиль + `profile_completed_at`) → respond | правка профиля табом; валидация та же, что в шите |
+| step_21 (`profile`) | `return_response` (`stop`) | таб «Профиль»: `{ok, outcome:'profile', profile, pdnDone, consentMarketing}` без записей |
+| step_22→23 (`profile_saved`) | upsert `users` (профиль + `consent_marketing`/`consent_marketing_at`) → respond | правка профиля табом (W60: и переключатель рассылки); валидация профиля та же, что в шите |
 | step_14 | `tables-upsert-records registrations` | отменить: `status = cancelled`, `cancelled_at = now`, ключ `(event_id, telegram_id)` |
 | step_15 | `return_response` (`stop`) | `200 {ok, outcome:'cancelled', text}` |
 | step_16 | `return_response` (`stop`) | `mine`, повторы, отказы — ответ из `step_9` без записей |
@@ -92,6 +92,14 @@
   вызов отвечал `200 ok` — различающий прогон: `ap_run_action` тем же
   `tables-upsert-records` напрямую, с литеральным значением, тоже не записал.
   Исправлено на верные `externalId` (см. `ap_export_table` для маппинга).
+- **Таб «Профиль» переключает `consent_marketing` (W60).** Причина: чат-путь
+  (`reg-profile/finish_lite`) больше не переспрашивает согласие на рассылку
+  при повторной регистрации (спросили один раз — хватит), поэтому нужен
+  способ передумать без новой регистрации. `profile_get` отдаёт текущее
+  значение (`consentMarketing`, из `users.consent_marketing`), `profile_save`
+  принимает `consentMarketing` в теле и пишет его вместе с профилем —
+  `consent_marketing_at` проставляется всегда, тем же приёмом, что и везде
+  с PAR-2 (пустая дата — «не отвечал», а не «нет»).
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
   прогона `telegram_id` каждого участника события на любой вызов `register`/
