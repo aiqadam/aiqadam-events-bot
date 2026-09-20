@@ -4,9 +4,13 @@
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
   (ветка `reg_profile`): колбэки `ob:*` и свободный ввод на шагах `ob_await_*`
   (ADR-0015: одно касание flows, ADR-0016: одинаковые по устройству шаги делят флоу)
-- **Назначение**: онбординг C первого касания (PAR-8, [ADR-0032](../../docs/adr/0032-onboarding-first-touch-profile.md)):
-  зачем → согласие → имя (эвристика) → работа → город → «Всё верно?» → регистрация.
-  Повторное касание (`ob:register`) — только создание регистрации
+- **Назначение**: онбординг C первого касания (PAR-8, [ADR-0032](../../docs/adr/0032-onboarding-first-touch-profile.md),
+  [ADR-0034](../../docs/adr/0034-onboarding-any-first-touch.md)):
+  зачем → согласие → имя (эвристика) → работа → город → «Всё верно?» → запись.
+  Диалог общий для входа по диплинку события (`draft.eventId` заполнен —
+  запись создаёт регистрацию) и для голого `/start` (`eventId` пуст — пишется
+  только профиль, регистрировать не на что). Повторное касание (`ob:register`)
+  — только создание регистрации, всегда с событием.
 - **Flow ID (MCP)**: `5U3Kv0cSrnvDTrbictA4L` · **externalId**: `bEd0cScLAymIT44Dmtnxu`
 
 ## Шаги
@@ -18,13 +22,14 @@
 | step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
 | step_2 | `tables-find-records events` | событие по `id` из draft (после парсинга — ссылка вперёд невозможна) |
 | step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); тексты — вход `texts` (ADR-0014) |
-| step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `Otherwise` |
+| step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `finish_no_event` / `Otherwise` |
 | step_6 (`ignore`), step_7 (`Otherwise`) | CODE noop | чужой вход — тишина |
 | step_8→12 (`card`) | upsert сессии → `edit card` (+ фолбэк новым сообщением с перепиской draft) | обычные шаги диалога |
 | step_13→18 (`consent`) | upsert `consent_pdn` → upsert сессии → `edit card` (+ фолбэк) | согласие пишется до вопросов профиля |
 | step_19→21 (`declined`) | clear сессии → `edit card` (+ фолбэк) | отказ без согласия |
-| step_22→28 (`finish`) | upsert `users` (профиль + consent) → upsert `registrations` → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | «Всё верно?» — единственное место создания регистрации первого касания |
+| step_22→28 (`finish`) | upsert `users` (профиль + consent) → upsert `registrations` → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | «Всё верно?» с событием — регистрация первого касания |
 | step_29→34 (`finish_lite`) | upsert `registrations` → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | повторное касание: `users` не трогаем (профиль не затираем пустым) |
+| step_35→40 (`finish_no_event`) | upsert `users` (профиль + consent) → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | ADR-0034: «Всё верно?» без события (голый `/start`) — регистрацию создавать не на что, `registrations` не трогаем; хвост `await_marketing` тот же, `reg-consent-mkt` сам решает по пустому `eventId`, что показать |
 
 ## Зависимости
 
@@ -65,6 +70,14 @@
 - **Разделение `finish`/`finish_lite` — защита от затирания**: lite-ветка не
   пишет `users` вовсе, потому что в её draft профиля нет, а пустые строки
   через upsert не отличить от «очистить». Цена — дублированная цепочка шагов.
+- **`finish_no_event` (ADR-0034) — та же логика, что `finish`, минус
+  создание регистрации.** Разводит их `step_4`: `action === 'finish'` при
+  пустом `draft.eventId` даёт `writeKind = 'finish_no_event'`, а не
+  `'finish'`; текст карточки берёт `profile.saved(.header)` вместо
+  `reg.done(.header)`. Цена та же, что у `finish`/`finish_lite` — ещё одна
+  дублированная цепочка шагов, а не условный шаг внутри одной ветки
+  (ROUTER — единственный способ на платформе безопасно пропустить один
+  шаг посреди цепочки).
 - **Без атомарности**: между upsert `users` и `registrations` провал оставляет
   профиль без регистрации — повторный `/start` ведёт в `register` (профиль
   заполнен) и дооформляет; между записью и отправкой — IDM-1 в `reg-consent-mkt`.

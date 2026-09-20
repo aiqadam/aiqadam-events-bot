@@ -12,22 +12,174 @@
     "displayName": "callableFlow",
     "name": "trigger",
     "nextAction": {
-      "displayName": "read staff row (organizer?)",
+      "displayName": "read profile (ADR-0034 гейт)",
       "name": "step_1",
       "nextAction": {
-        "displayName": "read my staff rows",
+        "displayName": "gate: профиль заполнен?",
         "name": "step_2",
         "nextAction": {
-          "displayName": "read published events",
-          "name": "step_3",
-          "nextAction": {
-            "displayName": "render menu",
-            "name": "step_4",
-            "nextAction": {
-              "displayName": "send menu",
-              "name": "step_5",
+          "children": [
+            {
+              "displayName": "read staff row (organizer?)",
+              "name": "step_8",
+              "nextAction": {
+                "displayName": "read my staff rows",
+                "name": "step_9",
+                "nextAction": {
+                  "displayName": "read published events",
+                  "name": "step_10",
+                  "nextAction": {
+                    "displayName": "render menu",
+                    "name": "step_11",
+                    "nextAction": {
+                      "displayName": "send menu",
+                      "name": "step_12",
+                      "settings": {
+                        "actionName": "send_text_message",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_notification": false,
+                          "format": "None",
+                          "message": "{{step_11['output'].text}}",
+                          "protect_content": false,
+                          "reply_markup": "{{step_11['output'].reply_markup}}",
+                          "web_page_preview": false
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "badPayload": "{{trigger['output'].data.badPayload}}",
+                        "firstName": "{{trigger['output'].data.firstName}}",
+                        "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                        "publishedRecords": "{{step_10['output']}}",
+                        "staffRecords": "{{step_9['output']}}",
+                        "staffRoleRecords": "{{step_8['output']}}",
+                        "telegramId": "{{trigger['output'].data.telegramId}}",
+                        "texts": {
+                          "menu.btn.events": "События",
+                          "menu.btn.manage": "Панель администратора",
+                          "menu.btn.new_event": "Новое событие",
+                          "menu.lead_controller": "Откройте каталог по кнопке ниже — сканер рядом с вашим событием",
+                          "menu.lead_guest": "Найдите свои билеты и регистрируйтесь на события по кнопке ниже",
+                          "menu.lead_owner": "Создайте событие или откройте каталог по кнопкам ниже",
+                          "start.bad_payload": "Ссылку не удалось разобрать. Вот что открыто сейчас:",
+                          "start.greeting": "Привет, {name}! Это бот событий AI Qadam.",
+                          "start.greeting_anon": "Привет! Это бот событий AI Qadam."
+                        }
+                      },
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  // Вердикт W49 (ADR-0027/ADR-0033, перенос из prototypes/scenarios.js:39-49):\n  // гость — одна кнопка «События», свой текст без заголовка;\n  // овнер — «События» + «Новое событие» сразу на форму #/manage/new;\n  // кнопки сканера в чате нет — сканер только рядом с событием (STF-2).\n  // W51 (решение владельца 2026-09-19): овнеру вернули вход в свой список —\n  // «Панель администратора» сразу на #/manage (правка без команд, ADR-0025).\n  // W52 (решение владельца 2026-09-19): у овнера первой кнопкой —\n  // «Панель администратора», затем «События» и «Новое событие».\n  // ADR-0034: этот шаг выполняется только когда профиль уже заполнен —\n  // гейт стоит раньше (step_2/step_3), роли здесь ни при чём.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n\n  const telegramId = str(inputs.telegramId);\n  const firstName = str(inputs.firstName).trim();\n  const badPayload = inputs.badPayload === true || str(inputs.badPayload) === 'true';\n  const miniappUrl = str(inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const nowMs = Date.now();\n\n  // Организатор — есть строка в `staff` с telegram_id = пользователь (ADR-0024).\n  // Это видимость, а не авторизация: правило прав решает manage-api.\n  // Постфильтр по telegram_id повторяет фильтр шага (defense in depth, Q25).\n  const isOwner = arr(inputs.staffRoleRecords).map(flat).some((r) => r.telegram_id === telegramId);\n\n  // Контролёр — активная строка event_staff (пустой revoked_at) на ещё не\n  // закончившееся опубликованное событие. Отдельной кнопки в чате больше нет:\n  // сканер — рядом с событием в Mini App + кнопка на конкретное событие\n  // в accept-карточке. Здесь флаг нужен только для текста и роли.\n  const published = arr(inputs.publishedRecords).map(flat).filter((r) => r.status === 'published');\n  const byId = {};\n  published.forEach((r) => { byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const isController = arr(inputs.staffRecords).map(flat)\n    .some((r) => r.telegram_id === telegramId && r.revoked_at === '' && byId[r.event_id] && notPast(byId[r.event_id]));\n\n  const preamble = badPayload\n    ? t('start.bad_payload')\n    : (firstName ? t('start.greeting', { name: firstName }) : t('start.greeting_anon'));\n\n  // Порядок кнопок фиксирован, по одной в ряд. Двойная роль — объединение.\n  const eventsBtn = [{ text: t('menu.btn.events'), web_app: { url: base + '/#/events' } }];\n  const manageBtn = [{ text: t('menu.btn.manage'), web_app: { url: base + '/#/manage' } }];\n  const newEventBtn = [{ text: t('menu.btn.new_event'), web_app: { url: base + '/#/manage/new' } }];\n  let rows;\n  let lead;\n  let role;\n  if (isOwner && isController) {\n    rows = [manageBtn, eventsBtn, newEventBtn];\n    lead = t('menu.lead_owner');\n    role = 'owner_controller';\n  } else if (isOwner) {\n    rows = [manageBtn, eventsBtn, newEventBtn];\n    lead = t('menu.lead_owner');\n    role = 'owner';\n  } else if (isController) {\n    rows = [eventsBtn];\n    lead = t('menu.lead_controller');\n    role = 'controller';\n  } else {\n    rows = [eventsBtn];\n    lead = t('menu.lead_guest');\n    role = 'guest';\n  }\n\n  return {\n    text: preamble + '\\n\\n' + lead,\n    reply_markup: { inline_keyboard: rows },\n    isOwner: isOwner, isController: isController, role: role, badPayload: badPayload, buttons: rows.length\n  };\n};",
+                        "packageJson": "{}"
+                      }
+                    },
+                    "type": "CODE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "columns": [
+                        "39qJ4o2MYyNYsT2VtxfcK",
+                        "8me4o2U2wj6cyrv8lfJv9",
+                        "zIA6xEHm7y1bwkajoYDQn",
+                        "iUPI69WFE2B8w3BBHdrak"
+                      ],
+                      "filters": {
+                        "filters": [
+                          {
+                            "field": {
+                              "id": "iUPI69WFE2B8w3BBHdrak",
+                              "name": "status",
+                              "type": "STATIC_DROPDOWN"
+                            },
+                            "operator": "eq",
+                            "value": "published"
+                          }
+                        ]
+                      },
+                      "limit": 50,
+                      "record_ids": [],
+                      "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-find-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "columns": [
+                      "r5WohfFLBagrxVrPDgB9s",
+                      "Rs62LH1YLr1QBsnpIrJzH",
+                      "zX2FO3bZZJuAZcVyZHiRw"
+                    ],
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": {
+                            "id": "Rs62LH1YLr1QBsnpIrJzH",
+                            "name": "telegram_id",
+                            "type": "TEXT"
+                          },
+                          "operator": "eq",
+                          "value": "{{trigger['output'].data.telegramId}}"
+                        }
+                      ]
+                    },
+                    "limit": 50,
+                    "record_ids": [],
+                    "table_id": "t1g8Vae3iEoDk93D6Rle7"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
               "settings": {
-                "actionName": "send_text_message",
+                "actionName": "tables-find-records",
                 "errorHandlingOptions": {
                   "continueOnFailure": {
                     "value": false
@@ -37,101 +189,211 @@
                   }
                 },
                 "input": {
-                  "chat_id": "{{trigger['output'].data.chatId}}",
-                  "disable_notification": false,
-                  "format": "None",
-                  "message": "{{step_4['output'].text}}",
-                  "protect_content": false,
-                  "reply_markup": "{{step_4['output'].reply_markup}}",
-                  "web_page_preview": false
+                  "columns": [
+                    "ecOXPzqTqu2ktJ2Uj330k",
+                    "GJtF4zTRpzLjZWhM3cmMd"
+                  ],
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": {
+                          "id": "ecOXPzqTqu2ktJ2Uj330k",
+                          "name": "telegram_id",
+                          "type": "TEXT"
+                        },
+                        "operator": "eq",
+                        "value": "{{trigger['output'].data.telegramId}}"
+                      }
+                    ]
+                  },
+                  "limit": 1,
+                  "record_ids": [],
+                  "table_id": "PnDy6gw9tlLUqTGk2EOUn"
                 },
                 "propertySettings": {},
-                "qadamName": "@aiqadam/qadam-telegram-bot",
-                "qadamVersion": "0.8.0"
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.5"
               },
               "type": "PIECE",
               "valid": true
             },
-            "settings": {
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "badPayload": "{{trigger['output'].data.badPayload}}",
-                "firstName": "{{trigger['output'].data.firstName}}",
-                "miniappUrl": "{{variables['MINIAPP_URL']}}",
-                "publishedRecords": "{{step_3['output']}}",
-                "staffRecords": "{{step_2['output']}}",
-                "staffRoleRecords": "{{step_1['output']}}",
-                "telegramId": "{{trigger['output'].data.telegramId}}",
-                "texts": {
-                  "menu.btn.events": "События",
-                  "menu.btn.manage": "Панель администратора",
-                  "menu.btn.new_event": "Новое событие",
-                  "menu.lead_controller": "Откройте каталог по кнопке ниже — сканер рядом с вашим событием",
-                  "menu.lead_guest": "Найдите свои билеты и регистрируйтесь на события по кнопке ниже",
-                  "menu.lead_owner": "Создайте событие или откройте каталог по кнопкам ниже",
-                  "start.bad_payload": "Ссылку не удалось разобрать. Вот что открыто сейчас:",
-                  "start.greeting": "Привет, {name}! Это бот событий AI Qadam.",
-                  "start.greeting_anon": "Привет! Это бот событий AI Qadam."
-                }
-              },
-              "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  // Вердикт W49 (ADR-0027/ADR-0033, перенос из prototypes/scenarios.js:39-49):\n  // гость — одна кнопка «События», свой текст без заголовка;\n  // овнер — «События» + «Новое событие» сразу на форму #/manage/new;\n  // кнопки сканера в чате нет — сканер только рядом с событием (STF-2).\n  // W51 (решение владельца 2026-09-19): овнеру вернули вход в свой список —\n  // «Панель администратора» сразу на #/manage (правка без команд, ADR-0025).\n  // W52 (решение владельца 2026-09-19): у овнера первой кнопкой —\n  // «Панель администратора», затем «События» и «Новое событие».\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n\n  const telegramId = str(inputs.telegramId);\n  const firstName = str(inputs.firstName).trim();\n  const badPayload = inputs.badPayload === true || str(inputs.badPayload) === 'true';\n  const miniappUrl = str(inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const nowMs = Date.now();\n\n  // Организатор — есть строка в `staff` с telegram_id = пользователь (ADR-0024).\n  // Это видимость, а не авторизация: правило прав решает manage-api.\n  // Постфильтр по telegram_id повторяет фильтр шага (defense in depth, Q25).\n  const isOwner = arr(inputs.staffRoleRecords).map(flat).some((r) => r.telegram_id === telegramId);\n\n  // Контролёр — активная строка event_staff (пустой revoked_at) на ещё не\n  // закончившееся опубликованное событие. Отдельной кнопки в чате больше нет:\n  // сканер — рядом с событием в Mini App + кнопка на конкретное событие\n  // в accept-карточке. Здесь флаг нужен только для текста и роли.\n  const published = arr(inputs.publishedRecords).map(flat).filter((r) => r.status === 'published');\n  const byId = {};\n  published.forEach((r) => { byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const isController = arr(inputs.staffRecords).map(flat)\n    .some((r) => r.telegram_id === telegramId && r.revoked_at === '' && byId[r.event_id] && notPast(byId[r.event_id]));\n\n  const preamble = badPayload\n    ? t('start.bad_payload')\n    : (firstName ? t('start.greeting', { name: firstName }) : t('start.greeting_anon'));\n\n  // Порядок кнопок фиксирован, по одной в ряд. Двойная роль — объединение.\n  const eventsBtn = [{ text: t('menu.btn.events'), web_app: { url: base + '/#/events' } }];\n  const manageBtn = [{ text: t('menu.btn.manage'), web_app: { url: base + '/#/manage' } }];\n  const newEventBtn = [{ text: t('menu.btn.new_event'), web_app: { url: base + '/#/manage/new' } }];\n  let rows;\n  let lead;\n  let role;\n  if (isOwner && isController) {\n    rows = [manageBtn, eventsBtn, newEventBtn];\n    lead = t('menu.lead_owner');\n    role = 'owner_controller';\n  } else if (isOwner) {\n    rows = [manageBtn, eventsBtn, newEventBtn];\n    lead = t('menu.lead_owner');\n    role = 'owner';\n  } else if (isController) {\n    rows = [eventsBtn];\n    lead = t('menu.lead_controller');\n    role = 'controller';\n  } else {\n    rows = [eventsBtn];\n    lead = t('menu.lead_guest');\n    role = 'guest';\n  }\n\n  return {\n    text: preamble + '\\n\\n' + lead,\n    reply_markup: { inline_keyboard: rows },\n    isOwner: isOwner, isController: isController, role: role, badPayload: badPayload, buttons: rows.length\n  };\n};",
-                "packageJson": "{}"
-              }
-            },
-            "type": "CODE",
-            "valid": true
-          },
-          "settings": {
-            "actionName": "tables-find-records",
-            "errorHandlingOptions": {
-              "continueOnFailure": {
-                "value": false
-              },
-              "retryOnFailure": {
-                "value": false
-              }
-            },
-            "input": {
-              "columns": [
-                "39qJ4o2MYyNYsT2VtxfcK",
-                "8me4o2U2wj6cyrv8lfJv9",
-                "zIA6xEHm7y1bwkajoYDQn",
-                "iUPI69WFE2B8w3BBHdrak"
-              ],
-              "filters": {
-                "filters": [
-                  {
-                    "field": {
-                      "id": "iUPI69WFE2B8w3BBHdrak",
-                      "name": "status",
-                      "type": "STATIC_DROPDOWN"
+            {
+              "displayName": "build onboarding entry card (no event)",
+              "name": "step_4",
+              "nextAction": {
+                "displayName": "send card (единственная отправка, без события)",
+                "name": "step_5",
+                "nextAction": {
+                  "displayName": "draft JSON + cardMessageId (без события)",
+                  "name": "step_6",
+                  "nextAction": {
+                    "displayName": "start session ob_consent (без события)",
+                    "name": "step_7",
+                    "settings": {
+                      "actionName": "tables-upsert-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "key_columns": [
+                          "N8CdPxcdxLX9vFCINvZbL"
+                        ],
+                        "table_id": "toTKgngMTqDNJWDpQMh4d",
+                        "values": {
+                          "values": [
+                            {
+                              "ESthrMwpn29JLvE2BNIj4": "registration",
+                              "IdGimBh539UlGSz6L0Pyo": "ob_consent",
+                              "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                              "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                              "sctBFEsMf10UobeFgzsVt": "{{step_6['output'].draft}}"
+                            }
+                          ]
+                        }
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
                     },
-                    "operator": "eq",
-                    "value": "published"
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "cardMessageId": "{{step_5['output'].body.result.message_id}}"
+                    },
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: '',\n    utm: '',\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: 'ob_consent'\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "send_text_message",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "chat_id": "{{trigger['output'].data.chatId}}",
+                    "disable_notification": false,
+                    "format": "MarkdownV2",
+                    "message": "{{step_4['output'].text}}",
+                    "protect_content": false,
+                    "reply_markup": "{{step_4['output'].replyMarkup}}",
+                    "web_page_preview": false
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                  "qadamVersion": "0.8.0"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
                   }
+                },
+                "input": {
+                  "firstName": "{{trigger['output'].data.firstName}}",
+                  "texts": {
+                    "onb.btn.continue": "Дальше",
+                    "onb.why": "Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем."
+                  }
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг без диплинка — та же why-карточка, что у reg-start\n  // при входе по ссылке события, но без фактов события (их тут нет).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const replyMarkup = { inline_keyboard: [[{ text: t('onb.btn.continue'), callback_data: 'ob:continue' }]] };\n  return { text: esc(t('onb.why')), replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            {
+              "displayName": "unexpected — ничего не делаем",
+              "name": "step_13",
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {},
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  return { ignored: true };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            }
+          ],
+          "displayName": "профиль заполнен?",
+          "name": "step_3",
+          "settings": {
+            "branches": [
+              {
+                "branchName": "has_profile",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].needsOnboard}}",
+                      "operator": "BOOLEAN_IS_FALSE"
+                    }
+                  ]
                 ]
               },
-              "limit": 50,
-              "record_ids": [],
-              "table_id": "R4aSQpLZvw7d3u6DVOSjH"
-            },
-            "propertySettings": {},
-            "qadamName": "@aiqadam/qadam-tables",
-            "qadamVersion": "0.4.5"
+              {
+                "branchName": "needs_onboard",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_2['output'].needsOnboard}}",
+                      "operator": "BOOLEAN_IS_TRUE"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "Otherwise",
+                "branchType": "FALLBACK"
+              }
+            ],
+            "executionType": "EXECUTE_FIRST_MATCH"
           },
-          "type": "PIECE",
+          "type": "ROUTER",
           "valid": true
         },
         "settings": {
-          "actionName": "tables-find-records",
           "errorHandlingOptions": {
             "continueOnFailure": {
               "value": false
@@ -141,33 +403,14 @@
             }
           },
           "input": {
-            "columns": [
-              "r5WohfFLBagrxVrPDgB9s",
-              "Rs62LH1YLr1QBsnpIrJzH",
-              "zX2FO3bZZJuAZcVyZHiRw"
-            ],
-            "filters": {
-              "filters": [
-                {
-                  "field": {
-                    "id": "Rs62LH1YLr1QBsnpIrJzH",
-                    "name": "telegram_id",
-                    "type": "TEXT"
-                  },
-                  "operator": "eq",
-                  "value": "{{trigger['output'].data.telegramId}}"
-                }
-              ]
-            },
-            "limit": 50,
-            "record_ids": [],
-            "table_id": "t1g8Vae3iEoDk93D6Rle7"
+            "records": "{{step_1['output']}}"
           },
-          "propertySettings": {},
-          "qadamName": "@aiqadam/qadam-tables",
-          "qadamVersion": "0.4.5"
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг — на первое /start вообще, не только на диплинк\n  // события. Гейт один на все роли: пока профиль не заполнен, ни staff,\n  // ни owner не видят своего меню — сначала тот же онбординг, что и гость.\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const row = arr(inputs.records).map(flat)[0] || {};\n  const profileCompletedAt = String(row.profile_completed_at || '');\n  return { needsOnboard: profileCompletedAt === '', profileCompletedAt: profileCompletedAt };\n};",
+            "packageJson": "{}"
+          }
         },
-        "type": "PIECE",
+        "type": "CODE",
         "valid": true
       },
       "settings": {
@@ -182,14 +425,14 @@
         },
         "input": {
           "columns": [
-            "ecOXPzqTqu2ktJ2Uj330k",
-            "GJtF4zTRpzLjZWhM3cmMd"
+            "JtylZU291K7TuMn9c9F2t",
+            "EAlXy4XsXGAeM7UrS0TIQ"
           ],
           "filters": {
             "filters": [
               {
                 "field": {
-                  "id": "ecOXPzqTqu2ktJ2Uj330k",
+                  "id": "JtylZU291K7TuMn9c9F2t",
                   "name": "telegram_id",
                   "type": "TEXT"
                 },
@@ -200,7 +443,7 @@
           },
           "limit": 1,
           "record_ids": [],
-          "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+          "table_id": "xHhYjhwqKdONkrYJGcBsz"
         },
         "propertySettings": {},
         "qadamName": "@aiqadam/qadam-tables",
