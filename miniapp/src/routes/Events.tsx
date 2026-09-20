@@ -853,22 +853,26 @@ function RegistrationSheet({
           </div>
         </>
       )}
-      <label className="control-row" htmlFor="reg-pdn">
-        <input id="reg-pdn" type="checkbox" className="checkbox" checked={pdn} onChange={onPdn} />
-        <span>{t('reg.pdn.label')}</span>
-      </label>
-      <label className="control-row" htmlFor="reg-mkt">
-        <input id="reg-mkt" type="checkbox" className="checkbox" checked={mkt} onChange={onMkt} />
-        <span>{t('reg.mkt.label')}</span>
-      </label>
-      <div className="helper">{t('reg.mkt.hint')}</div>
+      {profileNeeded && (
+        <>
+          <label className="control-row" htmlFor="reg-pdn">
+            <input id="reg-pdn" type="checkbox" className="checkbox" checked={pdn} onChange={onPdn} />
+            <span>{t('reg.pdn.label')}</span>
+          </label>
+          <label className="control-row" htmlFor="reg-mkt">
+            <input id="reg-mkt" type="checkbox" className="checkbox" checked={mkt} onChange={onMkt} />
+            <span>{t('reg.mkt.label')}</span>
+          </label>
+          <div className="helper">{t('reg.mkt.hint')}</div>
+        </>
+      )}
       {error && (
         <div className="card result bad" id="reg-error">
           <p className="empty-heading">{error}</p>
         </div>
       )}
       <div className="sheet-actions">
-        <button type="button" className="btn btn-primary btn-lg" id="reg-submit" disabled={!pdn || busy} aria-busy={busy} onClick={onSubmit}>
+        <button type="button" className="btn btn-primary btn-lg" id="reg-submit" disabled={(profileNeeded && !pdn) || busy} aria-busy={busy} onClick={onSubmit}>
           {t('event.card.btn_register')}
         </button>
       </div>

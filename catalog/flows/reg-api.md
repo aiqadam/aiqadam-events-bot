@@ -41,7 +41,7 @@
 | step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); все тексты — во входе `texts` |
 | step_10 | ROUTER по `outcome` | `register` / `registered_profile` / `cancel` / `profile` / `profile_saved` / `Otherwise` (`mine` и отказы без записей) |
 | step_11 | `tables-upsert-records registrations` | создать/реактивировать: `id = <eventId>-<telegramId>`, `status = registered`, `registered_at = now`, ключ `(event_id, telegram_id)` |
-| step_12 | `tables-upsert-records users` | `consent_pdn = true` + время, `consent_marketing = true/false` + время (всегда записывается, PAR-2); профиль НЕ пишет — для него ветка `registered_profile` |
+| step_12 | `tables-upsert-records users` (**пропущен, W60**) | было — `consent_pdn = true` + время, `consent_marketing = true/false` + время; отключён: повторная регистрация (эта ветка достижима только при `profileDone`) больше не трогает `users` — согласия уже записаны раньше, перезапись из шита каталога по умолчанию-снятому чекбоксу молча откатывала `consent_marketing` на `false` |
 | step_13 | `return_response` (`stop`) | `200 {ok, outcome:'registered', text}` |
 | step_18→20 (`registered_profile`) | upsert `registrations` → upsert `users` (согласия + профиль + `profile_completed_at`) → respond | регистрация из каталога с одновременным заполнением профиля (W50) |
 | step_21 (`profile`) | `return_response` (`stop`) | таб «Профиль»: `{ok, outcome:'profile', profile, pdnDone, consentMarketing}` без записей |
@@ -100,6 +100,20 @@
   принимает `consentMarketing` в теле и пишет его вместе с профилем —
   `consent_marketing_at` проставляется всегда, тем же приёмом, что и везде
   с PAR-2 (пустая дата — «не отвечал», а не «нет»).
+- **Повторная регистрация (`register`, `profileDone = true`) не трогает
+  `users` вовсе (W60).** Раньше `step_12` писал `consent_pdn`/`consent_marketing`
+  на **каждой** регистрации через каталог, включая повторные, — шит
+  (`RegistrationSheet`) сбрасывает чекбоксы в снятое состояние при каждом
+  открытии, поэтому вторая и последующие регистрации молча откатывали
+  `consent_marketing` на `false`, даже если человек уже согласился в чате
+  или при первой регистрации. `step_9` также требовал `consentPdn` в теле
+  **каждого** запроса `register`, блокируя кнопку в шите заново. Симметрично
+  чат-фиксу (`reg-profile/finish_lite`): гейт `consentPdn` смягчён до «либо
+  прислано, либо уже есть `users.consent_pdn = true`» (`alreadyConsentedPdn`),
+  а `step_12` помечен `skip` — для `profileDone` пользователя согласия уже
+  корректны, писать нечего. Ветка `registered_profile` (первая регистрация
+  из каталога с одновременным заполнением профиля, `step_18→20`) не тронута —
+  там это первое и единственное согласие, писать обязательно.
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
   прогона `telegram_id` каждого участника события на любой вызов `register`/
