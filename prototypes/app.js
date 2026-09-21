@@ -1106,7 +1106,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const box = card([], 'invite-card');
       box.appendChild(E('div', 'card-title', T('staff.btn.invite')));
       box.appendChild(E('div', 'invite-link', url));
-      box.appendChild(muted(T('proto.staff_invite_hint')));
+      box.appendChild(muted(T('staff.invite.hint')));
       const acts = E('div', 'app-actions');
       acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary', icon: 'copy', onClick: () => PROTO.copy(url) }));
       acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(url), '_blank', 'noopener') }));

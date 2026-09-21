@@ -52,6 +52,43 @@
   с `only_if value: ""` — флоу неполный. Решение W10: доводим/пересобираем его
   как часть пакета, а не плодим второй.
 
+- **2026-09-21** — собран `staff-invite` (webhook, `nFIO7cJiEXlQMCdr6lLjc`):
+  `initData` → гейт `staff`+чаптер → `generate-password` (22, alphanumeric)
+  → `hash-text` sha256 → `staff_invites` (`token_hash`, `event_id`,
+  `created_by`, `created_at`, `expires_at = +24ч`) → `{inviteLink}`. Токен
+  в БД не пишется; ответ отдаёт ссылку один раз.
+- **2026-09-21** — доведён `staff-accept` (`8seS0t3EfBZbmMSxuuYwC`), ранее
+  безымянный `DISABLED`-черновик: у роутера `step_5` пустая ветка отказов
+  получила условия (`invalid`/`used`/`expired`), добавлен недостающий
+  `send accepted + scanner` (`step_11`) — до него флоу не отправлял успешный
+  ответ; тексты `step_4` приведены к текущему `ru.json` («события», после
+  W56); пустой fallback закрыт no-op. Опубликован и включён.
+- **2026-09-21** — `tg-router`: в разборе маршрута `kind='s'` уходит в
+  `staff_accept` (было — в `Otherwise` молча); добавлена ветка и
+  `callFlow staff-accept` (`queue`), payload `{token, eventId, chatId,
+  telegramId}`. Опубликован.
+- **2026-09-21** — Mini App: `STAFF_INVITE_API`, кнопка «Пригласить
+  контролёра» инлайн в табе «Контролёры» (`Manage.tsx`) с ссылкой,
+  подсказкой и «Скопировать»/«Поделиться»; `npm run build` зелёный.
+  Ключ `staff.invite.hint` добавлен в `ru.json`; прототип переведён на него
+  (свой `proto.staff_invite_hint` удалён) — эталон и продукт больше не
+  расходятся. `prototypes/check.mjs` — exit 0.
+- **2026-09-21** — живой тест приёма (`staff-accept`) на четырёх исходах,
+  фикстуры вставлены/удалены через MCP: валидная ссылка → «Вы контролёр
+  события …» + `used_at`/`used_by` + строка `event_staff` + кнопка сканера
+  (прогон `FT1Fe6UliSl65Wgm6e8GI`, PRODUCTION); повтор → «Ссылка уже
+  использована»; просроченная → «Срок действия ссылки истёк»; неизвестный
+  токен и токен «не на то событие» → «Ссылка не найдена» (fail-closed).
+  Сквозной диплинк проверен через `tg-router`: `/start s…-…` →
+  `route=staff_accept` → вызов флоу → сообщение владельцу (прогон
+  `vpwLPv92CrRjabDnhn3yi`). Негатив создания: `curl` на
+  `staff-invite/sync` с мусорным `initData` → `401 invalid_init_data`.
+- **2026-09-21** — каталог: карточки `catalog/flows/staff-invite.md` и
+  `staff-accept.md`, обновлены `tg-router.md`, `overview.md` (25 → 27
+  флоу), `docs/FLOWS.md`. Офлайн-гейты: `check.mjs` — exit 0,
+  `check-texts.py` — exit 0, `check-commands.py` — exit 0,
+  `check-export-secrets.sh` — чисто.
+
 ## Ревью
 
 - **Ревьюер**: — · **Дата**: — · **Вердикт**: —
@@ -62,4 +99,14 @@
 
 ## Хвосты и блокеры
 
-- —
+- **Экспорт `flows/*.json` и строки `migrations` — нужен ключ платформы**
+  (шаг 0.7 ROADMAP — действие человека). На машине ни `QADAM_API_KEY`, ни
+  Keychain нет, поэтому `tools/export-flows.sh` и `tools/check-migrations.py`
+  не запускались. Снимок через `ap_export_flow` без ключа даёт только
+  черновик, а записать большие JSON в репозиторий руками — не путь.
+  После ключа: экспорт трёх флоу (`staff-invite`, `staff-accept`,
+  `tg-router`) тем же коммитом/следом, `_manifest.json`, строки
+  `migrations`, и **`EXPECTED_BOT_TOKEN` в `check-export-secrets.sh` 6 → 7**
+  (`staff-invite/step_2` добавляет ссылку на `BOT_TOKEN`).
+- **Живой позитив создания** (`staff-invite` из Mini App) — нужен овнер:
+  кнопка заработает после деплоя Pages из `main`; негатив (`401`) доказан.
