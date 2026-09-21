@@ -338,7 +338,18 @@
 }
 @keyframes scan { 0% { top: 18%; } 50% { top: 82%; } 100% { top: 18%; } }
 @media (prefers-reduced-motion: reduce) { .scan-line { animation: none; top: 50%; } }
-.scan-hint { text-align: center; font-size: 13px; color: var(--muted-foreground); margin: -4px 0 14px; }
+/* Кадр — мок нативного попапа Telegram (showScanQrPopup, W62): подпись среды
+   и текст параметра text внутри кадра, а не строкой страницы под ним. */
+.scan-native-tag {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; white-space: nowrap;
+  color: color-mix(in oklch, var(--background) 70%, transparent);
+}
+.scan-native-hint {
+  position: absolute; left: 16px; right: 16px; bottom: 14px; text-align: center;
+  font-size: 13px; color: color-mix(in oklch, var(--background) 82%, transparent);
+}
 .verdict {
   display: flex; align-items: center; gap: 12px;
   border: 1px solid var(--border);

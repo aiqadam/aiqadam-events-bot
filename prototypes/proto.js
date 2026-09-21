@@ -19,6 +19,8 @@ PROTO.protoDict = {
   'proto.theme_dark': 'Тёмная тема',
   'proto.theme_light': 'Светлая тема',
   'proto.demo_hint': 'Демо-контролы прототипа. В продукте их нет.',
+  // W62: кадр сканера — мок нативного попапа Telegram, а не UI страницы.
+  'proto.scan_native': 'Нативный попап Telegram · showScanQrPopup',
   // предложения продукта (ещё не в ru.json; что переехало в ru.json —
   // удалено, места вызовов переведены на ключи ru.json)
   'proto.forwarded_from': 'Переслано',
