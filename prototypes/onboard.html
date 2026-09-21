@@ -24,10 +24,6 @@
 .m-btn{padding:12px;border-radius:12px;text-align:center;font-weight:600}
 .m-btn.primary{background:var(--primary);color:var(--primary-foreground)}
 .m-btn.ghost{border:1px solid var(--border)}
-.m-chips{display:flex;gap:8px;margin:2px 0 4px}
-.m-chip{padding:8px 14px;border-radius:999px;border:1px solid var(--border);font-size:14px}
-.m-chip.on{border-color:var(--primary);color:var(--primary)}
-.m-lock{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted-foreground)}
 .m-head-row{display:flex;align-items:center;gap:10px}
 .m-ava{width:44px;height:44px;border-radius:999px;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-weight:600}
 .status{font-size:12px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.04em}
@@ -98,16 +94,14 @@
         <div class="m-field"><label>Фамилия</label><input value="Азимов" /></div>
         <div class="m-field"><label>Должность</label><input value="ML-инженер" /></div>
         <div class="m-field"><label>Компания</label><input value="Payme" /><div class="m-note">Можно пропустить — фриланс, студент.</div></div>
-        <div class="m-field"><label>Город</label><input value="Ташкент" /><div class="m-note">Ташкент и Алматы — одной кнопкой, другой напишите руками.</div>
-          <div class="m-chips"><span class="m-chip on">Ташкент</span><span class="m-chip">Алматы</span></div>
-        </div>
-        <label class="m-lock"><input type="checkbox" checked disabled /> Согласие на обработку данных дано 26 сентября. Храним у себя, третьим не отдаём.</label>
+        <div class="m-field"><label>Город</label><input value="Ташкент" /></div>
         <label class="m-check"><input type="checkbox" /> Присылать анонсы других событий</label>
+        <div class="m-note">Согласие на обработку данных дано 26 сентября. Храним у себя, третьим не отдаём.</div>
         <div class="m-btn primary">Сохранить</div>
       </div></div>
       <table>
         <tr><td>Тапов</td><td>Открыл таб — поправил — сохранил</td></tr>
-        <tr><td>Плюс</td><td>Построен как таб каталога (без нового роута); валидация на месте; согласие залочено, маркетинг отдельно (PAR-2)</td></tr>
+        <tr><td>Плюс</td><td>Построен как таб каталога (без нового роута); валидация на месте; согласие показано подписью, маркетинг отдельно (PAR-2)</td></tr>
         <tr><td>Минус</td><td>Регистрация целиком в Mini App не переехала: нет приложения — нет регистрации, поэтому первым шагом остался чат C</td></tr>
       </table>
       <div class="m-note">Живой таб: <a href="app.html#/events">app.html#/events → «Профиль»</a> (инициалы, валидация и тост — кликабельны).</div>
@@ -171,8 +165,8 @@
     <li>Маркетинг — всегда отдельно и после (PAR-2), никогда чекбоксом «по умолчанию включён».</li>
     <li>Таблица <span class="mono">users</span>: новые поля <span class="mono">position, company, city</span> + <span class="mono">profile_completed_at</span>. Имя/фамилию профиля нельзя хранить в <span class="mono">first_name/last_name</span> — их перезаписывает каждый апдейт из Telegram.</li>
     <li>Второе касание: consent и профиль не спрашиваем, регистрация в один тап.</li>
-    <li>Правка профиля — таб «Профиль» в <a href="app.html#/events">#/events</a>: шапка с инициалами, 5 полей, город вводом с чипами-подсказками, согласие залочено.</li>
-    <li>Город — ввод с чипами Ташкент / Алматы: покрывает большинство и держит данные чистыми без справочника городов.</li>
+    <li>Правка профиля — таб «Профиль» в <a href="app.html#/events">#/events</a>: шапка с инициалами, 5 полей, город простым вводом, согласие показано подписью (не чекбоксом), маркетинг отдельным чекбоксом.</li>
+    <li>Город кнопками (Ташкент / Алматы / написать свой) — только в онбординге чата (вариант C); в табе «Профиль» поле города — обычный ввод.</li>
     <li>Компания — необязательна (фриланс/студент), остальные четыре поля обязательны.</li>
     <li>Полный текст согласия — за кнопкой «Подробнее», без ухода со сценария.</li>
   </ul>

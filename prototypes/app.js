@@ -1311,16 +1311,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }));
     screen.appendChild(form);
 
-    // Согласие на ПД — показано залоченным: дано один раз, здесь не меняется.
-    const pdnRow = E('label', 'control-row');
-    const pdnBox = E('input', 'checkbox');
-    pdnBox.type = 'checkbox';
-    pdnBox.checked = true;
-    pdnBox.disabled = true;
-    pdnRow.appendChild(pdnBox);
-    pdnRow.appendChild(E('span', '', T('profile.pdn_done', { when: p.pdnAt })));
-    screen.appendChild(pdnRow);
-
     // Рассылка — отдельное согласие (PAR-2), меняется здесь же.
     const mktRow = E('label', 'control-row');
     const mktBox = E('input', 'checkbox');
@@ -1332,6 +1322,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     // и успокаивать «на регистрацию не влияет» нечего (W60).
     mktRow.appendChild(E('span', '', T('reg.mkt.label')));
     screen.appendChild(mktRow);
+
+    // Согласие на ПД — подписью, не чекбоксом: дано один раз, здесь не
+    // меняется (в продукте тот же текст, W60).
+    screen.appendChild(E('div', 'helper', T('profile.pdn_done', { when: p.pdnAt })));
 
     const acts = E('div', 'sticky-actions');
     acts.appendChild(btn(T('manage.btn.save'), {
