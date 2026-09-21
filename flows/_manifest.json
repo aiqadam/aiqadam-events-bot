@@ -129,15 +129,27 @@
     "source": "mcp"
   },
   {
+    "flow": "staff-accept",
+    "flowId": "8seS0t3EfBZbmMSxuuYwC",
+    "publishedVersionId": "8ath7lNU6cmkgNUS2fZh7",
+    "source": "mcp"
+  },
+  {
     "flow": "staff-events-api",
     "flowId": "Ok7iXvrnJUUzNcR5OwH8x",
     "publishedVersionId": "3hfTCqI6nh7aFKBD0QAhM",
     "source": "mcp"
   },
   {
+    "flow": "staff-invite",
+    "flowId": "nFIO7cJiEXlQMCdr6lLjc",
+    "publishedVersionId": "cYLX8SyKdGhxp3Bu6PHE1",
+    "source": "mcp"
+  },
+  {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "WtULEacr3fJvK88Oczl1S",
+    "publishedVersionId": "pCZzbj5UKQAxztYtD4Oba",
     "source": "mcp"
   }
 ]

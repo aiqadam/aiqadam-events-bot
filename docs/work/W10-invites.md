@@ -96,6 +96,15 @@
   `migrations`, `EXPECTED_BOT_TOKEN` 6→7; затем ревью). Pages из `main`
   публикует SPA — кнопка «Пригласить контролёра» станет живой.
 
+- **2026-09-21** — **экспорт снят через MCP, без REST-ключа.** `ap_export_flow`
+  вызван напрямую по OAuth-токену opencode (`~/.local/share/opencode/mcp-auth.json`),
+  ответы сохранены в файлы, нормализованы `tools/export-flow-mcp.py` — так
+  большой `tg-router` не пришлось пересобирать руками. Диф `tg-router.json`
+  содержит ровно ожидаемое: ветка `staff_accept`, `callFlow staff-accept`
+  (`step_21`) и новый код `step_10`. Офлайн-гейты с полным экспортом:
+  `check-texts.py` 27 флоу/230 пар — 0, `check-commands.py` — 0,
+  `check-export-secrets.sh` — чисто (`EXPECTED_BOT_TOKEN` 7).
+
 ## Ревью
 
 - **Ревьюер**: — · **Дата**: — · **Вердикт**: —
@@ -106,14 +115,16 @@
 
 ## Хвосты и блокеры
 
-- **Экспорт `flows/*.json` и строки `migrations` — нужен ключ платформы**
-  (шаг 0.7 ROADMAP — действие человека). На машине ни `QADAM_API_KEY`, ни
-  Keychain нет, поэтому `tools/export-flows.sh` и `tools/check-migrations.py`
-  не запускались. Снимок через `ap_export_flow` без ключа даёт только
-  черновик, а записать большие JSON в репозиторий руками — не путь.
-  После ключа: экспорт трёх флоу (`staff-invite`, `staff-accept`,
-  `tg-router`) тем же коммитом/следом, `_manifest.json`, строки
-  `migrations`, и **`EXPECTED_BOT_TOKEN` в `check-export-secrets.sh` 6 → 7**
-  (`staff-invite/step_2` добавляет ссылку на `BOT_TOKEN`).
+- **Экспорт снят без REST-ключа, через MCP** (прямой вызов
+  `ap_export_flow` по OAuth-токену opencode — `mcp-auth.json`), затем
+  `tools/export-flow-mcp.py`: `flows/staff-invite.json` (`cYLX8SyKdGhxp3Bu6PHE1`),
+  `flows/staff-accept.json` (`8ath7lNU6cmkgNUS2fZh7`), `flows/tg-router.json`
+  (`pCZzbj5UKQAxztYtD4Oba`) — все `state: LOCKED`, `_manifest.json` 27 флоу
+  с `source: "mcp"`. `tools/check-export-secrets.sh`: `EXPECTED_BOT_TOKEN`
+  6 → 7 (`staff-invite/step_2`). Строки `migrations` — по этим версиям.
+- **`tools/check-migrations.py` (сетевая сверка) не запускался**: нужен
+  `QADAM_API_KEY`. Инварианты сведены вручную по MCP-экспорту и `_manifest.json`.
 - **Живой позитив создания** (`staff-invite` из Mini App) — нужен овнер:
-  кнопка заработает после деплоя Pages из `main`; негатив (`401`) доказан.
+  Pages задеплоен из `main` (#100), кнопка живая; негатив (`401`) доказан.
+- **Независимое ревью не проходило** — пакет влит решением владельца раньше
+  срока (см. запись о мерже).
