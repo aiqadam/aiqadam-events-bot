@@ -409,10 +409,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- роут: сканер ----------
   const scanOutcomes = [
-    { key: 'ok', tone: 'ok', icon: 'check-circle', label: (scan) => T('checkin.ok', { name: scan.nextCheckin || T('checkin.name_unknown') }), sub: 'proto.result_ok' },
-    { key: 'already', tone: 'warn', icon: 'clock', label: (scan) => T('checkin.already', { time: scan.alreadyAt }), sub: 'proto.result_already' },
-    { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'proto.result_denied' },
-    { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'proto.result_denied' },
+    { key: 'ok', tone: 'ok', icon: 'check-circle', label: (scan) => T('checkin.ok', { name: scan.nextCheckin || T('checkin.name_unknown') }), sub: 'checkin.sub_ok' },
+    { key: 'already', tone: 'warn', icon: 'clock', label: (scan) => T('checkin.already', { time: scan.alreadyAt }), sub: 'checkin.sub_already' },
+    { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'checkin.sub_denied' },
+    { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'checkin.sub_denied' },
   ];
   // Действие в состоянии ошибки: `resume` — вернуться к сканеру (сеть,
   // повтор), `close` — выйти из сканера (нет прав, событие не передан:

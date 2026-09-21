@@ -51,5 +51,8 @@ export const REG_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/SiYL8m6k4oy
 export const FEEDBACK_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/DgmYgxiEXBz0roebYRBUj/sync';
 // W50 (вердикт W49): чьи кнопки сканера в каталоге — решает сервер по event_staff.
 export const STAFF_EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/Ok7iXvrnJUUzNcR5OwH8x/sync';
+// W62: счётчики «Отмечено X из Y» для сканера — читает сервер по event_staff
+// конкретного события один раз при открытии экрана (в checkin-api не трогаем).
+export const CHECKIN_COUNTER_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/lm9S9cRuSZOpVAgl2h44R/sync';
 // W10 (OWN-14): создание одноразовой ссылки-инвайта контролёра (24 ч, один раз).
 export const STAFF_INVITE_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/nFIO7cJiEXlQMCdr6lLjc/sync';
