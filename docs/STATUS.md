@@ -23,8 +23,8 @@
 > а не соответствием эталону; W25/W27 ждут платформу #420 и gating W15).
 >
 > Порядок v0.1 пройден почти полностью: W42 → W38 → W43 → W44 → W12 → W13 →
-> W14 → W45 → W46 → W49. Перед приёмкой **W15** остались: W10, W47, W12c,
-> W12b, W25/W27 (все — не начаты).
+> W14 → W45 → W46 → W49. Перед приёмкой **W15** остались: W12c, W12b,
+> W25/W27 (не начаты); W10 и W47 закрыты 2026-09-21.
 > Решения владельца:
 > [Q51](OPEN-QUESTIONS.md#q51) (W44) — ✅, [Q53](OPEN-QUESTIONS.md#q53) и
 > [ADR-0028](adr/0028-feedback-screen-fifth-miniapp-page.md) (W45) — ✅,
@@ -106,7 +106,7 @@
 | W44. Контролёры: выбор из списка с поиском (вердикт W41) | v0.1 | W36 — ✅; [Q51](OPEN-QUESTIONS.md#q51) — ✅ решения при взятии (участники+staff чаптера, от 2 символов) | **готов** 2026-09-17 — ревью чисто; живой позитив отложен решением владельца (находки — отдельным пакетом) | агент | [W44](work/W44-staff-search.md) |
 | W45. Послесловие: благодарность и форма отзыва (вердикт W41) | v0.1 | W12 — ✅; [ADR-0028](adr/0028-feedback-screen-fifth-miniapp-page.md) — ✅ принят, [Q53](OPEN-QUESTIONS.md#q53) — ✅ | **готов** 2026-09-17 — независимое ревью, вердикт «замечаний нет»: новый `feedback-api` (участие+IDOR-гейт, upsert по `event_id`+`telegram_id`), `reg-afterword` — только благодарность, `manage-api` — действие `feedback_list`, новая таблица `feedback`, пятая страница SPA `#/feedback`; PR #74 (база — ещё не смерженный #73) | агент | [W45](work/W45-afterword-feedback.md) |
 | W12b. `dedup-report` (сужен до диагностики 2026-09-14, [Q42](OPEN-QUESTIONS.md#q42): считать и сообщать, не удалять) | v0.1 | W1, W5 | не начат — **v0.1 решением владельца 2026-09-18** | — | — |
-| W47. Mini App — платформенные функции второго уровня (`BackButton`, `HapticFeedback`, closing confirmation, vertical swipes) | v0.1 | W33 — ✅ | не начат — **v0.1 решением владельца 2026-09-18** (заведён по итогам ресёрча best practice; только клиентский слой SPA) | — | — |
+| W47. Mini App — платформенные функции второго уровня (`BackButton`, `HapticFeedback`, closing confirmation, vertical swipes) | v0.1 | W33 — ✅ | **готов** 2026-09-21 — решением владельца: независимое ревью 2 круга (круг 1 — одно «на будущее», исправлено; круг 2 — «замечаний нет»); headless-прогон 28/28, независимый 39/39; код (`BackButton`/haptics/closing, типы, хук) в ветке `w47-platform-functions`; device-only хвосты (живой показ `BackButton`, аудит `disableVerticalSwipes`) приняты решением владельца | агент | [W47](work/W47-platform-functions.md) |
 | W16. HMAC в Code step: `fn-verify-init-data`, `fn-sign-qr`, `fn-verify-qr` (ADR-0010) | 5 | W2, W8, ADR-0010 | **готов** 2026-09-09 | агент W16 | [W16](work/W16-hmac-inline-code-step.md) |
 | W17. Inline execution mode для `callFlow` (qadam-flow#363) | 5 | W8, W5, W16 | **готов** 2026-09-13 (решением владельца, не «замечаний нет» — [почему](work/W17-inline-callflow.md#закрытие-2026-09-13--решением-владельца-проекта)) | агент W17 | [W17](work/W17-inline-callflow.md) |
 | W18. Страховка от fail-open дефектов платформы ([Q25](OPEN-QUESTIONS.md#q25), qadam-flow#382/#392) | 5 | W8, W16 | **готов** 2026-09-13 | агент W18 | [W18](work/W18-fail-open-mitigation.md) |

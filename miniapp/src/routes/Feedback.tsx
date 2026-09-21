@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticNotification } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, FEEDBACK_API } from '../lib/api';
 import Icon from '../components/Icon';
@@ -14,9 +15,15 @@ import Icon from '../components/Icon';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+const noop = () => {};
+
 export default function Feedback({ eventId }: { eventId: string }) {
   const tg = getTelegram();
   const initData = tg?.initData ?? '';
+
+  // W47: корневой экран — нативная «Назад» скрыта, системный жест закрывает
+  // Mini App.
+  useBackButton(false, noop);
 
   const [dictLoaded, setDictLoaded] = useState(false);
   const [state, setState] = useState<LoadState>('loading');
@@ -32,6 +39,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
   const [done, setDone] = useState(false);
 
   const showError = useCallback((text: string, retry: boolean) => {
+    hapticNotification('error');
     setErrorText(text);
     setRetryable(retry);
     setState('error');
@@ -97,19 +105,23 @@ export default function Feedback({ eventId }: { eventId: string }) {
     const res = await postJson(FEEDBACK_API, { initData, eventId, action: 'submit', rating, comment });
     setBusy(false);
     if (res.kind === 'network') {
+      hapticNotification('error');
       setSubmitError(t('feedback.error.network'));
       return;
     }
     if (res.kind === 'server') {
+      hapticNotification('error');
       setSubmitError(t('feedback.error.server'));
       return;
     }
     const d = res.data;
     if (d['ok']) {
+      hapticNotification('success');
       setDone(true);
       return;
     }
     const txt = typeof d['text'] === 'string' && d['text'] ? d['text'] : t('feedback.error.unknown');
+    hapticNotification('error');
     setSubmitError(txt);
   }, [busy, rating, comment, initData, eventId]);
 

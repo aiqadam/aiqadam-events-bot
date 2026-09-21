@@ -581,6 +581,13 @@ React SPA с тремя hash-роутами — `#/ticket`, `#/scan`, `#/manage`
 Требование STF-1 «сканер не закрывается между людьми» — ограничение именно этой страницы:
 результат рисуется поверх сканера, попап не переоткрывается на каждого человека.
 
+**Платформенные функции Mini App (W47).** SPA использует нативный `BackButton`
+(6.1+), `HapticFeedback` (6.1+), `enableClosingConfirmation`/`disableClosingConfirmation`
+(6.2+); Safe Area API (8.0+, W48) задаёт **пол Bot API продукта — 8.0+**,
+отдельного гейта `isVersionAtLeast()` на каждый метод нет. `disableVerticalSwipes`
+(7.7+) не вызывается: конфликта с жестами страницы не подтверждено. Правила
+поведения — [MINIAPP-UX](MINIAPP-UX.md) п. 1 и 9.
+
 **Хостинг: GitHub Pages из этого репозитория** (решено), каталог `miniapp/`,
 адрес `https://miniapp.events.aiqadam.org/` — он же прописывается
 в BotFather как Mini App URL. Деплой пушем в `main`, HTTPS из коробки.
