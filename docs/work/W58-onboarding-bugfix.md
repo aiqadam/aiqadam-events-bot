@@ -423,6 +423,146 @@ MCP», сверка `ap_flow_structure`/`ap_read_step_code` с реальным 
 
 Статус пакета остаётся **на проверке**: блокер 1 не снят.
 
+### Круг 4
+
+- **Ревьюер**: независимый агент (чистый контекст), **дата**: 2026-09-21
+- **Вердикт**: есть замечания
+
+#### Как проверено (впервые — живьём через MCP)
+
+MCP-инструменты в этой сессии реально вызываемы: `ap_list_flows` первым
+действием вернул 28 флоу. Блокер кругов 1–3 (п.1/п.3 протокола) снят.
+Ключа REST по-прежнему нет, поэтому `tools/export-flows.sh` и
+`tools/check-migrations.py` не запускались; `_manifest.json` сверен с живым
+инстансом через MCP.
+
+**Заявленные фиксы — все четыре подтверждены на живом проекте:**
+
+1. `esc()` побайтово равен эталону. `ap_read_step_code` по `reg-start/step_9`,
+   `reg-start/step_14`, `reg-profile/step_4` — во всех трёх определение
+   совпадает с `catalog/snippets/markdown-v2.md` (один `\-` в символьном
+   классе, а не `\\-`):
+
+   ```
+       .replace(/\\/g, '\\\\')
+       .replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
+   ```
+
+   Живой прогон `reg-start` (`QMIpdLheNg7ycEZBaYWP4`, PRODUCTION): `step_9`
+   собрал карточку, `step_10` отдал `200` с `entities.bold` — раньше шаг падал
+   `SyntaxError`, и карточка не отправлялась вовсе. Таблица «Встраивают» в
+   эталоне полна: `const esc` встречается в 6 флоу (`menu`, `reg-afterword`,
+   `reg-consent-mkt`, `reg-consent-pdn` ×2, `reg-profile`, `reg-start` ×2) —
+   все 6 названы.
+2. `step` внутри `draft` — во всех местах записи. `draftOf` в
+   `reg-profile/step_4` включает `step: step`; `reg-start/step_15` пишет
+   `step: 'ob_consent'`, `step_17` — `'ob_register'`; фолбэк-шаги
+   (`reg-profile/step_11/17/27/39`) кладут `step: str(inputs.nextStep)`.
+   Живые `ap_find_records` по `sessions` показывают `draft` с полем `step`
+   (`ob_consent`, `ob_register`, `await_marketing`) — не только колонка.
+3. Ветка `writeKind === 'consent'` не мёртвая. `reg-profile/step_4` на
+   `action === 'consent_namecheck'` ставит `writeKind = 'consent'`; ROUTER
+   `step_5` имеет ветку `consent` → `step_13` (upsert `consent_pdn=true` +
+   `consent_pdn_at`). Живой PRODUCTION-прогон `FgAJ98gCAdXZCsSsbn7Yh`
+   (`ob:agree`): `step_4.writeKind = "consent"`, `step_5` выбрал ветку
+   `consent` (`evaluation: true`), `step_13` записал `consent_pdn=true`,
+   `consent_pdn_at=2026-09-20T17:44:42Z`, `step_14` — сессию `ob_name`.
+4. `id` vs `externalId`. `ap_export_table` по `users` отдаёт те же
+   `externalId` шести профильных полей, что записаны в
+   `catalog/tables/users.md` (`em7af2g9kyaNXC2tPNvXF`, `KsKN4eTmjZN2IxrZxm5qZ`,
+   `p5TNNHUYCrHv3L6SWCRWb`, `wz2jSqAxfldiP8b0YOokJ`, `t89wutkSapoK3QKmZ0Vb8`,
+   `EAlXy4XsXGAeM7UrS0TIQ`); живые `columns`/`values` в `reg-start/step_12`,
+   `reg-profile/step_22/35`, `reg-api/step_17/19/22` используют ровно их.
+   `ap_find_records` по `users`: строки `fQI6fiqWWecM8ivDJxEGX` (52128246) и
+   `j4oFTUC5DnVq2ktkFbCCR` (532804490) содержат все шесть профильных полей с
+   реальными значениями + `consent_pdn` — запись реально проходит.
+
+**Прогоны и различающий путь.** `reg-profile` в PRODUCTION — 15 успешных
+прогонов (до W58 было 0), `reg-start` и `reg-api` в PRODUCTION — успешные.
+`ap_get_run` по `ZDJfQpBsNXvz5cqQqHS3R` (PRODUCTION) показывает весь
+`finish`: `step_22` записал шесть полей профиля (значения в `cells` пришли по
+верным `externalId`), `step_23` создал `registrations`, `step_24` — сессию
+`await_marketing` с `step` в `draft`. Это отличается от сломанного поведения
+(пустой `draft.step` → `ignore`; `values` по `id` → поля `null`), то есть
+прогон различающий. Дополнительно в TESTING есть старые падения периода
+отладки (11:28–13:22) — они до фиксов и до W60.
+
+**Сверка каталога, экспорта и манифеста.** `ap_flow_structure` по трём флоу
+совпадает с `catalog/flows/*.md` (состав веток, `columns`/`values`, `format`,
+`skip` на `reg-api/step_12`). Состав `_manifest.json` (25 флоу) совпадает с
+живыми опубликованными (в живых 28; лишние три — `DISABLED`-черновики
+`zz-access-check-delete-me`, `zz-diag-skip-primitive`, `staff-accept`, которых
+в манифесте и не должно быть). `ap_export_flow` отдаёт версии: `reg-start`
+`l3UqicR6uUGlxtEfJQXbr` = манифест, `reg-api` `QLA3hrRlWnoMvMoPBA3x2` =
+манифест; у `reg-profile` последняя версия — `DRAFT`
+`bEMt8LcohToEoo06XMngp`, а манифест `xmhA4Y2zjfcZRAI0W3E6W` = последняя
+publish-строка `w60-04` (см. замечание 3).
+
+**AppSec.** `reg-api/step_2` берёт `telegramId` только из выхода
+`fn-hmac-init-data`, поле из тела для этого отбрасывается. `ob:decline`
+привязан к шагам `ob_consent`/`ob_details`. Пользовательские данные
+экранируются перед `MarkdownV2`, `format` задан явно в каждом шаге отправки
+и редактирования. `check-export-secrets.sh` — чисто (6/6 `BOT_TOKEN`,
+2/2 `QR_SIGNING_KEY`, весь `auth` — ссылками). Секретов в шагах и каталоге
+нет.
+
+**Офлайн-чекеры.** `check-texts.py` — 25 флоу, 223 пары, 0 расхождений;
+`check-commands.py` — самопроверка ok, 0 нарушений; `check-export-secrets.sh`
+— чисто. `check-migrations.py` не запускался (нет ключа), но его логика
+прочитана — именно она даёт замечание 1.
+
+#### Замечания
+
+1. **важно** Пять строк `migrations`, добавленных W58 (08:31–11:05),
+   записаны с **пустыми `id` и `version_id`** (`commit` пустой проверкой
+   допускается) — это не тот формат, которого требует каталог и
+   детерминированная проверка. Строки (record id): `mVmF9RqhfIRkfDwqpz96H`
+   (reg-start), `YHlkCPT3LSRCfB7Gcy2YW` и `LYZyFtRkSR6VHqrc9d659`
+   (reg-profile), `c3DNvHfDRepQD4xrVReDm` (reg-api), `LjsDaYW94RUu6IPoHeJxz`
+   (reg-profile, правка замечания 5). `catalog/tables/migrations.md` требует
+   «одна публикация — одна строка `publish` с `version_id`»;
+   `tools/check-migrations.py` инвариантом C валит `publish` без `version_id`
+   и `id` не в формате `YYYY-MM-DD-<пакет>-<NN>`, а инвариантом B1 — последнюю
+   publish-строку `reg-start` (`version_id` пуст против
+   `l3UqicR6uUGlxtEfJQXbr` в манифесте). То есть ответ на замечание 3 круга 1
+   («строки записаны») формально не закрыт: строки есть по количеству, но
+   проверка на них упадёт. Тот же дефект — у соседних owner-строк 10:39
+   (`lUJqgmqrI7e3Oakz2TfLf`, `noEFHre2LXQRauf8ycNSf`,
+   `HHEZdxXoOqsIigSnWrmen`), так что `check-migrations.py` сейчас не пройдёт
+   в принципе. Починка: дозаписать `id`/`version_id`/`commit` (и, если
+   последняя publish-строка `reg-start`/`menu`/`reg-consent-mkt` останется без
+   версии, републиковать соответствующее состояние).
+2. **на будущее** Таблица шагов в `catalog/flows/reg-start.md` неполна против
+   `ap_flow_structure`: в ней нет `step_13` (`Otherwise`-noop) и
+   `step_18`/`step_19` (ветка отказа `step_11`). Ветка описана прозой в
+   «Заметках», но по чек-листу п.2 список должен совпадать поимённо.
+3. **на будущее** На инстансе у `reg-profile` осталась **лишняя `DRAFT`-версия
+   `bEMt8LcohToEoo06XMngp`** (создана диагностическими `ap_test_*`-прогонами
+   13:22). Опубликованное состояние (`xmhA4Y2zjfcZRAI0W3E6W`) и манифест не
+   затронуты, но по гоче №14 следующий снимок через `ap_export_flow`
+   (`tools/export-flow-mcp.py`) без `ap_lock_and_publish` вернёт `DRAFT` и
+   будет отвергнут. Перед следующей выгрузкой без ключа REST — републикация.
+
+#### Чем это ревью ограничено
+
+- Ключа REST нет: `tools/export-flows.sh` и `tools/check-migrations.py` не
+  запускались. `check-migrations.py` прочитан построчно, его вердикт по
+  замечанию 1 — из кода и живых строк, а не из прогона скрипта.
+- `ap_export_flow` отдаёт последнюю версию, не обязательно опубликованную
+  ([Q44](../../docs/OPEN-QUESTIONS.md#q44)), поэтому сверка
+  `publishedVersionId` сделана по манифесту + последней publish-строке +
+  поведению живых PRODUCTION-прогонов, а не выборкой версии по id.
+- Фикс `reg-api/step_17/19/22` через сам webhook не прогнан: живого
+  `initData` у ревьюера нет. Механизм записи тот же, что в проверенном живьём
+  `reg-profile/step_22`, и конфигурация шагов сверена, но «вызвано через
+  Mini App» это не доказывает.
+- Отрицательные сценарии (`не-участник → отказ`) в этом пакете не менялись и
+  ревьюером не прогонялись: пакет правил запись профиля и разметку, не
+  авторизацию; `telegramId` из `initData` проверен чтением кода.
+
+Статус пакета остаётся **на проверке**: замечание 1 «важно» — чинит владелец,
+замечания 2–3 «на будущее».
+
 ## Хвосты и блокеры
 
 - Независимое ревью не запущено — пакет только что доведён.
@@ -437,3 +577,48 @@ MCP», сверка `ap_flow_structure`/`ap_read_step_code` с реальным 
   через сам webhook (`initData` для Mini App у агента нет, гоча CLAUDE.md);
   проверено тем же прямым `ap_run_action`, что и `reg-profile/step_22`
   (идентичный механизм записи), и чтением экспорта после правки.
+
+## Ответы владельца (круг 4)
+
+1. **важно — исправлено.** Строки `migrations` приведены к формату
+   `catalog/tables/migrations.md` (сверено с git-историей
+   `flows/_manifest.json`, каждая публикация оставила там след):
+   - `mVmF9…` → `2026-09-20-w58-01`, `version_id=l3UqicR6uUGlxtEfJQXbr`
+     (reg-start; совпадает с манифестом — инвариант B1 проходит);
+   - `LYZyFtR…` → `2026-09-20-w58-02`, `version_id=1m3ZzGuqrMhWxptSNceqO`
+     (reg-profile, публикация 08:46);
+   - `c3DNvHf…` → `2026-09-20-w58-03`, `version_id=JLvJqE56qXNrHQ3AG7rnN`
+     (reg-api);
+   - `LjsDaYW…` → `2026-09-20-w58-04`, `version_id=aKtNttjHi0AOIxyfUe0VV`
+     (reg-profile, правка замечания 5);
+   - соседние owner-строки 10:39 → `2026-09-20-w59-01/02/03` с версиями
+     `YgMR7P…`/`cPeZzet…`/`JasmOC0…` (см. W59);
+   - `commit` = `762adac` (PR #94, вливший W58/W59/W60 в `main`).
+   **Одна строка удалена:** публикация reg-profile 08:39 — её `version_id`
+   не сохранился ни в git-истории манифеста (перекрыта публикацией 08:46
+   через 7 минут, `b627099` закоммичен в 08:54), ни в API (истории версий
+   нет). Ложную строку не заводил: причина и содержание той публикации
+   записаны в примечании `2026-09-20-w58-02`.
+   **Заодно поправлены предсуществующие нарушения того же чекера, без
+   которых он всё равно не проходил:** две `create`-строки W50
+   (`2026-09-18-w50-04/05`) с непустым `version_id` → `-`; удалена
+   malformed-строка про очистку *записей* `sessions`/`users` (вне области
+   ADR-0021 — таблица фиксирует схемные изменения, а не удаление строк).
+   `check-migrations.py` не запускался (нет ключа REST), но инвариант C
+   проверен по живым строкам (`ap_find_records`: строк без `id`/`version_id`
+   нет, `publish` без версии нет, не-`publish` с версией нет), инвариант B1 —
+   по последней publish-строке каждого затронутого флоу против манифеста.
+2. **на будущее — исправлено.** В `catalog/flows/reg-start.md` добавлены
+   пропущенные `step_13` (`Otherwise`-noop) и `step_18→19` (ветка отказа
+   записи сессии) — таблица шагов теперь совпадает с `ap_flow_structure`
+   поимённо.
+3. **на будущее — исправлено.** `reg-profile` переопубликован: DRAFT-версия
+   `bEMt8LcohToEoo06XMngp` стала `LOCKED`, снимок `flows/reg-profile.json`
+   переснят сразу после публикации (гоча №14), строка
+   `migrations 2026-09-21-w59-02`.
+
+**Примечание (вне пакета).** Три живых `DISABLED`-черновика
+(`zz-access-check-delete-me`, `zz-diag-skip-primitive`, `staff-accept`)
+не заведены ни этим пакетом, ни W59; в `_manifest.json` их нет, каталог их
+не описывает. Ревьюер их видел и находкой не счёл. Их судьба (удаление либо
+отдельный пакет) — отдельный хвост, к W58/W59 не относится.

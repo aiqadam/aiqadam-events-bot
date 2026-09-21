@@ -31,6 +31,8 @@
 | step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
 | step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
 | step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
+| step_18→19 (`onboard`, отказ `step_11`) | CODE текст сбоя → `send_text_message` | запись сессии не удалась — «попробуйте ещё раз» вместо тишины |
+| step_13 (`Otherwise`) | CODE «unexpected outcome» | noop-заглушка, если `outcome` не совпал ни с одной веткой |
 
 ## Зависимости
 
