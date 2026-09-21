@@ -122,6 +122,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       return;
     }
     setMineState('error');
+    hapticNotification('error');
     setMineError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
   }, [inTelegram, initData]);
 
@@ -144,6 +145,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setProfileState('loading');
     const res = await postJson(REG_API, { action: 'profile_get', initData });
     if (res.kind !== 'json' || !res.data['ok']) {
+      hapticNotification('error');
       setProfileState('error');
       return;
     }
@@ -169,6 +171,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     });
     if (res.kind !== 'json' || !res.data['ok']) {
       const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
+      hapticNotification('error');
       setProfileMsg(d && typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
       return;
     }

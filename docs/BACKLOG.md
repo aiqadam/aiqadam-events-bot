@@ -2927,7 +2927,8 @@ URL-полем в форме либо отдельным касанием в ч�
       со стабом `window.Telegram.WebApp` (28 проверок, см. журнал); живой
       показ в Telegram — **не выполнен агентом**, остаточный хвост владельцу;
 - [x] `HapticFeedback` вызывается во всех перечисленных точках — кодревью
-      плюс headless-прогон (success/warning/error и `impact:light`);
+      плюс headless-прогон (success/warning/error и `impact:light`); после
+      круга 1 ревью добраны вторичные error-точки;
 - [x] `enableClosingConfirmation` активен только при несохранённом черновике
       визарда, не залипает после публикации — headless-прогон (B1–B3, C3–C4);
 - [ ] решение по `disableVerticalSwipes` принято по результату аудита на

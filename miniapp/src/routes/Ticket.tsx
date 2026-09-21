@@ -190,10 +190,12 @@ export default function Ticket({ eventId }: { eventId: string }) {
     const res = await postJson(REG_API, { action: 'cancel', initData, eventId });
     setCancelBusy(false);
     if (res.kind === 'network') {
+      hapticNotification('error');
       setCancelError(t('events.err.network'));
       return;
     }
     if (res.kind === 'server') {
+      hapticNotification('error');
       setCancelError(t('events.err.server'));
       return;
     }
@@ -205,6 +207,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
       setCancelled(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('cancel.kept'));
       return;
     }
+    hapticNotification('error');
     setCancelError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
   }, [cancelBusy, initData, eventId]);
 

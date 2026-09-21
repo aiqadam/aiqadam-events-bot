@@ -819,10 +819,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       if (d['error'] === 'validation') {
         const errs2 = (d['fields'] as Record<string, unknown>) || {};
         const key = errs2['telegram_id'] ? String(errs2['telegram_id']) : 'manage.err.bad_telegram_id';
+        hapticNotification('error');
         setStaffFieldError(t(key));
         return;
       }
     }
+    hapticNotification('error');
     setStaffResult(errorTextFor(res as never));
   }, [eventId, initData, staffBusy, errorTextFor]);
 
@@ -856,6 +858,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       void addStaff(hit.telegram_id);
       return;
     }
+    hapticNotification('error');
     setStaffFieldError(t('manage.staff.login_not_found'));
   }, [searchQuery, candidates, eventId, initData, staffBusy, searchBusy, addStaff]);
 
@@ -907,6 +910,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           return;
         }
       }
+      hapticNotification('error');
       setStaffResult(errorTextFor(res as never));
     },
     [eventId, initData, staffBusy, errorTextFor],
@@ -928,6 +932,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
     }
+    hapticNotification('error');
     setStaffResult(errorTextFor(res as never));
   }, [eventId, initData, inviteBusy, errorTextFor]);
 
@@ -948,6 +953,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
     }
+    hapticNotification('error');
     setPartsError(errorTextFor(res as never));
   }, [eventId, initData, errorTextFor]);
 
@@ -967,6 +973,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
     }
+    hapticNotification('error');
     setFeedbackError(errorTextFor(res as never));
   }, [eventId, initData, errorTextFor]);
 
