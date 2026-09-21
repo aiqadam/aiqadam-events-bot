@@ -111,11 +111,105 @@
 
 ## Ревью
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: агент-ревьюер (независимый, чистый контекст) · **Дата**: 2026-09-21 · **Вердикт**: есть замечания (блокеров нет; одно «важно», одно «на будущее»)
 
 ### Замечания
 
-1. <заполняет ревьюер>
+1. **важно** — `catalog/flows/reg-afterword.md`, блок «Кто вызывает» (строка
+   `(плюс catch-up 48 ч)`): карточка `reg-afterword` продолжает утверждать, что
+   вызывающий `lifecycle` зовёт послесловие «плюс catch-up 48 ч», тогда как
+   правка 3 сузила окно до двух тиков (~30 мин от `finished_at`). Каталог
+   описывает вызывающего как текущий факт, а не как историю, поэтому он разошёлся
+   с живым проектом (AGENTS.md: «Каталог и живой проект должны совпадать»).
+   Правка — одна строка в `catalog/flows/reg-afterword.md`: назвать окно 2 тика /
+   30 мин от `finished_at` либо убрать конкретное число и сослаться на
+   `catalog/flows/lifecycle.md`. Масштаб маленький, но это именно тот класс
+   расхождений, ради которого каталог и ревью существуют.
+2. **на будущее** — `lifecycle/step_8` (`callFlow reg-afterword`,
+   `continueOnFailure: false`): сужение catch-up с 48 ч до ~30 мин уменьшило не
+   только шум по «позднему чекину», но и окно восстановления после сбоя вызова
+   послесловия. Если `callFlow` для одного получателя в цикле `step_6` упадёт,
+   цикл оборвётся на нём, а оставшиеся получатели тика подхватятся следующим
+   тиком только пока событие моложе `finished_at + 30 мин`; под 48-часовым окном
+   запас был кратно больше. Журнал называет цену правки только для позднего
+   чекина — этот побочный эффект не назван. Не блокер (отказ постановки в
+   очередь редок, а callee всё равно дедупит), но стоит либо поставить
+   `continueOnFailure: true` на `step_8` (тогда падение одного вызова не съедает
+   остальных), либо явно зафиксировать риск. Отдельного пакета не требует —
+   достаточно строки в каталоге/OPEN-QUESTIONS, если решите оставить как есть.
+
+### Что проверено
+
+- Живой `lifecycle` (MCP, `events-dev`): `ap_flow_structure` — 9 шагов, все
+  `configured`; `ap_validate_flow` — «ready (9 steps, 9 valid)»; `ap_list_flows` —
+  ENABLED / published. Все три правки на месте: `step_1`/`step_4` `limit: 500`;
+  `step_7` `continueOnFailure.value: true`; `step_2` — новый catch-up.
+- `ap_export_flow` `lifecycle`: `flows[0].id = NOgvaWpXJWlAr1IGJApA4` = `publishedVersionId`
+  в `flows/_manifest.json`; `state: LOCKED`, `status: PUBLISHED`. Экспорт в
+  `flows/lifecycle.json` сделан тем же коммитом `a29d408`, что и правка.
+- **Побайтово** (md5 `26a9b1f025974d9b9ac0909719532f14`, 3127 Б) совпали три
+  источника `sourceCode` `step_2`: живой вывод `ap_read_step_code`, `flows/lifecycle.json`
+  (через `json.load`) и `/tmp/w12/lifecycle-due.js`, который импортирует харнесс.
+- Офлайн-харнесс `/tmp/w12/test.mjs` перезапущен мной (`node /tmp/w12/test.mjs`):
+  `pass=50 fail=0`. В нём есть проверки ровно новой границы: `finished_at` 1 с назад
+  → catch-up; ровно 30 мин → catch-up; 30 мин + 1 с → нет; `finished_at` 47 ч →
+  нет; пустой `finished_at` + `ends_at` 5 мин → catch-up; пустой `finished_at` +
+  `ends_at` 49 ч → нет; `finished` без `ends_at` → нет.
+- Живой прогон `bSZAlwsLYMtnJmjA8aiwv` (TESTING, SUCCEEDED): на одном входе
+  `step_2` вернул `due: ["w12c-due-noatt"]`, `finishedIds:
+  ["w12c-due-noatt","w12c-catchup-new"]` — старый `finished` (`finished_at` 2 ч
+  назад) **исключён**, свежий — **включён**: это различающий прогон для правки 3.
+  `step_5 targets: []`, `step_6 iterations: []` — вызова `reg-afterword` и
+  сообщений не было. Фикстуры из `events` удалены (сейчас в таблице 2 записи).
+- Живой диагностический `U857drNSvIRIoQ7NAAP0H` (флоу `zz-diag-continue-on-failure`,
+  DRAFT, DISABLED): форма совпадает с `lifecycle` (PIECE внутри `LOOP_ON_ITEMS`,
+  шаг после цикла); экспорт подтверждает `step_3.continueOnFailure.value: true`;
+  в прогоне `step_3` — FAILED `404 ENTITY_NOT_FOUND`, а `step_4` всё равно вернул
+  `{reached:true}`. Это корректное доказательство семантики, на которую настроен
+  `lifecycle/step_7`.
+- Офлайн-проверки прогнаны мной с нулевым кодом: `check-export-secrets.sh` — чисто
+  (токенов/hex нет, `auth` — ссылки); `check-texts.py i18n/ru.json flows/*.json` —
+  28 флоу, 232 пары, 0 расхождений; `check-commands.py i18n/*.json flows/*.json` —
+  самопроверка ok, 0 нарушений.
+- `migrations` (живой таблицей): `2026-09-21-w12c-01` — `flow:lifecycle`, publish,
+  `NOgvaWpXJWlAr1IGJApA4`, commit `a29d408`; `2026-09-21-w12c-02` — create
+  `zz-diag-continue-on-failure`, version `-`. Совпадают с манифестом и журналом.
+- Чужие флоу не тронуты: диff ветки — только `catalog/flows/lifecycle.md`,
+  `flows/lifecycle.json`, `flows/_manifest.json`, `docs/STATUS.md`, этот журнал.
+  Сверены с инстансом: `reminders` = `AzpGNY9OyDL6v8IICQ30F`,
+  `checkin-api` = `M0vMBqVya8f117JBNmDLQ`, `reg-afterword` = `c1iPATKDXhTCT85UaqJCP`
+  — все равны `publishedVersionId` манифеста. Ссылка `callFlow` из `step_8` ведёт
+  на `1lrH7mXwLldQhc8p1Y2sC` — это `metadata.externalId` флоу `reg-afterword`
+  (не MCP-flowId), то есть мишень верная.
+- `catalog/flows/lifecycle.md` сверен с живой структурой: список из 9 шагов и
+  порядок совпадают (включая `step_7` внутри `step_3`), `limit 500` у `step_4`,
+  короткий catch-up и **названная цена** правки 3 (чекин позднее ~30 мин после
+  финиша послесловия не получает) на месте.
+
+### Не удалось проверить (ограничение)
+
+- `tools/check-migrations.py` — ключа платформы (`QADAM_API_KEY`/Keychain) в
+  сессии нет, скрипт завершился с кодом 2 и прямым сообщением об этом. Поэтому
+  детерминированная сверка `_manifest.json` ↔ инстанс ↔ `migrations` целиком не
+  выполнена; сделана ручная по 4 флоу (в т.ч. `lifecycle`) плюс сверка двух строк
+  `migrations`. Это ограничение среды, а не замечание владельцу.
+- `tools/export-flows.sh` по той же причине не прогонялся (нужен ключ);
+  опубликованность версии подтверждена через `ap_export_flow` (`state: LOCKED`,
+  `status: PUBLISHED`, id = версии в манифесте).
+
+### Ответ владельца (2026-09-21)
+
+1. **важно — исправлено.** `catalog/flows/reg-afterword.md`, блок «Кто вызывает»:
+   `(плюс catch-up 48 ч)` заменено на «короткий catch-up — 2 тика от
+   `finished_at`, окно и его цена — в `lifecycle.md`». Проверка: `grep "48 ч"`
+   по `catalog/flows/reg-afterword.md` молчит, живой `lifecycle` не менялся
+   (правка каталога, пересборка не нужна).
+2. **на будущее — зафиксировано, не чинится сейчас** (правило: «на будущее» —
+   записать, не чинить). Риск назван отдельным пунктом в
+   `catalog/flows/lifecycle.md`: у `step_8` (`callFlow`) `continueOnFailure`
+   выключен, упавший вызов обрывает цикл `step_6`, повтор — только в пределах
+   ~30 мин catch-up. Если решите чинить — отдельным пакетом
+   (`continueOnFailure: true` на `step_8`), это меняет поведение сверх задания W12c.
 
 ## Хвосты и блокеры
 
