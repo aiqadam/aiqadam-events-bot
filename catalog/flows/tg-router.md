@@ -56,7 +56,7 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — три исхода (deep link / меню / молчание), любая другая команда — `menu` (ADR-0025); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`) |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`) |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
 | step_20 | `callFlow reg-profile` (`queue`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
@@ -82,6 +82,14 @@
   Без обёртки вызов проходит `ap_validate_flow` и прогон формально успешен,
   но callee получает пустые поля — тихий отказ, не ошибка вызова. Callee
   читает поля плоско: `{{trigger['output'].data.<field>}}`.
+- **Голый `/start` во время онбординга по диплинку не теряет событие (W59).**
+  `step_10` при активной сессии `registration` с шагом `ob_*` и непустым
+  `eventId` из черновика маршрутизирует `/start` в `reg-start` с этим
+  `eventId`/`utm` (ADR-0034 п.4). Без этого ветка `menu.needs_onboard`
+  перезаписывала сессию черновиком `eventId: ''`, и финал становился
+  `finish_no_event` — регистрация на событие не создавалась. Условие `ob_*`
+  намеренно не покрывает `await_marketing`: завершивший профиль и ждущий
+  ответа о рассылке голым `/start` в регистрацию не возвращается.
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
