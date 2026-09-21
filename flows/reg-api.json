@@ -4,7 +4,7 @@
   "connectionIds": [],
   "displayName": "reg-api",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "catch_webhook",
@@ -652,7 +652,8 @@
                           "wz2jSqAxfldiP8b0YOokJ",
                           "t89wutkSapoK3QKmZ0Vb8",
                           "LeY6BeUOzWIyEtUFfKNbI",
-                          "KtdV8plfevjdnKlLko08q"
+                          "KtdV8plfevjdnKlLko08q",
+                          "FpWznk9Fgl8wUXXUKolRu"
                         ],
                         "filters": {
                           "filters": [
