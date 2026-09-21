@@ -94,14 +94,14 @@
                 },
                 "input": {
                   "columns": [
-                    "oLh0DFSDeTzwcyyDrX9tI",
-                    "U7St4I3LojwMYiyCOxwFY"
+                    "TZyqC63UAWrPbzxuf2q4w",
+                    "uCnpOj11sJLaX4Rqu6TUG"
                   ],
                   "filters": {
                     "filters": [
                       {
                         "field": {
-                          "id": "cQmSSShQIJlKQrrpGmMU4",
+                          "id": "qQPYl9c0ew6n8w2CGYZII",
                           "name": "event_id",
                           "type": "TEXT"
                         },

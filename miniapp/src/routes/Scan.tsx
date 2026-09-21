@@ -121,7 +121,7 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
           }
           const st = (d['status'] as string) || '';
           if (st === 'invalid_init_data') {
-            stopAll('clock', String(d['text']), false, 'scan.reopen_app');
+            stopAll('clock', String(d['text']), false);
           } else if (st === 'forbidden') {
             stopAll('shield', String(d['text']), false);
           } else {

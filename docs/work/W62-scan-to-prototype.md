@@ -1,6 +1,6 @@
 # W62. Экран контроля (сканер) — приведение к прототипу
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: вне волн (хвост соответствия прототипу)
 - **Зависит от**: W49 — ✅ (прототип-эталон), W50 — ✅, W33 — ✅
@@ -29,7 +29,7 @@
 - [x] счётчик и полоса: `registered` берётся один раз при открытии, `checked_in` растёт локально на исходе `ok` (как в прототипе)
 - [x] `checkin-api` не тронут — счётчики отдаёт отдельный гейтнутый `checkin-counter-api`
 - [~] живые проверки: `curl` на `/sync` (негатив мусорным `initData` — 401); позитив — хвост W15
-- [x] `catalog/` обновлён; `flows/checkin-counter-api.json` + `_manifest.json` + 3 строки `migrations`
+- [x] `catalog/` обновлён; `flows/checkin-counter-api.json` + `_manifest.json` + 4 строки `migrations`
 - [x] `check-texts.py` (232 пары, 0), `check-commands.py` (0), `check-export-secrets.sh` (чисто; `EXPECTED_BOT_TOKEN` 7→8), `tsc`/`vite build` чисты
 - [ ] независимое ревью, вердикт «замечаний нет»
 
@@ -63,14 +63,117 @@
   перепубликация `aLZTTcR8…` (черновик перекрыл публикацию, gotcha 14):
   экспорт снят сразу после `ap_lock_and_publish`, строки `migrations` —
   create + две publish.
+- **2026-09-21** — круг 1 ревью: блокер подтверждён и закрыт. `step_4` читал
+  `registrations` во **внутренних id полей** (`oLh0…`, `U7St…`, `cQmSS…`),
+  а `tables-find-records` принимает `externalId` — нечитаемые `columns`/фильтр
+  валят шаг fail-closed, счётчик не отдавался бы никогда. Проверено
+  `ap_resolve_property_options` (`columns`, `table_id: SM8tMxfQuQCHRDdAiNJyQ`):
+  девять externalId, среди них `event_id qQPYl9c0ew6n8w2CGYZII`,
+  `status TZyqC63UAWrPbzxuf2q4w`, `checked_in_at uCnpOj11sJLaX4Rqu6TUG` —
+  подставлены. Перепубликация `9X0AEtc4gCwkT2ByAuQo7`, экспорт сразу после
+  (gotcha 14), `migrations` — строка `w62-04`. Урок на будущее: id полей для
+  таблиц брать `ap_resolve_property_options`, а `ap_list_tables` — только для
+  обзора схемы.
+- **2026-09-21** — замечание 2 закрыто: снят `sub scan.reopen_app` у
+  `invalid_init_data` (в эталоне у ошибок нет подписи, текст сервера
+  `checkin.unauthorized` её уже содержит). Замечание 4 — шапка журнала
+  приведена к `на проверке`. Замечание 3 принято как «на будущее»: сверка
+  прав по полям, а не по непустоте — общий паттерн `checkin-api/step_7`,
+  не регрессия W62.
 
 ## Ревью
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: независимый агент (чистый контекст) · **Дата**: 2026-09-21 ·
+  **Вердикт**: **есть замечания** (круг 1)
 
 ### Замечания
 
-1. —
+1. **блокер** — `checkin-counter-api` (lm9S9cRuSZOpVAgl2h44R), шаг `step_4`
+   «read registrations (counters)» читает `registrations` во **внутреннем
+   namespace'е field id, а не в externalId**. `columns` —
+   `oLh0DFSDeTzwcyyDrX9tI` и `U7St4I3LojwMYiyCOxwFY` (внутренние id полей
+   `status` и `checked_in_at`; верные externalId — `TZyqC63UAWrPbzxuf2q4w`
+   и `uCnpOj11sJLaX4Rqu6TUG`), фильтр `event_id` — `cQmSSShQIJlKQrrpGmMU4`
+   (верный externalId — `qQPYl9c0ew6n8w2CGYZII`); репо: `flows/checkin-counter-api.json:96-98,104`.
+   Таблицы принимают externalId: `ap_resolve_property_options` по `columns`
+   (`table_id: SM8tMxfQuQCHRDdAiNJyQ`) отдаёт ровно девять externalId, и ни одного
+   из этих трёх среди них нет; так же читают `registrations` все рабочие флоу
+   (`manage-api`, `fn-find-registration` — `qQPYl9c0ew6n8w2CGYZII`,
+   `catalog/tables/README.md`). Следствие: `tables-find-records` с нечитаемым
+   фильтром/колонками **валяет шаг** (fail-closed; в схеме шага прямо:
+   «A filters value that cannot be read raises an error — it is never ignored»),
+   `step_6 return_response` при этом не исполняется и счётчик не отдаётся
+   **никогда** — на любом валидном staff-запросе. `Scan.tsx` ошибку проглатывает
+   (`loadCounters` при `ok !== true` молча выходит), поэтому в UI просто нет
+   полосы прогресса. Цель пакета «Отмечено X из Y» на живом инстансе не достигнута.
+   Почему не поймано: позитив ни разу не прогонялся живьём (честно объявленный
+   хвост W15), а локальный прогон трогал только CODE-шаг `step_5` на
+   синтетических входах и до реального `step_4` не доходил.    Фикс — подставить
+   три externalId; после правки обязателен **живой** позитив (staff → `ok`) и
+   различающий негатив (не-staff → `403`), иначе правка снова непроверена.
+   - *Исправлено*: `step_4` переведён на externalId (`qQPYl9c0ew6n8w2CGYZII`,
+     `TZyqC63UAWrPbzxuf2q4w`, `uCnpOj11sJLaX4Rqu6TUG`), перепубликован
+     `9X0AEtc4gCwkT2ByAuQo7`; живой позитив — по-прежнему хвост W15 (нет
+     `initData`), это названо в «Хвостах» (2026-09-21).
+
+2. **на будущее** — под экраном ошибки `invalid_init_data`
+   (`miniapp/src/routes/Scan.tsx:124`, рендер `:250`) выводится подпись
+   `scan.reopen_app`, которой в эталоне нет: у всех состояний `scanErrors`
+   (`prototypes/app.js:420-428`) только `icon/text/action`, а бокс ошибки
+   (`prototypes/app.js:451-463`) рисует иконку, заголовок и одну кнопку — без
+   `sub`. Строка унаследована из `main`, но по чек-листу 3a каждое расхождение
+   с прототипом должно быть названо в журнале; сейчас не названо. Либо признать
+   осознанным отличием, либо убрать при следующем касании.
+   - *Исправлено*: `sub scan.reopen_app` у `invalid_init_data` убран
+     (`Scan.tsx`), подписи у ошибок нет — как в эталоне (2026-09-21).
+
+3. **на будущее** — `checkin-counter-api/step_5` решает про права по **непустоте**
+   выдачи `tables-find-records` (`staffRows.length === 0`), а не по полям строки
+   (`event_id`/`telegram_id`); чек-лист 4.1 предпочитает сверку по полям. Это
+   **не регрессия W62**: так же устроен `checkin-api/step_7`
+   (`isStaff = staffRows.length > 0`), а фильтры fail-closed и содержат
+   `event_id`+`telegram_id`+`revoked_at not_exists` (STF-2 по конкретному
+   событию — выполнен). Закрывать обобщающим пакетом, не здесь.
+
+4. **на будущее** — шапка журнала («Статус: в работе», строка 3) разошлась с
+   `docs/STATUS.md` («на проверке»). Учётная мелочь.
+   - *Исправлено*: шапка журнала приведена к `на проверке` (2026-09-21).
+
+### Чем проверено
+
+- **MCP, живой `events-dev`**: `ap_flow_structure` и `ap_read_step_code` по
+  `checkin-counter-api` (lm9S9cRuSZOpVAgl2h44R) и `checkin-api`
+  (rKoDYtiIVdbzlW59b57uH); `ap_list_tables`; `ap_get_piece_props` +
+  `ap_resolve_property_options` по `tables-find-records`; `ap_export_flow` —
+  версия `aLZTTcR8e0TVmyxkUWTJC`, `state: LOCKED`, `status: PUBLISHED`;
+  `ap_validate_flow` — 9/9 valid; `ap_list_flows` — состав совпал с манифестом.
+- **`migrations`** (`ap_find_records`, `package=W62`): три строки — `create` +
+  два `publish`; `version_id` последней `publish` (`aLZTTcR8e0TVmyxkUWTJC`)
+  совпал с `flows/_manifest.json` и с живым `ap_export_flow`.
+- **Офлайн**: `check-texts.py` (232 пары, 0), `check-commands.py` (0),
+  `check-export-secrets.sh` (чисто; `BOT_TOKEN` 8 — рост на один из-за нового
+  флоу законен), `node prototypes/check.mjs` (OK), `npx tsc --noEmit`,
+  `npm run build` — чисто.
+- **SPA ↔ прототип по коду**: вердикт (тон/иконка/подпись), экран ошибки
+  (иконка/заголовок/одна кнопка), подсказка в нативный попап, счётчик и полоса,
+  сохранённый луп (STF-1) — совпадают; отказ от рамки видоискателя назван
+  в журнале причиной «камера нативная».
+- **`checkin-api` не тронут**: в дифе его нет, строк `migrations` по нему
+  в W62 нет, живая структура совпала с `flows/checkin-api.json` из `main`.
+- **`.result` у прочих потребителей** (Manage/Events/Ticket/Feedback): `index.css`
+  изменён только добавлением, правила `.card`/`.result` целы, сборка чиста.
+
+### Ограничения ревью
+
+- `tools/check-migrations.py` прогнать не удалось: `QADAM_API_KEY` в окружении
+  нет, keychain отсутствует (Linux). Версию `checkin-counter-api` сверил вручную
+  (манифест ↔ `migrations` ↔ `ap_export_flow`); остальные 27 флоу манифеста этой
+  проверкой не покрыты.
+- Живые прогоны `checkin-counter-api` (позитив с настоящим `initData`, негатив
+  не-staff → `403`) не выполнялись: у ревьюера нет живого `initData`,
+  а `ap_test_flow`/`ap_test_step` запрещены каноном (меняют состояние версии,
+  gotcha 11/14). Именно поэтому дефект namespace'а виден только по статике
+  экспорта.
 
 ## Хвосты и блокеры
 
