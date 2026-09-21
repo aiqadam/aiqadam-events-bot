@@ -1,10 +1,10 @@
 # W62. Экран контроля (сканер) — приведение к прототипу
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн (хвост соответствия прототипу)
 - **Зависит от**: W49 — ✅ (прототип-эталон), W50 — ✅, W33 — ✅
-- **Начат**: 2026-09-21 · **Закрыт**: —
+- **Начат**: 2026-09-21 · **Закрыт**: 2026-09-21
 
 ## Цель
 
@@ -31,7 +31,7 @@
 - [~] живые проверки: `curl` на `/sync` (негатив мусорным `initData` — 401); позитив — хвост W15
 - [x] `catalog/` обновлён; `flows/checkin-counter-api.json` + `_manifest.json` + 4 строки `migrations`
 - [x] `check-texts.py` (232 пары, 0), `check-commands.py` (0), `check-export-secrets.sh` (чисто; `EXPECTED_BOT_TOKEN` 7→8), `tsc`/`vite build` чисты
-- [ ] независимое ревью, вердикт «замечаний нет»
+- [x] независимое ревью, вердикт «замечаний нет» (круг 2)
 
 ## Как проверено
 
@@ -175,9 +175,94 @@
   gotcha 11/14). Именно поэтому дефект namespace'а виден только по статике
   экспорта.
 
+### Круг 2 (повторное ревью)
+
+- **Ревьюер**: независимый агент (чистый контекст) · **Дата**: 2026-09-21 ·
+  **Вердикт**: **замечаний нет**
+
+Замечания круга 1 закрыты, новых блокирующих и «важно» не найдено.
+
+#### Что проверено живьём (MCP, `events-dev`)
+
+- **Блокер 1 закрыт по существу.** `ap_flow_structure lm9S9cRuSZOpVAgl2h44R`
+  (`includeInput`): `step_4` — `columns`
+  `["TZyqC63UAWrPbzxuf2q4w","uCnpOj11sJLaX4Rqu6TUG"]`, фильтр `event_id`
+  `qQPYl9c0ew6n8w2CGYZII` (`table_id SM8tMxfQuQCHRDdAiNJyQ`). Независимо:
+  `ap_resolve_property_options` по `columns` этой таблицы отдаёт ровно девять
+  externalId, включая все три подставленных; внутренних id `oLh0…`/`U7St…`/
+  `cQmSS…` среди них нет. `step_3` (`event_staff`,
+  `table_id t1g8Vae3iEoDk93D6Rle7`) тоже на externalId (`r5Woh…`, `Rs62…`,
+  `zX2FO3…`) — подтверждено тем же резолвом.
+- `ap_read_step_code step_5` — чистая функция: `arr()`/`flat()` совпадают с
+  рабочими потребителями таблиц (`staff-invite`, `lifecycle`, `manage-api`),
+  ни сети, ни записи. Гейт `staffRows.length === 0` — принятый кругом 1
+  паттерн `checkin-api/step_7`, не регрессия.
+- `step_1`: `flow.externalId VzXoy80RWnX7pM4dm8eor` = `fn-hmac-init-data`
+  (сверено `ap_resolve_property_options` по пропу `flow`), `flowProps`
+  обёрнут в `payload` (gotcha 7a), `BOT_TOKEN` — длинной формой. `step_4`
+  читает только `status`+`checked_in_at` — без ПД.
+- **Экспорт/манифест/migrations сошлись:** живой `ap_export_flow` —
+  `flows[0].id = 9X0AEtc4gCwkT2ByAuQo7`, `state: LOCKED`, `status: PUBLISHED`;
+  `flows/_manifest.json` → `publishedVersionId 9X0AEtc4gCwkT2ByAuQo7`;
+  последняя строка `migrations` пакета W62 (`w62-04`, publish) →
+  `version_id 9X0AEtc4gCwkT2ByAuQo7`. Возможные расхождения `ap_export_flow`
+  и `flows/checkin-counter-api.json` не найдены (сверены входы всех девяти
+  шагов).
+- `ap_validate_flow` — `9 steps, 9 valid`. `ap_list_flows` —
+  `checkin-counter-api` ENABLED published; состав манифеста (28) совпал с
+  `flows/*.json`; два `zz-*` (draft, DISABLED) — диагностические, вне W62.
+- **Прогоны:** `ap_list_runs` — два прогона (2026-09-21 06:51, до фикса),
+  оба SUCCEEDED. `ap_get_run rjOGIYaCkHNAhKC34cJsp` читается целиком:
+  `initData: "garbage"` → `step_1 valid:false, reason:malformed` →
+  `step_7` → `step_8` `401 {ok:false,status:"invalid_init_data"}`.
+  Различающий негатив доказан; позитива после фикса нет (см. «Ограничения»).
+- **Замечания 2 и 4 закрыты.** `Scan.tsx`: `invalid_init_data` →
+  `stopAll('clock', text, false)` без `sub` (подписи у ошибок нет, как в
+  `prototypes/app.js:451-463`); шапка журнала и `docs/STATUS.md` — `на проверке`.
+
+#### Офлайн (запущено ревьюером 2026-09-21)
+
+- `check-texts.py` — 28 флоу, 232 пары, 0 расхождений (exit 0);
+- `check-commands.py` — 0 нарушений (exit 0);
+- `check-export-secrets.sh` — чисто: токен 0, hex 0, `BOT_TOKEN` 8,
+  `QR_SIGNING_KEY` 2, поля `auth` — ссылки (exit 0);
+- `node prototypes/check.mjs` — OK (ключи резолвятся, сценарии проходятся);
+- `npx tsc --noEmit` и `npm run build` — exit 0;
+- `grep -E '#[0-9a-fA-F]{3,8}|rgb\(|oklch\(|font-family|font-size' miniapp/*.html`
+  — молчит; веб-шрифтов на `ticket`/`scan` нет.
+
+#### Ограничения ревью (круг 2)
+
+- `tools/check-migrations.py` не выполнен: `QADAM_API_KEY` в окружении нет,
+  keychain на Linux отсутствует (то же, что в круге 1). Вручную сверены только
+  `checkin-counter-api` (манифест ↔ `migrations` ↔ `ap_export_flow`); остальные
+  27 флоу манифеста этой проверкой не покрыты.
+- **Живой позитив не выполнен и агентом невыполним:** нет `initData`
+  (нужен `BOT_TOKEN`, значение скрыто), а `ap_test_flow`/`ap_test_step`
+  запрещены каноном (меняют состояние версии, gotcha 11/14). Прогонов
+  `checkin-counter-api` после перепубликации `9X0AEtc…` нет. Это названный
+  хвост W15; закрытие блокера круга 1 опирается на статику: подставлены
+  ровно те externalId, которые отдаёт `ap_resolve_property_options` и
+  использует каждый рабочий потребитель `registrations`.
+- Диф ветки против `main` включает три коммита W61 (`reg-api`) — W61 уже
+  `готов` и отревьюен своим кругом; здесь повторно не проверялся.
+
+#### Наблюдения (замечаниями не считаю)
+
+- `scan.reopen_app` после снятия подписи не используется ни в SPA, ни в
+  прототипе — мёртвый ключ в `ru/uz/en`; снять при возврате i18n (W25/W27)
+  или следующим касанием.
+- `step_5` считает «пришёл» по `checked_in_at !== ''`, тогда как `lifecycle`
+  и `reg-afterword` дополнительно отсекают сентинел `-`. В `registrations`
+  (3 строки: пусто/ISO) он сейчас не встречается — риск теоретический.
+- `prototypes/app.js`/`proto.js` переведены с `proto.result_*` на
+  `checkin.sub_*` — следствие добавления ключей в `ru.json` и правила
+  `check.mjs` о дублях словаря (как в `a060b0e`); видимые строки те же.
+
 ## Хвосты и блокеры
 
 - Позитив `checkin-counter-api` живым `initData` и клик-проход сканера
   (все исходы, счётчик) — на W15: у агента нет живого `initData`.
 - Счётчик в `limit: 500` строк: событие с большим числом регистраций даст
   значение ниже факта; для индикатора прогресса принято, не для отчётности.
+- `scan.reopen_app` стал мёртвым ключом (снят с подписи) — снять при W25/W27.
