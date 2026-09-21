@@ -468,6 +468,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const view = E('div', 'scan-view');
     ['tl', 'tr', 'bl', 'br'].forEach((c) => view.appendChild(E('span', 'scan-corner ' + c)));
     view.appendChild(E('div', 'scan-line'));
+    // Кадр — мок нативного попапа Telegram (showScanQrPopup): камеру рисует
+    // клиент, страница показывает только вердикт и счётчик; подсказка scan.hint
+    // уходит в попап параметром text (W62), поэтому живёт внутри кадра, а не под ним.
+    view.appendChild(E('div', 'scan-native-tag', T('proto.scan_native')));
+    view.appendChild(E('div', 'scan-native-hint', T('scan.hint')));
     view.style.cursor = 'pointer';
     view.addEventListener('click', () => {
       // Успешный скан в демо двигает счётчик — иначе «отмечен» и «0 из 67»
@@ -477,7 +482,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       renderScan();
     });
     screen.appendChild(view);
-    screen.appendChild(E('div', 'scan-hint', T('scan.hint')));
 
     const verdict = E('div', 'verdict ' + outcome.tone);
     const vi = E('span', 'verdict-icon');
