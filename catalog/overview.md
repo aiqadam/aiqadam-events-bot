@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 25 | [flows/](flows/) |
+| Флоу | 27 | [flows/](flows/) |
 | Таблицы | 13 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -30,7 +30,8 @@ W26 закрыт («готов», независимое ревью, три кр
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
 | Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+событие; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт), [staff-invite](flows/staff-invite.md) — одноразовая ссылка-инвайт контролёра (W10, OWN-14) |
+| Контролёры | [staff-accept](flows/staff-accept.md) — приём инвайт-ссылки `?start=s…` (W10, OWN-14), вызывает `tg-router` |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
@@ -76,7 +77,7 @@ W26 закрыт («готов», независимое ревью, три кр
 |---|---|---|
 | `#/ticket?event_id=` | гость показывает QR на входе; над кодом — название/дата/адрес события, текст подтверждения отмены — с названием | [my-qr-api](flows/my-qr-api.md) |
 | `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | staff чаптера видит список своих событий и правит их табами `Событие / Участники / Рассылка / Контролёры` (OWN-1…OWN-5, OWN-15; таб рассылки — хинт + выход в чат + сегменты, сам сценарий — пересылка боту в чате, W14; табы — W53); ведёт список контролёров события (W36: выдача/отзыв по `telegram_id`), видит
+| `#/manage` и `#/manage/:id` | staff чаптера видит список своих событий и правит их табами `Событие / Участники / Рассылка / Контролёры` (OWN-1…OWN-5, OWN-15; таб рассылки — хинт + выход в чат + сегменты, сам сценарий — пересылка боту в чате, W14; табы — W53); ведёт список контролёров события (W36: выдача/отзыв по `telegram_id`; W55 — добавление по логину; W10 — одноразовая ссылка-инвайт на 24 ч в самом табе), видит
 участников со счётчиками и выгружает CSV/JSON (W13), получает ссылку
 регистрации (W37), видит отзывы участников (W45) | [manage-api](flows/manage-api.md) |
 | `#/manage/new` | создание — сразу форма визарда из чата (кнопки создания в списке нет, вердикт W49/W50) | [manage-api](flows/manage-api.md) |

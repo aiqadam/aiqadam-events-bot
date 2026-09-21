@@ -32,6 +32,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let feedbackRating = 0;
   let feedbackSent = false;
   let staffQuery = '';
+  let staffInviteShown = false;
 
   function currentHash() {
     const raw = location.hash.startsWith('#') ? location.hash.slice(1) : '';
@@ -235,6 +236,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const ev = ownerEvent(id);
     // У нового события ссылки ещё нет — показываем будущий id, а не чужой.
     return (ev && ev.inviteLink) || ('https://t.me/' + D.botUsername + '?start=e' + (id === 'new' ? '10' : id));
+  }
+  // W10 (OWN-14): одноразовая ссылка-инвайт контролёра. В продукте токен
+  // генерирует flow, ссылка одноразовая и живёт 24 часа — здесь мок.
+  function staffInviteUrl(id) {
+    return 'https://t.me/' + D.botUsername + '?start=s' + (id === 'new' ? '10' : id) + '-9f2c1a';
   }
   function eventUtm(id) {
     const base = eventInvite(id);
@@ -1084,6 +1090,30 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     body.appendChild(wrap);
     const feed = E('div', '');
     body.appendChild(feed);
+
+    // W10 (OWN-14): альтернатива логину — одноразовая ссылка-инвайт.
+    // Создаётся здесь же, в Mini App: овнер всё делает на экране, в чат
+    // карточка-инвайт не приходит (вердикт владельца 2026-09-21).
+    const inv = E('div', 'app-field');
+    inv.style.marginTop = '18px';
+    if (!staffInviteShown) {
+      inv.appendChild(btn(T('staff.btn.invite'), { kind: 'btn-outline', block: true, icon: 'link', onClick: () => {
+        staffInviteShown = true;
+        renderManageEvent(eventId);
+      } }));
+    } else {
+      const url = staffInviteUrl(eventId);
+      const box = card([], 'invite-card');
+      box.appendChild(E('div', 'card-title', T('staff.btn.invite')));
+      box.appendChild(E('div', 'invite-link', url));
+      box.appendChild(muted(T('staff.invite.hint')));
+      const acts = E('div', 'app-actions');
+      acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary', icon: 'copy', onClick: () => PROTO.copy(url) }));
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(url), '_blank', 'noopener') }));
+      box.appendChild(acts);
+      inv.appendChild(box);
+    }
+    body.appendChild(inv);
 
     function paintError() {
       PROTO.clear(errBox);

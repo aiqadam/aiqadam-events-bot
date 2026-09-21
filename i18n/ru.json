@@ -370,6 +370,7 @@
   "staff.btn.invite": "Пригласить контролёра",
   "staff.btn.revoke": "Отозвать права",
   "staff.invite.created": "Ссылка для контролёра, действует 24 часа и только один раз:\n{url}",
+  "staff.invite.hint": "Действует 24 часа и только один раз.",
   "staff.list.empty": "Контролёров пока нет.",
   "staff.list.item": "{name} — контролёр с {when}",
   "staff.list.title": "Контролёры события «{title}»",

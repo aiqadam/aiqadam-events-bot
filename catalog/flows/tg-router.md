@@ -17,7 +17,8 @@
    недоведённый диалог.
 2. Голый `/start` (payload пустой или неразобранный, `kind` пуст) → `menu`;
    `badPayload=true` доезжает до меню и меняет преамбулу.
-3. `/start` с валидным, но не `e` payload (`kind='c'`/`'s'`) → `Otherwise`
+3. `/start s<eventId>-<token>` (валидный, `kind='s'`) → `staff-accept` (W10,
+   OWN-14): приём инвайта контролёра. `/start c…` (`kind='c'`) → `Otherwise`
    молча: чекин — только сканером (Q41).
 4. **Любая другая команда** (`/menu`, `/help`, `/events`, `/myregs`,
    `/newevent`, `/editevent`, `/manage`, любое неизвестное) не исполняется
@@ -60,6 +61,7 @@
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
 | step_20 | `callFlow reg-profile` (`queue`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
+| step_21 | `callFlow staff-accept` (`queue`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
 | step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start` и любая незнакомая команда (ADR-0025); получает `chatId`, `firstName`, `badPayload`, `telegramId` |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
@@ -69,8 +71,8 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
-  `menu`, `bcast-draft`, `bcast-step`, `bcast-unsub` — делегирование, не
-  subflow-функции (ADR-0015 п. 4)
+  `menu`, `bcast-draft`, `bcast-step`, `bcast-unsub`, `staff-accept` —
+  делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
 - **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)

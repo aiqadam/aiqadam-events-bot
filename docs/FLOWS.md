@@ -142,13 +142,22 @@ PAR-3/4/5 живут экраном каталога, чат-путь `myreg` в
 
 ## `staff-invite` / `staff-accept` — контролёры
 
-`staff-invite` (owner): генерируем 22 символа base64url → `tables create-record`
-`staff_invites` c `token_hash = sha256(token)`, `expires_at = now + 24ч` →
-отдаём owner'у ссылку `?start=s<eventId>-<token>` (OWN-14).
+Создание и приём — два разных касания (ADR-0015), оба про одноразовую ссылку
+`?start=s<eventId>-<token>` на 24 ч (OWN-14).
 
-`staff-accept`: `sha256` пришедшего токена → поиск по `token_hash`;
-отказ если не найден, `used_at` не пуст или `now > expires_at`.
-Успех → `used_at = now` + строка в `event_staff` + ссылка на Mini App.
+`staff-invite` — webhook Mini App: овнер жмёт «Пригласить контролёра» в табе
+«Контролёры» `#/manage/:id`, `manage`-API-подобный гейт `staff`+чаптер →
+генератор даёт 22 символа `alphanumeric` → в `staff_invites` пишется только
+`sha256(token)` и `expires_at = +24ч` → странице возвращается ссылка. Токен
+живёт один раз, в БД его нет.
+
+`staff-accept` — вход по диплинку: `tg-router` разбирает `s`-payload
+(`fn-parse-start`) и зовёт флоу с `token`/`eventId`/`chatId`/`telegramId`.
+`sha256` пришедшего токена → поиск по `token_hash`; отказ если не найден,
+`event_id` не совпал со ссылкой, `used_at` не пуст или `now > expires_at`.
+Успех → claim `used_at` (только если пусто) + строка в `event_staff`
+с `granted_by`/`granted_at` + карточка с кнопкой сканера; проигравшая гонка
+получает «уже использована».
 
 Отзыв прав — `revoked_at = now` в `event_staff`; активные сессии Mini App
 перестают работать на следующем же скане, потому что проверка идёт на каждый запрос.

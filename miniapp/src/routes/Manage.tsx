@@ -4,7 +4,7 @@ import Icon from '../components/Icon';
 import { t, loadI18n } from '../lib/i18n';
 import { getTelegram } from '../lib/telegram';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, MANAGE_API, STAFF_EVENTS_API } from '../lib/api';
+import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
 const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
@@ -344,6 +344,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [candidates, setCandidates] = useState<StaffCandidate[]>([]);
   const [searchBusy, setSearchBusy] = useState(false);
+
+  // W10 (OWN-14): одноразовая ссылка-инвайт вместо логина (альтернатива,
+  // вердикт владельца 2026-09-21). Создаётся здесь, в Mini App.
+  const [staffInviteUrl, setStaffInviteUrl] = useState('');
+  const [inviteBusy, setInviteBusy] = useState(false);
 
   // W37: список событий чаптера (#/manage без :id) и ссылка регистрации,
   // которая живёт на экране (сервер отдаёт её в `load` и `save`).
@@ -935,6 +940,25 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     },
     [eventId, initData, staffBusy, errorTextFor],
   );
+
+  // W10 (OWN-14): создать одноразовую ссылку-инвайт на это событие.
+  // Сервер (staff-invite) проверяет initData и права staff+чаптер, кладёт
+  // sha256 токена в staff_invites и отдаёт ссылку ?start=s<eventId>-<token>.
+  const createStaffInvite = useCallback(async () => {
+    if (inviteBusy || eventId === '') return;
+    setStaffFieldError('');
+    setInviteBusy(true);
+    const res = await postJson(STAFF_INVITE_API, { initData, eventId });
+    setInviteBusy(false);
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && typeof d['inviteLink'] === 'string' && String(d['inviteLink']) !== '') {
+        setStaffInviteUrl(String(d['inviteLink']));
+        return;
+      }
+    }
+    setStaffResult(errorTextFor(res as never));
+  }, [eventId, initData, inviteBusy, errorTextFor]);
 
   // W13: участники события. Ответ всегда несёт counters+rows+csv+json —
   // ими и обновляем состояние, без перезапроса (как staff_list у W36).
@@ -2024,6 +2048,44 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </ul>
                     )
                   )}
+                  {/* W10 (OWN-14): одноразовая ссылка-инвайт — альтернатива логину.
+                      Создаётся здесь, в Mini App; в чат карточка не приходит
+                      (вердикт владельца 2026-09-21, прототип). */}
+                  <div className="field" style={{ marginTop: 18 }}>
+                    {staffInviteUrl === '' ? (
+                      <button type="button" className="btn btn-outline" id="staff-invite" disabled={staffBusy || inviteBusy} onClick={() => void createStaffInvite()}>
+                        {t('staff.btn.invite')}
+                      </button>
+                    ) : (
+                      <>
+                        <label className="label" htmlFor="staff-invite-link">
+                          {t('staff.btn.invite')}
+                        </label>
+                        <input
+                          className="input"
+                          id="staff-invite-link"
+                          type="text"
+                          readOnly
+                          value={staffInviteUrl}
+                          onFocus={(e) => e.currentTarget.select()}
+                        />
+                        <p className="helper">{t('staff.invite.hint')}</p>
+                        <div className="row" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                          <button type="button" className="btn btn-primary" id="staff-invite-copy" onClick={() => copyInviteLink(staffInviteUrl)}>
+                            {t('manage.btn.copy')}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            id="staff-invite-share"
+                            onClick={() => window.open('https://t.me/share/url?url=' + encodeURIComponent(staffInviteUrl), '_blank', 'noopener')}
+                          >
+                            {t('manage.btn.share')}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </section>
               )}
         </section>
