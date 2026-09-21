@@ -458,3 +458,93 @@ OAuth, которое субагент выполнить не может; `tool
   прототипа.
 - Остальные затронутые экраны (why-карточка, согласие, вопрос о работе,
   город, «Всё верно?») W59 не менял — они сверены W50/W58.
+
+### Круг 3 (повторный, MCP доступен — после ответов владельца)
+
+- **Ревьюер**: независимый агент (чистый контекст), **дата**: 2026-09-21
+- **Вердикт**: замечаний нет
+
+#### Как проверено
+
+Живой проект через MCP: `ap_list_flows` первым действием вернул 28 флоу —
+блокер прошлых кругов (п.1/п.3 протокола) снят. Ключа REST по-прежнему нет,
+поэтому `tools/export-flows.sh` и `tools/check-migrations.py` не запускались
+(см. «Ограничения»).
+
+**Важно 1 (потеря `eventId`) — исправлено, подтверждено различающим
+прогоном.** `ap_read_step_code` по `tg-router/step_10` показывает условие
+`continueEventOnboard = command==='start' && parsedKind==='' && sessionActive
+&& sessionScenario==='registration' && draftEventId!=='' &&
+starts(sessionStep,'ob_')`; при нём `route='reg_start'`, а `eventId`/`utm`
+берутся из черновика сессии (`draftEventId`/`draftUtm`), не из разобранного
+payload. Прогон `ghJXuiM3D5IgKE9YLpZMV` (TESTING, `ap_get_run`): апдейт
+`/start` без payload; `step_8` → `active:true`, `scenario:registration`,
+`step:ob_consent`, `draftEventId:"tmpw59evt"`; `step_9` → `valid:false`,
+`kind:''`; `step_10` → `route:"reg_start"`, `eventId:"tmpw59evt"`,
+`utm:"w59utm"`; `step_11` выбрал ветку `reg_start`, `step_12` —
+`call reg-start` с этими `eventId`/`utm` (`flowProps`). Это различающий
+прогон: до фикса тот же вход попадал в ветку `command==='start' &&
+parsedKind===''` → `route:'menu'`, `eventId:''` (`parsedEventId` пуст), а
+`menu/needs_onboard` переписывает сессию черновиком `eventId:''` — ровно
+описанный в замечании 1 круг 2 дефект. Тестовые данные удалены: в `sessions`
+и `users` нет `telegram_id=999000111` (`ap_find_records`), в `registrations`
+и `events` нет `tmpw59evt`.
+
+**Важно 2 (сверка с прототипом) — названо, достаточно.** В
+`prototypes/scenarios.js` путь овнера — `obCore('profile-saved','menu')`
+(стр. 186), финальная карточка `profile-saved` с текстом `onb.profile_saved`
+и кнопкой `common.btn.menu` «Меню» (стр. 188–189). Журнал («Сверка с
+прототипом») называет расхождение (заголовок `profile.saved.header` вместо
+`profile.tab`, кнопка `web_app` «События» на `#/events` вместо «Меню») и его
+причину — решение владельца ADR-0034 п.3. Причина проверена: прототип обновлён
+PR #82 (`99bb1c2`, 2026-09-19), ADR-0034 принят позже (`115650b`,
+2026-09-20) — это отступление по решению владельца, а не самовольное. Второй
+названный аргумент (кнопка «Меню» требует чтения роли, а гейт ADR-0034 п.2
+ставит чтение ролей после заполнения профиля) согласуется с
+`menu/step_3`/`step_8` живого флоу. По п.3a/ADR-0027 этого достаточно.
+
+**На будущее 4 — исправлено.** `ap_export_flow` по `reg-profile` отдаёт
+`id: bEMt8LcohToEoo06XMngp`, `state: LOCKED`, что совпадает с
+`publishedVersionId` манифеста; DRAFT-версии из замечания 4 круг 2 больше нет.
+
+**На будущее 5 — исправлено.** Строки `migrations` `2026-09-20-w59-01/02/03`
+имеют непустые `version_id` и `commit`. `2026-09-20-w59-02` = `cPeZzet…`
+(menu) и `2026-09-20-w59-03` = `JasmOC0…` (reg-consent-mkt) совпадают с
+текущим манифестом; `2026-09-20-w59-01` = `YgMR7P…` (reg-profile) — версия
+reg-profile на момент публикации W59 (подтверждено `git show
+115650b:flows/_manifest.json`), позже перекрытая `2026-09-20-w59-04`
+(`vpj0WN…`) и `2026-09-21-w59-02` (`bEMt8…`). Последняя publish-строка по
+каждому флоу (menu `cPeZzet…`, reg-consent-mkt `JasmOC0…`, reg-profile
+`bEMt8…`, tg-router `WtULEacr…`) совпадает с манифестом — инвариант B1
+`check-migrations.py` был бы выполнен.
+
+**Экспорт против живого.** `flows/tg-router.json` рабочего дерева (ветка
+`w58-w59-mcp-review`; файл не менялся с коммита `eccc7a6`) побайтово совпадает
+с живым `ap_export_flow` версии `WtULEacr3fJvK88Oczl1S` (`state: LOCKED`, 21 шаг):
+расхождения только `flowId` и `trigger.lastUpdatedDate` — поля, которых
+MCP-снимок не пишет. `flows/tg-router.json` и `flows/reg-profile.json`
+обновлены тем же коммитом `eccc7a6`. Живые `ap_export_flow` по `menu`
+(`cPeZzet…`) и `reg-consent-mkt` (`JasmOC0…`) — `state: LOCKED`, совпадают
+с манифестом.
+
+**Офлайн-чекеры (запущены мной):** `check-texts.py i18n/ru.json flows/*.json`
+— 25 флоу, 223 пары, 0 расхождений; `check-commands.py` — 0 нарушений,
+самопроверка ok; `check-export-secrets.sh` — чисто; `ap_validate_flow`
+tg-router — 21/21 шаг валиден, коротких форм переменных нет.
+
+#### Ограничения
+
+- Ключа REST нет: `tools/export-flows.sh` и `tools/check-migrations.py` не
+  запускались. Сверка `migrations` сделана вручную и только по строкам W59,
+  а не по всем 140 записям таблицы.
+- Различающий прогон `ghJXuiM3D5IgKE9YLpZMV` — положительный (условие
+  истинно → `reg_start`). Обратной стороны условия (`await_marketing`, пустой
+  `eventId`, нет активной сессии → `menu`) отдельным прогоном никто не
+  показывал: она проверена чтением кода (`ffT9DpewsIisOUVzJOUzC` — прогон с
+  пустым входом, `route:'none'`, контролем не является). Для полной пары
+  стоило бы прогнать `/start` при сессии `await_marketing` и увидеть `menu`.
+- Краевой случай, зафиксирован для истории: `/start <мусор>` (`parsedKind:''`,
+  но `startPayload!==''`) при активной `ob_*`-сессии с непустым `eventId`
+  тоже уходит в `reg_start`, и `badPayload` не выставляется. Поведение не
+  описано в ADR/каталоге; на онбординг без события не влияет, блокирующим не
+  считаю.

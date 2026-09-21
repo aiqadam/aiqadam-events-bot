@@ -622,3 +622,98 @@ publish-строка `w60-04` (см. замечание 3).
 не заведены ни этим пакетом, ни W59; в `_manifest.json` их нет, каталог их
 не описывает. Ревьюер их видел и находкой не счёл. Их судьба (удаление либо
 отдельный пакет) — отдельный хвост, к W58/W59 не относится.
+
+### Круг 5
+
+- **Ревьюер**: независимый агент (чистый контекст), **дата**: 2026-09-21
+- **Вердикт**: замечаний нет
+
+#### Как проверено
+
+MCP вызываем (`ap_list_flows` — 28 флоу). Ключа REST по-прежнему нет, поэтому
+`tools/export-flows.sh` и `tools/check-migrations.py` не запускались; логика
+чекера прочитана, а инварианты A/B1/B4/C воспроизведены вручную по живым
+строкам через MCP. Ветка `w58-w59-mcp-review`, HEAD `eccc7a6`, дерево чистое.
+
+**Замечание 1 круга 4 (важно, строки `migrations`) — снято, проверено
+независимо.** `ap_find_records` по `NCZNGuWh6PFs1JZXRPNTE` (140 строк,
+просмотрены все):
+
+- строк без `id` нет (`id not_exists` → 0 записей) и строк без `version_id`
+  нет (`version_id not_exists` → 0 записей);
+- все целевые строки (`2026-09-20-w58-01..04`, `w59-01..03`,
+  `2026-09-21-w59-01/02`) имеют непустой `id` формата
+  `YYYY-MM-DD-<пакет>-<NN>`, `action=publish` с непустым `version_id` и
+  `object_id` = flowId; `commit` (`762adac`, `eccc7a6`, `65d4a50`) — реальные
+  git-хэши;
+- гигиена по всей таблице: у каждого `publish` `version_id` непустой, у
+  каждого не-`publish` — ровно `-`; у всех `table:`-строк `object_id` = живой
+  internal id таблицы, `version_id=-` (в т.ч. `migrations`
+  `NCZNGuWh6PFs1JZXRPNTE`, `users` `gyMqrk23KWlFQweY3qDU0`);
+- инвариант B1 (последняя publish-строка ↔ `flows/_manifest.json`):
+  `reg-start` `w58-01`=`l3UqicR6uUGlxtEfJQXbr`; `reg-profile`
+  `2026-09-21-w59-02`=`bEMt8LcohToEoo06XMngp`; `reg-api`
+  `w60-03`=`QLA3hrRlWnoMvMoPBA3x2`; `menu` `w59-02`=`cPeZzetARSsdwmlMaJaIF`;
+  `reg-consent-mkt` `w59-03`=`JasmOC0wXfNA8qanpX7EI`; `tg-router`
+  `2026-09-21-w59-01`=`WtULEacr3fJvK88Oczl1S` — все совпали;
+- исторические версии промежуточных строк сверены не с манифестом на слово,
+  а с git-историей `_manifest.json`: `w58-01/02/03` — на `b627099`
+  (`l3UqicR6…`/`1m3ZzGuqrMhWxptSNceqO`/`JLvJqE56qXNrHQ3AG7rnN`), `w58-04`
+  `aKtNttjHi0AOIxyfUe0VV` — на `451f646`, `w59-01/02/03`
+  (`YgMR7P…`/`cPeZzet…`/`JasmOC0…`) — на `115650b`, `w59-04` `vpj0WN3…` — на
+  `65d4a50`. Ложной/дублирующей строки не видно; формат и содержимое
+  согласованы с ответом владельца.
+
+**Замечание 2 (на будущее) — снято.** `ap_flow_structure` по `reg-start`
+отдаёт 21 шаг (`trigger`, `step_1..step_20`, включая `step_13`, `step_18`,
+`step_19`). `catalog/flows/reg-start.md` перечисляет ровно их: `step_13` —
+отдельной строкой, `step_18`/`step_19` — строкой `step_18→19` (та же нотация,
+что уже была у `step_5→6`/`step_7→8`), оба имени названы. Лишних шагов в
+каталоге нет, соответствие поимённое.
+
+**Замечание 3 (на будущее) — снято.** `ap_export_flow` по `reg-profile`
+отдаёт `flows[0].id = bEMt8LcohToEoo06XMngp`, `state = LOCKED` — совпадает с
+`flows/_manifest.json.publishedVersionId`; DRAFT больше нет. Регресса от
+перепубликации нет: `git diff 762adac HEAD -- flows/reg-profile.json` меняет
+только `backupFiles` (`null`→`{}`) и `schemaVersion` `31`→`32` — ни один шаг
+или `sourceCode` не тронут.
+
+**Экспорт ↔ инстанс.** `flows/reg-profile.json` и `flows/tg-router.json`
+нормализованы той же функцией, что `tools/export-flow-mcp.py` (drop
+`lastUpdatedDate`/`lastTestDate`/`sampleDataFileId`, drop root
+`created`/`updated`/`id`/`flowId`/`updatedBy`, `sort_keys`), и **побайтово**
+совпали с живыми `ap_export_flow` (оба `state=LOCKED`, версии
+`bEMt8…`/`WtULEacr…`). Состав `_manifest.json` (25 флоу) ↔ 25 живых
+опубликованных.
+
+**Регресс каталога таблиц.** `ap_export_table users` (internal
+`gyMqrk23KWlFQweY3qDU0`) сверен построчно с `catalog/tables/users.md`: все 18
+полей, оба namespace'а совпадают; шесть профильных — `em7af2g9kyaNXC2tPNvXF`,
+`KsKN4eTmjZN2IxrZxm5qZ`, `p5TNNHUYCrHv3L6SWCRWb`, `wz2jSqAxfldiP8b0YOokJ`,
+`t89wutkSapoK3QKmZ0Vb8`, `EAlXy4XsXGAeM7UrS0TIQ`. Исправление замечания 2
+круга 1 не деградировало.
+
+**Офлайн-чекеры (запущены мной):** `check-texts.py` — 25 флоу, 223 пары,
+0 расхождений; `check-commands.py` — самопроверка ok, 0 нарушений;
+`check-export-secrets.sh` — чисто (6/6 `BOT_TOKEN`, 2/2 `QR_SIGNING_KEY`,
+весь `auth` — ссылками).
+
+#### Замечания
+
+Замечаний нет. Все три замечания круга 4 (1 «важно» + 2 «на будущее») сняты
+по живым артефактам; регресса в `users`/каталоге/экспорте не найдено.
+
+#### Чем это ревью ограничено
+
+- Ключа REST нет: `tools/check-migrations.py` не запускался. Инварианты
+  A/B1/B4/C воспроизведены вручную по живым строкам через MCP, а не прогоном
+  скрипта; `check-migrations.py` прочитан построчно.
+- На инстансе живут 3 `DISABLED`-черновика вне манифеста
+  (`zz-access-check-delete-me`, `zz-diag-skip-primitive`, `staff-accept`) —
+  pre-existing и вне W58/W59 (владелец назвал их отдельным хвостом). Если
+  REST `GET /api/v1/flows` их отдаёт, инвариант A `check-migrations.py` упадёт
+  на них независимо от строк миграций; без ключа это не проверить. Не находка
+  пакета, но следующий прогон чекера это покажет.
+- Отрицательные сценарии и webhook-путь `reg-api` не прогонялись: пакет круга
+  5 правил формат `migrations`, таблицу шагов и републикацию, не авторизацию;
+  `initData` у ревьюера нет.
