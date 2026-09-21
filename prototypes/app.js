@@ -1304,23 +1304,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       hint: T('profile.company_hint'),
       onInput: (e) => { p.company = e.target.value; },
     }));
-    // Город — сначала свободный ввод, чипы ниже как подсказки:
-    // клик подставляет значение в поле, руками пишется любой.
-    const cityWrap = E('div', 'app-field');
-    cityWrap.appendChild(E('label', 'label', T('profile.city')));
-    const cityInput = E('input', 'input');
-    cityInput.value = p.city || '';
-    cityInput.addEventListener('input', (e) => { p.city = e.target.value; });
-    cityWrap.appendChild(cityInput);
-    cityWrap.appendChild(E('div', 'helper', T('profile.city_hint')));
-    const chips = E('div', 'segmented');
-    ['Ташкент', 'Алматы'].forEach((c) => {
-      const b = btn(c, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { p.city = c; profileTried = false; renderEvents(); } });
-      if (p.city === c) b.classList.add('active');
-      chips.appendChild(b);
-    });
-    cityWrap.appendChild(chips);
-    form.appendChild(cityWrap);
+    // Город — простой текстовый ввод: чипы «Ташкент/Алматы» живут только
+    // в онбординге чата (W60), в форме профиля их нет, как и в продукте.
+    form.appendChild(field(T('profile.city'), p.city, {
+      onInput: (e) => { p.city = e.target.value; },
+    }));
     screen.appendChild(form);
 
     // Согласие на ПД — показано залоченным: дано один раз, здесь не меняется.
@@ -1340,9 +1328,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     mktBox.checked = !!p.mkt;
     mktBox.addEventListener('change', () => { p.mkt = mktBox.checked; });
     mktRow.appendChild(mktBox);
+    // Подписи под чекбоксом в профиле нет: там не происходит регистрации,
+    // и успокаивать «на регистрацию не влияет» нечего (W60).
     mktRow.appendChild(E('span', '', T('reg.mkt.label')));
     screen.appendChild(mktRow);
-    screen.appendChild(E('div', 'helper', T('reg.mkt.hint')));
 
     const acts = E('div', 'sticky-actions');
     acts.appendChild(btn(T('manage.btn.save'), {
