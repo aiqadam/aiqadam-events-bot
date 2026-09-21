@@ -37,7 +37,7 @@
 | step_6 | `tables-find-records registrations` | свои строки: `telegram_id eq <владелец initData>`, `limit 50`, проекция `telegram_id`+`status`+`registered_at`+`checked_in_at`+`event_id` |
 | step_7 | `tables-find-records registrations` | происхождение события: `event_id eq <id>`, `limit 200` (подсчёт занятости — OWN-15), проекция `event_id`+`telegram_id`+`status` |
 | step_8 | `tables-find-records events` | событие по `id`, `limit 1` |
-| step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`), гейт PAR-8 (W50) |
+| step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`) + `consent_pdn`/`consent_marketing`: гейт PAR-8 (W50) и текущее значение для таба «Профиль» |
 | step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); все тексты — во входе `texts` |
 | step_10 | ROUTER по `outcome` | `register` / `registered_profile` / `cancel` / `profile` / `profile_saved` / `Otherwise` (`mine` и отказы без записей) |
 | step_11 | `tables-upsert-records registrations` | создать/реактивировать: `id = <eventId>-<telegramId>`, `status = registered`, `registered_at = now`, ключ `(event_id, telegram_id)` |
@@ -81,38 +81,38 @@
 - **Подсчёты — defense in depth**: чтения фильтруют по `telegram_id`/`event_id`,
   CODE повторяет те же фильтры на строке (Q25). Лимит 200 на происхождение —
   договорённость Q15 для точности `no_seats`.
-- **`step_17`/`step_19`/`step_22` до 2026-09-20 писали и читали шесть
-  колонок профиля (`profile_first_name`, `profile_last_name`, `position`,
-  `company`, `city`, `profile_completed_at`) по внутреннему `id` поля вместо
-  `externalId` (CLAUDE.md, гоча №1). `columns`-проекция на чтении к этому
-  терпима (отдаёт `null`, шаг не падает), а `values` на записи — нет: ключ,
-  не совпадающий ни с одним `externalId`, молча отбрасывается. В результате
-  вкладка «Профиль» и регистрация из каталога с профилем (`registered_profile`)
-  не сохраняли ни одного из шести полей ни разу с момента W50, при этом сам
-  вызов отвечал `200 ok` — различающий прогон: `ap_run_action` тем же
-  `tables-upsert-records` напрямую, с литеральным значением, тоже не записал.
-  Исправлено на верные `externalId` (см. `ap_export_table` для маппинга).
-- **Таб «Профиль» переключает `consent_marketing` (W60).** Причина: чат-путь
-  (`reg-profile/finish_lite`) больше не переспрашивает согласие на рассылку
-  при повторной регистрации (спросили один раз — хватит), поэтому нужен
-  способ передумать без новой регистрации. `profile_get` отдаёт текущее
+- **`columns` на чтении и `values` на записи адресуют поля по `externalId`.**
+  Это разные namespace'ы: внутренний `field id` встречается только в `cells`
+  вывода `tables-find-records` (CLAUDE.md, гоча №1). Ошибка тут тихая с обеих
+  сторон: `values` с ключом-`id` платформа молча отбрасывает — шаг всё равно
+  отвечает `200 ok`, — а `columns` с чужим ключом просто не отдаёт колонку, и
+  CODE-шаг видит пустое поле. Маппинг `users` — в
+  [catalog/tables/users.md](../tables/users.md), сверять с `ap_export_table`,
+  а не с памятью.
+- **Таб «Профиль» переключает `consent_marketing`.** Чат-путь
+  (`reg-profile/finish_lite`) спрашивает согласие на рассылку один раз, при
+  повторной регистрации не переспрашивает — таб даёт передумать без новой
+  регистрации. `profile_get` отдаёт текущее
   значение (`consentMarketing`, из `users.consent_marketing`), `profile_save`
   принимает `consentMarketing` в теле и пишет его вместе с профилем —
   `consent_marketing_at` проставляется всегда, тем же приёмом, что и везде
   с PAR-2 (пустая дата — «не отвечал», а не «нет»).
+  **Грабля чтения:** `step_17` обязан держать `consent_marketing` в проекции
+  `columns` (externalId `FpWznk9Fgl8wUXXUKolRu`). Пропущенная колонка не
+  ошибка — `userRow.consent_marketing` просто пуст, `profile_get` возвращает
+  `false` при любом записанном значении, и галочка в табе выглядит снятой,
+  хотя запись `profile_save` отрабатывает. `profile_get` возвращает `false`
+  и для действительно непроставленного поля — отличить эти два случая по
+  ответу нельзя, поэтому проверять надо проекцией, а не поведением таба.
 - **Повторная регистрация (`register`, `profileDone = true`) не трогает
-  `users` вовсе (W60).** Раньше `step_12` писал `consent_pdn`/`consent_marketing`
-  на **каждой** регистрации через каталог, включая повторные, — шит
-  (`RegistrationSheet`) сбрасывает чекбоксы в снятое состояние при каждом
-  открытии, поэтому вторая и последующие регистрации молча откатывали
-  `consent_marketing` на `false`, даже если человек уже согласился в чате
-  или при первой регистрации. `step_9` также требовал `consentPdn` в теле
-  **каждого** запроса `register`, блокируя кнопку в шите заново. Симметрично
-  чат-фиксу (`reg-profile/finish_lite`): гейт `consentPdn` смягчён до «либо
-  прислано, либо уже есть `users.consent_pdn = true`» (`alreadyConsentedPdn`),
-  а `step_12` помечен `skip` — для `profileDone` пользователя согласия уже
-  корректны, писать нечего. Ветка `registered_profile` (первая регистрация
-  из каталога с одновременным заполнением профиля, `step_18→20`) не тронута —
+  `users`.** `step_12` помечен `skip`: к моменту, когда `profile_completed_at`
+  заполнен, согласия (`consent_pdn`, `consent_marketing`) уже записаны, а шит
+  каталога (`RegistrationSheet`) при каждом открытии сбрасывает чекбоксы в
+  снятое состояние — запись с него откатывала бы `consent_marketing` на
+  `false`. Симметрично чат-пути (`reg-profile/finish_lite`). Гейт `consentPdn`
+  в `step_9` — «либо прислано в теле, либо уже есть `users.consent_pdn = true`»
+  (`alreadyConsentedPdn`). Ветка `registered_profile` (`step_18→20`,
+  регистрация из каталога с одновременным заполнением профиля) не тронута:
   там это первое и единственное согласие, писать обязательно.
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
