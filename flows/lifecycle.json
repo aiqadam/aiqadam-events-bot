@@ -1,9 +1,10 @@
 {
+  "agentIds": [],
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "lifecycle",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "cron_expression",
@@ -23,7 +24,7 @@
               "actionName": "tables-update-record",
               "errorHandlingOptions": {
                 "continueOnFailure": {
-                  "value": false
+                  "value": true
                 },
                 "retryOnFailure": {
                   "value": false
@@ -152,7 +153,7 @@
                     }
                   ]
                 },
-                "limit": 100,
+                "limit": 500,
                 "record_ids": [],
                 "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
               },
@@ -182,7 +183,7 @@
             "events": "{{step_1['output']}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  // Tables отдаёт DATE строкой и зону не гарантирует — без зоны это UTC (OWN-3).\n  const parse = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n  const rows = arr(inputs.events).map(flat);\n\n  // Только вперёд (OWN-4): published→finished. cancelled/finished/draft не трогаем.\n  // Пустой ends_at — пропуск. Диапазон по DATE в фильтрах не работает (Q15),\n  // поэтому чтение берёт published+finished широким фильтром, а сравнение здесь.\n  const due = rows\n    .filter((e) => str(e.status) === 'published' && str(e.id) !== '')\n    .filter((e) => { const ms = parse(str(e.ends_at)); return isFinite(ms) && ms <= now; })\n    .map((e) => ({ recordId: str(e.__recordId), id: str(e.id) }))\n    .filter((x) => x.recordId !== '');\n  // Catch-up для послесловия: уже finished, но конец был недавно — поздний чекин\n  // после финиша иначе не позовёт reg-afterword никогда.\n  const CATCHUP_MS = 48 * 3600 * 1000;\n  const catchup = rows\n    .filter((e) => str(e.status) === 'finished' && str(e.id) !== '')\n    .filter((e) => { const ms = parse(str(e.ends_at)); return isFinite(ms) && ms >= now - CATCHUP_MS; })\n    .map((e) => str(e.id));\n  const seen = {};\n  const finishedIds = due.map((x) => x.id).concat(catchup)\n    .filter((id) => { if (seen[id]) return false; seen[id] = true; return true; });\n  // Сентинел вместо пустого `in`: пустое значение валит чтение (fail-closed),\n  // а несуществующий id возвращает ноль строк.\n  return { nowIso: nowIso, due: due, dueCount: due.length, finishedIds: finishedIds, finishedIdsCsv: finishedIds.length ? finishedIds.join(',') : '__none__' };\n};",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  // Tables отдаёт DATE строкой и зону не гарантирует — без зоны это UTC (OWN-3).\n  const parse = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n  const rows = arr(inputs.events).map(flat);\n\n  // Только вперёд (OWN-4): published→finished. cancelled/finished/draft не трогаем.\n  // Пустой ends_at — пропуск. Диапазон по DATE в фильтрах не работает (Q15),\n  // поэтому чтение берёт published+finished широким фильтром, а сравнение здесь.\n  const due = rows\n    .filter((e) => str(e.status) === 'published' && str(e.id) !== '')\n    .filter((e) => { const ms = parse(str(e.ends_at)); return isFinite(ms) && ms <= now; })\n    .map((e) => ({ recordId: str(e.__recordId), id: str(e.id) }))\n    .filter((x) => x.recordId !== '');\n  // Catch-up — короткий хвост для позднего чекина сразу после финиша: событие\n  // уже finished, а отметка появилась позже. Отсчёт — от finished_at (его\n  // ставит сам lifecycle), не от ends_at: иначе окно тянется 48 ч и каждый тик\n  // зовёт reg-afterword по всем пришедшим (~192 лишних вызова на человека),\n  // хотя callee всё равно дедупит. Верхняя граница — 2 тика крона */15.\n  const CATCHUP_MS = 2 * 15 * 60 * 1000;\n  const catchup = rows\n    .filter((e) => str(e.status) === 'finished' && str(e.id) !== '')\n    .filter((e) => {\n      const fin = parse(str(e.finished_at));\n      const ms = isFinite(fin) ? fin : parse(str(e.ends_at));\n      return isFinite(ms) && ms >= now - CATCHUP_MS;\n    })\n    .map((e) => str(e.id));\n  const seen = {};\n  const finishedIds = due.map((x) => x.id).concat(catchup)\n    .filter((id) => { if (seen[id]) return false; seen[id] = true; return true; });\n  // Сентинел вместо пустого `in`: пустое значение валит чтение (fail-closed),\n  // а несуществующий id возвращает ноль строк.\n  return { nowIso: nowIso, due: due, dueCount: due.length, finishedIds: finishedIds, finishedIdsCsv: finishedIds.length ? finishedIds.join(',') : '__none__' };\n};\n",
             "packageJson": "{}"
           }
         },
