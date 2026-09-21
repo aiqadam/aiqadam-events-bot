@@ -178,8 +178,9 @@ event_staff WHERE event_id = <eventId запроса> AND telegram_id = <из in
 
 - Токен — **22 случайных символа** из `crypto / generate-password`
   (`characterSet = alphanumeric`, `length = 22`). Это `A-Za-z0-9`, подмножество
-  алфавита deep link, ≈131 бит энтропии. Генератора случайных байт в Code step нет,
-  поэтому источник случайности — только этот qadam.
+  алфавита deep link; **номинально** ≈131 бит, но заявка не подтверждена —
+  генератор не CSPRNG (см. ограничение ниже). Генератора случайных байт
+  в Code step нет, поэтому источник случайности — только этот qadam.
 - В БД лежит **только `sha256(token)`** (`staff_invites.token_hash`).
   Утечка таблицы не даёт работающих ссылок.
 - Одноразовость — `used_at`; TTL — `expires_at = created_at + 24ч`.
