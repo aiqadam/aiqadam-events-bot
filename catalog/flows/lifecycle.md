@@ -11,10 +11,10 @@
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-schedule : cron_expression` | каждые 15 мин, Asia/Tashkent |
 | step_1 | `tables-find-records events` | `published` + `finished` широким фильтром — решение принимает CODE |
-| step_2 | CODE «due to finish» | `now`; `due` (только `published` с `ends_at <= now`, с record id); catch-up `finished` с `ends_at` не старше 48 ч; `finishedIds` + сентинел |
+| step_2 | CODE «due to finish» | `now`; `due` (только `published` с `ends_at <= now`, с record id); catch-up `finished` с `finished_at` не старше 2 тиков (30 мин); `finishedIds` + сентинел |
 | step_3 | LOOP_ON_ITEMS | по `due` |
-| step_7 (в цикле) | `tables-update-record events` | `status = finished`, `finished_at = nowIso` по record id |
-| step_4 | `tables-find-records registrations` | `event_id in finishedIds` |
+| step_7 (в цикле) | `tables-update-record events` | `status = finished`, `finished_at = nowIso` по record id; `continueOnFailure` |
+| step_4 | `tables-find-records registrations` | `event_id in finishedIds`, `limit 500` |
 | step_5 | CODE «afterword targets» | непустой `checked_in_at` → `{telegramId, chatId, eventId}`, дедуп пар |
 | step_6 | LOOP_ON_ITEMS | по `targets` |
 | step_8 (в цикле) | `subflows : callFlow reg-afterword` | `queue`, fire-and-forget, `flowProps.payload` |
@@ -35,15 +35,25 @@
   безвредна (перезапись `finished_at` тем же переходом).
 - **Сравнение дат — в CODE, а не в фильтрах** (Q15: диапазон по DATE в фильтрах
   не работает). Чтение берёт `published,finished` оператором `in`, отбор — код.
+- **`step_7` — `continueOnFailure`.** Падающий апдейт события (например,
+  запись удалена между чтением и записью) не обрывает тик: цикл продолжается,
+  и послесловия следующим шагам всё равно уходят. Отметку `finished` такой
+  апдейт не теряет — событие остаётся `published` и попадёт в `due` на
+  следующем тике.
 - **Сентинел `__none__` вместо пустого `in`.** Пустое значение валит чтение
   (fail-closed), а несуществующий id возвращает ноль строк. Тот же приём —
   в `reminders`.
 - **Find-шаги обязаны содержать `limit` + `record_ids`.** Без этих ключей шаг
   помечается невалидным (валидация это ловит, но сообщение не объясняет причину).
-- **Catch-up 48 ч** — для позднего чекина после финиша: событие уже `finished`,
-  а отметка появилась позже; без catch-up `reg-afterword` не позовут никогда.
-  Окно конечное: catch-up вечно растущего списка `finished` не масштабируется,
-  при сотнях событий окно придётся сужать.
+- **Catch-up — короткий хвост, 2 тика (30 мин) от `finished_at`.** Нужен для
+  позднего чекина сразу после финиша: событие уже `finished`, а отметка
+  появилась позже. Отсчёт от `finished_at` (его ставит `step_7`), не от
+  `ends_at`: иначе окно тянется 48 ч и каждый тик зовёт `reg-afterword` по всем
+  пришедшим (~192 лишних вызова на человека), хотя callee всё равно дедупит
+  ключом `afterword:<eventId>-<telegramId>`. Если `finished_at` пуст —
+  запасной отсчёт от `ends_at` с тем же окном. **Цена:** чекин позднее ~30 мин
+  после финиша послесловия уже не получит; нормальный чекин (до финиша) получает
+  его на тике перехода.
 - **Вызов `reg-afterword` — здесь, а не в `reminders`.** Послесловие —
   пост-событие: зовём по факту финиша (плюс catch-up), а не по факту чекина,
   чтобы «спасибо, что были» не уходило человеку на входе. Сам `reg-afterword`
