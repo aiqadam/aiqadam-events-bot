@@ -182,6 +182,33 @@
 - **Каталог/доки:** `catalog/flows/staff-invite.md`, `staff-accept.md`, `tg-router.md`, `overview.md` (27 флоу), `docs/FLOWS.md` — сверены с живой структурой; расхождения — замечания 2, 6, 7.
 - **Ограничение, названное честно:** живого позитива создания `staff-invite` с настоящим `initData` нет (нужен овнер, независимо подделать `initData` нельзя) — проверены только `401` и код; живого позитива приёма в PRODUCTION тоже нет (замечание 1).
 
+### Повторное ревью (круг 2, 2026-09-21)
+
+- **Ревьюер**: opencode (deepseek-v4.1-flash, независимый агент, чистый контекст) · **Дата**: 2026-09-21 · **Вердикт**: блокеров и «важно» нет; одно замечание уровня «на будущее» — пакет готов к `готов`.
+
+**Закрытие замечаний круга 1** (проверено по живым артефактам, а не по тексту ответа):
+
+1. **важно — закрыто.** `ap_get_run` по `FT1Fe6UliSl65Wgm6e8GI`: `Environment: TESTING`, ветка `ok` (`used_at`/`used_by` + строка `event_staff` + кнопка сканера). `vpwLPv92CrRjabDnhn3yi`: `Environment: PRODUCTION`, ветка `invalid` (токен `NoSuchToken22CharsHere`, ответ «Ссылка не найдена»). Журнал и «Хвосты» приведены к этим фактам, «живой тест PRODUCTION» из записи убран.
+2. **важно — закрыто.** `ap_find_records` по `staff_invites` (`JIjKkDu3Im2ylBmkkH5Fu`) — «No records found»; `ap_list_tables` — 0 записей. Строки `VZSiFHPQC5S1oH5sYQkDC` в живом проекте нет (осталась только в тексте круга 1 и в ответе владельца — так и должно быть).
+3. **на будущее — закрыто.** `docs/SECURITY.md`, раздел «Инвайт-токены staff (OWN-14)»: добавлено принятое ограничение — сырой токен виден в трассах (`staff-invite/step_15`, `tg-router/step_10`, триггер `staff-accept`) с компенсацией (TTL 24 ч + `sha256` в БД).
+4. **на будущее — закрыто.** Q60 заведён (`docs/OPEN-QUESTIONS.md`, строка 3438) с сутью, компенсациями и вариантами; `SECURITY.md` дополнен оговоркой «Стойкость генератора ниже номинала».
+5. **на будущее — принято хвостом.** В «Хвостах» зафиксировано, что гонка claim'а живым прогоном не проверялась; в ответе владельца — почему claim-first оставлен. Как проверенное не заявлено.
+6. **на будущее — закрыто.** Чек-лист готовности отмечен целиком, «Что построено» содержит `staff-invite`, `staff-accept`, `tg-router`, Mini App и `staff_invites`, шапка журнала — `на проверке`, совпадает со строкой W10 в `docs/STATUS.md`.
+7. **на будущее — закрыто.** `catalog/flows/tg-router.md` п. 9 больше не приводит `staff-accept` примером ухода в `Otherwise`; сказано, что с W10 он обрабатывается выше.
+
+**Новое замечание:**
+
+1. **на будущее** Q60 заведён секцией в конце `docs/OPEN-QUESTIONS.md`, но не внесён в указатель в начале файла (таблица `| # | Вопрос | Статус |` заканчивается на Q59). [AGENTS.md](../../AGENTS.md) описывает указатель как перечень со статусом **каждого** вопроса — читатель, идущий по нему, Q60 не увидит. Где: `docs/OPEN-QUESTIONS.md`, указатель. Не блокирует; чинится при следующей правке файла.
+   - *Исправлено*: Q60 добавлен в указатель (`docs/OPEN-QUESTIONS.md`) (2026-09-21).
+
+**Проверки круга 2 (свои запуски):**
+
+- **Живой проект (MCP):** `ap_get_run` по `FT1Fe6UliSl65Wgm6e8GI` (TESTING/`ok`) и `vpwLPv92CrRjabDnhn3yi` (PRODUCTION/`invalid`); `ap_find_records` по `staff_invites` — пусто; `ap_list_tables` — `staff_invites` 0 записей, `event_staff` 0; `ap_list_flows` — `staff-invite`/`staff-accept`/`tg-router` ENABLED + published; `ap_validate_flow` по трём флоу — «ready to publish» (16/13/22 шага, все valid).
+- **Экспорт ↔ манифест ↔ `migrations`:** `ap_export_flow` по трём флоу — `cYLX8SyKdGhxp3Bu6PHE1`, `8ath7lNU6cmkgNUS2fZh7`, `pCZzbj5UKQAxztYtD4Oba`, все `state: LOCKED`/`status: PUBLISHED`; совпадают с `flows/_manifest.json` и строками `migrations` `2026-09-21-w10-01..04` (`ap_find_records`).
+- **PR #103 docs-only:** `git show --stat 4f1b86e` — тронуты только `docs/` и `catalog/flows/tg-router.md`; `flows/`, `i18n/`, код Mini App не менялись, поэтому структурный регресс флоу исключён.
+- **Офлайн-гейты (с аргументами pre-commit, запущены сам):** `check-texts.py i18n/ru.json flows/*.json` → 27 флоу / 230 пар / 0 расхождений, exit 0; `check-commands.py i18n/*.json flows/*.json` → 27 флоу / 0 нарушений, exit 0; `check-export-secrets.sh` → чисто (`BOT_TOKEN` 7, `QR_SIGNING_KEY` 2, все 1 поля `auth` — ссылками), exit 0.
+- **Ограничение:** `tools/check-migrations.py` без `QADAM_API_KEY` не запускается (ключа платформы на машине нет); сверка манифест ↔ живой экспорт ↔ `migrations` сделана вручную по MCP и сошлась.
+
 ## Хвосты и блокеры
 
 - **Экспорт снят без REST-ключа, через MCP** (прямой вызов
