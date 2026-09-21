@@ -85,7 +85,7 @@ function routeName(hash) {
 }
 const ENTRIES = {
   guest: ['reminders'],
-  owner: ['published', 'updated', 'cancelled', 'broadcast', 'staff-invite', 'finished'],
+  owner: ['published', 'updated', 'cancelled', 'broadcast', 'finished'],
   controller: ['menu'],
 };
 

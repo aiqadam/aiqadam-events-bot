@@ -241,11 +241,6 @@ PROTO.buildScenarios = function (opts) {
       { id: 'finished', kind: 'bot', text: T('bcast.finished', { sent: ed.broadcast.sent, failed: 0 }), trace: ['OWN-11'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 
-      { id: 'staff-invite', kind: 'card', card: {
-          title: T('staff.btn.invite'), lines: [],
-          body: T('staff.invite.created', { url: 'https://t.me/' + D.botUsername + '?start=s' + ev.id + '-9f2c1a' }),
-        }, trace: ['OWN-14'], buttons: [{ label: T('manage.btn.copy'), copy: 'https://t.me/' + D.botUsername + '?start=s' + ev.id + '-9f2c1a' }] },
-
       { id: 'st-bcast-noshow', kind: 'card', state: true, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.segment.no_show_locked', { when: ev.ends }) }, trace: ['OWN-9'],
         buttons: [{ label: T('common.btn.back'), go: 'segment' }] },
       { id: 'st-bcast-empty', kind: 'card', state: true, card: { title: T('owner.event.btn.broadcast'), lines: [], body: T('bcast.empty_segment') }, trace: ['OWN-9'],
