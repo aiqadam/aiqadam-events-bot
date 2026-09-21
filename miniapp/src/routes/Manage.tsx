@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import type { ReactNode } from 'react';
 import Icon from '../components/Icon';
+import Sheet from '../components/Sheet';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticImpact, hapticNotification, setClosingConfirmation } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
@@ -211,8 +212,6 @@ function limitText(capacity: string, overbook: string): string {
   return limit === null ? t('event.card.seats_unlimited') : t('manage.capacity.limit', { limit });
 }
 
-// Шит — паттерн эталона (prototypes/proto.css `.app-sheet`): ручка, шапка
-// с крестиком, тело. В WebView позиционируется fixed, поверх sticky-бара.
 // W44: инициалы для аватара кандидата — кружок с буквами, как в прототипе.
 // Фото из Bot API не тянем; цвета — только семантические токены бренда.
 function candidateInitials(name: string, username: string): string {
@@ -220,58 +219,6 @@ function candidateInitials(name: string, username: string): string {
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return username.replace(/^@/, '').slice(0, 2).toUpperCase();
-}
-
-function Sheet({
-  open,
-  title,
-  onClose,
-  children,
-}: {
-  open: boolean;
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-  // Пока шит открыт, фон не прокручивается (дизайн-ревью W42, круг 4):
-  // колесо над подложкой уводило визард из-под модалки.
-  useEffect(() => {
-    if (!open) return;
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtml = html.style.overflow;
-    const prevBody = body.style.overflow;
-    html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
-    return () => {
-      html.style.overflow = prevHtml;
-      body.style.overflow = prevBody;
-    };
-  }, [open]);
-  if (!open) return null;
-  return (
-    <div className="app-sheet">
-      <div className="app-sheet-backdrop" onClick={onClose} />
-      <div className="app-sheet-panel" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="app-sheet-grab" />
-        <div className="app-sheet-head">
-          <span className="app-sheet-title">{title}</span>
-          <button type="button" className="app-sheet-close" aria-label={t('common.btn.close')} onClick={onClose}>
-            <Icon name="x" size={18} />
-          </button>
-        </div>
-        <div className="app-sheet-body">{children}</div>
-      </div>
-    </div>
-  );
 }
 
 export default function Manage({ eventId: propEventId }: { eventId: string }) {
@@ -302,8 +249,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [cancelSheet, setCancelSheet] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
-  // несохранённые правки молча (дизайн-ревью W42).
-  const loadedRef = useRef<Record<string, string> | null>(null);
+  // несохранённые правки молча (дизайн-ревью W42). Состояние, а не ref: после
+  // сохранения снимок меняется, и подтверждение закрытия (W47) снимается тем
+  // же рендером, а не ожиданием ухода со страницы.
+  const [loaded, setLoaded] = useState<Record<string, string> | null>(null);
   // Счётчик запросов resolve_geo: поздний ответ при закрытом шите не применяем
   // (дизайн-ревью, круг 6).
   const geoReqRef = useRef(0);
@@ -439,7 +388,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         next[n] = utcToLocalInput(String(ev[n] || ''));
       });
       setFields(next);
-      loadedRef.current = next;
+      setLoaded(next);
       applyStatus(String(ev['status'] || 'draft'));
       // Вердикт W49: формат выводится из координат (онлайн ⟺ точки нет);
       // правка с координатами предзаполняет ссылку эквивалентной.
@@ -475,6 +424,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   const showLoadFail = useCallback((text: string, retryable = true) => {
+    hapticNotification('error');
     setShowForm(false);
     setLoadfailText(text);
     setLoadfailRetryable(retryable);
@@ -569,10 +519,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   const isDirty = useCallback(() => {
     if (!eventId) return false;
-    const base = loadedRef.current;
+    const base = loaded;
     if (!base) return false;
     return FIELDS.some((n) => String(fields[n] || '').trim() !== String(base[n] || '').trim());
-  }, [eventId, fields]);
+  }, [eventId, fields, loaded]);
 
   // «К списку» не теряет несохранённые правки молча: спрашиваем (дизайн-ревью).
   // У создания правки не теряются — черновик лежит в localStorage, поэтому
@@ -588,6 +538,22 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
     leaveForm();
   }, [done, eventId, isDirty, leaveForm]);
+
+  // W47: нативная «Назад» — экран события ведёт к списку, открытый шит
+  // (отмена события / подтверждение выхода) закрывает, корневые экраны
+  // (список, создание из чата) её скрывают.
+  const goBack = useCallback(() => {
+    if (cancelSheet) {
+      setCancelSheet(false);
+      return;
+    }
+    if (confirmExit) {
+      setConfirmExit(false);
+      return;
+    }
+    backToList();
+  }, [cancelSheet, confirmExit, backToList]);
+  useBackButton(cancelSheet || confirmExit || (showForm && !!eventId), goBack);
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
@@ -624,7 +590,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       }
     } catch {}
     setFields(next);
-    loadedRef.current = next;
+    setLoaded(next);
     setOnline(nextOnline);
     setMapLink(nextLink);
     setStep(nextStep);
@@ -656,15 +622,17 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       });
       setBusy(false);
       if (res.kind !== 'json') {
+        hapticNotification('error');
         showToast(errorTextFor(res as never));
         return;
       }
       const d = res.data as Record<string, unknown>;
       if (d['ok']) {
+        hapticNotification('success');
         try {
           localStorage.removeItem(DRAFT_KEY);
         } catch {}
-        loadedRef.current = collecting;
+        setLoaded(collecting);
         if (d['eventId']) setEventId(String(d['eventId']));
         applyStatus(status);
         // После публикации экран успеха живёт как «Новое событие» (прототип);
@@ -689,6 +657,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
       if (d['error'] === 'validation') {
+        hapticNotification('error');
         const errFields = (d['fields'] as Record<string, unknown>) || {};
         showFieldErrors(errFields);
         const txt = typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.err.validation');
@@ -698,6 +667,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         if (first !== undefined) setStep(STEP_OF_FIELD[first]);
         return;
       }
+      hapticNotification('error');
       showToast(errorTextFor(res as never));
     },
     [busy, clearErrors, collect, eventId, initData, origStatus, applyStatus, errorTextFor, showFieldErrors, showToast, leaveForm],
@@ -804,6 +774,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // показываем саму ссылку, чтобы её можно было скопировать руками.
   const copyInviteLink = useCallback(
     (url: string) => {
+      hapticImpact('light');
       if (!navigator.clipboard || !navigator.clipboard.writeText) {
         showToast(url);
         return;
@@ -1131,6 +1102,26 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     } catch {}
   }, [showForm, eventId, done, fields, step, online, mapLink]);
 
+  // W47: подтверждение закрытия Mini App — только пока на экране есть
+  // несохранённый черновик (создание) или несохранённые правки; после
+  // публикации/сохранения и на выходе без изменений выключается. Это не
+  // защита данных (черновик и так переживает закрытие), а защита от ощущения
+  // потери.
+  const draftTouched = useCallback(() => {
+    if (!eventId) {
+      if (step > 0 || online || mapLink.trim() !== '') return true;
+      return FIELDS.some((n) => String(fields[n] || '').trim() !== '');
+    }
+    return isDirty();
+  }, [eventId, step, online, mapLink, fields, isDirty]);
+
+  useEffect(() => {
+    setClosingConfirmation(showForm && !done && !confirmExit && draftTouched());
+  }, [showForm, done, confirmExit, draftTouched]);
+
+  // Уход со страницы не должен оставлять подтверждение включённым.
+  useEffect(() => () => setClosingConfirmation(false), []);
+
   const canPublish = !origStatus || origStatus === 'draft';
   const plate = plateFromLocal(fields['starts_at']);
   // W53: таб рассылки — сегменты из загруженных участников (прототип
@@ -1261,7 +1252,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       aria-selected={manageTab === key}
                       className={`tab${manageTab === key ? ' active' : ''}`}
                       id={`mtab-${key}`}
-                      onClick={() => setManageTab(key)}
+                      onClick={() => {
+                        hapticImpact('light');
+                        setManageTab(key);
+                      }}
                     >
                       {label}
                     </button>

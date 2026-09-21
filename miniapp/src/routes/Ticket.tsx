@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticNotification } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
 import { utcMs, utcToWhen } from '../lib/dates';
@@ -107,6 +108,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   );
 
   const showError = useCallback((text: string, retry: boolean) => {
+    hapticNotification('error');
     setErrorText(text);
     setIsError(true);
     setRetryable(retry);
@@ -176,6 +178,11 @@ export default function Ticket({ eventId }: { eventId: string }) {
     }
   }, [tg, initData, eventId]);
 
+  // W47: нативная «Назад» на корневом билете скрыта; при открытом
+  // подтверждении отмены закрывает его, а не весь Mini App.
+  const closeCancelSheet = useCallback(() => setCancelConfirm(false), []);
+  useBackButton(cancelConfirm, closeCancelSheet);
+
   const cancelRegistration = useCallback(async () => {
     if (cancelBusy) return;
     setCancelBusy(true);
@@ -192,6 +199,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
     }
     const d = res.data as Record<string, unknown>;
     if (d['ok']) {
+      hapticNotification('success');
       setCancelConfirm(false);
       setCanCancel(false);
       setCancelled(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('cancel.kept'));

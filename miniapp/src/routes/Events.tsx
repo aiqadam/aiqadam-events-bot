@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticImpact, hapticNotification } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, EVENTS_API, REG_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToPlate, utcToWhen, utcMs } from '../lib/dates';
@@ -77,15 +78,18 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setLoadfail('');
     const res = await postJson(EVENTS_API, {});
     if (res.kind === 'network') {
+      hapticNotification('error');
       setLoadfail(t('events.err.network'));
       return;
     }
     if (res.kind === 'server') {
+      hapticNotification('error');
       setLoadfail(t('events.err.server'));
       return;
     }
     const d = res.data as Record<string, unknown>;
     if (!d['ok'] || !Array.isArray(d['upcoming']) || !Array.isArray(d['past'])) {
+      hapticNotification('error');
       setLoadfail(t('events.err.server'));
       return;
     }
@@ -100,11 +104,13 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setMineError('');
     const res = await postJson(REG_API, { action: 'mine', initData });
     if (res.kind === 'network') {
+      hapticNotification('error');
       setMineState('error');
       setMineError(t('events.err.network'));
       return;
     }
     if (res.kind === 'server') {
+      hapticNotification('error');
       setMineState('error');
       setMineError(t('events.err.server'));
       return;
@@ -203,6 +209,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setTab(routeTab);
   }, [routeTab]);
   const switchTab = useCallback((key: EventsTab) => {
+    hapticImpact('light');
     setTab(key);
     try {
       history.replaceState(null, '', '#/events?tab=' + key);
@@ -253,6 +260,10 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setSheetEvent(null);
   }, []);
 
+  // W47: нативная «Назад» на корневом каталоге скрыта; при открытом шите
+  // регистрации закрывает шит, а не весь Mini App.
+  useBackButton(Boolean(sheetEvent), closeSheet);
+
   const submitRegistration = useCallback(async () => {
     if (!sheetEvent || sheetBusy) return;
     setSheetBusy(true);
@@ -271,15 +282,18 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     });
     setSheetBusy(false);
     if (res.kind === 'network') {
+      hapticNotification('error');
       setSheetError(t('events.err.network'));
       return;
     }
     if (res.kind === 'server') {
+      hapticNotification('error');
       setSheetError(t('events.err.server'));
       return;
     }
     const d = res.data as Record<string, unknown>;
     if (d['ok']) {
+      hapticNotification('success');
       // IDM-1: повтор даёт тот же результат — «уже зарегистрированы», без второго подтверждения.
       setSheetDone(true);
       void loadMine();
@@ -287,6 +301,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       return;
     }
     if (d['error'] === 'profile_required') setProfileNeeded(true);
+    hapticNotification('error');
     setSheetError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
   }, [sheetEvent, sheetBusy, initData, mkt, sheetProf, loadMine, loadProfile]);
 

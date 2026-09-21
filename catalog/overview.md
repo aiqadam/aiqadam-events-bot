@@ -143,6 +143,12 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   Bot API 8.0+) — паддинг сверху на `#root`, снизу на `.sticky-actions`/
   `.app-sheet-panel`. Живая проверка на устройстве с вырезом — не сделана
   ([Q48](../docs/OPEN-QUESTIONS.md#q48)).
+- **Платформенные функции второго уровня** (W47): нативный `BackButton`
+  (видна на экране события и при открытом шите, скрыта на корневых экранах),
+  `HapticFeedback` (успех/ошибка/повтор чекина, публикация, отзыв, копирование
+  ссылки, табы), `enableClosingConfirmation` — только при несохранённом
+  черновике визарда. `disableVerticalSwipes` не вызывается (конфликта нет).
+  Правила — [MINIAPP-UX](../docs/MINIAPP-UX.md) п. 1 и 9.
 
 - **`miniapp/src/vendor/brand/tokens.css` + `components.css`** — дословные
   файлы бренда с зафиксированным в шапке `BRAND_COMMIT`

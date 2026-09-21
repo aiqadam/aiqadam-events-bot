@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticNotification } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { CHECKIN_API, CHECKIN_COUNTER_API } from '../lib/api';
 import Icon, { type IconName } from '../components/Icon';
@@ -21,8 +22,14 @@ type View =
   | { kind: 'error'; icon: IconName; text: string; sub?: string; retryable: boolean }
   | null;
 
+const noop = () => {};
+
 export default function Scan({ eventId: propEventId }: { eventId: string }) {
   const eventIdRef = useRef(propEventId);
+
+  // W47: корневой экран — нативная «Назад» скрыта; нативный попап сканера
+  // закрывается своим жестом, системный — закрывает Mini App.
+  useBackButton(false, noop);
 
   const [title, setTitle] = useState('AI Qadam Events');
   const [statusKey, setStatusKey] = useState<string>('');
@@ -40,10 +47,12 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
 
   const showVerdict = useCallback((status: string, text: string) => {
     const v = VERDICT[status] || VERDICT.invalid;
+    hapticNotification(status === 'ok' ? 'success' : status === 'already' ? 'warning' : 'error');
     setView({ kind: 'verdict', status, text, sub: v.sub });
   }, []);
 
   const stopAll = useCallback((icon: IconName, text: string, retryable: boolean, sub?: string) => {
+    hapticNotification('error');
     stoppedRef.current = true;
     setStatusKey('');
     setView({ kind: 'error', icon, text, retryable, sub });
