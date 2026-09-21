@@ -242,3 +242,45 @@ html, body { touch-action: pan-x pan-y; }
 /* Нативные контролы (календарь datetime-local) — в теме страницы. */
 html[data-theme='dark'] { color-scheme: dark; }
 html[data-theme='light'] { color-scheme: light; }
+
+/* W62: вердикт и состояние ошибки сканера, счётчик — перенос из прототипа
+   (`.verdict`/`.scan-state`/`.scan-progress` в proto.css). Только раскладка,
+   цвет и шрифт — токенами бренда. */
+.verdict {
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  background: var(--card);
+  box-shadow: inset 0 4px 0 var(--border);
+}
+.verdict .verdict-icon {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.verdict.ok { border-color: var(--success); box-shadow: inset 0 4px 0 var(--success); }
+.verdict.ok .verdict-icon { background: color-mix(in oklch, var(--success) 16%, transparent); color: var(--success); }
+.verdict.warn { border-color: var(--warning); box-shadow: inset 0 4px 0 var(--warning); }
+.verdict.warn .verdict-icon { background: color-mix(in oklch, var(--warning) 18%, transparent); color: var(--warning); }
+.verdict.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
+.verdict.bad .verdict-icon { background: color-mix(in oklch, var(--destructive) 16%, transparent); color: var(--destructive); }
+.verdict-text { font-family: var(--font-display); font-weight: 600; font-size: 18px; color: var(--foreground); line-height: 1.25; }
+.verdict-sub { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+.scan-state {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 32px 16px 8px; text-align: center;
+}
+.scan-state .state-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.scan-state .state-title {
+  font-family: var(--font-display); font-weight: 600; font-size: 17px; line-height: 1.3;
+  max-width: 300px;
+}
+.scan-progress { margin-top: 4px; align-self: stretch; }
+.scan-progress-bar { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+.scan-progress-fill { height: 100%; background: var(--primary); border-radius: 999px; }
+.scan-progress-label { font-size: 12px; color: var(--muted-foreground); margin-top: 6px; text-align: center; }

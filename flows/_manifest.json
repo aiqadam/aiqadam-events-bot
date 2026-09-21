@@ -29,6 +29,12 @@
     "publishedVersionId": "M0vMBqVya8f117JBNmDLQ"
   },
   {
+    "flow": "checkin-counter-api",
+    "flowId": "lm9S9cRuSZOpVAgl2h44R",
+    "publishedVersionId": "aLZTTcR8e0TVmyxkUWTJC",
+    "source": "mcp"
+  },
+  {
     "flow": "events-api",
     "flowId": "wEdKdE4RBGKIzWkl4MJHG",
     "publishedVersionId": "UVCk436XmnjYSoMAgevTG",
