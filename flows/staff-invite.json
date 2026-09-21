@@ -1,0 +1,491 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "staff-invite",
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "catch_webhook",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "normalize request",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "verify initData",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "auth decide",
+          "name": "step_3",
+          "nextAction": {
+            "children": [
+              {
+                "displayName": "respond 401",
+                "name": "step_5",
+                "settings": {
+                  "actionName": "return_response",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "fields": {
+                      "body": {
+                        "error": "{{step_3['output'].error}}",
+                        "eventId": "{{step_3['output'].eventId}}",
+                        "fields": "{{step_3['output'].fields}}",
+                        "ok": "{{step_3['output'].ok}}",
+                        "text": "{{step_3['output'].text}}"
+                      },
+                      "headers": {},
+                      "status": "{{step_3['output'].httpStatus}}"
+                    },
+                    "respond": "stop",
+                    "responseType": "json"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-webhook",
+                  "qadamVersion": "0.1.35"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              {
+                "displayName": "read my staff row",
+                "name": "step_6",
+                "nextAction": {
+                  "displayName": "read event by id",
+                  "name": "step_7",
+                  "nextAction": {
+                    "displayName": "decide invite",
+                    "name": "step_8",
+                    "nextAction": {
+                      "children": [
+                        {
+                          "displayName": "respond error",
+                          "name": "step_10",
+                          "settings": {
+                            "actionName": "return_response",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "fields": {
+                                "body": {
+                                  "error": "{{step_8['output'].error}}",
+                                  "eventId": "{{step_8['output'].eventId}}",
+                                  "fields": "{{step_8['output'].fields}}",
+                                  "ok": "{{step_8['output'].ok}}",
+                                  "text": "{{step_8['output'].text}}"
+                                },
+                                "headers": {},
+                                "status": "{{step_8['output'].httpStatus}}"
+                              },
+                              "respond": "stop",
+                              "responseType": "json"
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-webhook",
+                            "qadamVersion": "0.1.35"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        {
+                          "displayName": "generate token",
+                          "name": "step_11",
+                          "nextAction": {
+                            "displayName": "hash token",
+                            "name": "step_12",
+                            "nextAction": {
+                              "displayName": "timestamps + invite link",
+                              "name": "step_13",
+                              "nextAction": {
+                                "displayName": "write invite",
+                                "name": "step_14",
+                                "nextAction": {
+                                  "displayName": "respond invite",
+                                  "name": "step_15",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "eventId": "{{step_8['output'].eventId}}",
+                                          "inviteLink": "{{step_13['output'].inviteLink}}",
+                                          "ok": true,
+                                          "text": "{{step_13['output'].text}}"
+                                        },
+                                        "headers": {},
+                                        "status": "200"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.35"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "actionName": "tables-create-records",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "table_id": "JIjKkDu3Im2ylBmkkH5Fu",
+                                    "values": {
+                                      "values": [
+                                        {
+                                          "90B7lnyMZnViDUXRFi8vI": "{{step_8['output'].eventId}}",
+                                          "It8AmKquq3YtTjOHIhX7a": "{{step_13['output'].createdAt}}",
+                                          "Ue4bS4nXOkN15qNd4IQo3": "{{step_13['output'].expiresAt}}",
+                                          "fKQAjYvMBW5ZbGWX8AYgx": "{{step_8['output'].telegramId}}",
+                                          "lBOKZnQ8VSnNlRb16ph9Q": "{{step_12['output']}}"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.4.5"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "botUsername": "{{variables['BOT_USERNAME']}}",
+                                  "eventId": "{{step_8['output'].eventId}}",
+                                  "texts": {
+                                    "staff.invite.created": "Ссылка для контролёра, действует 24 часа и только один раз:\n{url}"
+                                  },
+                                  "token": "{{step_11['output']}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] === undefined || texts[k] === null ? k : texts[k]);\n    if (vars) Object.keys(vars).forEach((x) => { s = s.split('{' + x + '}').join(String(vars[x])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const token = str(inputs.token);\n  const eventId = str(inputs.eventId);\n  const botUsername = str(inputs.botUsername).replace(/^@/, '');\n  const now = Date.now();\n  const createdAt = new Date(now).toISOString();\n  const expiresAt = new Date(now + 24 * 60 * 60 * 1000).toISOString();\n  const inviteLink = (token && eventId && botUsername)\n    ? ('https://t.me/' + botUsername + '?start=s' + eventId + '-' + token)\n    : '';\n  return { createdAt: createdAt, expiresAt: expiresAt, inviteLink: inviteLink, text: t('staff.invite.created', { url: inviteLink }) };\n};\n",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "hash-text",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "method": "sha256",
+                                "text": "{{step_11['output']}}"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-crypto",
+                              "qadamVersion": "0.0.21"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "generate-password",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "characterSet": "alphanumeric",
+                              "length": 22
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-crypto",
+                            "qadamVersion": "0.0.21"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        }
+                      ],
+                      "displayName": "invite outcome",
+                      "name": "step_9",
+                      "settings": {
+                        "branches": [
+                          {
+                            "branchName": "error",
+                            "branchType": "CONDITION",
+                            "conditions": [
+                              [
+                                {
+                                  "firstValue": "{{step_8['output'].outcome}}",
+                                  "operator": "TEXT_EXACTLY_MATCHES",
+                                  "secondValue": "error"
+                                }
+                              ]
+                            ]
+                          },
+                          {
+                            "branchName": "Otherwise",
+                            "branchType": "FALLBACK"
+                          }
+                        ],
+                        "executionType": "EXECUTE_FIRST_MATCH"
+                      },
+                      "type": "ROUTER",
+                      "valid": true
+                    },
+                    "settings": {
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "eventId": "{{step_1['output'].eventId}}",
+                        "events": "{{step_7['output']}}",
+                        "staff": "{{step_6['output']}}",
+                        "telegramId": "{{step_3['output'].telegramId}}",
+                        "texts": {
+                          "manage.err.forbidden": "Нет прав на правку этого события"
+                        }
+                      },
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] === undefined || texts[k] === null ? k : texts[k]);\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const match = (rows, key, val) => arr(rows).map(flat).filter((r) => str(r[key]) === val)[0] || null;\n\n  const telegramId = str(inputs.telegramId);\n  const reqEventId = str(inputs.eventId);\n  const forbidden = {\n    outcome: 'error', httpStatus: 403, ok: false, error: 'forbidden', text: t('manage.err.forbidden'),\n    fields: {}, eventId: reqEventId, chapterId: '', title: '', telegramId: telegramId\n  };\n\n  // Права: строка `staff` вызывающего + чаптер события (ADR-0024), fail-closed.\n  const staffRow = match(inputs.staff, 'telegram_id', telegramId);\n  if (!telegramId || !staffRow) return forbidden;\n  const staffChapter = str(staffRow.chapter_id);\n\n  // Сентинел '-' (не-slug) — не ключ, отказ до любого сравнения.\n  if (reqEventId === '-' || reqEventId === '') return forbidden;\n\n  const ev = match(inputs.events, 'id', reqEventId);\n  if (!ev || str(ev.id) !== reqEventId) return forbidden;\n  const chapterId = str(ev.chapter_id);\n  if (!(staffChapter === '' || staffChapter === chapterId)) return forbidden;\n\n  return {\n    outcome: 'ok', httpStatus: 200, ok: true, error: '', text: '', fields: {},\n    eventId: reqEventId, chapterId: chapterId, title: str(ev.title), telegramId: telegramId\n  };\n};\n",
+                        "packageJson": "{}"
+                      }
+                    },
+                    "type": "CODE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "filters": {
+                        "filters": [
+                          {
+                            "field": {
+                              "id": "39qJ4o2MYyNYsT2VtxfcK",
+                              "name": "id",
+                              "type": "TEXT"
+                            },
+                            "operator": "eq",
+                            "value": "{{step_1['output'].eventId}}"
+                          }
+                        ]
+                      },
+                      "limit": 1,
+                      "record_ids": [],
+                      "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-find-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": {
+                            "id": "ecOXPzqTqu2ktJ2Uj330k",
+                            "name": "telegram_id",
+                            "type": "TEXT"
+                          },
+                          "operator": "eq",
+                          "value": "{{step_3['output'].telegramId}}"
+                        }
+                      ]
+                    },
+                    "limit": 1,
+                    "record_ids": [],
+                    "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
+                },
+                "type": "PIECE",
+                "valid": true
+              }
+            ],
+            "displayName": "authorized?",
+            "name": "step_4",
+            "settings": {
+              "branches": [
+                {
+                  "branchName": "unauthorized",
+                  "branchType": "CONDITION",
+                  "conditions": [
+                    [
+                      {
+                        "firstValue": "{{step_3['output'].authorized}}",
+                        "operator": "BOOLEAN_IS_FALSE"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "branchName": "Otherwise",
+                  "branchType": "FALLBACK"
+                }
+              ],
+              "executionType": "EXECUTE_FIRST_MATCH"
+            },
+            "type": "ROUTER",
+            "valid": true
+          },
+          "settings": {
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "hmac": "{{step_2['output'].data}}",
+              "texts": {
+                "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
+              }
+            },
+            "sourceCode": {
+              "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] === undefined || texts[k] === null ? k : texts[k]);\n  const hmac = (inputs.hmac && typeof inputs.hmac === 'object') ? inputs.hmac : {};\n  const valid = hmac.valid === true || hmac.valid === 'true';\n  const telegramId = String(hmac.telegramId === undefined || hmac.telegramId === null ? '' : hmac.telegramId).trim();\n  if (!valid || !telegramId) {\n    return { authorized: false, httpStatus: 401, ok: false, error: 'invalid_init_data', text: t('checkin.unauthorized'), fields: {}, eventId: '', telegramId: '' };\n  }\n  return { authorized: true, httpStatus: 200, ok: true, error: '', text: '', fields: {}, eventId: '', telegramId: telegramId };\n};\n",
+              "packageJson": "{}"
+            }
+          },
+          "type": "CODE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "callFlow",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "executionMode": "inline",
+            "flow": {
+              "exampleData": {
+                "sampleData": {}
+              },
+              "externalId": "VzXoy80RWnX7pM4dm8eor"
+            },
+            "flowProps": {
+              "payload": {
+                "botToken": "{{variables['BOT_TOKEN']}}",
+                "initData": "{{step_1['output'].initData}}",
+                "maxAgeSeconds": 300
+              }
+            },
+            "mode": "simple",
+            "waitForResponse": true
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-subflows",
+          "qadamVersion": "0.4.14"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "body": "{{trigger['output'].body}}"
+        },
+        "sourceCode": {
+          "code": "export const code = async (inputs) => {\n  const body = (inputs.body && typeof inputs.body === 'object') ? inputs.body : {};\n  const initData = String(body.initData === undefined || body.initData === null ? '' : body.initData).trim();\n  const raw = String(body.eventId === undefined || body.eventId === null ? '' : body.eventId).trim();\n  const SLUG = /^[A-Za-z0-9_]{1,12}$/;\n  const eventId = SLUG.test(raw) ? raw : '-';\n  return { initData: initData, eventId: eventId };\n};\n",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "authFields": {},
+        "authType": "none"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-webhook",
+      "qadamVersion": "0.1.35",
+      "triggerName": "catch_webhook"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}
