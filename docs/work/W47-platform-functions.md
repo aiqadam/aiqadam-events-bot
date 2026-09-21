@@ -1,6 +1,6 @@
 # W47. Mini App — платформенные функции второго уровня (`BackButton`, `HapticFeedback`, closing confirmation, vertical swipes)
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: v0.1
 - **Зависит от**: W33 (React SPA) — готов
