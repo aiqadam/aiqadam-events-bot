@@ -84,11 +84,29 @@
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 > Владелец пакета сюда не пишет — только отвечает под замечаниями, что исправлено.
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: — (ожидается)
+- **Ревьюер**: независимый агент (opencode, deepseek-v4.1-flash) · **Дата**: 2026-09-21 · **Вердикт**: есть замечания (одно, уровня «на будущее»; блокеров и «важно» нет)
 
 ### Замечания
 
-—
+1. **на будущее** — карточка `catalog/flows/reg-api.md` сохраняет историю обнаружения: заметка про W58 («`step_17`/`step_19`/`step_22` до 2026-09-20 писали и читали…», «различающий прогон…») и заметка про W60 («Раньше `step_12` писал…») — `catalog/flows/reg-api.md`, строки ~84–94 и ~110–123 — по правилу «Каталог — инструкция, а не дневник» (AGENTS.md) фразы вида «раньше было по-другому» удаляются при следующей правке карточки, а W61 карточку правил. W61 этого не вносил, на корректность флоу не влияет. При следующем касании оставить только текущее состояние (что читается/пишется сейчас и почему `columns` обязателен), даты и путь решения убрать.
+   - *Исправлено*: заметки `reg-api.md` переписаны в текущее состояние — убраны «до 2026-09-20», «Раньше `step_12` писал…», «Исправлено на…»; остались действующие правила (namespace `columns`/`values`, обязательная колонка `consent_marketing`, `skip` на `step_12` и его причина) и ссылка на `catalog/tables/users.md` (2026-09-21).
+
+#### Что проверено и сошлось (свидетельства)
+
+- `ap_flow_structure` (includeInput=true): `step_17.settings.input.columns` содержит `FpWznk9Fgl8wUXXUKolRu` (10 колонок); `ap_read_step_code` `step_9` собирает строку `flat()` по `fieldName` и читает `userRow.consent_marketing` в ветке `profile_get` — без колонки значение пусто, `consentMarketing: false`. Цепочка фикса сходится.
+- `ap_export_table` (users, внутренний id `gyMqrk23KWlFQweY3qDU0`): `consent_marketing` → externalId `FpWznk9Fgl8wUXXUKolRu`, field id `p5kwWMUyrOXRvQx4oTH29` — namespace (`columns` использует externalId) подтверждён первоисточником, гоча №1 не нарушена. Этим же вызовом и `ap_find_records` (фильтр `consent_marketing eq true`) подтверждено: у `532804490`, `322876545`, `52128246` `consent_marketing = "true"` — путь записи исправен.
+- `step_22` пишет `FpWznk9Fgl8wUXXUKolRu` (`consent_marketing`) и `3t75byELQCZ1ejfTADsvp` (`consent_marketing_at`) — верные externalId; `step_19` — те же плюс профиль. Гейт `profile_save` (`userRow.consent_pdn === 'true'`) не тронут, регресса нет.
+- Мини-апп: `miniapp/src/routes/Events.tsx` читает `res.data['consentMarketing']` из `profile_get` и отправляет его в `profile_save` — цепочка «колонка → ответ → галочка» сходится.
+- Сверка версий: свежий `ap_export_flow` даёт `flows[0].id = N82R7sL1wxm3Ws177RHb0` = `publishedVersionId` в `flows/_manifest.json` = `version_id` строки `migrations 2026-09-21-w61-01` (package W61, object `flow:reg-api`, object_id `SiYL8m6k4oy4YunAdZ1W7`, action publish, commit `7a513c6`). Commit совпадает с HEAD ветки; в экспорте `schemaVersion 31→32`, `state: LOCKED`.
+- Диф `7a513c6` (5 файлов): только колонка `step_17`, `schemaVersion`, версия в манифесте, строка STATUS, журнал и каталог. Постороннего нет.
+- Офлайн-чекеры: `check-export-secrets.sh` — 0 совпадений, auth-поля ссылками (`{{connections['...']}}`), exit 0; `check-texts.py` — 230 пар, 0 расхождений, exit 0; `check-commands.py` — 0 нарушений, exit 0; `check-agents.py` — 0 нарушений, exit 0.
+- AppSec (применимое): изменение — чтение собственной строки вызывающего после проверки `initData` (ветка `valid` `step_3`), новых источников `telegram_id`, инъекций (значение колонки — константа, не пользовательский ввод), секретов и утечек не вносит. Криптография, IDOR-решения, CSV — не относятся.
+
+#### Пределы среды (не замечания к пакету)
+
+- `ap_run_action` (буквальный различающий прогон проекции `columns` из журнала) в моём MCP-наборе не экспонирован — воспроизвести не смог. Заменил его `ap_export_table` (первоисточник маппинга `fieldName`↔`externalId`) плюс `ap_find_records`; для проверки namespace это не слабее.
+- `tools/check-migrations.py` не запустился: ключа платформы нет ни в `QADAM_API_KEY`, ни в Keychain (exit 2). Инварианты B1/C проверены вручную по строке `migrations` через MCP — сходятся.
+- Живой сквозной прогон `profile_get`/`profile_save` не выполнялся (нужен подписанный `initData`; `ap_test_flow`/`ap_test_step` по этому флоу запрещены гочей №11/№14) — тот же предел, что заявлен в журнале владельца.
 
 ## Хвосты и блокеры
 
