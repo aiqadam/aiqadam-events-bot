@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 28 | [flows/](flows/) |
+| Флоу | 29 | [flows/](flows/) |
 | Таблицы | 13 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -33,6 +33,7 @@ W26 закрыт («готов», независимое ревью, три кр
 | Mini App API | [checkin-api](flows/checkin-api.md), [checkin-counter-api](flows/checkin-counter-api.md) — счётчики прогресса для сканера (W62), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт), [staff-invite](flows/staff-invite.md) — одноразовая ссылка-инвайт контролёра (W10, OWN-14) |
 | Контролёры | [staff-accept](flows/staff-accept.md) — приём инвайт-ссылки `?start=s…` (W10, OWN-14), вызывает `tg-router` |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
+| Диагностика (опс) | [dedup-report](flows/dedup-report.md) — раз в сутки считает дубли строк в `registrations`/`event_staff`/`broadcast_targets` и сообщает организаторам; ничего не удаляет (W12b, Q42) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
 Как читать карточки, проверенные факты про MCP/subflow'ы — [flows/README.md](flows/README.md).
