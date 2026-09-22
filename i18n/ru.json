@@ -70,6 +70,7 @@
   "dedup.event_staff": "event_staff: строк {rows}, лишних {dupes}",
   "dedup.broadcast_targets": "broadcast_targets: строк {rows}, лишних {dupes}",
   "dedup.total": "Лишних строк всего: {total}",
+  "event.card.btn_calendar": "Добавить в календарь",
   "event.card.btn_map": "Открыть на карте",
   "event.card.btn_register": "Зарегистрироваться",
   "event.card.deadline": "Регистрация до: {when}",

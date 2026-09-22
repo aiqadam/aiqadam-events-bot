@@ -20,8 +20,8 @@
 | step_2 | CODE «decide yes/no + разбор draft» | `isYes`, `cardMessageId`, `eventId`, `utm` |
 | step_3 | `tables-upsert-records users` (`continueOnFailure`) | `consent_marketing = true/false` + отметка времени **всегда** |
 | step_6 | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
-| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки (`title`, `starts_at`, `address`) |
-| step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`/`ticketReplyMarkup`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic`; заголовок карточки и содержимое второго сообщения зависят от `hasEvent = eventId !== ''` |
+| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки: `title`, `starts_at`, `ends_at`, `address`, `lat`, `lon` (W76 — карта и календарь) |
+| step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`/`ticketReplyMarkup`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic`; заголовок карточки и содержимое второго сообщения зависят от `hasEvent = eventId !== ''`. W76: карточка несёт адрес и «Открыть на карте» (только при валидных координатах, не `(0,0)`), в билет добавлена кнопка «Добавить в календарь» |
 | step_7 | `edit_message_text` (`continueOnFailure`) | карточка → итог диалога, **кнопки сняты** |
 | step_8 (On failure) | `send_text_message` | фолбэк: новая карточка если редактирование не удалось |
 | step_9 | `send_text_message` | второе сообщение, `reply_markup` = `step_5['output'].ticketReplyMarkup`: билет + кнопка `web_app` на `#/ticket?event_id=…` (есть событие) или кнопка `web_app` на `#/events` (события нет, ADR-0034) |
@@ -46,11 +46,13 @@
   ветка `finish_no_event`). Кнопка «Открыть билет» здесь не имеет смысла
   ни при каких данных: заменена кнопкой каталога `#/events` тем же кодом,
   что выбирает и заголовок.
-- **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)):
-  `step_3`/`step_6`/`step_4` — `continueOnFailure`, без отдельной ветки отказа
+- **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)):  `step_3`/`step_6`/`step_4` — `continueOnFailure`, без отдельной ветки отказа
   на каждом. `step_5` читает их `error` и при любом сбое отдаёт `common.err.generic`
   и в карточку, и в билет (не только карточку — иначе билет пришёл бы валидным
   текстом на несохранённое состояние). Регистрация уже создана в `reg-consent-pdn`,
   поэтому кнопка «Открыть билет» под текстом ошибки не ломает IDOR — билет
   по-прежнему проверяет `initData` и факт регистрации на сервере, а не то,
   что показал этот текст.
+- **Тексты `step_5` (W76):** в карточке — адрес и «Открыть на карте» (ссылка
+  только при валидных координатах, не `(0,0)`), в билете — вторая кнопка
+  «Добавить в календарь» (`event.card.btn_calendar`, ссылка Google Calendar).
