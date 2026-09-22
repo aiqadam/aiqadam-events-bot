@@ -72,7 +72,7 @@
 | 0.3 | Variables `QR_SIGNING_KEY`, `BOT_USERNAME` | **готов** 2026-09-08 | W2 |
 | 0.4 | GitHub Pages для `miniapp/` | **готов** 2026-09-08 | W7 |
 | 0.5 | `MINIAPP_URL` + Mini App URL в BotFather | **готов** 2026-09-08 | W7 |
-| 0.6 | Проект `events-prod` | **отложен** до W15 (решено 2026-09-08) | W15 |
+| 0.6 | Проект `events-prod` | **перенесён вперёд** решением владельца 2026-09-23 (Decision #0, [#148](https://github.com/aiqadam/aiqadam-events-bot/issues/148)): поднять до Meetup #3, перенести живые регистрации, перевести живую ссылку dev→prod (cutover); до cutover ссылку обслуживает dev | W15 |
 | 0.7 | Ключ платформенного API ревьюеру и владельцу пакета | **готов** (W29 закрыт) | — |
 | 0.8 | `telegram_id` владельца проекта — первая строка `staff` (чаптер `1`) | **готов** 2026-09-15 — подтверждён `322876545` (`return_void_0`); строка заводится в W32 | W32 |
 
@@ -150,7 +150,7 @@
 | W96. Phase 0: какой бот и проект хостит Meetup #3 ([#148](https://github.com/aiqadam/aiqadam-events-bot/issues/148)) | P0 | — | **на проверке** 2026-09-23 — ответ владельца получен, Decision #0 обновлён | агент | [W96](work/W96-meetup-host-decision.md) |
 | W97. Phase 0: копирование сообщения с фото ([#149](https://github.com/aiqadam/aiqadam-events-bot/issues/149)) | P0 | — | **на проверке** 2026-09-23 — 7/7 пунктов, вывод в #131 | агент | [W97](work/W97-copy-message-check.md) |
 | W98. Phase 0: удаление строк таблиц ([#150](https://github.com/aiqadam/aiqadam-events-bot/issues/150)) | P0 | — | **на проверке** 2026-09-23 — 7/7 пунктов, паттерн в `AGENTS.md`, артефакты убраны | агент | [W98](work/W98-table-delete-check.md) |
-| W15. Приёмка | v0.1 | все пакеты v0.1 — `готов` (W10, W12, W12b, W12c, W13, W14, W25, W27, W38, W42–W49) | не начат | — | — |
+| W15. Приёмка | v0.1 | все пакеты v0.1 — `готов` (W10, W12, W12b, W12c, W13, W14, W25, W27, W38, W42–W49) | не начат — **шаг 0.6 (`events-prod` + перенос регистраций + cutover) перенесён вперёд решением владельца 2026-09-23 (Decision #0, [#148](https://github.com/aiqadam/aiqadam-events-bot/issues/148)): до Meetup #3; полная приёмка W15 остаётся последней и ждёт W25/W27 (платформа [#420](https://github.com/aiqadam/qadam-flow/issues/420)) | — | — |
 
 Критический путь v0.1 после решения 2026-09-16, дополнен 2026-09-18 (W48,
 Q48 — найден ресёрчем, вставлен перед приёмкой; W10, W47, W12c, W12b, W25/W27
