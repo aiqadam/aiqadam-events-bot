@@ -83,6 +83,8 @@ html, body { touch-action: pan-x pan-y; }
 .step-dot.warn { background: var(--destructive); }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
 .chip-row .btn { max-width: 100%; min-width: 0; }
+/* W77: выбранный чип/формат — подсветка primary (эталон `.segmented .btn.active`). */
+.chip-row .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
 /* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
 .chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */
