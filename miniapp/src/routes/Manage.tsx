@@ -664,6 +664,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     const e = clientErrors(fields, true, { online, mapLink }).filter((x) => x.step === step);
     if (e.length) {
       setErrs(e);
+      // W77: сводка ошибки стоит над кнопками, но на длинном шаге уходит под
+      // экран — подводим взгляд к первому полю с ошибкой (как в эталоне).
+      const elId = e[0].field === 'geo' ? 'f-geolink' : `f-${e[0].field}`;
+      requestAnimationFrame(() => document.getElementById(elId)?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
       return;
     }
     setErrs([]);
