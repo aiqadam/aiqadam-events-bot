@@ -141,3 +141,48 @@
 - **на будущее 3** — принято: `w76.mjs` гоняет код из `flows/*.json`
   (репозиторный снимок), не из живых шагов; для чистой функции это
   эквивалентно, после перегенерации снимок = живой.
+
+### Круг 2 (2026-09-23)
+
+- **Ревьюер**: review-agent (opencode / opencode-go/deepseek-v4.1-flash), **дата**: 2026-09-23
+- **Вердикт**: замечаний нет
+
+«Важно» круга 1 закрыто. Проверено заново по живому проекту, а не по ответу владельца:
+
+- **`flows/reg-profile.json` — чистый пост-публикационный снимок.** Свежий
+  `ap_export_flow` (`5U3Kv0cSrnvDTrbictA4L`) отдаёт `flows[0].id` =
+  `Zk1LotBaEVkIni7wbEstD` = `publishedVersionId` манифеста, `state: LOCKED`,
+  `backupFiles: null`. Файл после нормализации тем же `walk()` (вырезаны
+  `lastUpdatedDate`/`lastTestDate`/`sampleDataFileId`, корневые
+  `created`/`updated`/`id`/`flowId`/`updatedBy`) **побайтово равен** свежему
+  экспорту (82 358 байт, сравнение `==` даёт True) — совпадают не только
+  `step_4`, но и все прочие шаги, входы и `texts`. `ap_read_step_code` по
+  `step_4` содержит добавленные комментарии W76 и `parseIso` перед `ev`,
+  как в живом.
+- **`flows/reg-consent-mkt.json`** — в `e6bcced` не менялся; свежий
+  `ap_export_flow` (`3gLF6TcbpFObHONATQ64N`) даёт `id`
+  `Lo4XdDMjJ91DFl5g0tcbb` (= манифест), `state: LOCKED`,
+  `backupFiles: null`; `step_5` и колонки `step_4`
+  (`…kSRM3ouou0Owj2yDYk92W` + `EKEX5zyhKo3WChz5ZquY0`,
+  `Br2f0wjLugSGIS2kjfoFE`, `zIA6xEHm7y1bwkajoYDQn`) совпадают с живым.
+- **Каталог**: `catalog/flows/reg-consent-mkt.md` называет вход
+  `event.card.btn_calendar` (пункт W76, стр. 56–58);
+  `catalog/flows/reg-profile.md` описывает факты в `finish`/`finish_lite`
+  и кнопку календаря — сверено с кодом живых шагов. Наблюдение (не
+  замечание): в списке ключей абзаца «Тексты — во входе `texts`» новый
+  ключ не появился, он назван отдельным пунктом ниже; на чтение каталога
+  это не влияет.
+- **Журнал**: «Как проверено» говорит «`migrations` — две строки `publish`
+  (`w76-01/02`)»; в ответах владельца отмечено, что `w76.mjs` гоняет код из
+  `flows/*.json`, а не живых шагов.
+- **Офлайн (все exit 0)**: `check-export-secrets.sh`; `check-texts.py
+  i18n/ru.json flows/*.json` (240 пар, 0 расхождений); `check-commands.py
+  i18n/*.json flows/*.json` (29 флоу, 0 нарушений); `check-agents.py`;
+  `node prototypes/check.mjs`; `/tmp/opencode/w76.mjs` — 19/19 OK.
+  Без аргументов `check-commands.py` печатает usage и выходит 2 — это
+  штатное поведение, не расхождение.
+- **Ветка относительно `main`**: `git log main..HEAD` — только `0c27aa4`
+  и `e6bcced`; `git diff --stat main...HEAD` — 7 ожидаемых файлов
+  (`flows/reg-profile.json`, `flows/reg-consent-mkt.json`,
+  `flows/_manifest.json`, `i18n/ru.json`, два `catalog/flows/*.md` и
+  журнал). Рабочее дерево чистое.
