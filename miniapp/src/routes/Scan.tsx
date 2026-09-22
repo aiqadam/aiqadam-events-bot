@@ -13,6 +13,7 @@ const VERDICT: Record<string, { tone: string; icon: IconName; sub?: string }> = 
   ok: { tone: 'ok', icon: 'check-circle', sub: 'checkin.sub_ok' },
   already: { tone: 'warn', icon: 'clock', sub: 'checkin.sub_already' },
   wrong_event: { tone: 'bad', icon: 'alert', sub: 'checkin.sub_denied' },
+  event_cancelled: { tone: 'bad', icon: 'alert', sub: 'checkin.sub_denied' },
   not_registered: { tone: 'bad', icon: 'x-circle', sub: 'checkin.sub_denied' },
   invalid: { tone: 'bad', icon: 'alert', sub: 'checkin.sub_denied' },
 };

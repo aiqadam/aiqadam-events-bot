@@ -156,7 +156,7 @@
 | W68. Phase 1: рассылка обнаруживаемой, вариант A ([#120](https://github.com/aiqadam/aiqadam-events-bot/issues/120)) | P1 | #125 | **в работе** 2026-09-23 | агент | [W68](work/W68-broadcast-discoverable.md) |
 | W76. Phase 1: детали события в чате после регистрации ([#128](https://github.com/aiqadam/aiqadam-events-bot/issues/128)) | P1 | — | **в работе** 2026-09-23 | агент | [W76](work/W76-event-details-after-reg.md) |
 | W74. Phase 1: бейдж «Регистрация закрыта» ([#126](https://github.com/aiqadam/aiqadam-events-bot/issues/126)) | P1 | #118 | **в работе** 2026-09-23 | агент | [W74](work/W74-reg-closed-badge.md) |
-| W91. Phase 1: чекин отменённого события → «Событие отменено» ([#143](https://github.com/aiqadam/aiqadam-events-bot/issues/143)) | P1 | — | **в работе** 2026-09-23 | агент | [W91](work/W91-checkin-cancelled.md) |
+| W91. Phase 1: чекин отменённого события → «Событие отменено» ([#143](https://github.com/aiqadam/aiqadam-events-bot/issues/143)) | P1 | — | **готов** 2026-09-23 — ревью круг 1 (блокер: экспорт `flows/checkin-api.json` отставал от живой версии, исправлен) → круг 2 «замечаний нет»; живые прогоны: отменённое → `event_cancelled`, живое → `ok`; Part 2 — Phase 3 | агент | [W91](work/W91-checkin-cancelled.md) |
 | W15. Приёмка | v0.1 | все пакеты v0.1 — `готов` (W10, W12, W12b, W12c, W13, W14, W25, W27, W38, W42–W49) | не начат — **шаг 0.6 (`events-prod` + перенос регистраций + cutover) перенесён вперёд решением владельца 2026-09-23 (Decision #0, [#148](https://github.com/aiqadam/aiqadam-events-bot/issues/148)): до Meetup #3; полная приёмка W15 остаётся последней и ждёт W25/W27 (платформа [#420](https://github.com/aiqadam/qadam-flow/issues/420)) | — | — |
 
 Критический путь v0.1 после решения 2026-09-16, дополнен 2026-09-18 (W48,

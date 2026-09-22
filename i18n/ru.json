@@ -40,6 +40,7 @@
   "cancel.too_late": "Событие уже началось — отменить регистрацию нельзя.",
   "checkin.already": "Уже отмечен в {time}",
   "checkin.counter": "Отмечено: {checked_in} из {registered}",
+  "checkin.event_cancelled": "Событие отменено",
   "checkin.forbidden": "Нет прав на чекин этого события",
   "checkin.invalid": "Код не распознан",
   "checkin.name_unknown": "участник без имени",
