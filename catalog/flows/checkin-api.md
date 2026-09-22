@@ -35,7 +35,7 @@
 | step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса |
 | step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) |
 | step_13 (valid) | `tables-find-records events` | статус события (`status`, проекция) — чекин отменённого события не проходит (STF-3, Part 1) |
-| step_7 (valid) | CODE «decide result» | шесть оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
+| step_7 (valid) | CODE «decide result» | семь оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
 | step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2. При исходе не-`ok` вместо id записи подставляется сентинел `-`: гарантированный 404, безопасный no-op |
 | step_9 (valid) | `return_response` | JSON-ответ Mini App |
 

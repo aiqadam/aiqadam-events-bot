@@ -30,7 +30,7 @@
                     "displayName": "read participant name",
                     "name": "step_6",
                     "nextAction": {
-                      "displayName": "read participant name",
+                      "displayName": "read event status",
                       "name": "step_13",
                       "nextAction": {
                         "displayName": "decide result",
@@ -173,7 +173,7 @@
                             ]
                           },
                           "record_ids": [],
-                          "table_id": "bVtxmEkqb3dPwZ2FKljqk"
+                          "table_id": "R4aSQpLZvw7d3u6DVOSjH"
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-tables",
