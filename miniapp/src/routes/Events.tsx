@@ -8,6 +8,7 @@ import { postJson, EVENTS_API, REG_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToPlate, utcToWhen, utcMs } from '../lib/dates';
 import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
+import Toast, { useToast } from '../components/Toast';
 
 // W38/W43: каталог `#/events` — PAR-3/PAR-4 экраном (ADR-0023).
 // Публичный срез читает events-api (без initData); «Мои билеты», регистрация
@@ -73,6 +74,13 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [sheetBusy, setSheetBusy] = useState(false);
   const [sheetError, setSheetError] = useState('');
   const [sheetDone, setSheetDone] = useState(false);
+
+  // W65/PAR-9: «Поделиться событием» — обычный пользователь отправляет ссылку
+  // регистрации (OWN-6; сервер уже отдаёт её карточке как `registerLink`)
+  // в Telegram или копирует. Ссылка — текстом на экране, а не системный share
+  // (MINIAPP-UX п. 7), поэтому действия живут в шите.
+  const [shareEvent, setShareEvent] = useState<CatalogEvent | null>(null);
+  const { toast, showToast } = useToast();
 
   const loadEvents = useCallback(async () => {
     setLoadfail('');
@@ -263,9 +271,38 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setSheetEvent(null);
   }, []);
 
+  const closeShare = useCallback(() => {
+    setShareEvent(null);
+  }, []);
+
+  // Копирование ссылки — тост «Скопировано» (эталон); буфер недоступен —
+  // показываем саму ссылку, чтобы её можно было скопировать руками (как manage).
+  const copyLink = useCallback(
+    (url: string) => {
+      hapticImpact('light');
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        showToast(url);
+        return;
+      }
+      void navigator.clipboard.writeText(url).then(
+        () => showToast(t('manage.btn.copied')),
+        () => showToast(url),
+      );
+    },
+    [showToast],
+  );
+
+  const openShare = useCallback((ev: CatalogEvent) => {
+    hapticImpact('light');
+    setShareEvent(ev);
+  }, []);
+
   // W47: нативная «Назад» на корневом каталоге скрыта; при открытом шите
-  // регистрации закрывает шит, а не весь Mini App.
-  useBackButton(Boolean(sheetEvent), closeSheet);
+  // (регистрации или «поделиться») закрывает шит, а не весь Mini App.
+  useBackButton(Boolean(sheetEvent) || Boolean(shareEvent), () => {
+    if (shareEvent) closeShare();
+    else closeSheet();
+  });
 
   const submitRegistration = useCallback(async () => {
     if (!sheetEvent || sheetBusy) return;
@@ -389,6 +426,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
           rows={mineRows}
           onRetry={() => void loadMine()}
           onOpenTicket={openTicket}
+          onShare={openShare}
         />
       )}
 
@@ -440,6 +478,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
                 canScan={Boolean(staffIds[ev.id])}
                 inTelegram={inTelegram}
                 onRegister={openRegister}
+                onShare={openShare}
               />
             </li>
           ))}
@@ -465,6 +504,12 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
           />
         )}
       </Sheet>
+
+      <Sheet open={Boolean(shareEvent)} title={t('events.share.title')} onClose={closeShare}>
+        {shareEvent && <ShareSheet ev={shareEvent} onCopy={copyLink} />}
+      </Sheet>
+
+      {toast && <Toast text={toast} />}
     </main>
   );
 }
@@ -477,6 +522,7 @@ function MineTab({
   rows,
   onRetry,
   onOpenTicket,
+  onShare,
 }: {
   dictLoaded: boolean;
   inTelegram: boolean;
@@ -485,6 +531,7 @@ function MineTab({
   rows: { row: MineRow; ev: CatalogEvent | undefined }[];
   onRetry: () => void;
   onOpenTicket: (eventId: string) => () => void;
+  onShare: (ev: CatalogEvent) => void;
 }) {
   if (!inTelegram) {
     return (
@@ -527,14 +574,24 @@ function MineTab({
     <ul id="mine-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
       {rows.map(({ row, ev }) => (
         <li key={row.eventId}>
-          <MineCard row={row} ev={ev as CatalogEvent} onOpenTicket={onOpenTicket} />
+          <MineCard row={row} ev={ev as CatalogEvent} onOpenTicket={onOpenTicket} onShare={onShare} />
         </li>
       ))}
     </ul>
   );
 }
 
-function MineCard({ row, ev, onOpenTicket }: { row: MineRow; ev: CatalogEvent; onOpenTicket: (eventId: string) => () => void }) {
+function MineCard({
+  row,
+  ev,
+  onOpenTicket,
+  onShare,
+}: {
+  row: MineRow;
+  ev: CatalogEvent;
+  onOpenTicket: (eventId: string) => () => void;
+  onShare: (ev: CatalogEvent) => void;
+}) {
   const p = utcToPlate(ev.startsAt);
   const when = utcToWhen(ev.startsAt);
   // W51: билет живёт до конца события, а не до старта — иначе в дверях зала
@@ -571,6 +628,10 @@ function MineCard({ row, ev, onOpenTicket }: { row: MineRow; ev: CatalogEvent; o
               <Icon name="external" />
               {t('reg.qr.button')}
             </a>
+            <button type="button" className="btn btn-outline" id="share" onClick={() => onShare(ev)}>
+              <Icon name="share" />
+              {t('manage.btn.share')}
+            </button>
           </div>
         )}
         {!showQr && attended && (
@@ -593,6 +654,7 @@ function EventCard({
   canScan,
   inTelegram,
   onRegister,
+  onShare,
 }: {
   ev: CatalogEvent;
   past: boolean;
@@ -601,6 +663,7 @@ function EventCard({
   canScan: boolean;
   inTelegram: boolean;
   onRegister: (ev: CatalogEvent) => (e: MouseEvent<HTMLAnchorElement>) => void;
+  onShare: (ev: CatalogEvent) => void;
 }) {
   const p = utcToPlate(ev.startsAt);
   const when = utcToWhen(ev.startsAt);
@@ -685,8 +748,50 @@ function EventCard({
             </a>
           </div>
         )}
+        {/* PAR-9/W65: поделиться событием доступно обычному пользователю;
+            на прошедшем события ссылка регистрации смысла не несёт. */}
+        {!past && (
+          <div className="app-actions" style={{ marginTop: 8 }}>
+            <button type="button" className="btn btn-outline" id="share" onClick={() => onShare(ev)}>
+              <Icon name="share" />
+              {t('manage.btn.share')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+// W65/PAR-9: шит «Поделиться событием». Ссылка — текстом на экране, действия
+// «Скопировать» и «Поделиться» (t.me/share/url) — как у овнера в manage
+// (MINIAPP-UX п. 7: система не даёт надёжного inline-шаринга из WebView).
+function ShareSheet({ ev, onCopy }: { ev: CatalogEvent; onCopy: (url: string) => void }) {
+  const when = utcToWhen(ev.startsAt);
+  const link = ev.registerLink;
+  const shareHref = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(ev.title)}`;
+  return (
+    <>
+      <div className="card-title">{ev.title}</div>
+      <div className="app-muted">
+        {when}
+        {ev.address ? ' · ' + ev.address : ''}
+      </div>
+      <div className="invite-link" id="share-link">
+        {link}
+      </div>
+      <p className="app-muted">{t('events.share.hint')}</p>
+      <div className="sheet-actions">
+        <button type="button" className="btn btn-primary btn-lg" id="share-copy" onClick={() => onCopy(link)}>
+          <Icon name="copy" />
+          {t('manage.btn.copy')}
+        </button>
+        <a className="btn btn-outline" id="share-tg" href={shareHref} target="_blank" rel="noopener noreferrer">
+          <Icon name="share" />
+          {t('manage.btn.share')}
+        </a>
+      </div>
+    </>
   );
 }
 

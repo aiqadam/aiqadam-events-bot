@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Icon from '../components/Icon';
 import Sheet from '../components/Sheet';
+import Toast, { useToast } from '../components/Toast';
 import { t, loadI18n } from '../lib/i18n';
 import { getTelegram, hapticImpact, hapticNotification, setClosingConfirmation } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
@@ -238,8 +239,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [loadfailRetryable, setLoadfailRetryable] = useState(true);
 
   // Результат сохранения и ошибки — тостом (паттерн эталона), не строкой в баре.
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<number | null>(null);
+  const { toast, setToast, showToast } = useToast();
 
   // W42: визард — шаг, ошибки шагов (клиентские и серверные), экран успеха.
   const [step, setStep] = useState(0);
@@ -312,21 +312,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   type ManageTab = 'event' | 'participants' | 'broadcast' | 'staff';
   const [manageTab, setManageTab] = useState<ManageTab>('event');
   const [inviteLink, setInviteLink] = useState<{ eventId: string; url: string } | null>(null);
-
-  const showToast = useCallback((text: string, sticky = false) => {
-    if (toastTimer.current !== null) {
-      window.clearTimeout(toastTimer.current);
-      toastTimer.current = null;
-    }
-    setToast(text);
-    if (!sticky) {
-      toastTimer.current = window.setTimeout(() => setToast(null), 2500);
-    }
-  }, []);
-
-  useEffect(() => () => {
-    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
-  }, []);
 
   // keep prop sync (when hash changes)
   useEffect(() => setEventId(propEventId), [propEventId]);
@@ -2104,11 +2089,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         </div>
       </Sheet>
 
-      {toast && (
-        <div className="toast show" id="toast" role="status">
-          {toast}
-        </div>
-      )}
+      {toast && <Toast text={toast} />}
     </main>
   );
 }

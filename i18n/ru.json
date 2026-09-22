@@ -97,6 +97,8 @@
   "events.list.past_title": "Прошедшие события",
   "events.list.upcoming_title": "Будущие события",
   "events.loading": "Загрузка…",
+  "events.share.hint": "Ссылка открывает регистрацию на это событие.",
+  "events.share.title": "Поделиться событием",
   "events.tab.mine": "Мои билеты",
   "export.btn.csv": "CSV",
   "export.btn.json": "JSON",
