@@ -1192,7 +1192,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ['past', T('events.list.btn.past')],
       ['profile', T('profile.tab')],
     ];
-    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2']);
+    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2', 'OWN-6']);
     clear();
 
     const tw = E('div', 'tabs-wrap');
@@ -1249,6 +1249,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const acts = E('div', 'event-actions');
     if (t.upcoming) {
       acts.appendChild(linkBtn(T('reg.qr.button'), '#/ticket?event_id=' + t.eventId, 'btn-primary', 'qr'));
+      if (t.canCancel) acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline btn-sm', icon: 'share', onClick: () => openShareSheet(t) }));
     } else if (!t.feedbackGiven) {
       acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + t.eventId, 'btn-outline', 'message-square'));
     } else {
@@ -1294,6 +1295,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       // В продукте видимость решает сервер по правам; в моке флаг в данных.
       // Вердикт владельца 2026-09-18: из чата кнопка чекина убрана.
       if (ev.staff) acts.appendChild(linkBtn(T('menu.btn.scanner'), '#/scan?event_id=' + ev.id, 'btn-outline btn-sm', 'qr'));
+      // Поделиться событием доступно обычному пользователю (OWN-6).
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline btn-sm', icon: 'share', onClick: () => openShareSheet(ev) }));
     } else if (ev.attendedMe && !ev.feedbackGiven) {
       acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
     } else if (ev.attendedMe && ev.feedbackGiven) {
@@ -1302,6 +1305,26 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (acts.childNodes.length) body.appendChild(acts);
     c.appendChild(body);
     return c;
+  }
+
+  // ---------- поделиться событием (обычный пользователь, OWN-6) ----------
+  // Паттерн продукта (MINIAPP-UX п. 7): ссылка — текстом на экране, а не
+  // кнопка шаринга Mini App; действия — «Скопировать» (navigator.clipboard)
+  // и «Поделиться» (t.me/share/url). Тот же блок, что у овнера в `manage`.
+  function openShareSheet(ev) {
+    const id = ev.id !== undefined && ev.id !== null ? ev.id : ev.eventId;
+    const link = eventInvite(id);
+    openSheet(T('events.share.title'), (body) => {
+      body.appendChild(E('div', 'sheet-event', ev.title));
+      const sub = [ev.when, ev.where].filter(Boolean).join(' · ');
+      if (sub) body.appendChild(E('div', 'app-muted', sub));
+      body.appendChild(E('div', 'invite-link', link));
+      body.appendChild(E('div', 'app-muted', T('events.share.hint')));
+      const acts = E('div', 'sheet-actions');
+      acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary btn-lg', icon: 'copy', onClick: () => PROTO.copy(link) }));
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(ev.title), '_blank', 'noopener') }));
+      body.appendChild(acts);
+    });
   }
 
   // ---------- регистрация внутри Mini App (PAR-1, PAR-2) ----------
