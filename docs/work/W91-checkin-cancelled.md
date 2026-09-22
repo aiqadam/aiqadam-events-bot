@@ -161,3 +161,81 @@ Mini App: `Scan.tsx` — новый вердикт `event_cancelled` (tone `bad`
   `prototypes/app.js` (`renderScan` его не знает), тон/иконка/подпись взяты из
   уже существующего паттерна отказа `wrong_event`. Расхождение с прототипом —
   осознанное (STF-3), названо здесь.
+
+### Круг 2 (2026-09-23)
+
+- **Ревьюер**: review-agent (opencode) · **Дата**: 2026-09-23 · **Вердикт**: замечаний нет
+- **Блокер круга 1 закрыт**, оба пункта «на будущее» закрыты.
+
+Проверено независимо (живой проект через MCP + содержимое ветки на коммите
+`7e2e80e`; ветка в рабочую копию не выложена — `git checkout` роли запрещён,
+поэтому сверялась `origin/w91-checkin-cancelled`).
+
+- `flows/checkin-api.json` соответствует опубликованной версии
+  `lkYm9AUS4ELkTphQo6FlB`:
+  - `step_13.settings.input.table_id` = `R4aSQpLZvw7d3u6DVOSjH` — это
+    **externalId** таблицы `events` (`ap_export_table` по внутреннему
+    `bVtxmEkqb3dPwZ2FKljqk` → `metadata.externalId R4aSQpLZvw7d3u6DVOSjH`);
+  - `displayName` шага `step_13` = «read event status»;
+  - `step_13` не отстал ничем существенным: вход совпал с живым
+    (`ap_flow_structure` с `includeInput` и `ap_export_flow`) — проекция
+    `columns: ["Ia0fI5cUGnI4VH7iXsEbv"]` (`events.status`), фильтр `events.id`
+    (`fnvGRZ5dTFES29pqSCu3Q`) `eq {{trigger['output'].body.eventId}}`,
+    `record_ids: []`, qadam `@aiqadam/qadam-tables` `0.4.5`. Остальные шаги
+    файла тоже совпали с живым опубликованным экспортом (все `settings.input`,
+    версии qadam, `continueOnFailure` у `step_8`, цепочка `step_6 → step_13 →
+    step_7`).
+- `schemaVersion`: 31 в снимке, 32 в MCP-экспорте — разница инструмента
+  выгрузки. Уточнение к ответу владельца: «как у всех» — не совсем так,
+  в `flows/` сейчас 21 файл с `31` и 8 с `32` (`reg-api`, `staff-invite`,
+  `checkin-counter-api` — 32). Замечанием не считаю: содержимое снимка от
+  этого не страдает.
+- `_manifest.json`: `checkin-api.publishedVersionId` = `lkYm9AUS4ELkTphQo6FlB`
+  = `ap_export_flow` `flows[0].id` (state `LOCKED`) = `ap_list_flows`
+  (published) = запись `migrations` `2026-09-23-w91-01` (`action publish`,
+  commit `9b88fcc`, `version_id lkYm9AUS4ELkTphQo6FlB`).
+- Различающий прогон прочитан (`ap_get_run`), пара на одном классе входа
+  (штатный контролёр + валидный QR):
+  - `xA1rjZAJJuh6LDswGcC6s` — событие `published`: `step_13` → `status:
+    published`, `step_7` → `ok`, `shouldCheckin: true`, `step_8` записал
+    `checked_in_at`, `step_9` HTTP 200;
+  - `0qc5AySV1dnr97MMRoPYp` — событие `cancelled`: `step_13` → `status:
+    cancelled`, `step_7` → `event_cancelled` / «Событие отменено»,
+    `shouldCheckin: false`, `writeRecordId: "-"`, `step_8` 404
+    `ENTITY_NOT_FOUND` (под `continueOnFailure`, записи нет), `step_9`
+    HTTP 200.
+- Каталог `catalog/flows/checkin-api.md`: строка `step_7` — «семь оставшихся
+  исходов STF-4»; в таблице исходов `event_cancelled` есть. Семь — число
+  различных статусов, которые возвращает `step_7` (`forbidden`, `invalid`,
+  `wrong_event`, `event_cancelled`, `not_registered`, `already`, `ok`);
+  `invalid_init_data` решает `step_10`.
+- Журнал: `event_cancelled` явно назван расширением эталона
+  `prototypes/app.js` (`renderScan` его не знает — `grep` по `prototypes/`
+  не находит `event_cancelled` в сканере; тон/иконка/подпись взяты из
+  `wrong_event`). Утверждение верно.
+
+Офлайн-проверки на содержимом ветки (дерево материализовано из
+`origin/w91-checkin-cancelled`, запуск с `cwd` в нём; все exit 0):
+
+- `tools/check-export-secrets.sh` — 0 совпадений токена/hex, `BOT_TOKEN` 8,
+  `QR_SIGNING_KEY` 2, `auth` — ссылки;
+- `python3 tools/check-texts.py i18n/ru.json flows/*.json` — 29 флоу,
+  238 пар, 0 расхождений;
+- `python3 tools/check-commands.py i18n/ru.json flows/*.json` — 29 флоу,
+  0 нарушений;
+- `python3 tools/check-agents.py` — 2 роли, 4 адаптера, 0 нарушений
+  (ветка канон/адаптеры не трогает);
+- `node prototypes/check.mjs` — OK: ключи резолвятся, переходы целы,
+  сценарии проходятся.
+
+Состав ветки `git diff main...origin/w91-checkin-cancelled` — ровно 6 файлов:
+`flows/checkin-api.json`, `flows/_manifest.json`, `i18n/ru.json`,
+`miniapp/src/routes/Scan.tsx`, `catalog/flows/checkin-api.md`,
+`docs/work/W91-checkin-cancelled.md`. Постороннего нет. `docs/STATUS.md` и
+`docs/work/W77-*` в обратном диффе — это `main` ушёл вперёд (merge #153),
+ветка их не меняла.
+
+`check-migrations.py` не запускался: нет `QADAM_API_KEY`/Keychain; манифест ↔
+инстанс ↔ `migrations` сверены вручную (выше).
+
+**Замечаний нет.** Блокер круга 1 закрыт; пакет можно переводить в `готов`.
