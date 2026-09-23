@@ -131,6 +131,16 @@ function tashMs(local: string): number {
   return Date.UTC(p.y, p.mo, p.d, +p.h, +p.mi) - 5 * 3600 * 1000;
 }
 
+// W74: временная часть формулы «регистрация закрыта» — дедлайн уже прошёл,
+// а событие ещё не началось. Одна функция на список и форму: на вход идут
+// UTC-миллисекунды (список — utcMs, форма — tashMs), поэтому ветки не могут
+// разойтись. Пустой/нечитаемый дедлайн закрытия не означает (регистрация идёт
+// до начала). Гейт `published` — только у списка: issue #126, п. 3 не
+// ограничивает предупреждение формы статусом.
+function regDeadlinePassed(deadlineMs: number, startsMs: number, nowMs: number): boolean {
+  return isFinite(deadlineMs) && isFinite(startsMs) && deadlineMs < nowMs && startsMs > nowMs;
+}
+
 // «сб, 26 сентября · 22:00» — форма меты каталога, но из локальной строки.
 function endsWhen(local: string): string {
   const p = plateFromLocal(local);
@@ -1168,11 +1178,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const plate = plateFromLocal(fields['starts_at']);
   // W74: дедлайн уже прошёл, а событие ещё не началось — предупреждаем, но
   // сохранять не мешаем (закрыть регистрацию раньше — иногда осознанно).
-  // Обе даты — локальные («ташкентские») строки формы, поэтому через tashMs.
-  const deadlineMs = tashMs(fields['reg_deadline_at']);
-  const startsMs = tashMs(fields['starts_at']);
-  const nowMs = Date.now();
-  const regDeadlinePast = isFinite(deadlineMs) && isFinite(startsMs) && deadlineMs < nowMs && startsMs > nowMs;
+  // Даты формы — локальные («ташкентские») строки, поэтому через tashMs;
+  // саму формулу держит общий regDeadlinePassed.
+  const regDeadlinePast = regDeadlinePassed(tashMs(fields['reg_deadline_at']), tashMs(fields['starts_at']), Date.now());
   // W53: таб рассылки — сегменты из загруженных участников (прототип
   // renderBroadcastTab; строки all_consent в ответе participants нет —
   // пропущена осознанно, см. журнал W53).
@@ -1231,11 +1239,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                 const ms = utcMs(ev.starts_at);
                 const now = Date.now();
                 const past = isFinite(ms) && ms < now;
-                // W74: «Регистрация закрыта» — опубликованное событие, дедлайн
-                // уже прошёл, а само событие ещё не началось. Пустой дедлайн
-                // закрытия не означает (регистрация идёт до начала).
-                const deadlineMs = utcMs(ev.reg_deadline_at || '');
-                const regClosed = ev.status === 'published' && isFinite(deadlineMs) && deadlineMs < now && isFinite(ms) && ms > now;
+                // W74: «Регистрация закрыта» — опубликованное событие, у которого
+                // дедлайн прошёл, а начало ещё в будущем. Время считает общий
+                // regDeadlinePassed (UTC-мс из utcMs), `published` — гейт списка.
+                const regClosed = ev.status === 'published' && regDeadlinePassed(utcMs(ev.reg_deadline_at || ''), ms, now);
                 return (
                   <li key={ev.id}>
                     <a className={`event-card${past ? ' past' : ''}`} href={`#/manage/${ev.id}`}>
