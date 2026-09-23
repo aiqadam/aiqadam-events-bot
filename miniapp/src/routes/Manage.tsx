@@ -62,6 +62,8 @@ type ListItem = {
   title: string;
   starts_at: string;
   status: string;
+  // W74: сырой UTC-дедлайн регистрации — список решает, показать ли бейдж.
+  reg_deadline_at?: string;
   isAuthor: boolean;
   address?: string;
   lat?: string;
@@ -1164,6 +1166,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   const canPublish = !origStatus || origStatus === 'draft';
   const plate = plateFromLocal(fields['starts_at']);
+  // W74: дедлайн уже прошёл, а событие ещё не началось — предупреждаем, но
+  // сохранять не мешаем (закрыть регистрацию раньше — иногда осознанно).
+  // Обе даты — локальные («ташкентские») строки формы, поэтому через tashMs.
+  const deadlineMs = tashMs(fields['reg_deadline_at']);
+  const startsMs = tashMs(fields['starts_at']);
+  const nowMs = Date.now();
+  const regDeadlinePast = isFinite(deadlineMs) && isFinite(startsMs) && deadlineMs < nowMs && startsMs > nowMs;
   // W53: таб рассылки — сегменты из загруженных участников (прототип
   // renderBroadcastTab; строки all_consent в ответе participants нет —
   // пропущена осознанно, см. журнал W53).
@@ -1220,7 +1229,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               {listItems.map((ev) => {
                 const p = utcToPlate(ev.starts_at);
                 const ms = utcMs(ev.starts_at);
-                const past = isFinite(ms) && ms < Date.now();
+                const now = Date.now();
+                const past = isFinite(ms) && ms < now;
+                // W74: «Регистрация закрыта» — опубликованное событие, дедлайн
+                // уже прошёл, а само событие ещё не началось. Пустой дедлайн
+                // закрытия не означает (регистрация идёт до начала).
+                const deadlineMs = utcMs(ev.reg_deadline_at || '');
+                const regClosed = ev.status === 'published' && isFinite(deadlineMs) && deadlineMs < now && isFinite(ms) && ms > now;
                 return (
                   <li key={ev.id}>
                     <a className={`event-card${past ? ' past' : ''}`} href={`#/manage/${ev.id}`}>
@@ -1232,6 +1247,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       <div className="event-body">
                         <div className="event-top">
                           <span className="event-status">{t(`status.${ev.status}`)}</span>
+                          {regClosed && (
+                            <span className="badge badge-warning" id={`reg-closed-${ev.id}`}>
+                              {t('manage.badge.reg_closed')}
+                            </span>
+                          )}
                           {ev.isAuthor && <span className="badge mono">{t('manage.list.author')}</span>}
                         </div>
                         <h3 className="event-title">{ev.title}</h3>
@@ -1611,6 +1631,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     {fieldError('reg_deadline_at') && (
                       <p className="helper error" id="e-reg_deadline_at">
                         {fieldError('reg_deadline_at')}
+                      </p>
+                    )}
+                    {/* W74: предупреждение, не ошибка — сохранение не блокируем. */}
+                    {regDeadlinePast && (
+                      <p className="helper warning" id="w-reg_deadline_at">
+                        {t('manage.warn.deadline_past')}
                       </p>
                     )}
                   </div>

@@ -47,6 +47,10 @@ html, body { touch-action: pan-x pan-y; }
 .result.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
 .result .empty-heading { color: var(--foreground); }
 
+/* W74: предупреждение под полем — тон warning, не ошибка: сохранение не
+   блокируется, поэтому красный цвет ошибки здесь был бы неверен. */
+.helper.warning { color: var(--warning); }
+
 /* Ticket card error — так же как result bad */
 .ticket-card.error { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
 .ticket-card.error .msg { color: var(--foreground); }
@@ -89,6 +93,10 @@ html, body { touch-action: pan-x pan-y; }
 .chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */
 .event-title { overflow-wrap: anywhere; }
+/* W74: в шапке карточки списка теперь может быть три подписи (статус, бейдж
+   «Регистрация закрыта», «Вы создали»). Бренд-ряд не переносится — разрешаем
+   перенос, иначе «Вы создали» уезжает за край. */
+.event-card .event-top { flex-wrap: wrap; }
 /* Плита даты — по высоте содержимого, как в эталоне. */
 .event-card .date-plate { align-self: start; }
 /* Афиша (W38): мета двумя строками — дата и адрес не слипаются (как .preview). */

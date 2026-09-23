@@ -83,7 +83,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_16 (save) | `LOOP_ON_ITEMS` по `{{step_14['output'].targets}}` | |
 | step_17 (в цикле) | `send_text_message` (`continueOnFailure`) | уведомление одному зарегистрированному (`format: None`) |
 | step_31 (events_list) | `tables-find-records events` | события чаптера: фильтр `chapter_id eq {{step_7['output'].chapterId}}`, `limit: 200` |
-| step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию; у своих событий (`isAuthor`) с непустым адресом добавляются `address`/`lat`/`lon` — недавние места визарда (W42) |
+| step_32 (events_list) | CODE «shape events list» | форма списка (`id`, `title`, `starts_at`, `status`, `reg_deadline_at`, `isAuthor`) и порядок: будущие по возрастанию, затем прошедшие по убыванию; у своих событий (`isAuthor`) с непустым адресом добавляются `address`/`lat`/`lon` — недавние места визарда (W42); `reg_deadline_at` — сырой UTC-дедлайн, по нему страница решает бейдж «Регистрация закрыта» (W74) |
 | step_33 (events_list) | `return_response` (`stop`) | `200 {ok:true, events:[…], count}` |
 | step_34 (geo_link) | CODE «geo link: parse» | вырезает `oid` из орг-ссылки (`/maps/org/<slug?>/<oid>`); всё прочее даёт пустой `uri` — Геокодер ответит `400`, отказ вернёт `step_36` |
 | step_35 (geo_link) | `@aiqadam/qadam-http : send_request` | `GET https://geocode-maps.yandex.ru/1.x/` (`apikey` — `{{variables['YANDEX_GEOCODER_API_KEY']}}`, `uri`, `format=json`, `lang=ru_RU`, `results=1`), `failureMode: continue_all`, `timeout: 10`. **Именно `1.x`:** тот же ключ на `/v1/` отвечает `403 Invalid api key` — различающий прогон в журнале W42 |
@@ -105,7 +105,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | нет строки `staff`; событие не найден; `event.chapter_id` не подходит под `staff.chapter_id`; сентинел `-`; создание с `newId`, занятым записью чужого чаптера | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
 | `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,hasPhoto}, eventId, inviteLink}` — `inviteLink` непустой только у `published` |
-| `list` staff'ом | 200 | `{ok:true, events:[{id,title,starts_at,status,isAuthor,address?,lat?,lon?}], count}` — события своего чаптера; `address`/`lat`/`lon` только у своих (`isAuthor`) и только при непустом адресе (недавние места, W42); не staff — `403`, как у `load` |
+| `list` staff'ом | 200 | `{ok:true, events:[{id,title,starts_at,status,reg_deadline_at,isAuthor,address?,lat?,lon?}], count}` — события своего чаптера; `address`/`lat`/`lon` только у своих (`isAuthor`) и только при непустом адресе (недавние места, W42); не staff — `403`, как у `load` |
 | `save` | 200 | `{ok:true, text, eventId, inviteLink}` — `eventId` созданного события нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем; `inviteLink` — только у `published` |
 | `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки события, `item` отформатирован сервером |
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
@@ -156,6 +156,10 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   **W42:** у своих событий с непустым адресом в ответ добавляются
   `address`/`lat`/`lon` — визард берёт их для «Недавних мест» (чужой адрес
   в ответ не попадает); отдельного хранилища недавних мест нет.
+  **W74:** в строке есть и сырой `reg_deadline_at`; признак «регистрация
+  закрыта» (статус `published`, дедлайн в прошлом, начало в будущем) считает
+  страница — сервер отдаёт только значение, чтобы формула показа не жила на
+  сервере и не расходилась с формой.
 - **Орг-ссылка (`resolve_geo`, W42/[Q55](../../docs/OPEN-QUESTIONS.md#q55))** —
   отдельная ветка (`step_34`…`step_37`), ранний возврат в `step_7` до
   *использования* события (сам `step_6` в графе выполняется всегда: сентинел
