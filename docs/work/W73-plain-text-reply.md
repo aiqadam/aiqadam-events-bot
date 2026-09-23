@@ -132,7 +132,44 @@
 
 > Заполняет независимый ревьюер.
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: review-agent (gpt-5.6-luna) · **Дата**: 2026-09-23 · **Вердикт**: замечаний нет
+
+### Что проверено
+
+- MCP доступен: проект `events-dev` (`vZXlkfz60dx6kX97yICx7`). Для `tg-router`,
+  `menu`, `reg-api` и `reg-profile` снята живая структура: все шаги
+  `configured`, `valid`, без незаполненных веток; CODE-шаги прочитаны через
+  `ap_read_step_code` и не содержат сетевых вызовов или записи в таблицы.
+- Живые экспорты через `ap_export_flow` совпадают с `flows/*.json` и
+  `publishedVersionId` в `_manifest.json`: `SGwk43CYYPHDNsqraS0bX`,
+  `dVvIi8m6z28Kpwvmpp5cE`, `DxyL1oN5ia0rOtRzI7R72`,
+  `TVBVDJy4pGCIxAYyPzZxs` соответственно; в экспортируемых настройках
+  секретов нет.
+- Каталог сверен со структурой и экспортом: новые ветки fallback, action
+  `delete_account`, циклы `find → loop → delete`, UI-кнопка и граница Part 1 /
+  Part 2 описаны согласованно.
+- Таблица `migrations` содержит пять записей W73 (`w73-01`…`w73-05`), включая
+  публикации четырёх флоу и удаление временного mint-флоу; версии и commit
+  совпадают с пакетом.
+- Прочитаны живые успешные прогоны plain-text (`ywWLXPLM2lnLhUcuezodB`) и
+  отрицательный `reg-api` с malformed `initData` (`He1r0IO87VVwtgzuanQm3`),
+  а также серия production-прогонов затронутых флоу. IDOR-гейт, обязательный
+  `confirm` и удаление только по внутренним id строк подтверждены структурой,
+  кодом и журналом curl-проверок T1–T5.
+- Офлайн-проверки `check-export-secrets.sh`, `check-texts.py`,
+  `check-commands.py`, `check-agents.py`, `prototypes/check.mjs` и сборка
+  Mini App прошли успешно; `git diff --check` также чист.
+
+### Замечания
+
+Нет.
+
+### Ограничение среды
+
+`tools/check-migrations.py` отдельно запустить не удалось: на машине нет
+`QADAM_API_KEY` и записи ключа в Keychain. Это не блокировало живую MCP-сверку
+структур, экспортов и записей `migrations`; секрет в репозитории не искался и
+не добавлялся.
 
 ## Хвосты и блокеры
 
