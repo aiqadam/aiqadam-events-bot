@@ -85,13 +85,13 @@
   {
     "flow": "manage-api",
     "flowId": "CcGPwuW4ws5hkcaOPerEG",
-    "publishedVersionId": "g0Tjak1LdiTkWI9UN0Pc4",
+    "publishedVersionId": "aYL50moLqjFmJalgTPxmF",
     "source": "mcp"
   },
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "dVvIi8m6z28Kpwvmpp5cE",
+    "publishedVersionId": "E5sVXvXecXf3zAIJfJ9aL",
     "source": "mcp"
   },
   {
@@ -161,7 +161,7 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "SGwk43CYYPHDNsqraS0bX",
+    "publishedVersionId": "E5UtwCPjFh5dUFmF0YKg8",
     "source": "mcp"
   }
 ]

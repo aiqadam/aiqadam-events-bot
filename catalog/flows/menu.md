@@ -15,7 +15,8 @@
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId` |
+| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
+| step_14 | `answer_callback_query` (`continueOnFailure`) | ack колбэка меню (`menu:bcast_help`); на `/start` идёт с пустым id и тихо падает — не мешает |
 | step_1 | `tables-find-records users` | `profile_completed_at` вызывающего — гейт ADR-0034 |
 | step_2 | CODE «gate» | `needsOnboard` (пусто → true) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
@@ -30,7 +31,7 @@
 | step_8 | `tables-find-records staff` | строка `staff` пользователя (limit 1) — видимость кнопок овнера |
 | step_9 | `tables-find-records event_staff` | все staff-строки пользователя (limit 50) |
 | step_10 | `tables-find-records events` | опубликованные события (status = `published`, limit 50) |
-| step_11 | CODE «render menu» | сборка кнопок: гость — 1 кнопка; организатор — [`Панель администратора`, `События`, `Новое событие`]; контролёр — тот же 1 экран, свой текст; `fallback=true` (ответ на обычный текст, W73) меняет преамбулу на `menu.fallback_text`, кнопки и лид те же |
+| step_11 | CODE «render menu» | сборка кнопок: гость — 1 кнопка; организатор — [`Панель администратора`, `События`, `Новое событие`, `Как сделать рассылку` (`callback_data: menu:bcast_help`, W68)]; контролёр — тот же 1 экран, свой текст; `fallback=true` (ответ на обычный текст, W73) меняет преамбулу на `menu.fallback_text`, кнопки и лид те же; `callbackData=menu:bcast_help` от организатора отдаёт инструкцию `bcast.howto.*` вместо приветствия (W68) |
 | step_12 | `send_text_message` (`format: None`) | отправка меню |
 
 ## Зависимости
@@ -98,3 +99,11 @@
 - **Тексты — через `inputs.texts`** (ADR-0014), ключи `menu.*`, `onb.*` и
   `start.*`. `format: None` в ветке меню (без разметки), `MarkdownV2` в
   ветке онбординга (общий эталон экранирования с `reg-start`/`reg-profile`).
+- **Кнопка «Как сделать рассылку» (W68, #120).** У организатора (и двойной
+  роли) в меню есть кнопка с колбэком `menu:bcast_help`; `tg-router`
+  (`step_10`) маршрутизирует префикс `menu:` в это же меню, а `step_11`
+  отдаёт инструкцию в 3 шага (`bcast.howto.title`/`step1`/`step2`/`step3`) —
+  тот же текст, что таб «Рассылка» Mini App. Гостю и контролёру (кнопки нет)
+  колбэк отдаёт обычное меню. `step_14` подтверждает колбэк; на `/start` он
+  вызывается с пустым `callbackQueryId` и падает под `continueOnFailure`.
+  Это не команда — префикс колбэка, ADR-0025 не затронут.
