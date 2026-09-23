@@ -34,6 +34,7 @@
 | `MINIAPP_URL` | [reg-start](flows/reg-start.md) | кнопка QR в ветке `existing` |
 | `MINIAPP_URL` | [reg-consent-mkt](flows/reg-consent-mkt.md) | кнопка `web_app` на `#/ticket?event_id=` (SPA) в сообщении с билетом (ADR-0007) |
 | `MINIAPP_URL` | [menu](flows/menu.md) | вход `miniappUrl` у CODE — кнопки `web_app` на `#/events`, `#/events?tab=mine`, `#/manage` и `#/scan?event_id=` (SPA) |
+| `MINIAPP_URL` | [reminders](flows/reminders.md) | вход `miniappUrl` у CODE — кнопка `web_app` «Открыть билет» на `#/ticket?event_id=` (SPA) в напоминании ([#142](https://github.com/aiqadam/aiqadam-events-bot/issues/142)) |
 | `BOT_TOKEN` | [manage-api](flows/manage-api.md) | `callFlow fn-hmac-init-data`, поле `botToken` |
 | `YANDEX_GEOCODER_API_KEY` | [manage-api](flows/manage-api.md) | `http` Геокодера, `queryParams.apikey` (ветка `geo_link`, Q55) |
 | `BOT_USERNAME` | [manage-api](flows/manage-api.md) | `inviteLink` в ответах `load`/`save` — ссылка на форме, не в чате (W37) |

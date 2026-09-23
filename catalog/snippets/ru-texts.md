@@ -33,7 +33,7 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 задокументированное отдельным эталоном. Шаги с `texts` есть у флоу:
 `checkin-api`, `manage-api`, `menu`,
 `my-qr-api`, `reg-afterword`, `reg-api`, `reg-consent-mkt`,
-`reg-consent-pdn`, `reg-start` (полнота — по закоммиченному экспорту
+`reg-consent-pdn`, `reg-start`, `reminders` (полнота — по закоммиченному экспорту
 `flows/*.json`); список шагов каждого — в его карточке `catalog/flows/*.md`.
 
 **До W26 (историческая привязка к удалённым флоу, не текущая спека):**
