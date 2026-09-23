@@ -7,6 +7,7 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, EVENTS_API, REG_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToPlate, utcToWhen, utcMs } from '../lib/dates';
 import Icon from '../components/Icon';
+import MapLinks from '../components/MapLinks';
 import Sheet from '../components/Sheet';
 import Toast, { useToast } from '../components/Toast';
 
@@ -19,6 +20,8 @@ type CatalogEvent = {
   id: string;
   title: string;
   address: string;
+  lat: string;
+  lon: string;
   startsAt: string;
   endsAt: string;
   regDeadlineAt: string;
@@ -687,6 +690,7 @@ function MineCard({
             </span>
           )}
         </div>
+        <MapLinks lat={ev.lat} lon={ev.lon} address={ev.address} />
         {showQr && (
           <div className="app-actions" style={{ marginTop: 0 }}>
             <a className="btn btn-primary" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`} onClick={onOpenTicket(ev.id)}>
@@ -776,6 +780,7 @@ function EventCard({
             </span>
           )}
         </div>
+        <MapLinks lat={ev.lat} lon={ev.lon} address={ev.address} />
         {action === 'qr' && (
           <div className="app-actions" style={{ marginTop: 0 }}>
             <a className="btn btn-primary" id="ticket" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`}>

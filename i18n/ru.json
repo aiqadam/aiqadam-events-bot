@@ -76,6 +76,8 @@
   "dedup.total": "Лишних строк всего: {total}",
   "event.card.btn_calendar": "Добавить в календарь",
   "event.card.btn_map": "Открыть на карте",
+  "event.card.btn_map_google": "Google Maps",
+  "event.card.btn_map_yandex": "Яндекс.Карты",
   "event.card.btn_register": "Зарегистрироваться",
   "event.card.deadline": "Регистрация до: {when}",
   "event.card.deadline_short": "Регистрация до {when}",

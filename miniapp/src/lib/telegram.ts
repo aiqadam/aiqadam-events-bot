@@ -15,6 +15,21 @@ export function isInTelegram(): boolean {
   return Boolean(tg && tg.initData);
 }
 
+// W72 (#124): открыть внешнюю ссылку (карты) — в Telegram нативным openLink,
+// иначе новой вкладкой. Ошибка косметическая: если ссылку открыть не удалось,
+// ничего не ломаем.
+export function openExternal(url: string): void {
+  if (!url) return;
+  const openLink = getTelegram()?.openLink;
+  if (typeof openLink === 'function') {
+    try {
+      openLink(url);
+      return;
+    } catch {}
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
 // W47: тактильный отклик. Клиент без HapticFeedback (или вызов вне Telegram)
 // молча ничего не делает — отклик косметический, ошибка недопустима.
 export function hapticImpact(style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'light'): void {
