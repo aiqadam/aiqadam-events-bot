@@ -3,8 +3,9 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
   `POST /api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync`; тело:
-  `{ action, eventId?, initData, consentPdn?, consentMarketing? }`
-  (`authType: none`, авторизация — `initData`)
+  `{ action, eventId?, initData, consentPdn?, consentMarketing?, confirm?, telegramId? }`
+  (`authType: none`, авторизация — `initData`; `confirm`/`telegramId` — только
+  для `delete_account`, чужой `telegramId` не доверяется)
 - **Назначение**: «Мои билеты» и регистрация в каталоге `#/events`
   (PAR-3/PAR-4 в целевой форме): одно касание — три действия, все строго
   по владельцу `initData` (W43, Q57)
@@ -17,6 +18,7 @@
 | `mine` | регистрации вызывающего — живые (`registered`/`checked_in`), отменённые не возвращаются | `200 {ok, outcome:'mine', mine:[{eventId, status, registeredAt, checkedInAt}]}` |
 | `register` | создать регистрацию идемпотентно (IDM-1) с двумя согласиями | `200 {ok, outcome:'registered', text}` / `200 {ok, outcome:'existing', text}` (повтор — та же строка) / отказы (см. ниже) |
 | `cancel` | отменить до `starts_at` (PAR-5) | `200 {ok, outcome:'cancelled', text}` / `404 not_registered` / `409 too_late` |
+| `delete_account` | самоудаление аккаунта (GDPR, W73, ADR-0039): строки вызывающего из `users`, `registrations`, `feedback`, `broadcast_targets`, `sessions`. Требует `confirm: true` | `200 {ok, outcome:'delete_account', text}` / `403 forbidden` (чужой `telegramId` в теле) / `400 bad_request` (нет подтверждения) |
 
 Отказы `register`: `400 pdn_required` (PAR-1 не отмечен — сервер требует,
 кнопка в шите без него выключена), `400 bad_request`, `404 not_found`,
@@ -49,10 +51,18 @@
 | step_14 | `tables-upsert-records registrations` | отменить: `status = cancelled`, `cancelled_at = now`, ключ `(event_id, telegram_id)` |
 | step_15 | `return_response` (`stop`) | `200 {ok, outcome:'cancelled', text}` |
 | step_16 | `return_response` (`stop`) | `mine`, повторы, отказы — ответ из `step_9` без записей |
+| step_24→26 (`delete_account`) | `tables-find-records registrations` → `LOOP_ON_ITEMS` → `tables-delete-record` | строки вызывающего из `registrations`; удаление по внутреннему id, пустой список — ноль итераций (гоча 18) |
+| step_27→29 | то же по `feedback` | |
+| step_30→32 | то же по `broadcast_targets` | |
+| step_33→35 | то же по `sessions` | |
+| step_36→38 | то же по `users` | профиль удаляется последним: сбой раньше оставляет строку для повторного вызова |
+| step_39 | `return_response` (`stop`) | `200 {ok, outcome:'delete_account', text}` |
 
 ## Зависимости
 
-- **Таблицы**: `registrations` (чтение + запись), `users` (запись согласий), `events` (чтение)
+- **Таблицы**: `registrations` (чтение + запись + удаление), `users` (запись
+  согласий + удаление), `events` (чтение), а также `feedback`,
+  `broadcast_targets`, `sessions` (только удаление, W73)
 - **Переменные**: `BOT_TOKEN`
 - **Флоу**: `fn-hmac-init-data` (`inline` — ответ нужен для маршрутизации)
 - **Connections**: —
@@ -114,6 +124,16 @@
   (`alreadyConsentedPdn`). Ветка `registered_profile` (`step_18→20`,
   регистрация из каталога с одновременным заполнением профиля) не тронута:
   там это первое и единственное согласие, писать обязательно.
+- **Самоудаление аккаунта (W73, #125, ADR-0039).** `delete_account` удаляет
+  строки вызывающего жёстко и без каскада. `telegram_id` — только из
+  проверенного `initData` (DAT-1); `telegramId` в теле, не равный
+  вызывающему, даёт `403` (попытка IDOR), а не «тихое своё удаление».
+  Подтверждение (`confirm: true`) обязательно — кнопка в табе «Профиль»
+  шлёт его после шита. Повтор безвреден: циклы по пустым выборкам делают
+  ноль итераций. **Границы Part 1:** удаляются `users`, `registrations`,
+  `feedback`, `broadcast_targets`, `sessions`; права и организационные
+  касания (`event_staff`, `staff`, `staff_invites`, `events.staff_id`) —
+  Part 2 (ADR-0039, «Границы»).
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
   прогона `telegram_id` каждого участника события на любой вызов `register`/
