@@ -18,8 +18,9 @@
 - `bcast:seg:<bid>:<segment>` — гейты (создатель, staff, сегмент, время
   `no_show`) → превью (`bcast.preview.*` + счётчик) с кнопками
   тест/отправка/отмена;
-- `bcast:test:<bid>` — отправка тела себе **с кнопкой отписки** (овнер видит
-  ровно то, что уйдёт) → штамп `test_sent_at` только при доставке;
+- `bcast:test:<bid>` — отправка себе **копией исходного поста** (`copyMessage`)
+  с кнопкой отписки (овнер видит ровно то, что уйдёт: фото, жирный, ссылка) →
+  штамп `test_sent_at` только при доставке;
 - `bcast:send:<bid>` — гейты (создатель, сегмент задан, `test_sent_at`,
   время `no_show`) → `callFlow bcast-run`; повторный запуск бегущей
   рассылки — resume с уведомлением `bcast.interrupted`, а не дубль;
@@ -39,18 +40,18 @@
 | step_2 | CODE «parse callback» | `{op, bid, arg, valid}` |
 | step_3 | ROUTER `by op` | `ev`/`seg`/`test`/`send`/`cancel`/`Otherwise` |
 | step_4→6 | `tables-find-records` | ветка `ev`: сессия, событие, staff |
-| step_7 | CODE «gate + segment keyboard» | гейты сессии/события/staff, генерация `bid`, клавиатура сегментов |
+| step_7 | CODE «gate + segment keyboard» | гейты сессии/события/staff, генерация `bid`, клавиатура сегментов; из черновика достаёт `mediaChatId`/`mediaMessageId` (W79) |
 | step_8 | ROUTER `ev gate` | `ok` → создать строку + сессия + экран; иначе текст отказа |
-| step_9→11 | `create broadcasts`, `upsert sessions`, `send_text_message` | строка черновика, сессия `await_segment` (`draft={bid}`), экран сегментов |
+| step_9→11 | `create broadcasts`, `upsert sessions`, `send_text_message` | строка черновика (+ `media_chat_id`/`media_message_id`, W79), сессия `await_segment` (`draft={bid}`), экран сегментов |
 | step_12 | `send_text_message` | текст отказа `ev` |
 | step_13→20 | `tables-find-records` ×5 + CODE | ветка `seg`: рассылка, контекст (`bid/eventId`), событие, staff, регистрации, `memberCsv`, `users in-csv`, consent-база |
 | step_21 | CODE «decide preview» | гейты + подсчёт тем же правилом, что материализация (`attended`-множество, дедуп, `blocked_bot` вне игры); `locked` для `no_show` до `ends_at` |
 | step_22 | ROUTER `seg verdict` | `ok` / `locked` / иначе-отказ |
 | step_23→24 | `upsert broadcasts`, `send_text_message` | сохранить сегмент, превью с кнопками |
 | step_25→26 | `send_text_message` ×2 | тексты `locked` / отказа |
-| step_27→28 | `find broadcasts`, CODE «test gate» | ветка `test`: создатель + непустое тело, `unsubMarkup` |
+| step_27→28 | `find broadcasts`, CODE «test gate» | ветка `test`: создатель + непустое тело **или** источник `copyMessage` (W79), `unsubMarkup` |
 | step_29 | ROUTER `test gate verdict` | |
-| step_30→31 | `send_text_message` (`continueOnFailure`), CODE «test delivered?» | тест себе с кнопкой отписки; доставка по отсутствию ошибки |
+| step_30→31 | `custom_api_call /copyMessage` (`continueOnFailure`), CODE «test delivered?» | тест себе копией исходного поста с кнопкой отписки (W79); доставка по отсутствию ошибки |
 | step_32 | ROUTER `delivered verdict` | |
 | step_33→34 | `upsert broadcasts`, `send_text_message` | штамп `test_sent_at`, `bcast.test.sent` |
 | step_35→36 | `send_text_message` ×2 | `common.err.generic` (тест не дошёл) / текст отказа гейта |
@@ -91,3 +92,9 @@
   с сентинелом `__none__` (fail-closed: пустое значение валит чтение).
 - **`flowProps` у `callFlow` — обёртка `{"payload": {...}}`** (глобальная
   гоча 7a); `exampleData` совпадает с триггером callee.
+- **Тест себе — копия исходного поста (W79, #131).** `step_30` —
+  `custom_api_call /copyMessage` (`from_chat_id`/`message_id` из строки
+  рассылки, `reply_markup` — кнопка «Отписаться»). Кнопку `copyMessage` сам не
+  переносит: без явного `reply_markup` её нет (проверено #149). Тело может быть
+  пустым, если у поста только фото; гейт `step_28` требует «тело или источник».
+  `step_31` читает `{{step_30['error']}}`, как и прежняя отправка.

@@ -17,7 +17,7 @@
 | step_2 | CODE «staff gate» | `isStaff` + `chapterId`; постфильтр по `telegram_id` (defense in depth, Q25) |
 | step_3 | ROUTER: `staff` / `Otherwise` | не-staff пересылка уходит в тишину (форварды от гостей — обычное дело) |
 | step_4 | `tables-find-records events` | `published,finished`, лимит 100 |
-| step_5 | CODE «build event keyboard» | фильтр по чаптеру staff, сортировка по `starts_at`, кнопки `bcast:ev:<eventId>` + отмена; `draftJson` (`body/createdBy/chatId`) |
+| step_5 | CODE «build event keyboard» | фильтр по чаптеру staff, сортировка по `starts_at`, кнопки `bcast:ev:<eventId>` + отмена; `draftJson` (`body/createdBy/chatId/mediaChatId/mediaMessageId`) |
 | step_6 | ROUTER: `empty` / `Otherwise` | |
 | step_7 | `@aiqadam/qadam-telegram-bot : send_text_message` | `owner.events.empty` (ветка `empty`) |
 | step_8 | `tables-upsert-records sessions` | `scenario='broadcast'`, `step='await_event'`, `draft` — тело черновика |
@@ -42,6 +42,12 @@
 - **Черновик всегда привязан к событию** — сегмента «все с consent» без события
   нет (пустой `event_id` не используется); `all_consent` выбирается на экране
   сегментов уже в привязке к событию.
+- **Источник `copyMessage` живёт в черновике (W79, #131).** `step_5` кладёт в
+  `draft` `mediaChatId` (= `chatId` организатора) и `mediaMessageId`
+  (= `messageId` пересланного поста). Отправка идёт копией исходного сообщения,
+  поэтому овнер видит в тесте ровно то, что уйдёт (фото, жирный, ссылка под
+  словом), а не один пересказанный текст. `body` остаётся текстом/подписью для
+  превью.
 - **Доступ — граница `manage-api`** (ADR-0024): строка `staff` + (`chapter_id`
   staff пуст или равен чаптеру события). События `draft`/`cancelled`/`finished`
   мимо `published`/`finished` не предлагаются; `finished` нужен для `no_show`.

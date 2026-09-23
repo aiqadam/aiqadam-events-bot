@@ -1,10 +1,12 @@
 {
   "agentIds": [],
+  "backupFiles": null,
   "connectionIds": [
     "TZTlXaCEO2hEvimUowbSA"
   ],
   "displayName": "bcast-draft",
-  "schemaVersion": "31",
+  "notes": [],
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -160,6 +162,7 @@
                     "chatId": "{{trigger['output'].data.chatId}}",
                     "eventsRecords": "{{step_4['output']}}",
                     "fwdText": "{{trigger['output'].data.fwdText}}",
+                    "messageId": "{{trigger['output'].data.messageId}}",
                     "telegramId": "{{trigger['output'].data.telegramId}}",
                     "texts": {
                       "bcast.ask.event": "К какому событию относится рассылка?",
@@ -168,7 +171,7 @@
                     }
                   },
                   "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fmtTash = (iso) => {\n    const ms = parseDate(iso);\n    if (!isFinite(ms)) return '';\n    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date(ms));\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const chapterId = str(inputs.chapterId);\n  const rows = arr(inputs.eventsRecords).map(flat).filter((e) => {\n    if (str(e.id) === '') return false;\n    const st = str(e.status);\n    if (st !== 'published' && st !== 'finished') return false;\n    const ec = str(e.chapter_id || '');\n    if (!(chapterId === '' || (ec !== '' && ec === chapterId))) return false;\n    return true;\n  });\n  rows.sort((a, b) => (parseDate(a.starts_at) || Infinity) - (parseDate(b.starts_at) || Infinity));\n  const now = new Date().toISOString();\n  if (!rows.length) return { empty: true, text: t('owner.events.empty'), replyMarkup: null, draftJson: '', now: now };\n  const kb = rows.slice(0, 30).map((e) => {\n    const when = fmtTash(e.starts_at);\n    const label = (str(e.title).slice(0, 40) + (when ? ', ' + when : '')).slice(0, 60);\n    return [{ text: label || str(e.id), callback_data: 'bcast:ev:' + str(e.id) }];\n  });\n  kb.push([{ text: t('bcast.btn.cancel'), callback_data: 'bcast:cancel' }]);\n  const draft = { body: str(inputs.fwdText), createdBy: str(inputs.telegramId), chatId: str(inputs.chatId) };\n  return {\n    empty: false, text: t('bcast.ask.event'),\n    replyMarkup: { inline_keyboard: kb },\n    draftJson: JSON.stringify(draft), now: now,\n  };\n};",
+                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fmtTash = (iso) => {\n    const ms = parseDate(iso);\n    if (!isFinite(ms)) return '';\n    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date(ms));\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const chapterId = str(inputs.chapterId);\n  const rows = arr(inputs.eventsRecords).map(flat).filter((e) => {\n    if (str(e.id) === '') return false;\n    const st = str(e.status);\n    if (st !== 'published' && st !== 'finished') return false;\n    const ec = str(e.chapter_id || '');\n    if (!(chapterId === '' || (ec !== '' && ec === chapterId))) return false;\n    return true;\n  });\n  rows.sort((a, b) => (parseDate(a.starts_at) || Infinity) - (parseDate(b.starts_at) || Infinity));\n  const now = new Date().toISOString();\n  if (!rows.length) return { empty: true, text: t('owner.events.empty'), replyMarkup: null, draftJson: '', now: now };\n  const kb = rows.slice(0, 30).map((e) => {\n    const when = fmtTash(e.starts_at);\n    const label = (str(e.title).slice(0, 40) + (when ? ', ' + when : '')).slice(0, 60);\n    return [{ text: label || str(e.id), callback_data: 'bcast:ev:' + str(e.id) }];\n  });\n  kb.push([{ text: t('bcast.btn.cancel'), callback_data: 'bcast:cancel' }]);\n  // W79 (#131): источник copyMessage — чат и message_id пересланного поста.\n  // Отправка идёт копией исходного сообщения, поэтому овнер видит в тесте\n  // ровно то, что уйдёт (фото, жирный, ссылка под словом).\n  const draft = {\n    body: str(inputs.fwdText),\n    createdBy: str(inputs.telegramId),\n    chatId: str(inputs.chatId),\n    mediaChatId: str(inputs.chatId),\n    mediaMessageId: str(inputs.messageId),\n  };\n  return {\n    empty: false, text: t('bcast.ask.event'),\n    replyMarkup: { inline_keyboard: kb },\n    draftJson: JSON.stringify(draft), now: now,\n  };\n};",
                     "packageJson": "{}"
                   }
                 },

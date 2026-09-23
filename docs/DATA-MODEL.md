@@ -191,6 +191,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `event_id` | text | пусто для сегмента «все с consent» |
 | `segment` | enum | `all_consent` \| `registered` \| `attended` \| `no_show` (OWN-9) |
 | `body`, `parse_mode` | text | |
+| `media_chat_id`, `media_message_id` | text | источник `copyMessage` (чат и `message_id` пересланного поста) для фото-рассылок; пусто у текстовых/старых (W79, #131) |
 | `created_by` | text | |
 | `test_sent_at` | timestamp | **пусто → отправка запрещена** (OWN-10) |
 | `status` | enum | `draft` \| `running` \| `done` \| `failed` |

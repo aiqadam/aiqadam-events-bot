@@ -21,6 +21,8 @@
 | cursor | NUMBER | `MNy5oYhMX34dDj5x6JLd7` | `cVRqZm5ErYVDii1IRWG6y` | индекс в списке получателей |
 | started_at | DATE | `GEb4WuGSUofCWNtAz8uBs` | `pQpEcjvWDoZ3VIhmOJXfg` | UTC |
 | finished_at | DATE | `yevE4jElXPvczO4LTt2Yj` | `nr4uLO3Mz3F5tCznJNGXy` | UTC |
+| media_chat_id | TEXT | `0KCxjpZONVc1URjFBBlvr` | `BedNZ4g2qw3y8TUS0GhYa` | источник `copyMessage`: чат пересланного поста (W79) |
+| media_message_id | TEXT | `QkMPuoMtVWmQhWMpfflFC` | `mpkulBkkpaj7XpipVepAw` | источник `copyMessage`: `message_id` пересланного поста (W79) |
 
 ## Заметки
 
