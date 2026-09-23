@@ -23,11 +23,11 @@
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
-| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `Дальше` (`ob:continue`); согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля |
+| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `Дальше` (`ob:continue`); согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72) |
 | step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
 | step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии (шаг — в `step_11`) |
 | step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_consent` |
-| step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`) |
+| step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`); ссылка на карту — та же проверка, что в `step_9` (W72) |
 | step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
 | step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
 | step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
@@ -55,6 +55,11 @@
   `reg-profile` читает текущий шаг диалога из `draft.step`, а не из колонки
   таблицы; без этого поля в JSON каждый колбэк `ob:*` не находил свой шаг и
   уходил в `ignore` — онбординг выглядел как «повисшая» кнопка.
+- **Ссылка «Открыть на карте» строится только при непустых координатах.**
+  `step_9`/`step_14` читают `lat`/`lon` из `step_3` (`ev.lat || ''`) и проверяют
+  `str(lat) !== '' && str(lon) !== '' && !(lat === 0 && lon === 0)`: иначе
+  `Number('') === 0` давал ссылку на точку 0,0 в Атлантике для события без
+  координат. Та же проверка в `reg-profile`/`reg-consent-mkt` (W72, #124).
 - **`step_12` читает профиль по `externalId` полей `users`, не по `id`.**
   У каждого поля таблицы два идентификатора (гоча CLAUDE.md №1): `columns`
   на чтении терпит `id` молча (отдаёт `null`), `values` на записи — нет.

@@ -27,6 +27,8 @@ interface TelegramWebApp {
   // возвращается в чат с ботом и пересылает ему сообщение (сценарий W14).
   close: () => void;
   openTelegramLink?: (url: string) => void;
+  // W72: открытие внешней ссылки (карты) — Bot API 6.1+.
+  openLink?: (url: string, opts?: { try_instant_view?: boolean }) => void;
   closeScanQrPopup: () => void;
   showScanQrPopup: (params: Record<string, unknown>, cb: (...args: unknown[]) => void) => void;
   onEvent: (event: string, cb: () => void) => void;

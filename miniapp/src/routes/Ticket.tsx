@@ -6,6 +6,7 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
 import { utcMs, utcToWhen } from '../lib/dates';
 import Icon from '../components/Icon';
+import MapLinks from '../components/MapLinks';
 import Sheet from '../components/Sheet';
 
 const QR_MAX = 224;
@@ -38,6 +39,8 @@ export default function Ticket({ eventId }: { eventId: string }) {
   const [evTitle, setEvTitle] = useState('');
   const [evWhen, setEvWhen] = useState('');
   const [evAddress, setEvAddress] = useState('');
+  const [evLat, setEvLat] = useState('');
+  const [evLon, setEvLon] = useState('');
 
   const qrSize = useCallback(() => {
     const el = qrElRef.current;
@@ -247,6 +250,8 @@ export default function Ticket({ eventId }: { eventId: string }) {
         setEvTitle(String(ev['title'] || ''));
         setEvWhen(utcToWhen(String(ev['startsAt'] || '')));
         setEvAddress(String(ev['address'] || ''));
+        setEvLat(String(ev['lat'] || ''));
+        setEvLon(String(ev['lon'] || ''));
       });
     }
   }, [tg, initData, eventId, requestQr, loadCancelInfo]);
@@ -315,6 +320,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
                 <span>{evAddress}</span>
               </div>
             )}
+            <MapLinks lat={evLat} lon={evLon} address={evAddress} />
           </div>
         )}
         {!cancelled && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
