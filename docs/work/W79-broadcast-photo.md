@@ -1,10 +1,10 @@
 # W79. Phase 2: анонс спикера — фото + форматирование, вариант A (#131 Part 1)
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: P2 (tracking [#117](https://github.com/aiqadam/aiqadam-events-bot/issues/117))
 - **Зависит от**: #120 ✅, #149 ✅ (копирование сообщения с фото)
-- **Начат**: 2026-09-23 · **Закрыт**: —
+- **Начат**: 2026-09-23 · **Закрыт**: 2026-09-23
 
 ## Цель
 
@@ -50,7 +50,7 @@
 - **Валидация:** `ap_validate_flow` — `tg-router` 22/22, `bcast-draft` 11/11,
   `bcast-step` 57/57, `bcast-run` 53/53.
 - **Офлайн:** `check-export-secrets.sh` exit 0 (8 `BOT_TOKEN`, 2 `QR_SIGNING_KEY`
-  — как ожидалось, значений нет); `check-texts.py` 253/0; `check-commands.py`
+  — как ожидалось, значений нет);   `check-texts.py` 254/0; `check-commands.py`
   0; `check-agents.py` 0; `prototypes/check.mjs` OK.
 - **Живой сквозной e2e и смоук — за владельцем** (пересланное фото → событие →
   сегмент → «Тест себе» → отправка тестовому сегменту).
@@ -219,6 +219,49 @@
 - Живые `429`/`403` через `custom_api_call` (см. замечание 5).
 - `ap_get_run` по прогону `A1QMj8RGDMe9Dvc7gVD0A` — «not found»
   (замечание 2).
+
+### Круг 2 (2026-09-23)
+
+- **Вердикт**: замечаний нет
+
+**Закрытие замечаний круга 1:**
+
+1. **важно 1 (пропавший `bcast.btn.seg_noshow`)** — закрыто. Живьём
+   (`ap_flow_structure` + `ap_export_flow`): `bcast-step` `state: LOCKED`,
+   `flows[0].id = mUBsgkhFz8Z5jv7uToQ80`; в `step_7` во входе `texts` снова 13
+   ключей, включая `bcast.btn.seg_noshow: "Не пришедшие"`. Манифест обновлён,
+   `migrations` `2026-09-23-w79-04` несёт новую версию. `check-texts.py` —
+   **254/0** (было 253/0). `ap_validate_flow bcast-step` — 57/57. Повторный
+   прогон анализатора «`t('…')` в коде ↔ ключи `texts`» по всем флоу —
+   потерянных ключей нет (единственная строка, `manage-api/step_7: status.`, —
+   ложное срабатывание на склейке ключа).
+2. **важно 2 (нечитаемое доказательство)** — закрыто. `ap_list_flows`:
+   `zz-w79-copytest` (`7eGhh8t9fXGwcXxUnX4EM`) в проекте, `DISABLED`/draft,
+   **не удалён**. `ap_get_run Ib4ldE0LjRdZsF69fvKAE` отдаёт прогон читаемо:
+   `step_1` → `{destChatId, srcChatId, srcMsgId: 2533, markup}`;
+   `step_2` → `status: 200`, `body:{ok:true,result:{message_id:2586}}`.
+3. **на будущее 3 (дубль гейта)** — закрыто. В `step_28` осталась одна
+   проверка `body === '' && media_message_id === ''`, комментарий приведён к
+   смыслу; `catalog/flows/bcast-step.md` («тело **или** источник») совпадает.
+4. **на будущее 4–6** — ответы в журнале на месте и обоснованы: расширение
+   `check-texts.py` — отдельная правка инструмента, не в этом пакете; конверт
+   `custom_api_call` проверен живьём на 400 (`status` + `responseBody.error_code`),
+   живой 429/403 — при первой возможности (унаследованный хвост W14); альбом с
+   подписью — задача Part 2.
+
+**Проверено живьём:** `ap_flow_structure` + `ap_export_flow` (`bcast-step`:
+ключ на месте, `LOCKED`, id = манифест), `ap_get_run Ib4ldE0LjRdZsF69fvKAE`,
+`ap_list_flows` (33 флоу, `zz-w79-copytest` не удалён), `ap_find_records
+migrations` (w79-04 = `mUBsgkhFz8Z5jv7uToQ80`), `ap_validate_flow bcast-step`
+57/57. Офлайн: `check-export-secrets.sh`, `check-texts.py` 254/0,
+`check-commands.py`, `check-agents.py`, `prototypes/check.mjs` — все exit 0.
+
+**Не проверено:** живой Telegram e2e и живой 429/403 — как и в круге 1, на
+владельце/при первой возможности.
+
+**Мелочь (не замечание):** в разделе «Как проверено» журнала всё ещё указано
+`check-texts.py 253/0` — по факту 254/0 (строка не обновлена вместе с правкой;
+на систему не влияет).
 
 ## Хвосты и блокеры
 
