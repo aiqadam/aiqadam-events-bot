@@ -23,7 +23,7 @@
 | Поле | Что |
 |---|---|
 | `initData` | `Telegram.WebApp.initData` страницы |
-| `action` | `load` — отдать событие для правки; `save` — создать (`eventId` пустой) или обновить; `list` — события чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров события, выдача и отзыв прав; `staff_search` — поиск кандидатов в контролёры по имени/`@username` (W44); `participants` — участники события: счётчики, строки и готовые строки CSV/JSON (W13); `resolve_geo` — координаты и адрес орг-ссылки Яндекс.Карт через Геокодер (W42, Q55) |
+| `action` | `load` — отдать событие для правки; `save` — создать (`eventId` пустой) или обновить; `list` — события чаптера для `#/manage` без `:id` (W37); `staff_list` / `staff_add` / `staff_remove` — список контролёров события, выдача и отзыв прав; `staff_search` — поиск кандидатов в контролёры по имени/`@username` (W44); `participants` — участники события: счётчики, строки и готовые строки CSV/JSON (W13); `resolve_geo` — координаты и адрес орг-ссылки Яндекс.Карт через Геокодер (W42, Q55); `delete` — удаление черновика с нулём регистраций (W66, OWN-4.1) |
 | `staffTelegramId` | только при `staff_add`/`staff_remove`: `telegram_id` контролёра; формат (цифры 8–16) проверяет `step_20` |
 | `query` | только при `staff_search`: строка поиска (W44); минимум длины и сравнение — в CODE-шаге поиска, здесь только обрезка до 100 |
 | `link` | только при `resolve_geo`: ссылка Яндекс.Карт; из неё берётся **только числовой `oid`** (хост — `yandex.*`, путь `/maps/org/…`), в Геокодер уходит `uri=ymapsbm1://org?oid=…`; короткие `maps/-/…` не поддержаны — в них нет `oid` |
@@ -45,7 +45,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_2 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` |
 | step_3 (Otherwise) | CODE «invalid init data response» | `checkin.unauthorized`, `httpStatus: 401` |
 | step_4 (Otherwise) | `return_response` (`stop`) | ответ `401` |
-| step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action`; `fields` |
+| step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action` — по белому списку (`load`/`save`/`staff_*`/`staff_search`/`list`/`resolve_geo`/`participants`/`feedback_list`/`delete`, всё прочее → `unknown`, `step_7` ответит 400); `fields` |
 | step_18 (valid) | `tables-find-records staff` | строка `staff` вызывающего по `telegram_id` (`limit: 1`) |
 | step_19 (staff) | `tables-find-records event_staff` | строки события (`event_id`, проекция, `limit: 200`) — список и поиск активной строки |
 | step_52 (staff) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+имя+`username`) — join имён для строк списка; при росте упрётся в Q31, как и широкое чтение на `/start` |
@@ -71,8 +71,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_46 (participants) | CODE «participants: shape + export» | гейт повторно по полям (Q25), схлопывание дублей по `telegram_id`, счётчики, строки, готовые строки CSV/JSON; `outcome` = `done` / `error` |
 | step_47 (participants) | `return_response` (`stop`) | `200 {ok:true, title, counters, rows, count, csv, json}` / `403` |
 | step_6 (valid) | `tables-find-records events` | событие по `id`, `limit: 1` |
-| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового события, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `participants` / `error` |
-| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `events_list` / `geo_link` / `search` / `participants` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
+| step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового события, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `participants` / `feedback` / `delete` / `error` |
+| step_8 (valid) | ROUTER: `save` / `load` / `staff` / `events_list` / `geo_link` / `search` / `participants` / `feedback` / `delete` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
 | step_9 (Otherwise) | `return_response` (`stop`) | `403` forbidden / `422` validation / `400` |
 | step_10 (load) | `return_response` (`stop`) | `200`, `event` — поля события для формы (+ `hasPhoto`, `inviteLink` для published) |
 | step_11 (save) | `tables-upsert-records events` | запись по ключу `id` (пишет `staff_id` и `chapter_id`) |
@@ -89,6 +89,13 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_35 (geo_link) | `@aiqadam/qadam-http : send_request` | `GET https://geocode-maps.yandex.ru/1.x/` (`apikey` — `{{variables['YANDEX_GEOCODER_API_KEY']}}`, `uri`, `format=json`, `lang=ru_RU`, `results=1`), `failureMode: continue_all`, `timeout: 10`. **Именно `1.x`:** тот же ключ на `/v1/` отвечает `403 Invalid api key` — различающий прогон в журнале W42 |
 | step_36 (geo_link) | CODE «geo link: parse response» | разбирает обе формы вывода `http` (2xx — плоская, 4xx/5xx — `response`); `Point.pos` = «долгота широта» → `lat`/`lon` (6 знаков), адрес — `Address.formatted` (подряд идущие одинаковые компоненты схлопываются, ≤300); отказ — `422 {fields:{geo:'manage.geo.org_fail'}}` |
 | step_37 (geo_link) | `return_response` (`stop`) | `200 {ok:true, lat, lon, address}` или `422` с ключом ошибки |
+| step_53 (delete) | `tables-find-records registrations` | есть ли хоть одна строка события (`event_id`, проекция `event_id`, `limit: 1`) — «ноль регистраций» считается по факту строки, а не по `status` |
+| step_54 (delete) | `tables-find-records event_staff` | есть ли связанные контролёры (`event_id`, проекция `event_id`, `limit: 1`) — блокируют удаление |
+| step_55 (delete) | CODE «delete: decide» | серверная проверка (Q25): регистрации → `has_registrations`; не `draft` → `not_draft` (Part 1, OWN-4.1); `event_staff` → `has_staff`; иначе `canDelete:true` с внутренним `recordId` записи `events` |
+| step_56 (delete) | ROUTER: `canDelete` / `Otherwise` | по `{{step_55['output'].canDelete}}` (BOOLEAN) — гейт, а не `continueOnFailure` (гоча 15) |
+| step_57 (canDelete) | `tables-delete-record events` | жёсткое удаление по `records_ids:[recordId]` (внутренний id, гоча 18) — ветка достижима только при `canDelete:true`, пустого `records_ids` не бывает |
+| step_58 (canDelete) | `return_response` (`stop`) | `200 {ok:true, deleted:true, reason:"", text}` |
+| step_59 (Otherwise) | `return_response` (`stop`) | `409 {ok:false, deleted:false, reason, text}` (`has_registrations`/`not_draft`/`has_staff`) или `500` |
 
 ### Контракт ответа (согласован с `#/manage` SPA)
 
@@ -108,6 +115,11 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `participants` отказ | 403 | `{ok:false, error:"forbidden", text}` — не-staff, чужой чаптер, нет события: один ответ, как у `load` |
 | `resolve_geo` успех | 200 | `{ok:true, lat, lon, address}` — координаты (6 знаков) и адрес из Геокодера; `address` может быть пустым |
 | `resolve_geo` отказ (нет `oid` в ссылке, организация не найдена, Геокодер недоступен или ключ отвергнут) | 422 | `{ok:false, error:"validation", text, fields:{geo:"manage.geo.org_fail"}}` — страница переводит ключ и оставляет шит открытым; фолбэк — координаты текстом |
+| `delete` успех (W66) | 200 | `{ok:true, deleted:true, reason:"", text}` — строка удалена из `events` |
+| `delete`: есть регистрации | 409 | `{ok:false, deleted:false, reason:"has_registrations", text}` — удалять нельзя, только отменять |
+| `delete`: не черновик | 409 | `{ok:false, deleted:false, reason:"not_draft", text}` — Part 1 удаляет только `draft`; опубликованное с нулём регистраций — Phase 3 (Part 2, #118) |
+| `delete`: связанные контролёры | 409 | `{ok:false, deleted:false, reason:"has_staff", text}` — снимите их, потом удаляйте |
+| `delete`: не-staff / чужой чаптер / нет события | 403 | `{ok:false, error:"forbidden", text}` — один ответ, как у `load` |
 | нечисловой `staffTelegramId` | 422 | `{ok:false, error:"validation", text, fields:{telegram_id:"manage.err.bad_telegram_id"}, staff:[...]}` — страница переводит ключ |
 
 Тело ответа собирается из вывода шага-решения своей ветки, поэтому `return_response`
@@ -274,7 +286,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 
 ## Зависимости
 
-- **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение и upsert),
+- **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение, upsert и удаление черновика — `tables-delete-record`, W66),
   `staff` (`PnDy6gw9tlLUqTGk2EOUn`, чтение), `registrations`
   (`SM8tMxfQuQCHRDdAiNJyQ`, чтение), `event_staff` (`t1g8Vae3iEoDk93D6Rle7`,
   чтение / create / update), `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение:
