@@ -6,7 +6,7 @@
   ],
   "displayName": "bcast-step",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -117,10 +117,12 @@
                               "values": {
                                 "values": [
                                   {
+                                    "0KCxjpZONVc1URjFBBlvr": "{{step_7['output'].mediaChatId}}",
                                     "6ITY7K1B8OgqL0lm2Idbg": "draft",
                                     "6rmHz7Lc1djdjFpjAmO5V": "registered",
                                     "AQs7BEfN0hZ3OjPZXZNsc": "{{trigger['output'].data.telegramId}}",
                                     "AXQRMe7knv8NFDCckziRD": "{{step_7['output'].bid}}",
+                                    "QkMPuoMtVWmQhWMpfflFC": "{{step_7['output'].mediaMessageId}}",
                                     "YF9ryxUV0d3RK74xPjZkq": "{{step_7['output'].body}}",
                                     "bU9nqeQ2wZo2bMr2kBnNj": "None",
                                     "vGB2xSw6CWfuMilj0wAlH": "{{step_7['output'].eventId}}"
@@ -211,7 +213,6 @@
                           "bcast.btn.cancel": "Отменить рассылку",
                           "bcast.btn.seg_all": "Все согласившиеся",
                           "bcast.btn.seg_attended": "Пришедшие",
-                          "bcast.btn.seg_noshow": "Не пришедшие",
                           "bcast.btn.seg_registered": "Зарегистрированные",
                           "bcast.segment.all_consent": "Все, кто согласился на анонсы",
                           "bcast.segment.checked_in": "Пришедшие на событие",
@@ -223,7 +224,7 @@
                         }
                       },
                       "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fresh24h = (updatedAt) => {\n    const ms = parseDate(updatedAt);\n    return isFinite(ms) && (Date.now() - ms) <= 24 * 3600 * 1000;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const nowIso = new Date().toISOString();\n  const deny = (errText) => ({ verdict: 'deny', errText: errText, bid: '', text: '', replyMarkup: null, body: '', eventId: '', nowIso: nowIso });\n  const srows = arr(inputs.sessionRecords).map(flat)\n    .filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const s = srows[0];\n  if (!s || str(s.scenario) !== 'broadcast' || str(s.step) !== 'await_event' || !fresh24h(s.updated_at))\n    return deny(t('common.err.session_expired'));\n  let body = '', createdBy = '';\n  try { const d = JSON.parse(str(s.draft) || '{}'); body = str(d.body); createdBy = str(d.createdBy); } catch (e) { body = ''; }\n  if (body === '' || (createdBy !== '' && createdBy !== str(inputs.telegramId)))\n    return deny(t('common.err.session_expired'));\n  const erows = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(inputs.eventId));\n  const ev = erows[0];\n  if (!ev) return deny(t('common.err.event_not_found'));\n  if (str(ev.status) !== 'published' && str(ev.status) !== 'finished')\n    return deny(t('common.err.event_not_found'));\n  const staffRows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const chapterId = str(ev.chapter_id || '');\n  const srow = staffRows[0];\n  const sc = srow ? str(srow.chapter_id || '') : '';\n  if (!srow || (sc !== '' && chapterId !== '' && sc !== chapterId)) return deny(t('common.err.forbidden'));\n  const bid = 'b' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);\n  const segBtn = (seg, label) => [{ text: label, callback_data: 'bcast:seg:' + bid + ':' + seg }];\n  const kb = [\n    segBtn('registered', t('bcast.btn.seg_registered')),\n    segBtn('attended', t('bcast.btn.seg_attended')),\n    segBtn('no_show', t('bcast.btn.seg_noshow')),\n    segBtn('all_consent', t('bcast.btn.seg_all')),\n    [{ text: t('bcast.btn.cancel'), callback_data: 'bcast:cancel:' + bid }],\n  ];\n  const text = t('bcast.ask.segment')\n    + '\\n— ' + t('bcast.segment.registered')\n    + '\\n— ' + t('bcast.segment.checked_in')\n    + '\\n— ' + t('bcast.segment.no_show')\n    + '\\n— ' + t('bcast.segment.all_consent');\n  return { verdict: 'ok', errText: '', bid: bid, text: text, replyMarkup: { inline_keyboard: kb }, body: body, eventId: str(ev.id), nowIso: nowIso };\n};",
+                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fresh24h = (updatedAt) => {\n    const ms = parseDate(updatedAt);\n    return isFinite(ms) && (Date.now() - ms) <= 24 * 3600 * 1000;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const nowIso = new Date().toISOString();\n  const deny = (errText) => ({ verdict: 'deny', errText: errText, bid: '', text: '', replyMarkup: null, body: '', eventId: '', mediaChatId: '', mediaMessageId: '', nowIso: nowIso });\n  const srows = arr(inputs.sessionRecords).map(flat)\n    .filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const s = srows[0];\n  if (!s || str(s.scenario) !== 'broadcast' || str(s.step) !== 'await_event' || !fresh24h(s.updated_at))\n    return deny(t('common.err.session_expired'));\n  let body = '', createdBy = '', mediaChatId = '', mediaMessageId = '';\n  try {\n    const d = JSON.parse(str(s.draft) || '{}');\n    body = str(d.body);\n    createdBy = str(d.createdBy);\n    mediaChatId = str(d.mediaChatId);\n    mediaMessageId = str(d.mediaMessageId);\n  } catch (e) { body = ''; }\n  // W79 (#131): фото без подписи допустимо — тело пустое, но есть источник\n  // copyMessage; пустыми оба не могут быть.\n  if ((body === '' && mediaMessageId === '') || (createdBy !== '' && createdBy !== str(inputs.telegramId)))\n    return deny(t('common.err.session_expired'));\n  const erows = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(inputs.eventId));\n  const ev = erows[0];\n  if (!ev) return deny(t('common.err.event_not_found'));\n  if (str(ev.status) !== 'published' && str(ev.status) !== 'finished')\n    return deny(t('common.err.event_not_found'));\n  const staffRows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.telegram_id) === str(inputs.telegramId));\n  const chapterId = str(ev.chapter_id || '');\n  const srow = staffRows[0];\n  const sc = srow ? str(srow.chapter_id || '') : '';\n  if (!srow || (sc !== '' && chapterId !== '' && sc !== chapterId)) return deny(t('common.err.forbidden'));\n  const bid = 'b' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);\n  const segBtn = (seg, label) => [{ text: label, callback_data: 'bcast:seg:' + bid + ':' + seg }];\n  const kb = [\n    segBtn('registered', t('bcast.btn.seg_registered')),\n    segBtn('attended', t('bcast.btn.seg_attended')),\n    segBtn('no_show', t('bcast.btn.seg_noshow')),\n    segBtn('all_consent', t('bcast.btn.seg_all')),\n    [{ text: t('bcast.btn.cancel'), callback_data: 'bcast:cancel:' + bid }],\n  ];\n  const text = t('bcast.ask.segment')\n    + '\\n— ' + t('bcast.segment.registered')\n    + '\\n— ' + t('bcast.segment.checked_in')\n    + '\\n— ' + t('bcast.segment.no_show')\n    + '\\n— ' + t('bcast.segment.all_consent');\n  return { verdict: 'ok', errText: '', bid: bid, text: text, replyMarkup: { inline_keyboard: kb }, body: body, eventId: str(ev.id), mediaChatId: mediaChatId, mediaMessageId: mediaMessageId, nowIso: nowIso };\n};",
                         "packageJson": "{}"
                       }
                     },
@@ -964,7 +965,7 @@
                         "valid": true
                       },
                       "settings": {
-                        "actionName": "send_text_message",
+                        "actionName": "custom_api_call",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": true
@@ -974,13 +975,24 @@
                           }
                         },
                         "input": {
-                          "chat_id": "{{trigger['output'].data.chatId}}",
-                          "disable_notification": false,
-                          "format": "None",
-                          "message": "{{step_28['output'].body}}",
-                          "protect_content": false,
-                          "reply_markup": "{{step_28['output'].unsubMarkup}}",
-                          "web_page_preview": false
+                          "body": {
+                            "data": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "from_chat_id": "{{step_28['output'].mediaChatId}}",
+                              "message_id": "{{step_28['output'].mediaMessageId}}",
+                              "reply_markup": "{{step_28['output'].unsubMarkup}}"
+                            }
+                          },
+                          "body_type": "json",
+                          "failsafe": false,
+                          "followRedirects": false,
+                          "headers": {},
+                          "method": "POST",
+                          "queryParams": {},
+                          "response_is_binary": false,
+                          "url": {
+                            "url": "/copyMessage"
+                          }
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
@@ -1064,7 +1076,7 @@
                     }
                   },
                   "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return { ok: false, body: '', bid: '', unsubMarkup: null, errText: t('common.err.generic'), confirmText: t('bcast.test.sent'), failText: t('common.err.generic') };\n  if (str(b.created_by) !== str(inputs.telegramId)) return { ok: false, body: '', bid: '', unsubMarkup: null, errText: t('common.err.forbidden'), confirmText: t('bcast.test.sent'), failText: t('common.err.generic') };\n  if (str(b.body) === '') return { ok: false, body: '', bid: '', unsubMarkup: null, errText: t('common.err.generic'), confirmText: t('bcast.test.sent'), failText: t('common.err.generic') };\n  return {\n    ok: true, body: str(b.body), bid: str(b.id), errText: '',\n    confirmText: t('bcast.test.sent'), failText: t('common.err.generic'),\n    unsubMarkup: { inline_keyboard: [[{ text: t('bcast.btn.unsubscribe'), callback_data: 'bcast:unsub:' + str(b.id) }]] },\n  };\n};",
+                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const deny = (errText) => ({ ok: false, body: '', bid: '', unsubMarkup: null, errText: errText, confirmText: t('bcast.test.sent'), failText: t('common.err.generic'), mediaChatId: '', mediaMessageId: '' });\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return deny(t('common.err.generic'));\n  if (str(b.created_by) !== str(inputs.telegramId)) return deny(t('common.err.forbidden'));\n  // W79 (#131): фото без подписи допустимо — тело пустое, но есть источник\n  // copyMessage; тест идёт копией исходного поста, без источника не собрать.\n  if (str(b.body) === '' && str(b.media_message_id) === '') return deny(t('common.err.generic'));\n  if (str(b.media_message_id) === '') return deny(t('common.err.generic'));\n  return {\n    ok: true, body: str(b.body), bid: str(b.id), errText: '',\n    confirmText: t('bcast.test.sent'), failText: t('common.err.generic'),\n    mediaChatId: str(b.media_chat_id), mediaMessageId: str(b.media_message_id),\n    unsubMarkup: { inline_keyboard: [[{ text: t('bcast.btn.unsubscribe'), callback_data: 'bcast:unsub:' + str(b.id) }]] },\n  };\n};",
                     "packageJson": "{}"
                   }
                 },
