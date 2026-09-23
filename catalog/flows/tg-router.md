@@ -32,6 +32,8 @@
    получатель — гость); любой другой `bcast:*` → `bcast-step`;
    пересланное сообщение без команды и с непустым текстом/подписью →
    `bcast-draft` (staff-гейт внутри, не-staff уходит в тишину).
+6a. Колбэк меню (W68, #120): префикс `menu:` (кнопка «Как сделать рассылку»,
+   `menu:bcast_help`) → `menu`. Не команда, ADR-0025 не затронут.
 7. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
    визарда в `sessions`) обработчика не имеют: их колбэки и нетекстовые
    апдейты уходят в `Otherwise` молча. Обычный текст отвечает меню по п. 8 —
@@ -65,12 +67,12 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод `ob_await_*` перекрывает его (п. 9 контракта) |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`; **колбэки меню — по префиксу `menu:`** (W68, #120). Проверки рассылок и меню стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод `ob_await_*` перекрывает его (п. 9 контракта) |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
 | step_20 | `callFlow reg-profile` (`queue`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
 | step_21 | `callFlow staff-accept` (`queue`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
-| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025) и обычный текст (W73, #125); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId` |
+| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025), обычный текст (W73, #125) и колбэк `menu:*` (W68, #120); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
@@ -148,3 +150,10 @@
 - **Вход в создание события — кнопка «Новое событие» в карточке меню**
   (`web_app` на `#/manage`), не команда. Правка существующего события
   появится списком в `#/manage` (W37); до W37 её нет — цена ADR-0025.
+- **Колбэк `menu:*` ведёт в `menu` (W68, #120).** Кнопка «Как сделать
+  рассылку» в меню организатора шлёт `menu:bcast_help`; `step_10` ловит
+  префикс `menu:` до командной цепочки, `step_15` передаёт в меню
+  `callbackData`/`callbackQueryId`. Различающий прогон: колбэк
+  `menu:bcast_help` → `step_10` `route: menu`, `step_11` ветка `menu`; меню
+  отдаёт инструкцию `bcast.howto.*`. `step_15` — `queue` (fire-and-forget),
+  как остальные касания.

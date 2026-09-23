@@ -1182,13 +1182,53 @@
                           "displayName": "read participants names",
                           "name": "step_45",
                           "nextAction": {
-                            "displayName": "participants: shape + export",
-                            "name": "step_46",
+                            "displayName": "read consent users",
+                            "name": "step_60",
                             "nextAction": {
-                              "displayName": "respond (participants)",
-                              "name": "step_47",
+                              "displayName": "participants: shape + export",
+                              "name": "step_46",
+                              "nextAction": {
+                                "displayName": "respond (participants)",
+                                "name": "step_47",
+                                "settings": {
+                                  "actionName": "return_response",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "fields": {
+                                      "body": {
+                                        "count": "{{step_46['output'].count}}",
+                                        "counters": "{{step_46['output'].counters}}",
+                                        "csv": "{{step_46['output'].csv}}",
+                                        "error": "{{step_46['output'].error}}",
+                                        "eventId": "{{step_46['output'].eventId}}",
+                                        "fields": "{{step_46['output'].fields}}",
+                                        "json": "{{step_46['output'].json}}",
+                                        "ok": "{{step_46['output'].ok}}",
+                                        "rows": "{{step_46['output'].rows}}",
+                                        "text": "{{step_46['output'].text}}",
+                                        "title": "{{step_46['output'].title}}"
+                                      },
+                                      "headers": {},
+                                      "status": "{{step_46['output'].httpStatus}}"
+                                    },
+                                    "respond": "stop",
+                                    "responseType": "json"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-webhook",
+                                  "qadamVersion": "0.1.35"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
                               "settings": {
-                                "actionName": "return_response",
                                 "errorHandlingOptions": {
                                   "continueOnFailure": {
                                     "value": false
@@ -1198,34 +1238,34 @@
                                   }
                                 },
                                 "input": {
-                                  "fields": {
-                                    "body": {
-                                      "count": "{{step_46['output'].count}}",
-                                      "counters": "{{step_46['output'].counters}}",
-                                      "csv": "{{step_46['output'].csv}}",
-                                      "error": "{{step_46['output'].error}}",
-                                      "eventId": "{{step_46['output'].eventId}}",
-                                      "fields": "{{step_46['output'].fields}}",
-                                      "json": "{{step_46['output'].json}}",
-                                      "ok": "{{step_46['output'].ok}}",
-                                      "rows": "{{step_46['output'].rows}}",
-                                      "text": "{{step_46['output'].text}}",
-                                      "title": "{{step_46['output'].title}}"
-                                    },
-                                    "headers": {},
-                                    "status": "{{step_46['output'].httpStatus}}"
+                                  "consentRows": "{{step_60['output']}}",
+                                  "event": "{{step_6['output']}}",
+                                  "hmac": "{{step_1['output'].data}}",
+                                  "regRows": "{{step_44['output']}}",
+                                  "req": "{{step_5['output']}}",
+                                  "staff": "{{step_18['output']}}",
+                                  "texts": {
+                                    "manage.err.forbidden": "Нет прав на правку этого события",
+                                    "manage.parts.col_checked_in": "Время чекина",
+                                    "manage.parts.col_name": "Имя",
+                                    "manage.parts.col_status": "Статус",
+                                    "manage.parts.col_telegram_id": "telegram_id",
+                                    "myreg.status.cancelled": "отменена",
+                                    "myreg.status.checked_in": "был на событии",
+                                    "myreg.status.registered": "зарегистрирован"
                                   },
-                                  "respond": "stop",
-                                  "responseType": "json"
+                                  "userRows": "{{step_45['output']}}"
                                 },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-webhook",
-                                "qadamVersion": "0.1.35"
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  // W13: участники события (OWN-7) + строки CSV/JSON для экспорта (OWN-8).\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20/step_42).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', counters: { registered: 0, checked_in: 0, cancelled: 0, all_consent: 0 },\n    rows: [], count: 0, csv: '', json: '[]'\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load` (Q25) ----------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи, а не как\n  // непустота выборки: «не staff», «чужой чаптер» и «нет события» отвечают\n  // одинаково — одним 403.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- схлопывание дублей по telegram_id (DATA-MODEL, IDM-1/IDM-2) ------------\n  // Уникальности в БД нет (ADR-0003): одна пара (event_id, telegram_id) может\n  // дать несколько строк. Статус берёт самая ранняя строка по registered_at —\n  // эталон fn-find-registration (с ним же сверяется чекин, расходиться нельзя);\n  // пришёл = непустой checked_in_at хоть в одной строке (IDM-2), показывается\n  // самое раннее время.\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const rows = arr(inputs.regRows).map(flat)\n    .filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  const ratMs = (r) => parseIso(str(r.registered_at));\n  rows.sort((a, b) => {\n    const x = ratMs(a), y = ratMs(b);\n    if (isFinite(x) && isFinite(y)) return x - y;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const byId = {};\n  rows.forEach((r) => {\n    const id = str(r.telegram_id);\n    if (!byId[id]) byId[id] = { status: 'registered', checked_in_at: '', seen: false };\n    const cur = byId[id];\n    if (!cur.seen) {\n      cur.status = str(r.status) === 'cancelled' ? 'cancelled' : 'registered';\n      cur.seen = true;\n    }\n    const cin = str(r.checked_in_at);\n    if (cin !== '') {\n      const ms = parseIso(cin), curMs = parseIso(cur.checked_in_at);\n      if (cur.checked_in_at === '' || (isFinite(ms) && (!isFinite(curMs) || ms < curMs))) cur.checked_in_at = cin;\n    }\n  });\n\n  // --- имена из users (DAT-1: только подписи, решение — по telegram_id) -------\n  // Кого нет в users — показать нечего: имя заменяет сам telegram_id, строка\n  // не теряется (экспорт обязан сходиться со счётчиками).\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  // --- даты — Asia/Tashkent словами (OWN-3) -----------------------------------\n  // Формат фиксирован строкой «DD.MM.YYYY HH:mm»: читается в RU-Excel как\n  // дата, в JSON — однозначен. Строится из частей (formatToParts), а не\n  // готовой строкой Intl — разделители не зависят от версии ICU.\n  const dtf = new Intl.DateTimeFormat('ru-RU', {\n    timeZone: 'Asia/Tashkent',\n    day: '2-digit', month: '2-digit', year: 'numeric',\n    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'\n  });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: сначала пришедшие, затем зарегистрированные, затем отмены -----\n  // Внутри группы — по имени (простое сравнение строк, без localeCompare:\n  // его порядок зависит от ICU рантайма). Тот же порядок — в CSV и JSON.\n  const groupOf = (p) => (p.checked_in_at !== '' ? 0 : (p.status === 'registered' ? 1 : 2));\n  const shaped = Object.keys(byId).map((id) => ({\n    telegram_id: id,\n    name: personName(id),\n    status: byId[id].status,\n    checked_in_at: fmtTashkent(byId[id].checked_in_at)\n  }));\n  shaped.sort((a, b) => {\n    const g = groupOf(a) - groupOf(b);\n    if (g !== 0) return g;\n    if (a.name < b.name) return -1;\n    if (a.name > b.name) return 1;\n    return a.telegram_id < b.telegram_id ? -1 : 1;\n  });\n\n  // --- счётчики — по УНИКАЛЬНЫМ telegram_id, не строкам (DATA-MODEL) ----------\n  // registered включает пришедших (статус у них registered) — как в эталоне\n  // (48 ≥ 31) и формулах DATA-MODEL: зарегистрировано = status=registered;\n  // пришло = checked_in_at непусто; отменило = status=cancelled.\n  const counters = { registered: 0, checked_in: 0, cancelled: 0, all_consent: 0 };\n  shaped.forEach((p) => {\n    if (p.status === 'registered') counters.registered += 1;\n    else counters.cancelled += 1;\n    if (p.checked_in_at !== '') counters.checked_in += 1;\n  });\n\n  // --- W68 (#120): «подписчики анонсов» (all_consent) -------------------------\n  // Глобальный сегмент, не по событию: те же правила, что в bcast-step/bcast-run\n  // (consent_marketing = true, кроме заблокировавших бота), по уникальным\n  // telegram_id. Счётчик для таба «Рассылка» в Mini App; событие ему не нужно.\n  const allConsent = {};\n  arr(inputs.consentRows).map(flat).forEach((u) => {\n    const id = str(u.telegram_id);\n    if (id === '' || str(u.consent_marketing) !== 'true' || str(u.blocked_bot) === 'true') return;\n    allConsent[id] = true;\n  });\n  counters.all_consent = Object.keys(allConsent).length;\n\n  // --- экспорт: собирает сервер одной строкой (OWN-8) -------------------------\n  // Файл строит сервер, а не SPA: экранирование и даты в одном месте, рядом\n  // со счётчиками — расхождения «на экране одно, в файле другое» нет.\n  // Статус — русским текстом (тот же словарь, что экран: myreg.status.*);\n  // пришедший показывается «был на событии», как в эталоне.\n  const statusText = (p) => {\n    if (p.checked_in_at !== '') return t('myreg.status.checked_in');\n    if (p.status === 'cancelled') return t('myreg.status.cancelled');\n    return t('myreg.status.registered');\n  };\n  // CSV-инъекция: значение, начинающееся с = + - @, получает префикс '\n  // (запятая не входит: разделитель — ';' под RU-Excel). Кавычки удваиваются,\n  // каждое поле — в кавычках: один инвариант на все поля, без исключений.\n  const csvEsc = (v) => {\n    let s = String(v);\n    if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n    return '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  };\n  const header = [t('manage.parts.col_telegram_id'), t('manage.parts.col_name'), t('manage.parts.col_status'), t('manage.parts.col_checked_in')].map(csvEsc).join(';');\n  const csvBody = shaped.map((p) => [p.telegram_id, p.name, statusText(p), p.checked_in_at].map(csvEsc).join(';')).join('\\n');\n  // BOM — первый символ строки: любой потребитель, сохранивший её как есть,\n  // получает файл с целой кириллицей в Excel. JSON — без BOM (валидность).\n  const csv = '﻿' + header + (csvBody ? '\\n' + csvBody : '');\n  const json = JSON.stringify({\n    event: { id: eventId, title: title },\n    exported_at: fmtTashkent(new Date(Date.now()).toISOString()),\n    counters: counters,\n    rows: shaped.map((p) => ({ telegram_id: p.telegram_id, name: p.name, status: statusText(p), checked_in_at: p.checked_in_at }))\n  }, null, 2);\n\n  return respond('done', 200, {\n    ok: true, title: title,\n    counters: counters, rows: shaped, count: shaped.length,\n    csv: csv, json: json\n  });\n};",
+                                  "packageJson": "{}"
+                                }
                               },
-                              "type": "PIECE",
+                              "type": "CODE",
                               "valid": true
                             },
                             "settings": {
+                              "actionName": "tables-find-records",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -1235,29 +1275,29 @@
                                 }
                               },
                               "input": {
-                                "event": "{{step_6['output']}}",
-                                "hmac": "{{step_1['output'].data}}",
-                                "regRows": "{{step_44['output']}}",
-                                "req": "{{step_5['output']}}",
-                                "staff": "{{step_18['output']}}",
-                                "texts": {
-                                  "manage.err.forbidden": "Нет прав на правку этого события",
-                                  "manage.parts.col_checked_in": "Время чекина",
-                                  "manage.parts.col_name": "Имя",
-                                  "manage.parts.col_status": "Статус",
-                                  "manage.parts.col_telegram_id": "telegram_id",
-                                  "myreg.status.cancelled": "отменена",
-                                  "myreg.status.checked_in": "был на событии",
-                                  "myreg.status.registered": "зарегистрирован"
+                                "columns": [
+                                  "JtylZU291K7TuMn9c9F2t",
+                                  "FpWznk9Fgl8wUXXUKolRu",
+                                  "ja2S7DwVun5AKs3Jk7jK6"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": "consent_marketing",
+                                      "operator": "eq",
+                                      "value": "true"
+                                    }
+                                  ]
                                 },
-                                "userRows": "{{step_45['output']}}"
+                                "limit": 500,
+                                "record_ids": [],
+                                "table_id": "xHhYjhwqKdONkrYJGcBsz"
                               },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  // W13: участники события (OWN-7) + строки CSV/JSON для экспорта (OWN-8).\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20/step_42).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', counters: { registered: 0, checked_in: 0, cancelled: 0 },\n    rows: [], count: 0, csv: '', json: '[]'\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load` (Q25) ----------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи, а не как\n  // непустота выборки: «не staff», «чужой чаптер» и «нет события» отвечают\n  // одинаково — одним 403.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- схлопывание дублей по telegram_id (DATA-MODEL, IDM-1/IDM-2) ------------\n  // Уникальности в БД нет (ADR-0003): одна пара (event_id, telegram_id) может\n  // дать несколько строк. Статус берёт самая ранняя строка по registered_at —\n  // эталон fn-find-registration (с ним же сверяется чекин, расходиться нельзя);\n  // пришёл = непустой checked_in_at хоть в одной строке (IDM-2), показывается\n  // самое раннее время.\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const rows = arr(inputs.regRows).map(flat)\n    .filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  const ratMs = (r) => parseIso(str(r.registered_at));\n  rows.sort((a, b) => {\n    const x = ratMs(a), y = ratMs(b);\n    if (isFinite(x) && isFinite(y)) return x - y;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const byId = {};\n  rows.forEach((r) => {\n    const id = str(r.telegram_id);\n    if (!byId[id]) byId[id] = { status: 'registered', checked_in_at: '', seen: false };\n    const cur = byId[id];\n    if (!cur.seen) {\n      cur.status = str(r.status) === 'cancelled' ? 'cancelled' : 'registered';\n      cur.seen = true;\n    }\n    const cin = str(r.checked_in_at);\n    if (cin !== '') {\n      const ms = parseIso(cin), curMs = parseIso(cur.checked_in_at);\n      if (cur.checked_in_at === '' || (isFinite(ms) && (!isFinite(curMs) || ms < curMs))) cur.checked_in_at = cin;\n    }\n  });\n\n  // --- имена из users (DAT-1: только подписи, решение — по telegram_id) -------\n  // Кого нет в users — показать нечего: имя заменяет сам telegram_id, строка\n  // не теряется (экспорт обязан сходиться со счётчиками).\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  // --- даты — Asia/Tashkent словами (OWN-3) -----------------------------------\n  // Формат фиксирован строкой «DD.MM.YYYY HH:mm»: читается в RU-Excel как\n  // дата, в JSON — однозначен. Строится из частей (formatToParts), а не\n  // готовой строкой Intl — разделители не зависят от версии ICU.\n  const dtf = new Intl.DateTimeFormat('ru-RU', {\n    timeZone: 'Asia/Tashkent',\n    day: '2-digit', month: '2-digit', year: 'numeric',\n    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'\n  });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: сначала пришедшие, затем зарегистрированные, затем отмены -----\n  // Внутри группы — по имени (простое сравнение строк, без localeCompare:\n  // его порядок зависит от ICU рантайма). Тот же порядок — в CSV и JSON.\n  const groupOf = (p) => (p.checked_in_at !== '' ? 0 : (p.status === 'registered' ? 1 : 2));\n  const shaped = Object.keys(byId).map((id) => ({\n    telegram_id: id,\n    name: personName(id),\n    status: byId[id].status,\n    checked_in_at: fmtTashkent(byId[id].checked_in_at)\n  }));\n  shaped.sort((a, b) => {\n    const g = groupOf(a) - groupOf(b);\n    if (g !== 0) return g;\n    if (a.name < b.name) return -1;\n    if (a.name > b.name) return 1;\n    return a.telegram_id < b.telegram_id ? -1 : 1;\n  });\n\n  // --- счётчики — по УНИКАЛЬНЫМ telegram_id, не строкам (DATA-MODEL) ----------\n  // registered включает пришедших (статус у них registered) — как в эталоне\n  // (48 ≥ 31) и формулах DATA-MODEL: зарегистрировано = status=registered;\n  // пришло = checked_in_at непусто; отменило = status=cancelled.\n  const counters = { registered: 0, checked_in: 0, cancelled: 0 };\n  shaped.forEach((p) => {\n    if (p.status === 'registered') counters.registered += 1;\n    else counters.cancelled += 1;\n    if (p.checked_in_at !== '') counters.checked_in += 1;\n  });\n\n  // --- экспорт: собирает сервер одной строкой (OWN-8) -------------------------\n  // Файл строит сервер, а не SPA: экранирование и даты в одном месте, рядом\n  // со счётчиками — расхождения «на экране одно, в файле другое» нет.\n  // Статус — русским текстом (тот же словарь, что экран: myreg.status.*);\n  // пришедший показывается «был на событии», как в эталоне.\n  const statusText = (p) => {\n    if (p.checked_in_at !== '') return t('myreg.status.checked_in');\n    if (p.status === 'cancelled') return t('myreg.status.cancelled');\n    return t('myreg.status.registered');\n  };\n  // CSV-инъекция: значение, начинающееся с = + - @, получает префикс '\n  // (запятая не входит: разделитель — ';' под RU-Excel). Кавычки удваиваются,\n  // каждое поле — в кавычках: один инвариант на все поля, без исключений.\n  const csvEsc = (v) => {\n    let s = String(v);\n    if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n    return '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  };\n  const header = [t('manage.parts.col_telegram_id'), t('manage.parts.col_name'), t('manage.parts.col_status'), t('manage.parts.col_checked_in')].map(csvEsc).join(';');\n  const csvBody = shaped.map((p) => [p.telegram_id, p.name, statusText(p), p.checked_in_at].map(csvEsc).join(';')).join('\\n');\n  // BOM — первый символ строки: любой потребитель, сохранивший её как есть,\n  // получает файл с целой кириллицей в Excel. JSON — без BOM (валидность).\n  const csv = '﻿' + header + (csvBody ? '\\n' + csvBody : '');\n  const json = JSON.stringify({\n    event: { id: eventId, title: title },\n    exported_at: fmtTashkent(new Date(Date.now()).toISOString()),\n    counters: counters,\n    rows: shaped.map((p) => ({ telegram_id: p.telegram_id, name: p.name, status: statusText(p), checked_in_at: p.checked_in_at }))\n  }, null, 2);\n\n  return respond('done', 200, {\n    ok: true, title: title,\n    counters: counters, rows: shaped, count: shaped.length,\n    csv: csv, json: json\n  });\n};",
-                                "packageJson": "{}"
-                              }
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
                             },
-                            "type": "CODE",
+                            "type": "PIECE",
                             "valid": true
                           },
                           "settings": {

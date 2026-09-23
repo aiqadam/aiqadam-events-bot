@@ -68,7 +68,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_43 (search) | `return_response` (`stop`) | `200 {ok:true, candidates:[{telegram_id,name,username}], count}` / `403` |
 | step_44 (participants) | `tables-find-records registrations` | участники события (`event_id`, проекция `event_id`+`telegram_id`+`status`+`checked_in_at`+`registered_at`, `limit: 200`) |
 | step_45 (participants) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+`first_name`+`last_name`+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
-| step_46 (participants) | CODE «participants: shape + export» | гейт повторно по полям (Q25), схлопывание дублей по `telegram_id`, счётчики, строки, готовые строки CSV/JSON; `outcome` = `done` / `error` |
+| step_60 (participants) | `tables-find-records users` | база подписчиков анонсов: фильтр `consent_marketing eq true`, проекция `telegram_id`+`consent_marketing`+`blocked_bot`, `limit: 500` — счётчик `all_consent` для таба «Рассылка» (W68, #120); то же правило, что в `bcast-step`/`bcast-run` |
+| step_46 (participants) | CODE «participants: shape + export» | гейт повторно по полям (Q25), схлопывание дублей по `telegram_id`, счётчики (`registered`/`checked_in`/`cancelled` + глобальный `all_consent`, W68), строки, готовые строки CSV/JSON; `outcome` = `done` / `error` |
 | step_47 (participants) | `return_response` (`stop`) | `200 {ok:true, title, counters, rows, count, csv, json}` / `403` |
 | step_6 (valid) | `tables-find-records events` | событие по `id`, `limit: 1` |
 | step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового события, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `participants` / `feedback` / `delete` / `error` |
@@ -111,7 +112,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `staff_add` / `staff_remove` | 200 | `{ok:true, text, staff:[...]}` — обновлённый список; повтор add/remove идемпотентен (тексты «уже контролёр» / «прав нет»), `403` — как у `load` |
 | `staff_search` успех (W44) | 200 | `{ok:true, title, candidates:[{telegram_id,name,username}], count}` — до 20 совпадений; запрос короче 2 символов — пустой список, а не вся база |
 | `staff_search` отказ | 403 | `{ok:false, error:"forbidden", text}` — не-staff, чужой чаптер, нет события: один ответ, как у `load` |
-| `participants` успех (W13) | 200 | `{ok:true, title, counters:{registered,checked_in,cancelled}, rows:[{telegram_id,name,status,checked_in_at}], count, csv, json}` — `status` ключ (`registered`/`cancelled`), `checked_in_at` — «DD.MM.YYYY HH:mm» Asia/Tashkent или пусто; `csv` — с BOM, `json` — без |
+| `participants` успех (W13) | 200 | `{ok:true, title, counters:{registered,checked_in,cancelled,all_consent}, rows:[{telegram_id,name,status,checked_in_at}], count, csv, json}` — `status` ключ (`registered`/`cancelled`), `checked_in_at` — «DD.MM.YYYY HH:mm» Asia/Tashkent или пусто; `all_consent` — глобальный счётчик подписчиков анонсов (W68), не по событию; `csv` — с BOM, `json` — без |
 | `participants` отказ | 403 | `{ok:false, error:"forbidden", text}` — не-staff, чужой чаптер, нет события: один ответ, как у `load` |
 | `resolve_geo` успех | 200 | `{ok:true, lat, lon, address}` — координаты (6 знаков) и адрес из Геокодера; `address` может быть пустым |
 | `resolve_geo` отказ (нет `oid` в ссылке, организация не найдена, Геокодер недоступен или ключ отвергнут) | 422 | `{ok:false, error:"validation", text, fields:{geo:"manage.geo.org_fail"}}` — страница переводит ключ и оставляет шит открытым; фолбэк — координаты текстом |
@@ -282,6 +283,12 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   фильтра и экспорт (набор ≤200 строк; отдельный запрос на срез — лишняя
   латентность, а экспорт всегда полный). Фильтры эталона: все / пришли
   (`checked_in_at` непусто) / не пришли (`registered` без чекина) / отмены.
+- **`all_consent` — счётчик подписчиков анонсов (W68, #120).** Глобальный
+  (не по событию): отдельное чтение `step_60` с фильтром
+  `consent_marketing eq true`, считаются уникальные `telegram_id`, кроме
+  `blocked_bot = true` — то же правило, что в `bcast-step`/`bcast-run`
+  (`resolve-segment`). Нужен табу «Рассылка» Mini App; в срезах участников
+  не участвует. `limit: 500` — как у сегмента рассылки.
 - **Проекции минимальные** ([Q17](../../docs/OPEN-QUESTIONS.md#q17)):
   `registrations` — `event_id` (переотбор в коде), `telegram_id`, `status`,
   `checked_in_at`, `registered_at` (ранняя строка); `users` — `telegram_id`,

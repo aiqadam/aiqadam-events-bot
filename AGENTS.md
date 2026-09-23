@@ -537,6 +537,18 @@ PIECE-шагов — URL, cron-выражения, таймзоны, `parse_mode
     про **поле шага** `table_id`, и он тоже `externalId`, а внутренний id
     записи (в `records_ids`) — единственное место с внутренним id, ровно как
     в гоче 1 сказано про CODE-шаги.
+19. **`ap_export_flow` не отдаёт свежий `exampleData` триггера `callableFlow`.**
+    После `ap_update_trigger`, добавившего поля в `exampleData` триггера
+    callee, `ap_flow_structure` и `ap_resolve_property_options` показывают
+    новую схему, а `ap_export_flow` — старую (и в черновике, и в `LOCKED`).
+    На поведение не влияет: рантайм несёт значения через
+    `flowProps.payload`, и `ap_resolve_property_options` (им резолвится форма
+    `callFlow`) отдаёт актуальное. Следствие: в `flows/<callee>.json` и в
+    `flow.exampleData` вызывающего флоу эти поля могут отсутствовать —
+    расхождение репозитория с инстансом в sample-данных, не в логике. Не
+    расследовать заново и не «чинить» повторной публикацией (не помогает).
+    Проверено 2026-09-23 (W68, #120): `menu` принял `callbackData` живым
+    прогоном, экспорт при этом без него.
 
 ## Safety rules
 

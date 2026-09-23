@@ -291,7 +291,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // W13: секция «Участники» (OWN-7, OWN-8) — только у существующего события.
   // Срезы (все/пришли/не пришли/отмены) режет страница из одного ответа, как
   // эталон; файлы csv/json собирает сервер — страница их только скачивает.
-  const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
+  const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number; all_consent: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
   const [partsError, setPartsError] = useState('');
   const [partsFilter, setPartsFilter] = useState<PartsFilter>('all');
 
@@ -990,7 +990,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const d = res.data as Record<string, unknown>;
       if (d['ok'] && d['counters'] && Array.isArray(d['rows'])) {
         setParts({
-          counters: d['counters'] as { registered: number; checked_in: number; cancelled: number },
+          counters: d['counters'] as { registered: number; checked_in: number; cancelled: number; all_consent: number },
           rows: d['rows'] as PartRow[],
           csv: typeof d['csv'] === 'string' ? String(d['csv']) : '',
           json: typeof d['json'] === 'string' ? String(d['json']) : '[]',
@@ -1182,8 +1182,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // саму формулу держит общий regDeadlinePassed.
   const regDeadlinePast = regDeadlinePassed(tashMs(fields['reg_deadline_at']), tashMs(fields['starts_at']), Date.now());
   // W53: таб рассылки — сегменты из загруженных участников (прототип
-  // renderBroadcastTab; строки all_consent в ответе participants нет —
-  // пропущена осознанно, см. журнал W53).
+  // renderBroadcastTab). W68 (#120): сегмент all_consent возвращён — счётчик
+  // «подписчиков анонсов» считает сервер (participants.counters.all_consent,
+  // глобальный, не по событию); в списке он первый, как в эталоне.
   const bcastNoShow = parts ? parts.rows.filter((p) => p.status === 'registered' && p.checked_in_at === '').length : 0;
   const bcastEndsMs = tashMs(fields['ends_at']);
   const bcastNoShowLocked = !isFinite(bcastEndsMs) || bcastEndsMs > Date.now();
@@ -1975,8 +1976,21 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               )}
                             {eventId && manageTab === 'broadcast' && (
                 <>
-                  <div className="card" id="bcast-hint" style={{ marginTop: 16 }}>
-                    <p className="app-muted">{t('proto.broadcast_chat_hint')}</p>
+                  {/* W68 (#120, вариант A): рассылка остаётся в чате — таб
+                      показывает инструкцию в 3 шага, а не конструктор. */}
+                  <div className="card" id="bcast-hint" style={{ marginTop: 16, padding: 16 }}>
+                    <div className="card-title" style={{ padding: 0 }}>
+                      {t('bcast.howto.title')}
+                    </div>
+                    <p className="app-muted" style={{ margin: '8px 0 0' }}>
+                      {t('bcast.howto.step1')}
+                    </p>
+                    <p className="app-muted" style={{ margin: '4px 0 0' }}>
+                      {t('bcast.howto.step2')}
+                    </p>
+                    <p className="app-muted" style={{ margin: '4px 0 0' }}>
+                      {t('bcast.howto.step3')}
+                    </p>
                   </div>
                   {tg && (
                     <div className="sheet-actions" style={{ marginTop: 12 }}>
@@ -2019,6 +2033,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </p>
                     ) : (
                       <>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.all_consent')}</span>
+                          <span className="tail">{parts.counters.all_consent}</span>
+                        </div>
                         <div className="list-row">
                           <span className="body">{t('bcast.segment.registered')}</span>
                           <span className="tail">{parts.counters.registered}</span>
