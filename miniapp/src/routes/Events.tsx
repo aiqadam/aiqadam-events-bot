@@ -59,6 +59,10 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [profileState, setProfileState] = useState<MineState>(inTelegram ? 'loading' : 'off');
   const [profileMsg, setProfileMsg] = useState('');
   const [pdnDone, setPdnDone] = useState('');
+  // W73 (#125, ADR-0039): самоудаление аккаунта — только свой, по initData.
+  const [deleteSheet, setDeleteSheet] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   // Шит регистрации: поля профиля (видны, пока профиль неполон).
   const [sheetProf, setSheetProf] = useState({ first: '', last: '', position: '', company: '', city: '' });
   const [profileNeeded, setProfileNeeded] = useState(false);
@@ -190,6 +194,40 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setProfileMsg(t('manage.saved.updated'));
   }, [initData, profile, profileMkt]);
 
+  // W73 (#125, ADR-0039): удаление своего аккаунта — сервер берёт telegram_id
+  // из initData, тело чужой id не удаляет. Подтверждение обязательно (confirm).
+  const deleteAccount = useCallback(async () => {
+    if (deleteBusy) return;
+    setDeleteBusy(true);
+    setDeleteError('');
+    const res = await postJson(REG_API, { action: 'delete_account', initData, confirm: true });
+    setDeleteBusy(false);
+    if (res.kind === 'network') {
+      hapticNotification('error');
+      setDeleteError(t('events.err.network'));
+      return;
+    }
+    if (res.kind === 'server') {
+      hapticNotification('error');
+      setDeleteError(t('events.err.server'));
+      return;
+    }
+    const d = res.data as Record<string, unknown>;
+    if (d['ok']) {
+      hapticNotification('success');
+      setDeleteSheet(false);
+      setProfile({ first: '', last: '', position: '', company: '', city: '' });
+      setProfileMkt(false);
+      setPdnDone('');
+      setProfileMsg(t('profile.delete.done'));
+      showToast(t('profile.delete.done'));
+      void loadMine();
+      return;
+    }
+    hapticNotification('error');
+    setDeleteError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('profile.delete.failed'));
+  }, [deleteBusy, initData, loadMine, showToast]);
+
   useEffect(() => {
     setupThemeListener();
     if (tg) {
@@ -299,7 +337,11 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
   // W47: нативная «Назад» на корневом каталоге скрыта; при открытом шите
   // (регистрации или «поделиться») закрывает шит, а не весь Mini App.
-  useBackButton(Boolean(sheetEvent) || Boolean(shareEvent), () => {
+  useBackButton(Boolean(sheetEvent) || Boolean(shareEvent) || deleteSheet, () => {
+    if (deleteSheet) {
+      setDeleteSheet(false);
+      return;
+    }
     if (shareEvent) closeShare();
     else closeSheet();
   });
@@ -448,6 +490,10 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
             setProfileMsg('');
           }}
           onSave={() => void saveProfile()}
+          onDelete={() => {
+            setDeleteError('');
+            setDeleteSheet(true);
+          }}
         />
       )}
 
@@ -507,6 +553,25 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
       <Sheet open={Boolean(shareEvent)} title={t('events.share.title')} onClose={closeShare}>
         {shareEvent && <ShareSheet ev={shareEvent} onCopy={copyLink} />}
+      </Sheet>
+
+      {/* W73 (#125, ADR-0039): подтверждение удаления аккаунта. Разрушительная
+          кнопка — не первая и только после явного подтверждения. */}
+      <Sheet open={deleteSheet} title={t('profile.delete.title')} onClose={() => setDeleteSheet(false)}>
+        <p className="app-muted">{t('profile.delete.confirm')}</p>
+        {deleteError && (
+          <div className="card result bad" id="delete-error">
+            <p className="empty-heading">{deleteError}</p>
+          </div>
+        )}
+        <div className="sheet-actions">
+          <button type="button" className="btn btn-destructive" id="profile-delete-yes" disabled={deleteBusy} aria-busy={deleteBusy} onClick={() => void deleteAccount()}>
+            {t('profile.delete.btn')}
+          </button>
+          <button type="button" className="btn btn-secondary" id="profile-delete-no" onClick={() => setDeleteSheet(false)}>
+            {t('profile.delete.cancel')}
+          </button>
+        </div>
       </Sheet>
 
       {toast && <Toast text={toast} />}
@@ -806,6 +871,7 @@ function ProfileTab({
   onChange,
   onMktChange,
   onSave,
+  onDelete,
 }: {
   dictLoaded: boolean;
   inTelegram: boolean;
@@ -817,6 +883,7 @@ function ProfileTab({
   onChange: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
   onMktChange: () => void;
   onSave: () => void;
+  onDelete: () => void;
 }) {
   if (!inTelegram) {
     return (
@@ -883,6 +950,14 @@ function ProfileTab({
           {t('manage.btn.save')}
         </button>
       </div>
+      {/* W73 (#125, ADR-0039): самоудаление аккаунта (GDPR) — внизу, после
+          сохранения, разрушительная кнопка не первая. */}
+      <div className="app-actions" style={{ marginTop: 8 }}>
+        <button type="button" className="btn btn-destructive btn-block" id="profile-delete" onClick={onDelete}>
+          {t('profile.delete.btn')}
+        </button>
+      </div>
+      <p className="helper">{t('profile.delete.hint')}</p>
     </div>
   );
 }

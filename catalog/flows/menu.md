@@ -15,7 +15,7 @@
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `telegramId` |
+| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId` |
 | step_1 | `tables-find-records users` | `profile_completed_at` вызывающего — гейт ADR-0034 |
 | step_2 | CODE «gate» | `needsOnboard` (пусто → true) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
@@ -30,7 +30,7 @@
 | step_8 | `tables-find-records staff` | строка `staff` пользователя (limit 1) — видимость кнопок овнера |
 | step_9 | `tables-find-records event_staff` | все staff-строки пользователя (limit 50) |
 | step_10 | `tables-find-records events` | опубликованные события (status = `published`, limit 50) |
-| step_11 | CODE «render menu» | сборка кнопок: гость — 1 кнопка; организатор — [`Панель администратора`, `События`, `Новое событие`]; контролёр — тот же 1 экран, свой текст |
+| step_11 | CODE «render menu» | сборка кнопок: гость — 1 кнопка; организатор — [`Панель администратора`, `События`, `Новое событие`]; контролёр — тот же 1 экран, свой текст; `fallback=true` (ответ на обычный текст, W73) меняет преамбулу на `menu.fallback_text`, кнопки и лид те же |
 | step_12 | `send_text_message` (`format: None`) | отправка меню |
 
 ## Зависимости
@@ -89,6 +89,12 @@
   меняет преамбулу с приветствия на `start.bad_payload`. Работает только
   внутри `has_profile` — у нового гостя с неразобранным payload сначала
   всё равно онбординг.
+- **Ответ на обычный текст (W73, #125).** `tg-router` зовёт меню не только
+  на `/start` и незнакомую команду, но и на обычный текст — с
+  `fallback=true`. Тогда преамбула — `menu.fallback_text`, а не приветствие
+  по имени; лид (`menu.lead_guest`/`lead_owner`/`lead_controller`) и кнопки
+  не отличаются от `/start`. Для нового гостя (профиль не заполнен) флаг
+  ни на что не влияет: сначала тот же онбординг (ADR-0034).
 - **Тексты — через `inputs.texts`** (ADR-0014), ключи `menu.*`, `onb.*` и
   `start.*`. `format: None` в ветке меню (без разметки), `MarkdownV2` в
   ветке онбординга (общий эталон экранирования с `reg-start`/`reg-profile`).

@@ -33,17 +33,25 @@
    пересланное сообщение без команды и с непустым текстом/подписью →
    `bcast-draft` (staff-гейт внутри, не-staff уходит в тишину).
 7. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
-     визарда в `sessions`) обработчика не имеют: их сообщения уходят в
-   `Otherwise` молча.
-8. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
+   визарда в `sessions`) обработчика не имеют: их колбэки и нетекстовые
+   апдейты уходят в `Otherwise` молча. Обычный текст отвечает меню по п. 8 —
+   мёртвая сессия текстовому ответу не мешает.
+8. **Обычный текст без команды, без колбэка и без пересылки** (W73, #125):
+   `command === '' && callbackData === '' && !forwarded && text.trim() !== ''`
+   и это не свободный ввод на шаге `ob_await_*` → `menu` с
+   `fallback=true`. Гость получает короткую меню-карточку с преамбулой
+   `menu.fallback_text` (не «напишите нам» — тексты, обещавшие обратное,
+   переписаны). Фото и стикеры без текста, старые колбэки `myreg:*`/`reg:*`,
+   `/start c…` и чужие тексты вне формы сюда не попадают — остаются молча.
+9. Иначе, если есть активная сессия (`sessions`, не протухшая `>24ч`,
    `scenario/step` не `-`) со `scenario='registration'`:
     - колбэк с префиксом `reg:pdn:` → `reg_pdn`; `reg:mkt:` → `reg_mkt`;
       любой другой `reg:*` → **ничего** (не угадываем обработчик);
     - колбэк с префиксом `ob:` → `reg_profile` (онбординг C, W50);
     - текст без колбэка на шаге `ob_await_*` → `reg_profile` (свободный ввод
-      имени/работы/города); чужие тексты — в `Otherwise` молча.
-    Сообщений без колбэка в рамках `registration` вне онбординга нет.
-9. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink — W9 не будет, Q41; `staff-accept` с W10 обрабатывается выше).
+      имени/работы/города) — эта ветка срабатывает раньше п. 8 и потому
+      перекрывает его; чужие тексты — в `Otherwise` молча.
+10. Иначе — `Otherwise`, лог «намерение без обработчика» (checkin-deeplink — W9 не будет, Q41; `staff-accept` с W10 обрабатывается выше).
 
 ## Шаги
 
@@ -57,12 +65,12 @@
 | step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`) |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft`. Проверки рассылок стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод `ob_await_*` перекрывает его (п. 9 контракта) |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
 | step_20 | `callFlow reg-profile` (`queue`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
 | step_21 | `callFlow staff-accept` (`queue`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
-| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start` и любая незнакомая команда (ADR-0025); получает `chatId`, `firstName`, `badPayload`, `telegramId` |
+| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025) и обычный текст (W73, #125); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId` |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
@@ -89,9 +97,18 @@
   `eventId` из черновика маршрутизирует `/start` в `reg-start` с этим
   `eventId`/`utm` (ADR-0034 п.4). Без этого ветка `menu.needs_onboard`
   перезаписывала сессию черновиком `eventId: ''`, и финал становился
-  `finish_no_event` — регистрация на событие не создавалась. Условие `ob_*`
+  `finish_no_event` — регистрация на событие не создавалась.   Условие `ob_*`
   намеренно не покрывает `await_marketing`: завершивший профиль и ждущий
   ответа о рассылке голым `/start` в регистрацию не возвращается.
+- **Обычный текст — короткий ответ меню, а не тишина (W73, #125).** Тексты
+  бота звали «напишите боту снова / напишите нам», а бот молчал. Теперь
+  текст вне формы маршрутизируется в `menu` (`fallback=true`), и меню
+  отвечает преамбулой `menu.fallback_text` теми же кнопками, что `/start`.
+  Исключение ровно одно — свободный ввод на шаге `ob_await_*` (там текст
+  это ответ на вопрос, а не запрос меню). Проверка стоит после пересылок и
+  до сессионной ветки: мёртвые сессии `event_create`/`event_edit` ответу не
+  мешают. Признак «это ответ формы» — шаг `ob_await_*` в `sessions`, а не
+  сама активная сессия (ADR-0034).
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
