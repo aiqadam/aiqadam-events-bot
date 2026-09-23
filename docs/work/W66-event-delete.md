@@ -16,30 +16,53 @@
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| flow `manage-api` | — | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
-| Mini App `Manage.tsx` | — | — |
-| SPEC OWN-4 | — | [docs/SPEC.md](../SPEC.md) |
+| flow `manage-api` | `CcGPwuW4ws5hkcaOPerEG`, published `QOZhdStd1zSQPa6SJFsgc` | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
+| `step_5` (нормализация) | `delete` добавлен в белый список действий | там же |
+| `step_7` (решение) | `action='delete'` → `outcome='delete'`; `__recordId` — внутренний id записи | там же |
+| `step_53`…`step_59` | ветка `delete`: чтение регистраций/`event_staff`, серверная проверка, гейт, `tables-delete-record`, ответы | там же |
+| Mini App `Manage.tsx` | кнопки на первом экране + строка списка, шит удаления | — |
+| SPEC OWN-4.1 | правило удаления | [docs/SPEC.md](../SPEC.md) |
 
 ## Чек-лист готовности
 
 > Из [issue #118](https://github.com/aiqadam/aiqadam-events-bot/issues/118), Part 1.
 
-- [ ] «Отменить»/«Удалить» видны сразу при открытии события, без шагов визарда
-- [ ] SPEC OWN-4 описывает удаление
-- [ ] `delete` работает только при 0 регистраций (curl, три случая)
-- [ ] текст в `i18n/ru.json`, `check-texts.py` зелёный
-- [ ] `catalog/`, `flows/*.json`, `_manifest.json` обновлены одним коммитом
-- [ ] `cd miniapp && npm ci && npm run build` проходит
-- [ ] `catalog/` совпадает с живым проектом
+- [x] «Отменить»/«Удалить» видны сразу при открытии события, без шагов визарда
+- [x] SPEC OWN-4 описывает удаление (OWN-4.1, отдельным коммитом)
+- [x] `delete` работает только при 0 регистраций (curl, см. «Как проверено»)
+- [x] текст в `i18n/ru.json`, `check-texts.py` зелёный (245 пар, 0 расхождений)
+- [x] `catalog/`, `flows/*.json`, `_manifest.json` обновлены одним коммитом
+- [x] `cd miniapp && npm run build` проходит (tsc + vite)
+- [x] `catalog/` совпадает с живым проектом
 
 ## Как проверено
 
-- —
+Живые `curl` на опубликованный `/sync` (`manage-api`), свежий `initData` от
+временного флоу (удалён после тестов):
+
+| Случай | Ответ |
+|---|---|
+| черновик с нулём регистраций → удаление | `200 {ok:true, deleted:true}`; строка `events` действительно исчезла (`ap_find_records` → 0) |
+| повторный `delete` удалённого | `403 forbidden` (события нет) |
+| `published` с 5 регистрациями | `409 {reason:"has_registrations"}`; строка на месте |
+| `published` с нулём регистраций | `409 {reason:"not_draft"}` — граница Part 1 |
+| не-staff (`532804490`) | `403 forbidden` |
+
+Плюс офлайн: `check-export-secrets.sh`, `check-texts.py`, `check-commands.py`,
+`check-agents.py`, `prototypes/check.mjs` — зелёные.
 
 ## Журнал
 
 - **2026-09-23** — пакет взят. Part 1: кнопки на первом экране + удаление черновика;
   двухшаговая отмена с рассылкой — Part 2 (Phase 3, зависит от #120).
+- **2026-09-23** — реализация. Точка отката `manage-api` до правки —
+  `z8ZDy7YasY3HpgGlXL15a`. Первый прогон curl дал `400`: `step_5` фильтрует
+  `action` по белому списку и не знал `delete` — добавлен. Второй прогон —
+  все случаи таблицы выше. Публикация `QOZhdStd1zSQPa6SJFsgc`, экспорт снят
+  сразу после публикации (гоча 14).
+- **2026-09-23** — временный флоу `zz-qa-mint` (подпись `initData` через
+  `node:crypto`, `BOT_TOKEN` — переменной) создан для тестов и удалён; в
+  манифесте/каталоге его нет.
 
 ## Ревью
 

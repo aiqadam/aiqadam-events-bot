@@ -247,6 +247,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [done, setDone] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [cancelSheet, setCancelSheet] = useState(false);
+  // W66: удаление черновика — подтверждение и цель (событие из списка или открытое).
+  const [deleteSheet, setDeleteSheet] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
   // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
   // несохранённые правки молча (дизайн-ревью W42). Состояние, а не ref: после
@@ -482,6 +485,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setDone(false);
     setDraftRestored(false);
     setCancelSheet(false);
+    setDeleteSheet(false);
+    setDeleteTarget(null);
     setConfirmExit(false);
     geoReqRef.current += 1; // ответ resolve_geo в полёте уже не применяется
     setOnline(false);
@@ -532,13 +537,18 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setCancelSheet(false);
       return;
     }
+    if (deleteSheet) {
+      setDeleteSheet(false);
+      setDeleteTarget(null);
+      return;
+    }
     if (confirmExit) {
       setConfirmExit(false);
       return;
     }
     backToList();
-  }, [cancelSheet, confirmExit, backToList]);
-  useBackButton(cancelSheet || confirmExit || (showForm && !!eventId), goBack);
+  }, [cancelSheet, deleteSheet, confirmExit, backToList]);
+  useBackButton(cancelSheet || deleteSheet || confirmExit || (showForm && !!eventId), goBack);
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
@@ -657,6 +667,40 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     },
     [busy, clearErrors, collect, eventId, initData, origStatus, applyStatus, errorTextFor, showFieldErrors, showToast, leaveForm],
   );
+
+  // W66 (OWN-4.1): удаление события. Права и «ноль регистраций» проверяет сервер
+  // (manage-api, action=delete); здесь — подтверждение и вызов. Удалять можно
+  // черновик (Part 1); причина отказа приходит текстом с сервера.
+  const openDelete = useCallback((id: string, title: string) => {
+    if (!id) return;
+    setDeleteTarget({ id, title });
+    setDeleteSheet(true);
+  }, []);
+
+  const doDelete = useCallback(async () => {
+    const tgt = deleteTarget;
+    if (!tgt || busy) return;
+    setDeleteSheet(false);
+    setBusy(true);
+    const res = await postJson(MANAGE_API, { initData, action: 'delete', eventId: tgt.id });
+    setBusy(false);
+    if (res.kind !== 'json') {
+      hapticNotification('error');
+      showToast(errorTextFor(res as never));
+      return;
+    }
+    const d = res.data as Record<string, unknown>;
+    if (d['ok']) {
+      hapticNotification('success');
+      showToast(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.delete.done'));
+      setDeleteTarget(null);
+      if (eventId === tgt.id) leaveForm();
+      else void loadList();
+      return;
+    }
+    hapticNotification('error');
+    showToast(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.delete.failed'));
+  }, [deleteTarget, busy, initData, errorTextFor, showToast, eventId, leaveForm, loadList]);
 
   // Шаг проверяется на «Далее» — как в эталоне (дизайн-ревью W42): пустые
   // обязательные поля не пропускаем, точки шагов с ошибками помечаются.
@@ -1207,6 +1251,23 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                             </a>
                           </div>
                         )}
+                        {/* W66 (OWN-4.1): удаление черновика — прямо из строки списка. */}
+                        {ev.status === 'draft' && (
+                          <div className="app-actions" style={{ marginTop: 8 }}>
+                            <button
+                              type="button"
+                              className="btn btn-destructive"
+                              id={`delete-${ev.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openDelete(ev.id, ev.title);
+                              }}
+                            >
+                              {t('manage.delete.btn')}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </a>
                   </li>
@@ -1258,6 +1319,35 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* W66 (OWN-4.1): «Удалить»/«Отменить» — на первом экране события,
+              а не на последнем шаге визарда (issue #118). */}
+          {eventId && manageTab === 'event' && !done && !confirmExit && (origStatus === 'draft' || origStatus === 'published') && (
+            <div className="app-actions" id="event-danger-actions" style={{ marginBottom: 12 }}>
+              {origStatus === 'draft' && (
+                <button
+                  type="button"
+                  className="btn btn-destructive"
+                  id="delete-event"
+                  disabled={busy}
+                  onClick={() => openDelete(eventId, fields['title'])}
+                >
+                  {t('manage.delete.btn')}
+                </button>
+              )}
+              {origStatus === 'published' && (
+                <button
+                  type="button"
+                  className="btn btn-destructive"
+                  id="cancel-event-top"
+                  disabled={busy}
+                  onClick={() => setCancelSheet(true)}
+                >
+                  {t('owner.event.btn.cancel_event')}
+                </button>
+              )}
             </div>
           )}
 
@@ -1659,18 +1749,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         </section>
                       )}
 
-                      {origStatus === 'published' && (
-                        <button
-                          type="button"
-                          className="btn btn-destructive btn-block"
-                          id="cancel-event"
-                          disabled={busy}
-                          style={{ marginTop: 16 }}
-                          onClick={() => setCancelSheet(true)}
-                        >
-                          {t('owner.event.btn.cancel_event')}
-                        </button>
-                      )}
                     </>
                   )}
 
@@ -2089,6 +2167,33 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           </button>
           <button type="button" className="btn btn-secondary" id="cancel-no" onClick={() => setCancelSheet(false)}>
             {t('common.btn.cancel')}
+          </button>
+        </div>
+      </Sheet>
+
+      <Sheet
+        open={deleteSheet}
+        title={t('manage.delete.btn')}
+        onClose={() => {
+          setDeleteSheet(false);
+          setDeleteTarget(null);
+        }}
+      >
+        <p className="app-muted">{t('manage.delete.confirm', { title: deleteTarget?.title || fields['title'] })}</p>
+        <div className="sheet-actions">
+          <button type="button" className="btn btn-destructive" id="delete-yes" disabled={busy} onClick={() => void doDelete()}>
+            {t('manage.delete.btn')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            id="delete-no"
+            onClick={() => {
+              setDeleteSheet(false);
+              setDeleteTarget(null);
+            }}
+          >
+            {t('manage.delete.cancel')}
           </button>
         </div>
       </Sheet>
