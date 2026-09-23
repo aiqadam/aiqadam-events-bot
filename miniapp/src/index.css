@@ -67,6 +67,14 @@ html, body { touch-action: pan-x pan-y; }
 .tabs-scroll { overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px; }
 .tabs-scroll .tabs { border-bottom: 0; min-width: max-content; }
 .tabs-scroll .tab { padding: 0 12px; }
+/* W71 (#123): в узком окне (~380px) табы умещаются без горизонтальной прокрутки.
+   Ширину окна Mini App задать нельзя, поэтому табы сжимаются равномерно;
+   overflow-x: auto выше остаётся фолбэком для совсем узких окон. */
+@media (max-width: 400px) {
+  .tabs .tab { flex: 1 1 0; min-width: 0; padding: 0 6px; justify-content: center; }
+  .tabs-scroll .tabs { min-width: 0; }
+  .tabs-scroll .tab { padding: 0 6px; }
+}
 /* W53: строки сегментов рассылки — как в эталоне (`.list-card`/`.list-row`
    в proto.css). Только раскладка и токены. */
 .list-card { padding: 0; overflow: hidden; }

@@ -492,6 +492,14 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
 .tabs-scroll .tabs { border-bottom: 0; min-width: max-content; }
 .tabs-scroll .tab { padding: 0 12px; }
 .tabs-wrap { border-bottom: 1px solid var(--border); margin: 0 -16px 12px; padding: 0 16px; }
+/* W71 (#123): в узком окне (~380px) табы умещаются без горизонтальной прокрутки.
+   Ширину окна Mini App задать нельзя, поэтому табы сжимаются равномерно;
+   overflow-x: auto выше остаётся фолбэком для совсем узких окон. */
+@media (max-width: 400px) {
+  .tabs .tab { flex: 1 1 0; min-width: 0; padding: 0 6px; justify-content: center; }
+  .tabs-scroll .tabs { min-width: 0; }
+  .tabs-scroll .tab { padding: 0 6px; }
+}
 
 /* ---------- каталог: EventCard ---------- */
 .event-card { display: grid; grid-template-columns: 68px 1fr; gap: 16px; align-items: start; padding: 16px; margin-bottom: 12px; }
