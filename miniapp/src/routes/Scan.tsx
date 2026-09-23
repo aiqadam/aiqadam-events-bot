@@ -5,6 +5,7 @@ import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { CHECKIN_API, CHECKIN_COUNTER_API } from '../lib/api';
 import Icon, { type IconName } from '../components/Icon';
+import BackButton from '../components/BackButton';
 
 const RESULT_MS = 1600;
 
@@ -23,14 +24,13 @@ type View =
   | { kind: 'error'; icon: IconName; text: string; sub?: string; retryable: boolean }
   | null;
 
-const noop = () => {};
-
-export default function Scan({ eventId: propEventId }: { eventId: string }) {
+export default function Scan({ eventId: propEventId, fromApp = false }: { eventId: string; fromApp?: boolean }) {
   const eventIdRef = useRef(propEventId);
 
-  // W47: корневой экран — нативная «Назад» скрыта; нативный попап сканера
-  // закрывается своим жестом, системный — закрывает Mini App.
-  useBackButton(false, noop);
+  // W47/W70: «Назад» — только если сканер открыт изнутри приложения (из
+  // карточки события/списка), не из кнопки в чате (правило MINIAPP-UX п.1).
+  // Нативный попап сканера закрывается своим жестом.
+  useBackButton(fromApp, () => window.history.back());
 
   const [title, setTitle] = useState('AI Qadam Events');
   const [statusKey, setStatusKey] = useState<string>('');
@@ -235,6 +235,7 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+      <BackButton show={fromApp} onBack={() => window.history.back()} />
       <h1 className="empty-heading" id="title">
         {title}
       </h1>

@@ -5,6 +5,7 @@ import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, FEEDBACK_API } from '../lib/api';
 import Icon from '../components/Icon';
+import BackButton from '../components/BackButton';
 
 // W45 (ADR-0028, Q53): пятая страница SPA — форма отзыва после события.
 // Вход — только по факту участия (регистрация с чекином на конкретный
@@ -15,15 +16,13 @@ import Icon from '../components/Icon';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-const noop = () => {};
-
-export default function Feedback({ eventId }: { eventId: string }) {
+export default function Feedback({ eventId, fromApp = false }: { eventId: string; fromApp?: boolean }) {
   const tg = getTelegram();
   const initData = tg?.initData ?? '';
 
-  // W47: корневой экран — нативная «Назад» скрыта, системный жест закрывает
-  // Mini App.
-  useBackButton(false, noop);
+  // W47/W70: «Назад» — только если форма открыта изнутри приложения
+  // (из «Прошедших»), не из кнопки в чате (правило MINIAPP-UX п.1).
+  useBackButton(fromApp, () => window.history.back());
 
   const [dictLoaded, setDictLoaded] = useState(false);
   const [state, setState] = useState<LoadState>('loading');
@@ -128,6 +127,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
   if (!dictLoaded) {
     return (
       <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center' }}>
+        <BackButton show={fromApp} onBack={() => window.history.back()} />
         <p className="empty-desc">{t('feedback.loading')}</p>
       </main>
     );
@@ -136,6 +136,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
   if (state === 'loading') {
     return (
       <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center' }}>
+        <BackButton show={fromApp} onBack={() => window.history.back()} />
         <p className="empty-desc">{t('feedback.loading')}</p>
       </main>
     );
@@ -144,6 +145,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
   if (state === 'error') {
     return (
       <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center' }}>
+        <BackButton show={fromApp} onBack={() => window.history.back()} />
         <div className="card result bad">
           <p className="empty-heading">{errorText}</p>
         </div>
@@ -161,6 +163,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
   if (done || given) {
     return (
       <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center' }}>
+        <BackButton show={fromApp} onBack={() => window.history.back()} />
         <div className="sheet-success" id="feedback-done">
           <div className="success-icon">
             <Icon name="check-circle" size={34} />
@@ -181,6 +184,7 @@ export default function Feedback({ eventId }: { eventId: string }) {
   // ready, ещё не отправлял (given=false, done=false) — форма.
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
+      <BackButton show={fromApp} onBack={() => window.history.back()} />
       <h1 className="app-title">{t('feedback.title')}</h1>
       <p className="app-muted">{t('feedback.lead')}</p>
 

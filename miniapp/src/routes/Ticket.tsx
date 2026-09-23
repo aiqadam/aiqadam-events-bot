@@ -6,12 +6,13 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
 import { utcMs, utcToWhen } from '../lib/dates';
 import Icon from '../components/Icon';
+import BackButton from '../components/BackButton';
 import MapLinks from '../components/MapLinks';
 import Sheet from '../components/Sheet';
 
 const QR_MAX = 224;
 
-export default function Ticket({ eventId }: { eventId: string }) {
+export default function Ticket({ eventId, fromApp = false }: { eventId: string; fromApp?: boolean }) {
   const tg = getTelegram();
   const initData = tg?.initData ?? '';
   const qrElRef = useRef<HTMLDivElement>(null);
@@ -181,10 +182,18 @@ export default function Ticket({ eventId }: { eventId: string }) {
     }
   }, [tg, initData, eventId]);
 
-  // W47: нативная «Назад» на корневом билете скрыта; при открытом
-  // подтверждении отмены закрывает его, а не весь Mini App.
-  const closeCancelSheet = useCallback(() => setCancelConfirm(false), []);
-  useBackButton(cancelConfirm, closeCancelSheet);
+  // W47/W70: нативная «Назад» — при открытом подтверждении отмены закрывает
+  // его, а не весь Mini App; иначе, если билет открыт изнутри приложения,
+  // возвращает на прошлый экран. Открытый из чата билет «Назад» не показывает
+  // (правило MINIAPP-UX п.1).
+  const handleBack = useCallback(() => {
+    if (cancelConfirm) {
+      setCancelConfirm(false);
+      return;
+    }
+    window.history.back();
+  }, [cancelConfirm]);
+  useBackButton(fromApp || cancelConfirm, handleBack);
 
   const cancelRegistration = useCallback(async () => {
     if (cancelBusy) return;
@@ -301,6 +310,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
   return (
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
+      <BackButton show={fromApp} onBack={handleBack} />
       <div className={`card ticket-card ${isError && !cancelled ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         <h1 className="empty-heading" id="title">
           {title}

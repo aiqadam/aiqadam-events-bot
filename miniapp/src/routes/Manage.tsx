@@ -541,9 +541,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     leaveForm();
   }, [done, eventId, isDirty, leaveForm]);
 
-  // W47: нативная «Назад» — экран события ведёт к списку, открытый шит
-  // (отмена события / подтверждение выхода) закрывает, корневые экраны
-  // (список, создание из чата) её скрывают.
+  // W47/W70: нативная «Назад» — открытый шит (отмена события / подтверждение
+  // выхода) закрывает; в визарде на шаге > 0 ведёт на предыдущий шаг (в т.ч.
+  // при создании из чата — раньше «Назад» там не было вовсе); экран события
+  // ведёт к списку; корневые экраны (список, создание с шага 0) её скрывают.
   const goBack = useCallback(() => {
     if (cancelSheet) {
       setCancelSheet(false);
@@ -558,9 +559,17 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setConfirmExit(false);
       return;
     }
+    if (showForm && !done && manageTab === 'event' && step > 0) {
+      setErrs([]);
+      setStep((s) => Math.max(0, s - 1));
+      return;
+    }
     backToList();
-  }, [cancelSheet, deleteSheet, confirmExit, backToList]);
-  useBackButton(cancelSheet || deleteSheet || confirmExit || (showForm && !!eventId), goBack);
+  }, [cancelSheet, deleteSheet, confirmExit, showForm, done, manageTab, step, backToList]);
+  useBackButton(
+    cancelSheet || deleteSheet || confirmExit || (showForm && !done && manageTab === 'event' && (!!eventId || step > 0)),
+    goBack,
+  );
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
