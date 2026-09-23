@@ -89,7 +89,10 @@ console-ошибок 0**. Различающие случаи списка: `pub
   `node:crypto`, `BOT_TOKEN` — переменной) создан для curl и удалён; в
   манифесте/каталоге его нет.
 - **2026-09-23** — `migrations`: строка `2026-09-23-w74-01` (`flow:manage-api`,
-  `publish`, `version_id: g0Tjak1LdiTkWI9UN0Pc4`).
+  `publish`, `version_id: g0Tjak1LdiTkWI9UN0Pc4`, `commit: d1d9c19`).
+  `tools/check-migrations.py` запустить не удалось — ключа платформы на машине
+  нет ни в `QADAM_API_KEY`, ни в Keychain; сверку манифест ↔ инстанс ↔
+  `migrations` сделал вручную через MCP (ревьюеру — как в W66).
 
 ## Ревью
 
