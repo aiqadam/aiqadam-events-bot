@@ -3,7 +3,8 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
   (`route: menu`: голый `/start`, `/start` с неразобранным payload, любая
-  незнакомая команда — [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md))
+  незнакомая команда — [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md),
+  обычный текст — W73, колбэк `menu:*` — W68)
 - **Назначение**: точка входа на голый `/start`. Сначала гейт профиля
   (ADR-0034): пока `users.profile_completed_at` не заполнен — тот же
   онбординг C, что и по диплинку события, только без карточки события;
