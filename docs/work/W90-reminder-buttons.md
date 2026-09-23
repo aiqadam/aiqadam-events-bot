@@ -30,7 +30,10 @@
 
 > Из issue [#142](https://github.com/aiqadam/aiqadam-events-bot/issues/142), «Definition of done».
 
-- [x] Обе кнопки работают на телефоне и в Telegram Desktop — живой прогон, см. «Как проверено»
+- [ ] Обе кнопки **открываются** на телефоне и в Telegram Desktop — живой прогон
+  доказывает приём сообщения с обеими кнопками Telegram'ом (`200`,
+  `message_id 2584`), но не открытие на двух клиентах; это хвост на владельца
+  (см. «Хвосты»)
 - [x] `check-texts.py` зелёный, экспорт обновлён
 - [x] `catalog/` совпадает с живым проектом
 
@@ -84,16 +87,97 @@
 - **2026-09-23** — `ap_update_step` по `reminders` строго последовательно
   (гоча 16); `step_9.input` правил только `reply_markup`, чтобы не задеть
   `auth` (`{{connections[...]}}`).
+- **2026-09-23 — расхождение с прототипом (чек-лист 3a, ADR-0027) названо
+  сознательно.** `prototypes/scenarios.js` (сцены `reminders`, `reminder-2h`)
+  рисует напоминания **plain text без кнопок**; W90 добавляет кнопки
+  «Открыть билет» / «Как добраться» решением issue
+  [#142](https://github.com/aiqadam/aiqadam-events-bot/issues/142). Прототип —
+  эталон v0.1, но Phase 2 из трекера расширяет его осознанно; прототип в этом
+  пакете не правится (правка эталона — отдельное решение, как в W42).
 
 ## Ревью
 
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: review-agent (opencode / opencode-go/deepseek-v4.1-flash), **дата**: 2026-09-23
+- **Вердикт**: есть замечания
+
+Проверено живьём (MCP доступен). `ap_flow_structure` + `ap_read_step_code` по
+`step_2`/`step_4`/`step_8`; `ap_validate_flow` — 11/11 valid. `step_1.columns`
+включают `EKEX5zyhKo3WChz5ZquY0`=`lat` и `Br2f0wjLugSGIS2kjfoFE`=`lon`
+(сверено с `catalog/tables/events.md`); `flat()` читает их по `fieldName`.
+`ap_get_run` по `lw7Yg8UCs9E6oigDx8I57` отдаётся: `step_2` — `mapsUrl` для
+события с координатами, `step_4` — проброс `mapsUrl`, `step_8.replyMarkup` —
+обе кнопки (`web_app` `#/ticket?event_id=…` + `url` yandex.uz), `step_9` —
+`200`, `message_id 2584`, в `body.result.reply_markup` обе кнопки. `step_9`
+сохранил `auth` (`{{connections['TZTlXaCEO2hEvimUowbSA']}}`), `chat_id`,
+`message`, `format: None`, `reply_markup`, `continueOnFailure`. Живой draft
+(`ap_flow_structure`) совпадает с экспортом `flows/reminders.json`
+(`ap_export_flow`: `flows[0].id` = `k8F1IdAjjsHFPvZY1Lv4f`, `state: LOCKED`) и
+`_manifest.json`; расхождение только `auth` — экспорт MCP его не отдаёт
+(ADR-0021, ожидаемо). `migrations` `2026-09-23-w90-01/02` сверены вручную
+(`check-migrations.py` без ключа не запускается): publish-строка даёт
+`version_id` = манифест, `object_id` = flowId; delete-строка `table:events`
+version_id `-`, commit `fcbe51c` существует. Офлайн: `check-export-secrets.sh`
+0, `check-texts.py` 254/0, `check-commands.py` 0, `check-agents.py` 0,
+`prototypes/check.mjs` OK. Собственный прогон `mapsUrlOf` (код из `step_2`):
+валидные координаты → ссылка; `(0,0)`, пусто, null, нечисло, `lat>90`,
+`lon>180` → пусто; границы `±90/±180` — валидны. Регрессия окон `24h`/`2h`,
+дедуп `put_if_absent`, `status=registered`, сентинел `__none__`,
+`format: None` — диффом и живой структурой не затронуты.
+
+Отклонение от буквы issue (шаг 1: «`hasGeo` из `event-card`, а не из
+`reg-profile`») обосновано и задокументировано: `event-card.hasGeo` считает
+`(0,0)` валидным, то есть воскрешает [#124](https://github.com/aiqadam/aiqadam-events-bot/issues/124);
+взята более строгая проверка W76. Не замечание.
 
 ### Замечания
 
-1. —
+1. **важно** — DoD-пункт «Обе кнопки работают на телефоне и в Telegram
+   Desktop» отмечен `[x]`, но тот же журнал в «Хвостах» пишет, что живая
+   проверка на телефоне/Desktop — за владельцем. Прогон
+   `lw7Yg8UCs9E6oigDx8I57` доказывает, что Telegram **принял** сообщение с
+   обеими кнопками (`200`, `message_id 2584`, `body.result.reply_markup`), но
+   не то, что кнопки открываются на двух клиентах. До `готов` — либо
+   зафиксировать подтверждение владельца в журнале, либо снять галочку. —
+   `docs/work/W90-reminder-buttons.md`, «Чек-лист готовности» + «Хвосты».
+   - *Исправлено*: галочка снята, пункт переформулирован — «открываются на
+     телефоне и в Desktop» отделено от доказанного «Telegram принял сообщение с
+     обеими кнопками»; открытие на клиентах явно записано хвостом на владельца
+     (как в W74/W76/W68). (2026-09-23)
+
+2. **на будущее** — метки кнопок берутся через `t()` с фолбэком на сырой ключ
+   (`texts[key] === undefined ? key`), а не через `has()`-гейт эталона
+   `event-card.md` («сырой ключ на кнопке недопустим»). Сейчас оба ключа во
+   входе `step_8.texts` есть и `check-texts.py` зелёный — сырой ключ на кнопку
+   попасть не может. Но `check-texts.py` сверяет только присутствующие пары и
+   не ловит ключ, на который ссылается код, а `texts` — вложенный объект,
+   который `ap_update_step` заменяет целиком (гоча 12): частичное обновление
+   молча поставит `ticket.btn.open` текстом на кнопку. Либо `has()`-гейт, либо
+   правило в `check-texts.py`. — `reminders/step_8`.
+   - *Ответ*: принято как «на будущее». Сейчас поведение безопасно (оба ключа
+     во входе `step_8.texts`, `check-texts.py` 254/0). `has()`-гейт из
+     `event-card.md` добавим при следующей правке `step_8` — отдельной правкой
+     с перепубликацией, чтобы не менять опубликованную версию ради латентного
+     случая. (2026-09-23)
+
+3. **на будущее** — сверка с прототипом ([REVIEW-CHECKLIST](REVIEW-CHECKLIST.md) 3a,
+   ADR-0027) в журнале не отражена. `prototypes/scenarios.js` рисует
+   напоминания (`reminders`, `reminder-2h`) **plain text без кнопок**; W90
+   добавляет кнопки решением issue #142. Расхождение с эталоном допустимо, но
+   его полагается назвать в журнале, как сделано в W42. —
+   `docs/work/W90-reminder-buttons.md`; `prototypes/scenarios.js:131-132`.
+   - *Исправлено*: расхождение названо в «Журнале» (запись 2026-09-23 о
+     прототипе). Прототип не правится — это осознанное расширение эталона
+     решением issue #142. (2026-09-23)
+
+4. **на будущее** (pre-existing, W90 не создавал) — список «Шаги с `texts` есть
+   у флоу» в эталоне `catalog/snippets/ru-texts.md` не содержит `reminders`,
+   хотя `step_8` — ровно W26-вариант (принимает `texts`, сам подставляет
+   `{…}`). W90 добавил в этот `texts` два ключа, неполнота списка стала
+   заметнее. — `catalog/snippets/ru-texts.md:33-37`.
+   - *Исправлено*: `reminders` добавлен в список «Шаги с `texts`» эталона
+     `catalog/snippets/ru-texts.md`. (2026-09-23)
 
 ## Хвосты и блокеры
 
