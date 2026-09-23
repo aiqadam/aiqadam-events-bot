@@ -389,6 +389,7 @@
   "reg.venue.hint": "Точка на карте — сообщением выше.",
   "remind.24h": "Напоминание: «{title}» завтра, {when}. Адрес: {address}",
   "remind.2h": "«{title}» через два часа, {when}. Адрес: {address}",
+  "remind.btn.directions": "Как добраться",
   "scan.checking": "Проверка…",
   "scan.error_server": "Сервер ответил неожиданно. Попробуйте ещё раз.",
   "scan.hint": "Наводите камеру на QR-код участника.",

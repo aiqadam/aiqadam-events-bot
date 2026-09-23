@@ -1,16 +1,18 @@
 {
+  "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
     "TZTlXaCEO2hEvimUowbSA"
   ],
   "displayName": "reminders",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "cron_expression",
     "name": "trigger",
     "nextAction": {
+      "displayName": "read published events",
       "name": "step_1",
       "nextAction": {
         "displayName": "due windows",
@@ -50,6 +52,7 @@
                             "format": "None",
                             "message": "{{step_8['output'].text}}",
                             "protect_content": false,
+                            "reply_markup": "{{step_8['output'].replyMarkup}}",
                             "web_page_preview": false
                           },
                           "propertySettings": {},
@@ -69,14 +72,17 @@
                           }
                         },
                         "input": {
+                          "miniappUrl": "{{variables['MINIAPP_URL']}}",
                           "target": "{{step_5['output'].item}}",
                           "texts": {
                             "remind.24h": "Напоминание: «{title}» завтра, {when}. Адрес: {address}",
-                            "remind.2h": "«{title}» через два часа, {when}. Адрес: {address}"
+                            "remind.2h": "«{title}» через два часа, {when}. Адрес: {address}",
+                            "remind.btn.directions": "Как добраться",
+                            "ticket.btn.open": "Открыть билет"
                           }
                         },
                         "sourceCode": {
-                          "code": "export const code = async (inputs) => {\n  // Русский-онли до платформенного i18n — ADR-0014.\n  // ИСТОЧНИК ТЕКСТА — i18n/ru.json. Правка формулировки — это правка ru.json\n  // И входа этого шага; иначе они разъедутся молча (ловит check-texts.py).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const tgt = (inputs.target && typeof inputs.target === 'object') ? inputs.target : {};\n  const kind = str(tgt.kind) === '2h' ? '2h' : '24h';\n  const text = t(kind === '2h' ? 'remind.2h' : 'remind.24h', { title: str(tgt.title), when: str(tgt.when), address: str(tgt.address) });\n  return { text: text, kind: kind };\n};",
+                          "code": "export const code = async (inputs) => {\n  // Русский-онли до платформенного i18n — ADR-0014.\n  // ИСТОЧНИК ТЕКСТА — i18n/ru.json. Правка формулировки — это правка ru.json\n  // И входа этого шага; иначе они разъедутся молча (ловит check-texts.py).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const tgt = (inputs.target && typeof inputs.target === 'object') ? inputs.target : {};\n  const kind = str(tgt.kind) === '2h' ? '2h' : '24h';\n  const text = t(kind === '2h' ? 'remind.2h' : 'remind.24h', { title: str(tgt.title), when: str(tgt.when), address: str(tgt.address) });\n  // W90 (#142): под напоминанием — «Открыть билет» (Mini App) и, для\n  // офлайн-события с координатами, «Как добраться» (Яндекс.Карты). Карта —\n  // только когда mapsUrl непустой (собран в step_2 из валидных lat/lon,\n  // OWN-2); онлайн-событие и событие без координат остаются без кнопки.\n  const base = str(inputs.miniappUrl).replace(/\\/+$/, '');\n  const eventId = str(tgt.eventId);\n  const rows = [];\n  if (base !== '' && eventId !== '') {\n    rows.push([{ text: t('ticket.btn.open'), web_app: { url: base + '/#/ticket?event_id=' + eventId } }]);\n  }\n  if (str(tgt.mapsUrl) !== '') {\n    rows.push([{ text: t('remind.btn.directions'), url: str(tgt.mapsUrl) }]);\n  }\n  const replyMarkup = rows.length ? { inline_keyboard: rows } : {};\n  return { text: text, kind: kind, replyMarkup: replyMarkup };\n};",
                           "packageJson": "{}"
                         }
                       },
@@ -175,7 +181,7 @@
                 "regs": "{{step_3['output']}}"
               },
               "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const byEvent = {};\n  (Array.isArray(inputs.due) ? inputs.due : []).forEach((d) => { if (d && str(d.eventId) !== '') byEvent[str(d.eventId)] = d; });\n  // Получатели — только status=registered. Отбор повторяется в коде (Q25):\n  // фильтр чтения может разойтись, решение — по полям записи.\n  const seen = {};\n  const targets = arr(inputs.regs).map(flat)\n    .filter((r) => str(r.status) === 'registered' && byEvent[str(r.event_id)] && str(r.telegram_id) !== '')\n    .filter((r) => { const k = str(r.event_id) + '|' + str(r.telegram_id); if (seen[k]) return false; seen[k] = true; return true; })\n    .map((r) => { const d = byEvent[str(r.event_id)]; return { eventId: str(r.event_id), kind: str(d.kind), telegramId: str(r.telegram_id), title: str(d.title), when: str(d.when), address: str(d.address) }; });\n  return { targets: targets, count: targets.length };\n};",
+                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const byEvent = {};\n  (Array.isArray(inputs.due) ? inputs.due : []).forEach((d) => { if (d && str(d.eventId) !== '') byEvent[str(d.eventId)] = d; });\n  // Получатели — только status=registered. Отбор повторяется в коде (Q25):\n  // фильтр чтения может разойтись, решение — по полям записи.\n  const seen = {};\n  const targets = arr(inputs.regs).map(flat)\n    .filter((r) => str(r.status) === 'registered' && byEvent[str(r.event_id)] && str(r.telegram_id) !== '')\n    .filter((r) => { const k = str(r.event_id) + '|' + str(r.telegram_id); if (seen[k]) return false; seen[k] = true; return true; })\n    .map((r) => { const d = byEvent[str(r.event_id)]; return { eventId: str(r.event_id), kind: str(d.kind), telegramId: str(r.telegram_id), title: str(d.title), when: str(d.when), address: str(d.address), mapsUrl: str(d.mapsUrl) }; });\n  return { targets: targets, count: targets.length };\n};",
                 "packageJson": "{}"
               }
             },
@@ -237,7 +243,7 @@
             "events": "{{step_1['output']}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parse = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n  // Показ — Asia/Tashkent временем (OWN-3): окно уже говорит «завтра» / «через\n  // два часа» (шаблон remind.24h/remind.2h), дата с годом здесь — шум\n  // (W51: было «17 сентября 2026 г. в 17:41»). Форма прототипа: when='18:30'.\n  const WHEN_FMT = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n\n  const H = 3600 * 1000;\n  const now = Date.now();\n  const due = [];\n  arr(inputs.events).map(flat)\n    .filter((e) => str(e.status) === 'published' && str(e.id) !== '')\n    .forEach((e) => {\n      const ms = parse(str(e.starts_at));\n      if (!isFinite(ms)) return;\n      const dt = ms - now;\n      // Окна OWN-16: 24h iff 2h<dt<=24h, 2h iff 0<dt<=2h. В момент старта —\n      // ничего; пропущенное окно не досылается (dt<=0 — пропуск навсегда).\n      // Событие, опубликованное поздно (dt уже <2h), вид 24h не получит никогда.\n      let kind = '';\n      if (dt > 2 * H && dt <= 24 * H) kind = '24h';\n      else if (dt > 0 && dt <= 2 * H) kind = '2h';\n      else return;\n      due.push({ eventId: str(e.id), title: str(e.title), startsAt: str(e.starts_at), address: str(e.address), kind: kind, when: WHEN_FMT.format(new Date(ms)) });\n    });\n  const seen = {};\n  const ids = due.map((d) => d.eventId).filter((id) => { if (seen[id]) return false; seen[id] = true; return true; });\n  return { nowIso: new Date(now).toISOString(), due: due, dueCount: due.length, dueIdsCsv: ids.length ? ids.join(',') : '__none__' };\n};",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parse = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n  // Показ — Asia/Tashkent временем (OWN-3): окно уже говорит «завтра» / «через\n  // два часа» (шаблон remind.24h/remind.2h), дата с годом здесь — шум\n  // (W51: было «17 сентября 2026 г. в 17:41»). Форма прототипа: when='18:30'.\n  const WHEN_FMT = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n\n  // W90 (#142): карта «Как добраться» — только когда координаты заполнены и\n  // осмысленны. Пусто/нечисло/вне диапазона/(0,0) — не гео: (0,0) — это\n  // Гвинейский залив, а не адрес (баг #124, закрыт в W76). Ссылка не\n  // хранится, а собирается из lat/lon (OWN-2).\n  const mapsUrlOf = (e) => {\n    const latS = str(e.lat);\n    const lonS = str(e.lon);\n    if (latS === '' || lonS === '') return '';\n    const lat = Number(latS);\n    const lon = Number(lonS);\n    if (!isFinite(lat) || !isFinite(lon)) return '';\n    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return '';\n    if (lat === 0 && lon === 0) return '';\n    return 'https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat;\n  };\n\n  const H = 3600 * 1000;\n  const now = Date.now();\n  const due = [];\n  arr(inputs.events).map(flat)\n    .filter((e) => str(e.status) === 'published' && str(e.id) !== '')\n    .forEach((e) => {\n      const ms = parse(str(e.starts_at));\n      if (!isFinite(ms)) return;\n      const dt = ms - now;\n      // Окна OWN-16: 24h iff 2h<dt<=24h, 2h iff 0<dt<=2h. В момент старта —\n      // ничего; пропущенное окно не досылается (dt<=0 — пропуск навсегда).\n      // Событие, опубликованное поздно (dt уже <2h), вид 24h не получит никогда.\n      let kind = '';\n      if (dt > 2 * H && dt <= 24 * H) kind = '24h';\n      else if (dt > 0 && dt <= 2 * H) kind = '2h';\n      else return;\n      due.push({ eventId: str(e.id), title: str(e.title), startsAt: str(e.starts_at), address: str(e.address), kind: kind, when: WHEN_FMT.format(new Date(ms)), mapsUrl: mapsUrlOf(e) });\n    });\n  const seen = {};\n  const ids = due.map((d) => d.eventId).filter((id) => { if (seen[id]) return false; seen[id] = true; return true; });\n  return { nowIso: new Date(now).toISOString(), due: due, dueCount: due.length, dueIdsCsv: ids.length ? ids.join(',') : '__none__' };\n};",
             "packageJson": "{}"
           }
         },
@@ -260,7 +266,9 @@
             "tQEzfGR3hYG0ztG50Po00",
             "kSRM3ouou0Owj2yDYk92W",
             "8me4o2U2wj6cyrv8lfJv9",
-            "iUPI69WFE2B8w3BBHdrak"
+            "iUPI69WFE2B8w3BBHdrak",
+            "EKEX5zyhKo3WChz5ZquY0",
+            "Br2f0wjLugSGIS2kjfoFE"
           ],
           "filters": {
             "filters": [

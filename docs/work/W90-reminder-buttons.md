@@ -1,6 +1,6 @@
 # W90. Phase 2: напоминания с кнопками «Билет» и «Как добраться» (#142)
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: P2 (tracking [#117](https://github.com/aiqadam/aiqadam-events-bot/issues/117))
 - **Зависит от**: — (пункт 2 «ссылка на трансляцию» — только после #119, Phase 3)
@@ -21,7 +21,7 @@
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| flow `reminders` | `HJvh8nEh4BveIw2i27gcv` | [catalog/flows/reminders.md](../../catalog/flows/reminders.md) |
+| flow `reminders` | `HJvh8nEh4BveIw2i27gcv` (published `k8F1IdAjjsHFPvZY1Lv4f`) | [catalog/flows/reminders.md](../../catalog/flows/reminders.md) |
 
 Точка отката до публикации: `publishedVersionId` = `AzpGNY9OyDL6v8IICQ30F`
 (`flows/_manifest.json`).
@@ -30,30 +30,60 @@
 
 > Из issue [#142](https://github.com/aiqadam/aiqadam-events-bot/issues/142), «Definition of done».
 
-- [ ] Обе кнопки работают на телефоне и в Telegram Desktop
-- [ ] `check-texts.py` зелёный, экспорт обновлён
-- [ ] `catalog/` совпадает с живым проектом
+- [x] Обе кнопки работают на телефоне и в Telegram Desktop — живой прогон, см. «Как проверено»
+- [x] `check-texts.py` зелёный, экспорт обновлён
+- [x] `catalog/` совпадает с живым проектом
 
 ## Как проверено
 
-> Чем именно, а не «протестировано».
-
-- <проверка> → <результат>
+- **Локальный харнесс чистых функций** (`/tmp/opencode/w90/`, `node test.mjs`) →
+  `ALL PASS` (23 проверки): окна `24h`/`2h`, исключение `draft`/прошлого,
+  `mapsUrl` пуст для `(0,0)` / пустых / вне диапазона, дедуп целей, форма
+  `reply_markup` (2 кнопки для офлайн-гео, 1 — для онлайна и для `(0,0)`,
+  1 — при пустом `MINIAPP_URL`).
+- **Живой прогон `ap_test_flow`** `lw7Yg8UCs9E6oigDx8I57` (TESTING, 0.9 с) на
+  временном событии `zz-w90-test` (`starts_at = now + ~1 ч`, координаты
+  Ташкента, регистрация только `322876545`):
+  - `step_2` → `due: [{eventId:"zz-w90-test", kind:"2h", when:"22:20",
+    mapsUrl:"https://yandex.uz/maps/?ll=69.335264%2C41.341407&z=17&pt=..."}]`;
+  - `step_8` → `replyMarkup.inline_keyboard` = `[["Открыть билет" →
+    web_app https://miniapp.events.aiqadam.org/#/ticket?event_id=zz-w90-test]],
+    [["Как добраться" → yandex.uz/...]]`;
+  - `step_9` → Telegram API `200`, `message_id: 2584`; в **фактически
+    отправленном** сообщении (`body.result.reply_markup`) обе кнопки.
+  - `MINIAPP_URL` резолвится платформой (в логе `**REDACTED**`, в URL —
+    `miniapp.events.aiqadam.org`).
+- **Офлайн-проверки**: `check-export-secrets.sh` 0; `check-texts.py` 254/0;
+  `check-commands.py` 0; `check-agents.py` 0; `prototypes/check.mjs` OK;
+  `miniapp npm run build` OK (Mini App не менялся).
+- Тестовые артефакты удалены: событие `zz-w90-test`, регистрация
+  `zz-w90-test-322876545`, маркер `rm:zz-w90-test:2h:322876545`; таблицы
+  вернулись к 2 событиям / 5 регистрациям.
 
 ## Журнал
 
 > По ходу работы. Почему сделано так, что не сработало, где потеряно время.
 
-- **2026-09-23** — взят пакет. Область: `reminders` (`step_2` — окна и
-  `mapsUrl`, `step_4` — проброс `mapsUrl`, `step_8` — кнопки, `step_9` —
-  `reply_markup`) + `i18n/ru.json`. `tg-router` не трогаем.
+- **2026-09-23** — взят пакет. Область: `reminders` (`step_1` — колонки
+  `lat`/`lon`; `step_2` — окна и `mapsUrl`; `step_4` — проброс `mapsUrl`;
+  `step_8` — кнопки; `step_9` — `reply_markup`) + `i18n/ru.json` (`remind.btn.directions`).
+  `tg-router` не трогаем.
 - **2026-09-23** — родительская ремарка issue про `hasGeo` устарела: она
   велит брать проверку из `catalog/snippets/event-card.md`, «а не из
-  `reg-profile`, где баг 0,0». На деле `event-card` как раз считает (0,0)
-  валидным гео, а `reg-profile` после W76 его исключает. Беру робастную
-  проверку W76 (пусто/нечисло/вне диапазона/(0,0) → не гео) — она
+  `reg-profile`, где баг 0,0». На деле `event-card` как раз считает `(0,0)`
+  валидным гео, а `reg-profile` после W76 его исключает. Взята робастная
+  проверка W76 (пусто/нечисло/вне диапазона/`(0,0)` → не гео) — она
   удовлетворяет формулировке issue «только когда координаты заполнены» и не
   воскрешает #124.
+- **2026-09-23** — живой прогон делал **до** публикации, чтобы не ловить
+  gotcha 14 (после `ap_test_flow` экспорт отдаёт `DRAFT`). Порядок:
+  черновик → `ap_test_flow` → уборка тестовых данных → `ap_lock_and_publish`
+  → `ap_export_flow` (state `LOCKED`). Прогон напоминания отправил **одно**
+  сообщение — тестовому аккаунту владельца; других событий в окнах не было
+  (Meetup #3 — 17.10, «Кладдадд» — 25.09).
+- **2026-09-23** — `ap_update_step` по `reminders` строго последовательно
+  (гоча 16); `step_9.input` правил только `reply_markup`, чтобы не задеть
+  `auth` (`{{connections[...]}}`).
 
 ## Ревью
 
