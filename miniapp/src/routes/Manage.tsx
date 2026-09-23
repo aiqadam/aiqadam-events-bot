@@ -559,14 +559,17 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setConfirmExit(false);
       return;
     }
-    if (showForm && step > 0) {
+    if (showForm && !done && manageTab === 'event' && step > 0) {
       setErrs([]);
       setStep((s) => Math.max(0, s - 1));
       return;
     }
     backToList();
-  }, [cancelSheet, deleteSheet, confirmExit, showForm, step, backToList]);
-  useBackButton(cancelSheet || deleteSheet || confirmExit || (showForm && (!!eventId || step > 0)), goBack);
+  }, [cancelSheet, deleteSheet, confirmExit, showForm, done, manageTab, step, backToList]);
+  useBackButton(
+    cancelSheet || deleteSheet || confirmExit || (showForm && !done && manageTab === 'event' && (!!eventId || step > 0)),
+    goBack,
+  );
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.

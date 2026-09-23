@@ -310,7 +310,7 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
 
   return (
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
-      <BackButton show={fromApp} onBack={() => window.history.back()} />
+      <BackButton show={fromApp} onBack={handleBack} />
       <div className={`card ticket-card ${isError && !cancelled ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         <h1 className="empty-heading" id="title">
           {title}
