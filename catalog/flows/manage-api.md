@@ -286,7 +286,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 
 ## Зависимости
 
-- **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение и upsert),
+- **Таблицы**: `events` (`R4aSQpLZvw7d3u6DVOSjH`, чтение, upsert и удаление черновика — `tables-delete-record`, W66),
   `staff` (`PnDy6gw9tlLUqTGk2EOUn`, чтение), `registrations`
   (`SM8tMxfQuQCHRDdAiNJyQ`, чтение), `event_staff` (`t1g8Vae3iEoDk93D6Rle7`,
   чтение / create / update), `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение:
