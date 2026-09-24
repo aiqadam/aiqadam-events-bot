@@ -1,10 +1,10 @@
 # W100. Перепривязка шагов с недоступных версий qadam'ов
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн — попутная находка W99, решение владельца в чате
 - **Зависит от**: W99 (ак колбэка меню; та же причина — пин на недоступную версию)
-- **Начат**: 2026-09-24 · **Закрыт**: —
+- **Начат**: 2026-09-24 · **Закрыт**: 2026-09-24
 
 ## Цель
 
@@ -29,7 +29,14 @@ http. Живое состояние — [catalog/overview.md](../../catalog/over
       (`ap_validate_flow` по каждому из 15 флоу — без «Unavailable Qadam Versions»)
 - [x] `ap_validate_flow` по каждому флоу чист
 - [x] `catalog/` совпадает с живым проектом
-- [ ] Независимое ревью
+- [x] Независимое ревью (3 круга; круг 3 — «замечаний нет»)
+
+## Закрытие
+
+- **2026-09-24 — готов.** Круг 1: «важно» — `staff-accept` остался DRAFT
+  после теста (исправлено). Круг 2: «важно» — то же у `tg-router`
+  (исправлено). Круг 3: «замечаний нет». 68 шагов в 15 флоу перепривязаны,
+  дерево сверено, живые прогоны прошли.
 
 ## Как проверено
 
@@ -251,6 +258,56 @@ http. Живое состояние — [catalog/overview.md](../../catalog/over
    одной ветке. Урок тот же, что в круге 1: не гонять тесты между `publish`
    и снятием снимка.
 
+### Круг 3
+
+- **Ревьюер**: агент (review-agent, чистый контекст), **дата**: 2026-09-24
+- **Вердикт**: замечаний нет
+
+#### Как проверено
+
+- Живой `ap_export_flow` `tg-router` (`nyaBzgKGG8TTTsryjc9tW`): `flows[0].id` =
+  `IUhunmfHugu5pUFBx6gYR`, `state: LOCKED`, `updated 08:11:09Z` — совпадает
+  с `publishedVersionId` в `flows/_manifest.json` и с `version_id` строки
+  `migrations` `2026-09-24-w100-16` (прочитана `ap_find_records`).
+- Все 16 строк `package: W100` в `migrations` сверены с `_manifest.json` —
+  16/16 `version_id` совпадают.
+- Точечные живые `ap_export_flow` по mcp-снимкам W100: `menu` — LOCKED,
+  `flows[0].id = BTl8TqBftj2zmNhgChZDP`; `reg-profile` — LOCKED,
+  `2NgfMOhv5Gvushbhoexgi`; `staff-accept` — LOCKED, `BLlc5yNIFIfbY3pXF34rC`;
+  `bcast-step` — LOCKED, `SxzoGVUba6hkzMHUQce4G`. Все четыре равны
+  `publishedVersionId` манифеста — новых DRAFT-расхождений нет.
+- `ap_list_runs` (TESTING): последние тестовые прогоны — 2026-09-24 07:51
+  (`staff-accept`, `menu`, `fn-parse-start`, `tg-router`), после ~08:20 ни
+  одного. `ap_get_run` по прогонам 07:08 и 07:51 подтверждает: тесты трогали
+  ровно эти четыре флоу; `tg-router`, `menu`, `staff-accept` сейчас LOCKED.
+- `fn-parse-start` отдаёт DRAFT `oG1KA0SNUzlEeyBSHHlpf` (`created 09-13`,
+  `updated 09-20`) при манифестной `kFNxo90Y8u65ncLzBiVku` — это **не новое**:
+  ровно та пара из [Q44](../OPEN-QUESTIONS.md#q44) (документированный пример
+  «`ap_export_flow` отдаёт черновик»), флоу снят REST-скриптом (`source`
+  не `mcp`), сегодняшними тестами не изменён (`updated` остался 09-20), к W100
+  не относится.
+- `ap_validate_flow` по всем 29 флоу манифеста — без «Unavailable Qadam
+  Versions» (`reg-api` — 39 valid + 1 skipped, известный W60). Дополнительно:
+  `ChatBot` — чисто; `zz-diag-skip-primitive` — 3 valid + 1 skipped;
+  `zz-access-check-delete-me` — незаконфигурированный триггер (диагностический,
+  DISABLED, та же находка круга 2, к W100 не относится).
+- Офлайн: `tools/check-texts.py i18n/ru.json flows/*.json` — 29 флоу, 254 пары,
+  0 расхождений, exit 0; `tools/check-commands.py flows/*.json` — 0 нарушений,
+  exit 0; `bash tools/check-export-secrets.sh` — 0 токенов, 0 hex, переменные
+  как ожидалось, 0 полей `auth` (вакуумно на mcp-снимках — принято замечанием 4
+  круга 1), exit 0.
+- `tools/check-migrations.py` не запускался: ключа платформы
+  (`QADAM_API_KEY`/Keychain) нет; сверка манифест↔инстанс↔`migrations` сделана
+  вручную через `ap_export_flow` + `ap_find_records`.
+- Git: ветка `w100-telegram-pin-migration`, HEAD `3d8050e`, рабочее дерево
+  чистое; последние два коммита (`7100f1e`, `3d8050e`) меняют только журнал и
+  `flows/_manifest.json`.
+
 ## Хвосты и блокеры
 
-- Повторное независимое ревью после круга 2 (закрытие `tg-router`) не запущено.
+- Замечания 2–4 круга 1 («на будущее») остаются на будущее: `reg-profile`
+  trigger `exampleData` — гоча #19; `reg-afterword` MCP-снимок без `auth` —
+  нужен REST-снимок при наличии ключа; `check-export-secrets.sh` на MCP-снимках
+  не проверяет `auth`-поля (общий хвост, не W100).
+- `tools/check-migrations.py` не запускался — нет ключа платформы; сверка
+  манифест↔инстанс↔`migrations` сделана вручную (`ap_export_flow` + `ap_find_records`).
