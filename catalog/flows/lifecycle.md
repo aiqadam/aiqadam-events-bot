@@ -17,7 +17,7 @@
 | step_4 | `tables-find-records registrations` | `event_id in finishedIds`, `limit 500` |
 | step_5 | CODE «afterword targets» | непустой `checked_in_at` → `{telegramId, chatId, eventId}`, дедуп пар |
 | step_6 | LOOP_ON_ITEMS | по `targets` |
-| step_8 (в цикле) | `subflows : callFlow reg-afterword` | `queue`, fire-and-forget, `flowProps.payload` |
+| step_8 (в цикле) | `subflows : callFlow reg-afterword` | `inline`, `flowProps.payload` |
 
 ## Зависимости
 
@@ -40,6 +40,11 @@
   и послесловия следующим шагам всё равно уходят. Отметку `finished` такой
   апдейт не теряет — событие остаётся `published` и попадёт в `due` на
   следующем тике.
+- **`step_8` — `executionMode: inline`, без `waitForResponse`.** Цикл `step_6`
+  ждёт окончания каждого вызова `reg-afterword` (включая отправку сообщения
+  Bot API), а не рассылает их очередью параллельно. Для крона раз в 15 мин
+  это приемлемо; `reg-afterword` пауз внутри не имеет (иначе `inline` был бы
+  запрещён платформой).
 - **Известный риск (не блокер): у `step_8` (`callFlow`) `continueOnFailure`
   выключен.** Упавший вызов послесловия обрывает цикл `step_6` — оставшиеся
   получатели этого тика пропускаются. Повторная попытка возможна только пока
