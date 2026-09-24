@@ -16,7 +16,7 @@
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData` |
+| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
 | step_1 | `tables-find-records users` | `profile_completed_at` вызывающего — гейт ADR-0034 |
 | step_2 | CODE «gate» | `needsOnboard` (пусто → true) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
