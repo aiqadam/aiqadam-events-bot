@@ -16,8 +16,7 @@
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
-| step_14 | `answer_callback_query` (`continueOnFailure`) | ack колбэка меню (`menu:bcast_help`); на `/start` идёт с пустым id и тихо падает — не мешает |
+| trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData` |
 | step_1 | `tables-find-records users` | `profile_completed_at` вызывающего — гейт ADR-0034 |
 | step_2 | CODE «gate» | `needsOnboard` (пусто → true) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
@@ -105,6 +104,11 @@
   (`step_10`) маршрутизирует префикс `menu:` в это же меню, а `step_11`
   отдаёт инструкцию в 3 шага (`bcast.howto.title`/`step1`/`step2`/`step3`) —
   тот же текст, что таб «Рассылка» Mini App. Гостю и контролёру (кнопки нет)
-  колбэк отдаёт обычное меню. `step_14` подтверждает колбэк; на `/start` он
-  вызывается с пустым `callbackQueryId` и падает под `continueOnFailure`.
-  Это не команда — префикс колбэка, ADR-0025 не затронут.
+  колбэк отдаёт обычное меню. Это не команда — префикс колбэка, ADR-0025 не
+  затронут.
+- **Ack колбэка — в `tg-router`, не здесь (W99).** Раньше `menu` первым шагом
+  звал `answer_callback_query`, но `callbackQueryId` непуст только у колбэка:
+  на `/start` и обычном тексте шаг всё равно делал HTTP-визит в Bot API и
+  получал `400` — 0,3–0,7 с из ~1,2 с прогона впустую (`continueOnFailure`
+  прятал). Шаг из флоу убран; ack делает первый шаг ветки `menu_cb` в
+  `tg-router` (`step_22`), до вызова меню.
