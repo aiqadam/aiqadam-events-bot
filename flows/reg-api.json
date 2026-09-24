@@ -1143,7 +1143,7 @@
                               "type": "TEXT"
                             },
                             "operator": "eq",
-                            "value": "{{step_2['output'].eventId}}"
+                            "value": "{{step_2['output'].eventIdOrNone}}"
                           }
                         ]
                       },
@@ -1183,7 +1183,7 @@
                             "type": "TEXT"
                           },
                           "operator": "eq",
-                          "value": "{{step_2['output'].eventId}}"
+                          "value": "{{step_2['output'].eventIdOrNone}}"
                         }
                       ]
                     },
@@ -1353,7 +1353,7 @@
             "targetTelegramId": "{{trigger['output'].body.telegramId}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const bool = (v) => v === true || str(v).toLowerCase() === 'true';\n  const hmac = (inputs.hmac && typeof inputs.hmac === 'object') ? inputs.hmac : {};\n  return {\n    valid: hmac.valid === true || str(hmac.valid) === 'true',\n    telegramId: str(hmac.telegramId),\n    action: str(inputs.action).trim().toLowerCase(),\n    eventId: str(inputs.eventId).trim(),\n    consentPdn: bool(inputs.consentPdn),\n    consentMarketing: bool(inputs.consentMarketing),\n    profileFirst: str(inputs.profileFirst).trim(),\n    profileLast: str(inputs.profileLast).trim(),\n    profilePosition: str(inputs.profilePosition).trim(),\n    profileCompany: str(inputs.profileCompany).trim(),\n    profileCity: str(inputs.profileCity).trim(),\n    // W73 (#125, ADR-0039): самоудаление аккаунта. `confirm` — явное\n    // подтверждение из шита; `targetTelegramId` — то, что пришло в теле\n    // (нормализация его не доверяет: решение в step_9, IDOR-гейт).\n    confirm: bool(inputs.confirm),\n    targetTelegramId: str(inputs.targetTelegramId).trim(),\n    now: new Date().toISOString()\n  };\n};\n",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const bool = (v) => v === true || str(v).toLowerCase() === 'true';\n  const hmac = (inputs.hmac && typeof inputs.hmac === 'object') ? inputs.hmac : {};\n  const eventId = str(inputs.eventId).trim();\n  return {\n    valid: hmac.valid === true || str(hmac.valid) === 'true',\n    telegramId: str(hmac.telegramId),\n    action: str(inputs.action).trim().toLowerCase(),\n    eventId: eventId,\n    // W101: tables-find-records fail-closed на пустом значении eq. step_7/step_8\n    // фильтруют по eventIdOrNone: непустой sentinel для mine, profile_* и\n    // delete_account, где события нет; для register/cancel равен eventId.\n    eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    consentPdn: bool(inputs.consentPdn),\n    consentMarketing: bool(inputs.consentMarketing),\n    profileFirst: str(inputs.profileFirst).trim(),\n    profileLast: str(inputs.profileLast).trim(),\n    profilePosition: str(inputs.profilePosition).trim(),\n    profileCompany: str(inputs.profileCompany).trim(),\n    profileCity: str(inputs.profileCity).trim(),\n    // W73 (#125, ADR-0039): самоудаление аккаунта. `confirm` — явное\n    // подтверждение из шита; `targetTelegramId` — то, что пришло в теле\n    // (нормализация его не доверяет: решение в step_9, IDOR-гейт).\n    confirm: bool(inputs.confirm),\n    targetTelegramId: str(inputs.targetTelegramId).trim(),\n    now: new Date().toISOString()\n  };\n};",
             "packageJson": "{}"
           }
         },
