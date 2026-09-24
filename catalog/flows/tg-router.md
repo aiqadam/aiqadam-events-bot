@@ -71,10 +71,10 @@
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
 | step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft` (**W79, #131:** и фото без подписи — `hasPhoto`, если апдейт не альбомный, `mediaGroupId === ''`); **колбэки меню — по префиксу `menu:`** (W68, #120). Проверки рассылок и меню стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод `ob_await_*` перекрывает его (п. 9 контракта) |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
-| step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`queue`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
-| step_20 | `callFlow reg-profile` (`queue`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
-| step_21 | `callFlow staff-accept` (`queue`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
-| step_15 | `callFlow menu` (`queue`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025), обычный текст (W73, #125) и колбэк `menu:*` (W68, #120); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
+| step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`inline`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
+| step_20 | `callFlow reg-profile` (`inline`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
+| step_21 | `callFlow staff-accept` (`inline`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
+| step_15 | `callFlow menu` (`inline`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025), обычный текст (W73, #125) и колбэк `menu:*` (W68, #120); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
@@ -116,13 +116,19 @@
 - **Гейт `step_3` отбивает четыре причины одним полем `reason`**: `bad_update`,
   `duplicate`, `from_bot`, `non_private_chat` — порядок именно такой (от
   «апдейт нечитаем» к «пользователь не тот»).
-- **Все вызовы касаний (`callFlow` из веток `step_11`) — `executionMode: queue`,
-  не `inline`.** `inline` синхронен независимо от `waitForResponse` — родитель
-  ждёт всю длительность вызванного флоу, включая отправку сообщений Bot API
-  (~0,7–0,9 с каждое). `queue` — единственный режим, дающий настоящий
-  fire-and-forget. Правило: `queue` для «передал и не жду ответа» (как здесь),
-  `inline` только когда родителю нужен ответ (`fn-parse-start` на `step_9` —
-  inline, результат обязателен для маршрутизации).
+- **Вызовы касаний (`callFlow` из веток `step_11`) — `executionMode: inline`,
+  кроме `bcast-*` (`step_17`/`18`/`19` — `queue`).** `inline` синхронен
+  независимо от `waitForResponse`: роутер ждёт весь вызванный флоу, включая
+  отправку сообщений Bot API (~0,7–0,9 с каждое). Для `reg-*`, `menu` и
+  `staff-accept` это принято (решение владельца, [ADR-0040](../../docs/adr/0040-inline-for-touch-callflow.md));
+  `fn-parse-start` на `step_9` — `inline`, потому что ответ обязателен для
+  маршрутизации.
+- **`bcast-*` остаются `queue` не по стилю, а по запрету платформы.** Инлайн
+  запрещён, если вызываемый флоу делает паузу (Delay, Human Input/Approval,
+  собственный queue-`callFlow`). `bcast-step` содержит `callFlow bcast-run`, а
+  `bcast-run` — `Delay` и самовызов `callFlow bcast-run` в `queue`; инлайн
+  сломал бы рассылку чанками. У остальных получателей (`reg-*`, `menu`,
+  `staff-accept`) пауз нет.
 - **Апсерт `users` (`step_6`) не пропускает запись при отсутствии изменений** —
   упрощение ради читаемости флоу (ADR-0015); латентность записи в таблицу не
   в приоритете (дорогая статья — отправка сообщений, не запись в таблицу).
@@ -156,9 +162,9 @@
   рассылку» в меню организатора шлёт `menu:bcast_help`; `step_10` ловит
   префикс `menu:` до командной цепочки, `step_15` передаёт в меню
   `callbackData`/`callbackQueryId`. Различающий прогон: колбэк
-  `menu:bcast_help` → `step_10` `route: menu`, `step_11` ветка `menu`; меню
-  отдаёт инструкцию `bcast.howto.*`. `step_15` — `queue` (fire-and-forget),
-  как остальные касания.
+   `menu:bcast_help` → `step_10` `route: menu`, `step_11` ветка `menu`; меню
+   отдаёт инструкцию `bcast.howto.*`. `step_15` — `inline`, как остальные
+   касания (ADR-0040).
 - **Анонс спикера — фото без подписи тоже черновик (W79, #131).** `step_10`
   заводит `bcast_draft` для пересланного сообщения, если есть текст/подпись
   **или** фото (`hasPhoto`) и это не альбомный апдейт (`mediaGroupId === ''`).
