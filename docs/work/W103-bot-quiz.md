@@ -1,6 +1,6 @@
 # W103. Викторина в боте: свободный ответ, окно, одна попытка
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: вне волн
 - **Зависит от**: —
@@ -18,40 +18,94 @@
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| flow `<name>` | `<flowId>` | [catalog/flows/<name>.md](../../catalog/flows/<name>.md) |
-| таблица `<name>` | `<tableId>` | [catalog/tables/<name>.md](../../catalog/tables/<name>.md) |
+| flow `quiz` | `6wceNeNPjDvHW7zXOOBi2` (ext `WE8CzyJMuEnEXm1iBufk7`) | [catalog/flows/quiz.md](../../catalog/flows/quiz.md) |
+| flow `quiz-answer` | `g2CN4zwC3cJXj59bCYOMR` (ext `dCl7H1XhNWfqDx5BMR4UA`) | [catalog/flows/quiz-answer.md](../../catalog/flows/quiz-answer.md) |
+| таблица `quizzes` | `onPqavTOslmDuytZ5ErDf` (ext `RA6NwbSZw7rGtcYW7dB9x`) | [catalog/tables/quizzes.md](../../catalog/tables/quizzes.md) |
+| таблица `quiz_questions` | `dJvacDTJfkv3GUwY2CBZs` (ext `Uow3rhLvdObG1mBdUcxuS`) | [catalog/tables/quiz_questions.md](../../catalog/tables/quiz_questions.md) |
+| таблица `quiz_attempts` | `LWUEI27IwYuV9sXOVBw4R` (ext `JPo7yK4N9lxN8HxBwpmRs`) | [catalog/tables/quiz_attempts.md](../../catalog/tables/quiz_attempts.md) |
+| таблица `quiz_answers` | `0XbW7Mm9jS8rO9T3PFX3Y` (ext `tcwKTQH8W1EG4SHeHdoRr`) | [catalog/tables/quiz_answers.md](../../catalog/tables/quiz_answers.md) |
+
+Правки живых флоу: `tg-router` (`step_10` маршруты, `step_11` ветки `quiz`/
+`quiz_answer`, `step_24`/`step_25`), `menu` (`step_14` чтение `quizzes`,
+`step_11` кнопка), `i18n/ru.json` (ключи `quiz.*`, `menu.btn.quiz`).
+
+ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `quiz-answer`
+`DE2d4DwGmtOgd1s7EyLqZ`, `tg-router` `7XN2bitvXcuHXOPFieWRl`, `menu`
+`dZckEYYzOiEiE912a6hgn`.
 
 ## Чек-лист готовности
 
-> Скопировать из [BACKLOG.md](../BACKLOG.md) и отмечать по мере прохождения.
-> Плюс обязательный пункт для всех пакетов.
-
-- [ ] таблицы `quizzes`, `quiz_questions`, `quiz_attempts`, `quiz_answers` заведены, DATA-MODEL и `catalog/tables` обновлены;
-- [ ] флоу `quiz` собирает ответы, ведёт окно, держит одну попытку, пишет `elapsed`/`late`;
-- [ ] `tg-router`: маршрут `qz:` и свободный ввод `q_await_*` (перекрывает меню-фолбэк);
-- [ ] `menu`: кнопка «Викторина»;
-- [ ] тексты в `i18n/ru.json`, `tools/check-texts.py` — 0 расхождений;
-- [ ] положительный прогон (полное прохождение) и отрицательные (вне окна, повторный вход, не-текст);
-- [ ] экспорт `flows/*.json` тем же коммитом, `check-export-secrets.sh` — чисто;
-- [ ] `catalog/` совпадает с живым проектом.
+- [x] таблицы `quizzes`, `quiz_questions`, `quiz_attempts`, `quiz_answers` заведены, DATA-MODEL и `catalog/tables` обновлены;
+- [x] флоу `quiz` собирает ответы, ведёт окно, держит одну попытку, пишет `elapsed`/`late`;
+- [x] `tg-router`: маршрут `qz:` и свободный ввод `q_await_*` (перекрывает меню-фолбэк);
+- [x] `menu`: кнопка «Викторина»;
+- [x] тексты в `i18n/ru.json`, `tools/check-texts.py` — 0 расхождений (сверка по `flow:tg-router`, `flow:menu`; новые флоу покрыты после экспорта);
+- [ ] положительный прогон (полное прохождение) и отрицательные (вне окна, повторный вход, не-текст) — **прогнаны на TESTING, не на живом боте**;
+- [ ] экспорт `flows/*.json` тем же коммитом, `check-export-secrets.sh` — чисто — **хвост: нужен ключ платформы**;
+- [x] `catalog/` совпадает с живым проектом (карточки `quiz`, `quiz-answer`, `tg-router`, `menu`, 4 таблицы, `overview`, `tables/README`).
 
 ## Как проверено
 
-> Чем именно, а не «протестировано». Фикстуры, отрицательные сценарии, что видел на экране.
+Все проверки — `ap_test_flow`/`ap_test_step` в TESTING (прогоны на инстансе
+`events-dev`), фикстура владельца `telegramId 322876545`; тестовые ответы и
+попытка владельца удалены после проверок, сессия очищена.
 
-- <проверка> → <результат>
+- **вход, полный путь**: `quiz` (run `FDFucHlvFWVHHA4l9qtGQ`) → `active:true`,
+  `quizId:booth1`, `count:12`, `outcome:start`; `step_7` создал попытку,
+  `step_8` — сессию `q_await_answer`, `step_9` отправил вопрос 1 (Bot API `200`);
+- **ответ**: `quiz-answer` (run `QglmuGobvIDvbEBdY2yAl`) → `outcome:next`,
+  `elapsed_ms:13069`, `late:true`, ответ записан (`action:created`), сессия
+  переведена на `idx:2`, отправлен вопрос 2;
+- **финал**: сессия выставлялась на `idx:12` — `quiz-answer` (run
+  `fjEiu0V6I4su4XkrSjWlZ`) → `outcome:finish`, ответ записан, `quiz_attempts.finished_at`
+  проставлен, сессия закрыта (`scenario='-'`, `step='-'`), отправлен `quiz.done`;
+- **повторный вход**: `quiz` (run `FvY72yNwqY0NkbLTmzutP`) → `outcome:reply`,
+  текст «Вы уже прошли викторину» (попытка завершена);
+- **окно закрыто**: `ends_at` временно в прошлом → `quiz` (run `QiwIBTlwf7MbsDs65u46V`)
+  → `outcome:reply`, «Викторина сейчас не идёт»; `ends_at` восстановлен;
+- **маршрутизация tg-router**: колбэк `qz:start` (run `CTRhQ9MvFelHxKDyHiJtP`)
+  → `step_10 route:quiz`, ветка `quiz` выбрана, `step_24` вызвал `quiz`;
+  текст при сессии викторины (run `43PVt1OnaNKB6QlTbMJQI`) → `route:quiz_answer`,
+  ветка `quiz_answer`, `step_25` вызвал `quiz-answer`; фото (run
+  `sHzenmq48sYGgos9S5Icd`) → `route:none`, `Otherwise` (ответом не считается);
+- **кнопка гостя**: `menu` для не-staff профиля (run `kOql1WMFTZdPOrTBUDw5h`)
+  → `reply_markup` первой строкой `[Викторина / qz:start]`, затем `События`;
+- `ap_validate_flow` — `quiz` 12/12, `quiz-answer` 16/16, `tg-router` 26/26,
+  `menu` 15/15.
+
+Контент для стоенда: одна викторина `booth1` «Викторина у стойки», 12 вопросов
+(черновик владельца — в BACKLOG/обсуждении), окно `2026-09-23…2026-10-01` —
+**плейсхолдер, владельцу заменить на реальное**.
 
 ## Журнал
-
-> По ходу работы. Почему сделано так, что не сработало, где потеряно время.
 
 - **2026-09-24** — пакет взят. Решения владельца из обсуждения: вход кнопкой в
   меню (QR на стойке — обычная ссылка на бота, онбординг не трогаем); ответ —
   свободный текст, вариантов нет; таймер «10 секунд» проверяется **по факту
   ответа** (`elapsed` пишется, поздно — флаг `late`, не режем), активного
   отсчёта `Delay` нет; брошенная попытка — старт сначала; завершённую перепройти
-  нельзя; скоринг/лидерборд/страница не делаются; выгрузка — чтение таблицы
-  через MCP.
+  нельзя; скоринг/лидерборд/страница не делаются; выгрузка — чтение таблицы.
+- **2026-09-24** — два флоу, не один: вход (колбэк) и ответ (текст) — разные по
+  устройству касания ([ADR-0015](../../docs/adr/0015-one-touch-one-flow.md)),
+  поэтому `quiz` и `quiz-answer`, а не один роутер. Внутри каждого — свой
+  ROUTER (`start`/`reply` и `next`/`finish`/`reply`), пустую ветку от
+  `ap_build_flow` удаляли (`ap_delete_branch`, индекс 0).
+- **2026-09-24** — «10 секунд» — метка, не отказ: `elapsed` считается от
+  отправки вопроса ботом (`draft.shownAt`), активный `Delay`-флоу отброшен
+  (платформа не держит секунды точно). Следствие: пока гость не ответит, вопрос
+  ждёт; на стойке это никого не блокирует.
+- **2026-09-24** — `table_id`/`field.id` в шагах `tables`: `table_id` —
+  externalId таблицы, но `field.id` в фильтрах сработал и по **внутреннему**
+  id (`0bP9eErHjkFZuPDAmrJCQ` в `quiz/step_3` вернул ровно 12 вопросов). В
+  `values` upsert — только externalId полей (гоча 1).
+- **2026-09-24** — тестовый вход триггера `telegram-bot` — **сам `update`**,
+  без обёртки; у `callableFlow` — `{"data": {...}}`. Обёртка `{"update": {...}}`
+  у Telegram-триггера даёт `step_1 → ok:false`, все поля пусты — и `route:none`
+  без ошибки (тихий промах). Проверять шаги роутера прогоном **всего** флоу:
+  `ap_test_step` подхватывает сохранённый sample предыдущих шагов и врёт.
+- **2026-09-24** — после публикации любого флоу **не прогонять тесты до
+  экспорта**: `ap_test_*` переводит версию в DRAFT (гоча 14). Экспорт снимался
+  сразу после `ap_lock_and_publish`.
 
 ## Ревью
 
@@ -67,4 +121,21 @@
 
 ## Хвосты и блокеры
 
-- <что осталось, чего не хватает, к кому вопрос — или «нет»>
+- **Экспорт `flows/*.json` не снят: нет ключа платформы** в окружении агента
+  (`QADAM_API_KEY` / Keychain пусты). Версии сняты через `ap_export_flow`
+  (ID выше), но файлы и `flows/_manifest.json` — за владельцем:
+  `tools/export-flows.sh` (все флоу) или экспорт `quiz`, `quiz-answer`,
+  `tg-router`, `menu` и `tools/export-flow-mcp.py`. Без него `check-migrations.py`
+  не пройдёт (правило A: repo↔instance). После экспорта — `check-export-secrets.sh`.
+- **`migrations`**: строки `2026-09-24-w103-01…08` (4 таблицы `create`,
+  4 флоу `publish` с ID версий выше) — вставлены в таблицу `migrations`.
+- **Self-deletion (`reg-api/delete_account`) не чистит `quiz_answers`/
+  `quiz_attempts`.** Ответы и имя — ПД; при самоудалении аккаунта строки
+  викторины останутся. Правка живого `reg-api` — отдельная задача (названная
+  цена, ADR-0041 «Цена»).
+- **Живой положительный на реальном боте не прогнан** (нужен тап по кнопке в
+  Telegram и полное прохождение): проверено на TESTING, включая вызов
+  `tg-router → quiz` end-to-end.
+- **Контент и окно — плейсхолдеры**: 12 вопросов из обсуждения, окно
+  `2026-09-23…2026-10-01`. Владелец заменяет на реальные перед событием.
+- **Независимое ревью не запущено** (следующий шаг — review-agent).

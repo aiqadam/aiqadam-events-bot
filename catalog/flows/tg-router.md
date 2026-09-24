@@ -35,9 +35,15 @@
    туда же уходит **фото без подписи** (анонс спикера часто без текста);
    альбомный апдейт без подписи (`mediaGroupId`) не берётся — Part 2.
 6a. Колбэк меню (W68, #120; ack — W99): префикс `menu:` (кнопка «Как сделать
-   рассылку», `menu:bcast_help`) → `menu_cb` — ветка подтверждает колбэк
-   (`answer_callback_query`) и только затем вызывает `menu`. Не команда,
-   ADR-0025 не затронут.
+    рассылку», `menu:bcast_help`) → `menu_cb` — ветка подтверждает колбэк
+    (`answer_callback_query`) и только затем вызывает `menu`. Не команда,
+    ADR-0025 не затронут.
+6b. Колбэк викторины (W103, [ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md)):
+    префикс `qz:` (кнопка «Викторина», `qz:start`) → `quiz` (вход).
+    Префикс колбэка, не команда — ADR-0025 не затронут. Свободный текст при
+    активной сессии `scenario=quiz`, шаг `q_await_*` → `quiz_answer`
+    (`quiz-answer`); проверка стоит **до** меню-фолбэка W73, иначе ответ ушёл бы
+    в меню.
 7. Сессии `scenario` = `event_create`/`event_edit` (остатки чатового
    визарда в `sessions`) обработчика не имеют: их колбэки и нетекстовые
    апдейты уходят в `Otherwise` молча. Обычный текст отвечает меню по п. 8 —
@@ -72,12 +78,14 @@
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
 | step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft` (**W79, #131:** и фото без подписи — `hasPhoto`, если апдейт не альбомный, `mediaGroupId === ''`); **колбэки меню — по префиксу `menu:`** (W68, #120; W99: маршрут `menu_cb`, ack до входа в меню). Проверки рассылок и меню стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод `ob_await_*` перекрывает его (п. 9 контракта) |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`menu_cb`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`Otherwise` | |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`menu_cb`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`quiz`/`quiz_answer`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`inline`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
 | step_20 | `callFlow reg-profile` (`inline`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
 | step_21 | `callFlow staff-accept` (`inline`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
 | step_15 | `callFlow menu` (`inline`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025), обычный текст (W73, #125); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
 | step_22→23 | `answer_callback_query` (`continueOnFailure`) → `callFlow menu` (`inline`, `waitForResponse: false`) | ветка `menu_cb`: ack колбэка `menu:*` (W99) и то же меню-хаб, но по колбэку организатора (W68, #120) |
+| step_24 | `callFlow quiz` (`inline`, `waitForResponse: false`) | ветка `quiz`: вход викторины, `qz:start` (W103, ADR-0041) |
+| step_25 | `callFlow quiz-answer` (`inline`, `waitForResponse: false`) | ветка `quiz_answer`: приём свободного ответа викторины (W103, ADR-0041) |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
@@ -86,7 +94,8 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
-  `menu`, `bcast-draft`, `bcast-step`, `bcast-unsub`, `staff-accept` —
+  `menu`, `bcast-draft`, `bcast-step`, `bcast-unsub`, `staff-accept`,
+  `quiz`, `quiz-answer` —
   делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
@@ -180,3 +189,13 @@
   фото альбома. Источник для `copyMessage` — `chatId` + `messageId` входящего
   сообщения; они уже уезжают в `bcast-draft` (payload `messageId`), менять
   `step_17` не потребовалось.
+- **Викторина (W103, ADR-0041).** Два новых маршрута в `step_10`/`step_11`:
+  колбэк `qz:*` → `quiz` (`step_24`) и свободный текст при сессии
+  `scenario=quiz`/шаг `q_await_*` → `quiz_answer` (`step_25`). Обе ветки —
+  `inline`, как прочие касания (ADR-0040); пауз внутри callee нет. Ветка текста
+  стоит **до** меню-фолбэка W73 (иначе ответ уходил бы в меню), колбэк — рядом с
+  `menu:`. Кнопка живёт в `menu` и видна только в окне викторины; команды не
+  заведены — префиксы колбэка, ADR-0025 не затронут. Различающие прогоны:
+  `qz:start` → `route: quiz`, ветка `quiz`, вызов `quiz`; текст в сессии
+  викторины → `route: quiz_answer`, ветка `quiz_answer`, вызов `quiz-answer`;
+  фото на том же шаге → `Otherwise` (ответом не считается).
