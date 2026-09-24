@@ -41,7 +41,7 @@
 | step_8 | `tables-find-records events` | событие по `id eq eventIdOrNone`, `limit 1` |
 | step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`) + `consent_pdn`/`consent_marketing`: гейт PAR-8 (W50) и текущее значение для таба «Профиль» |
 | step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); все тексты — во входе `texts` |
-| step_10 | ROUTER по `outcome` | `register` / `registered_profile` / `cancel` / `profile` / `profile_saved` / `Otherwise` (`mine` и отказы без записей) |
+| step_10 | ROUTER по `outcome` | `register` / `cancel` / `registered_profile` / `profile` / `profile_saved` / `delete_account` / `Otherwise` (`mine` и отказы без записей) |
 | step_11 | `tables-upsert-records registrations` | создать/реактивировать: `id = <eventId>-<telegramId>`, `status = registered`, `registered_at = now`, ключ `(event_id, telegram_id)` |
 | step_12 | `tables-upsert-records users` (**пропущен, W60**) | было — `consent_pdn = true` + время, `consent_marketing = true/false` + время; отключён: повторная регистрация (эта ветка достижима только при `profileDone`) больше не трогает `users` — согласия уже записаны раньше, перезапись из шита каталога по умолчанию-снятому чекбоксу молча откатывала `consent_marketing` на `false` |
 | step_13 | `return_response` (`stop`) | `200 {ok, outcome:'registered', text}` |

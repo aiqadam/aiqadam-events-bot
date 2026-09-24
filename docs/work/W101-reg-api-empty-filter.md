@@ -1,6 +1,6 @@
 # W101. Прод-инцидент: пустой `eventId` в фильтрах `reg-api`
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: вне волн — инцидент в проде, решение владельца 2026-09-24
 - **Зависит от**: —
@@ -175,6 +175,76 @@
 - Каталог: `catalog/flows/reg-api.md` соответствует живой структуре (шаги,
   фильтры, заметка про `eventIdOrNone`); гочу в `AGENTS.md` подтверждает
   `ap_run_action`-находка журнала.
+
+## Ревью, круг 2
+
+> Повторное ревью после ответа владельца на замечания круга 1 (коммит `4e59fac`).
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash) · **Дата**: 2026-09-24 · **Вердикт**: есть замечания
+
+Оба замечания круга 1 закрыты, правки документов новых расхождений не внесли;
+блокеров и «важно» нет. Оставшиеся замечания — гигиена каталога и шапки
+журнала, не регресс W101.
+
+- **Замечание №2 круга 1 (точность доказательств) — закрыто.** Все четыре
+  действия (`mine`, `profile_get`, `register`, `cancel`) перепрогнаны живым
+  `curl` на опубликованной версии `RFehqjpi0tvZ5u1y71ZpQ`
+  (`created 2026-09-24T09:15:31Z`); прогоны 09:21 UTC, все `PRODUCTION`:
+  `6N5qz2ApjRmNw3gNxeO8P` (`mine` → `200 outcome:"mine"`, `eventIdOrNone:"__none__"`,
+  `step_7`/`step_8` = `[]`), `pXQNwW0saDXPIXMBIJLSu` (`profile_get` → `200
+  outcome:"profile"`), `jVzJiA9cGVKUVazYWjHda` (`register` → `200
+  outcome:"existing"`, `eventIdOrNone === eventId`), `3zMVU9ixpS5EOLZ2Mhea6`
+  (`cancel` → `404 reason:"not_registered"`). Публикаций после `09:15:41Z` не
+  было: `ap_export_flow` отдаёт ту же `RFehqjpi…`, `flows/_manifest.json` и
+  `migrations.version_id` совпадают. Формулировки «Как проверено» и строки
+  `W101` в `STATUS.md` исправлены верно.
+- **Замечание №1 круга 1 (аудит прочих `eq`-фильтров с необязательным
+  значением) — записано хвостом.** В разделе «Хвосты и блокеры» есть отдельный
+  пункт с подтверждённым примером `checkin-counter-api/step_3`; чинить
+  в W101 его не требуется.
+
+### Замечания
+
+1. **на будущее** — шапка журнала `- **Статус**: в работе` расходится с
+   [STATUS.md](../../docs/STATUS.md), где `W101` — «**на проверке**» (ждёт
+   повторного ревью). — где: `docs/work/W101-reg-api-empty-filter.md`,
+   строка 3. — почему важно: статус пакета должен читаться одним значением;
+   то же замечание помечалось в W10 (круг 1) и W71 (круг 1). Поправить
+   при ответе на ревью.
+2. **на будущее** — в `catalog/flows/reg-api.md` перечисление веток `step_10`
+   неполно: живьём их семь (`register`, `cancel`, `registered_profile`,
+   `profile`, `profile_saved`, `delete_account`, `Otherwise`), а в карточке
+   `delete_account` пропущен (описан отдельно только в строке `step_24→26`).
+   — где: `catalog/flows/reg-api.md`, строка `step_10`. — почему важно:
+   [чек-лист ревьюера](REVIEW-CHECKLIST.md) требует соответствия шагов/веток
+   «по списку»; пропуск pre-existing (с W73), не регресс W101 — дописать при
+   следующей правке карточки.
+
+### Чем проверено (ревьюер, круг 2)
+
+- Прогоны через MCP: `ap_list_runs` по `reg-api` (последние 30) — четыре
+  успешных 09:21 UTC с `Environment: PRODUCTION`; `ap_get_run` по каждому:
+  вход/выход `step_2` (`eventIdOrNone`), `step_7`/`step_8` (`[]` на `__none__`,
+  непусто на реальном `eventId`), итоговые `step_9`/ответ. Все — после
+  `created` опубликованной версии.
+- Версия: `ap_export_flow reg-api` — `flows[0].id = RFehqjpi0tvZ5u1y71ZpQ`,
+  `created 2026-09-24T09:15:31Z`; `ap_list_flows` — ENABLED/published;
+  `migrations` (`W101`, `publish`, `commit 45fb6f4`, `version_id`
+  `RFehqjpi…`); `flows/_manifest.json` — тот же id.
+- Структура и каталог: `ap_flow_structure` и `ap_validate_flow` («ready to
+  publish», 40 шагов / 39 valid / 1 skipped) сверены с
+  `catalog/flows/reg-api.md` — `step_2.eventIdOrNone`, фильтры `step_7`/`step_8`
+  по нему, `step_9` по сырому `eventId`; списком сошлись все 40 шагов,
+  расхождение — только перечисление веток `step_10` (замечание 2).
+- Офлайн: `tools/check-export-secrets.sh` (0), `tools/check-texts.py
+  i18n/ru.json flows/*.json` (254 пары, 0 расхождений),
+  `tools/check-commands.py i18n/*.json flows/*.json` (0).
+  `tools/check-migrations.py` — код 2: ключа платформы в среде нет
+  (`QADAM_API_KEY` unset, Keychain пуст); сверка manifest ↔ `ap_export_flow` ↔
+  `migrations` сделана вручную, как и написано в журнале.
+- `AGENTS.md` (гоча W101 про пустой `eq`) содержит общее правило и ссылку на
+  `__none__`; факт подтверждается диагностикой журнала (`ap_run_action` на
+  пустом значении и на сентинеле).
 
 ## Хвосты и блокеры
 
