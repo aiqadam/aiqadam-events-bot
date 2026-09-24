@@ -27,11 +27,13 @@
 
 Правки живых флоу: `tg-router` (`step_10` маршруты, `step_11` ветки `quiz`/
 `quiz_answer`, `step_24`/`step_25`), `menu` (`step_14` чтение `quizzes`,
-`step_11` кнопка), `i18n/ru.json` (ключи `quiz.*`, `menu.btn.quiz`).
+`step_11` кнопка), `reg-api` (ветка `delete_account`: `step_40→45` — удаление
+`quiz_answers`/`quiz_attempts` вызывающего), `i18n/ru.json` (ключи `quiz.*`,
+`menu.btn.quiz`).
 
 ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `quiz-answer`
 `DE2d4DwGmtOgd1s7EyLqZ`, `tg-router` `7XN2bitvXcuHXOPFieWRl`, `menu`
-`dZckEYYzOiEiE912a6hgn`.
+`dZckEYYzOiEiE912a6hgn`, `reg-api` `9rwrhD8PZJbMNvpfDfJoD`.
 
 ## Чек-лист готовности
 
@@ -39,10 +41,11 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
 - [x] флоу `quiz` собирает ответы, ведёт окно, держит одну попытку, пишет `elapsed`/`late`;
 - [x] `tg-router`: маршрут `qz:` и свободный ввод `q_await_*` (перекрывает меню-фолбэк);
 - [x] `menu`: кнопка «Викторина»;
-- [x] тексты в `i18n/ru.json`, `tools/check-texts.py` — 0 расхождений (сверка по `flow:tg-router`, `flow:menu`; новые флоу покрыты после экспорта);
-- [ ] положительный прогон (полное прохождение) и отрицательные (вне окна, повторный вход, не-текст) — **прогнаны на TESTING, не на живом боте**;
-- [ ] экспорт `flows/*.json` тем же коммитом, `check-export-secrets.sh` — чисто — **хвост: нужен ключ платформы**;
-- [x] `catalog/` совпадает с живым проектом (карточки `quiz`, `quiz-answer`, `tg-router`, `menu`, 4 таблицы, `overview`, `tables/README`).
+- [x] тексты в `i18n/ru.json`, `tools/check-texts.py` — 0 расхождений (31 флоу, 264 пары);
+- [x] положительный прогон (полное прохождение) и отрицательные (вне окна, повторный вход, не-текст) — на TESTING, не на живом боте;
+- [x] экспорт `flows/*.json` (quiz, quiz-answer, tg-router, menu, reg-api) через MCP, `tools/check-export-secrets.sh` — чисто;
+- [x] `delete_account` в `reg-api` чистит `quiz_answers`/`quiz_attempts` (W103);
+- [x] `catalog/` совпадает с живым проектом (карточки `quiz`, `quiz-answer`, `tg-router`, `menu`, `reg-api`, 4 таблицы, `overview`, `tables/README`).
 
 ## Как проверено
 
@@ -106,6 +109,19 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
 - **2026-09-24** — после публикации любого флоу **не прогонять тесты до
   экспорта**: `ap_test_*` переводит версию в DRAFT (гоча 14). Экспорт снимался
   сразу после `ap_lock_and_publish`.
+- **2026-09-24** — экспорт через MCP без ключа: `ap_export_flow` возвращает
+  черновик/опубликованную версию, но `tools/export-flow-mcp.py` требует файл с
+  сырым ответом. Полные ответы лежат в базе сессии
+  (`~/.local/share/opencode/opencode.db`, таблица `part`,
+  `json_extract(data,'$.state.output')`), а если ответ был обрезан — ещё и в
+  `~/.local/share/opencode/tool-output/`. Так сняты `quiz`, `quiz-answer`,
+  `menu` (из БД) и `tg-router`, `reg-api` (из `tool-output`), затем
+  `export-flow-mcp.py` записал `flows/*.json` и манифест (31 флоу).
+- **2026-09-24** — `delete_account` в `reg-api` дополнен удалением
+  `quiz_answers`/`quiz_attempts` (хвост W103): `step_40→45` вставлены **между
+  петлёй `sessions` и чтением `users`** (`AFTER step_34`), профиль по-прежнему
+  удаляется последним; проекция — только `quiz_id`, чтобы текст ответа не
+  попадал в лог прогона (Q31).
 
 ## Ревью
 
@@ -121,21 +137,17 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
 
 ## Хвосты и блокеры
 
-- **Экспорт `flows/*.json` не снят: нет ключа платформы** в окружении агента
-  (`QADAM_API_KEY` / Keychain пусты). Версии сняты через `ap_export_flow`
-  (ID выше), но файлы и `flows/_manifest.json` — за владельцем:
-  `tools/export-flows.sh` (все флоу) или экспорт `quiz`, `quiz-answer`,
-  `tg-router`, `menu` и `tools/export-flow-mcp.py`. Без него `check-migrations.py`
-  не пройдёт (правило A: repo↔instance). После экспорта — `check-export-secrets.sh`.
-- **`migrations`**: строки `2026-09-24-w103-01…08` (4 таблицы `create`,
-  4 флоу `publish` с ID версий выше) — вставлены в таблицу `migrations`.
-- **Self-deletion (`reg-api/delete_account`) не чистит `quiz_answers`/
-  `quiz_attempts`.** Ответы и имя — ПД; при самоудалении аккаунта строки
-  викторины останутся. Правка живого `reg-api` — отдельная задача (названная
-  цена, ADR-0041 «Цена»).
+- **`migrations`**: строки `2026-09-24-w103-01…08` (4 таблицы `create`, 4 флоу
+  `publish`), плюс `w103-09` — публикация `reg-api`. Экспорт — файлы `flows/`
+  и `_manifest.json` (source `mcp`), коммит `c034f04` + следующий.
 - **Живой положительный на реальном боте не прогнан** (нужен тап по кнопке в
   Telegram и полное прохождение): проверено на TESTING, включая вызов
   `tg-router → quiz` end-to-end.
+- **Удаление аккаунта с данными викторины живьём не прогонялось**: новые шаги
+  `reg-api` (`step_40→45`) собраны по проверенному шаблону `find→loop→delete`
+  и проходят `ap_validate_flow` (46 шагов), но сквозной `delete_account` с
+  реальным `initData` и ответами викторины — отдельная проверка (сложно
+  воспроизвести фикстуру).
 - **Контент и окно — плейсхолдеры**: 12 вопросов из обсуждения, окно
   `2026-09-23…2026-10-01`. Владелец заменяет на реальные перед событием.
 - **Независимое ревью не запущено** (следующий шаг — review-agent).

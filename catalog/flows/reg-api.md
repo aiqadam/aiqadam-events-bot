@@ -18,7 +18,7 @@
 | `mine` | регистрации вызывающего — живые (`registered`/`checked_in`), отменённые не возвращаются | `200 {ok, outcome:'mine', mine:[{eventId, status, registeredAt, checkedInAt}]}` |
 | `register` | создать регистрацию идемпотентно (IDM-1) с двумя согласиями | `200 {ok, outcome:'registered', text}` / `200 {ok, outcome:'existing', text}` (повтор — та же строка) / отказы (см. ниже) |
 | `cancel` | отменить до `starts_at` (PAR-5) | `200 {ok, outcome:'cancelled', text}` / `404 not_registered` / `409 too_late` |
-| `delete_account` | самоудаление аккаунта (GDPR, W73, ADR-0039): строки вызывающего из `users`, `registrations`, `feedback`, `broadcast_targets`, `sessions`. Требует `confirm: true` | `200 {ok, outcome:'delete_account', text}` / `403 forbidden` (чужой `telegramId` в теле) / `400 bad_request` (нет подтверждения) |
+| `delete_account` | самоудаление аккаунта (GDPR, W73, ADR-0039): строки вызывающего из `users`, `registrations`, `feedback`, `broadcast_targets`, `sessions`, `quiz_answers`, `quiz_attempts` (W103). Требует `confirm: true` | `200 {ok, outcome:'delete_account', text}` / `403 forbidden` (чужой `telegramId` в теле) / `400 bad_request` (нет подтверждения) |
 
 Отказы `register`: `400 pdn_required` (PAR-1 не отмечен — сервер требует,
 кнопка в шите без него выключена), `400 bad_request`, `404 not_found`,
@@ -55,6 +55,8 @@
 | step_27→29 | то же по `feedback` | |
 | step_30→32 | то же по `broadcast_targets` | |
 | step_33→35 | то же по `sessions` | |
+| step_40→42 | то же по `quiz_answers` (W103) | ответы викторины; проекция — только `quiz_id`, чтобы текст ответа и имя не попадали в лог прогона (Q31) |
+| step_43→45 | то же по `quiz_attempts` (W103) | попытки викторины |
 | step_36→38 | то же по `users` | профиль удаляется последним: сбой раньше оставляет строку для повторного вызова |
 | step_39 | `return_response` (`stop`) | `200 {ok, outcome:'delete_account', text}` |
 
@@ -62,7 +64,8 @@
 
 - **Таблицы**: `registrations` (чтение + запись + удаление), `users` (запись
   согласий + удаление), `events` (чтение), а также `feedback`,
-  `broadcast_targets`, `sessions` (только удаление, W73)
+  `broadcast_targets`, `sessions`, `quiz_answers`, `quiz_attempts`
+  (только удаление, W73/W103)
 - **Переменные**: `BOT_TOKEN`
 - **Флоу**: `fn-hmac-init-data` (`inline` — ответ нужен для маршрутизации)
 - **Connections**: —
@@ -131,9 +134,11 @@
   Подтверждение (`confirm: true`) обязательно — кнопка в табе «Профиль»
   шлёт его после шита. Повтор безвреден: циклы по пустым выборкам делают
   ноль итераций. **Границы Part 1:** удаляются `users`, `registrations`,
-  `feedback`, `broadcast_targets`, `sessions`; права и организационные
-  касания (`event_staff`, `staff`, `staff_invites`, `events.staff_id`) —
-  Part 2 (ADR-0039, «Границы»).
+  `feedback`, `broadcast_targets`, `sessions`, а с W103 — ещё `quiz_answers`
+  и `quiz_attempts` ([ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md):
+  ответы викторины — ПД, самоудаление обязано их стирать); права и
+  организационные касания (`event_staff`, `staff`, `staff_invites`,
+  `events.staff_id`) — Part 2 (ADR-0039, «Границы»).
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
   прогона `telegram_id` каждого участника события на любой вызов `register`/

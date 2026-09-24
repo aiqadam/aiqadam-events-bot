@@ -316,7 +316,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 Ключ `(quiz_id, telegram_id, question_idx)` — повторный ответ на тот же вопрос
 перезаписывает строку. Скоринга нет: победителей владелец определяет вне системы,
 выгружая таблицу. `answer` и `display_name` — ПД, поэтому самоудаление аккаунта
-([PAR-10](SPEC.md)) обязано чистить и эти строки — на момент W103 это названный хвост.
+([PAR-10](SPEC.md)) чистит и эти строки: `reg-api/delete_account` удаляет
+`quiz_answers` и `quiz_attempts` (W103, [ADR-0041](adr/0041-quiz-in-chat-not-a-page.md)).
 
 ## Идемпотентность
 
