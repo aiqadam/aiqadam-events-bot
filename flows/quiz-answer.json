@@ -279,10 +279,38 @@
                     "valid": true
                   },
                   {
-                    "displayName": "send closed",
-                    "name": "step_14",
+                    "displayName": "clear closed session",
+                    "name": "step_16",
+                    "nextAction": {
+                      "displayName": "send closed",
+                      "name": "step_14",
+                      "settings": {
+                        "actionName": "send_text_message",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_notification": false,
+                          "format": "None",
+                          "message": "{{step_5['output'].text}}",
+                          "protect_content": false,
+                          "web_page_preview": false
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.9.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
                     "settings": {
-                      "actionName": "send_text_message",
+                      "actionName": "tables-upsert-records",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -292,16 +320,25 @@
                         }
                       },
                       "input": {
-                        "chat_id": "{{trigger['output'].data.chatId}}",
-                        "disable_notification": false,
-                        "format": "None",
-                        "message": "{{step_5['output'].text}}",
-                        "protect_content": false,
-                        "web_page_preview": false
+                        "key_columns": [
+                          "N8CdPxcdxLX9vFCINvZbL"
+                        ],
+                        "table_id": "toTKgngMTqDNJWDpQMh4d",
+                        "values": {
+                          "values": [
+                            {
+                              "ESthrMwpn29JLvE2BNIj4": "-",
+                              "IdGimBh539UlGSz6L0Pyo": "-",
+                              "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                              "U9P3zTZHcFdAAtzLVVSYn": "{{step_5['output'].answeredAt}}",
+                              "sctBFEsMf10UobeFgzsVt": "{}"
+                            }
+                          ]
+                        }
                       },
                       "propertySettings": {},
-                      "qadamName": "@aiqadam/qadam-telegram-bot",
-                      "qadamVersion": "0.9.0"
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.6"
                     },
                     "type": "PIECE",
                     "valid": true

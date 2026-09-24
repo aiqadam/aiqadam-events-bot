@@ -32,8 +32,9 @@
 `menu.btn.quiz`).
 
 ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `quiz-answer`
-`DE2d4DwGmtOgd1s7EyLqZ`, `tg-router` `7XN2bitvXcuHXOPFieWRl`, `menu`
-`dZckEYYzOiEiE912a6hgn`, `reg-api` `9rwrhD8PZJbMNvpfDfJoD`.
+`0qb8WuWk3LvRSJN2LniKE`, `tg-router` `92PCVEseESWMxOZCKKBOX`, `menu`
+`dZckEYYzOiEiE912a6hgn`, `reg-api` `9rwrhD8PZJbMNvpfDfJoD` (последние две —
+после правок по ревью).
 
 ## Чек-лист готовности
 
@@ -122,18 +123,41 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
   петлёй `sessions` и чтением `users`** (`AFTER step_34`), профиль по-прежнему
   удаляется последним; проекция — только `quiz_id`, чтобы текст ответа не
   попадал в лог прогона (Q31).
+- **2026-09-24** — независимое ревью (агент-ревьюер, живой MCP): блокеров и
+  «важно» нет, три «на будущее». Два исправлены сразу:
+  (1) **ack колбэка** `qz:start` — `tg-router/step_26` в ветке `quiz`, до
+  вызова `quiz` (как W99 у `menu_cb`), иначе Telegram держал «часики»;
+  (2) **закрытие окна гасит сессию** — `quiz-answer/step_16` в ветке `reply`
+  пишет `scenario='-'`/`step='-'`, иначе текст после закрытия окна уходил в
+  `quiz_answer` вместо меню-фолбэка W73. Оба перепубликованы и экспортированы
+  заново; третий пункт (перезапуск недоделанной попытки не стирает старые
+  строки `quiz_answers`, а перезаписывает их лениво) — оставлен хвостом.
 
 ## Ревью
 
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 > Владелец пакета сюда не пишет — только отвечает под замечаниями, что исправлено.
 
-- **Ревьюер**: <агент> · **Дата**: YYYY-MM-DD · **Вердикт**: замечаний нет | есть замечания
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-24 · **Вердикт**: **есть замечания** — блокеров и «важно» нет; три замечания уровня «на будущее». Пакет может идти в `готов` после того, как владелец заведёт их в хвосты/OPEN-QUESTIONS (чинить сейчас не требуется).
 
 ### Замечания
 
-1. **блокер | важно | на будущее** — <что не так> — <флоу/шаг/файл> — <почему важно>
-   - *Исправлено*: <что сделал владелец> (YYYY-MM-DD)
+1. **на будущее** — ADR-0041 п.2 обещает при повторном входе в недоделанную викторину «стереть её и начать сначала», а реализация стирает только сессию: `quiz/step_8` перезаписывает `sessions.draft` на `idx:1`, но старые строки `quiz_answers` физически не удаляются — они перезаписываются по ключу лишь по мере повторных ответов (`quiz-answer/step_7`/`step_10`); шагов `tables-delete-record` в `quiz`/`quiz-answer` нет. Завершённая попытка не страдает (на ней все вопросы перезаписаны), но брошенная-и-перезапущенная-и-снова-брошенная оставляет устаревшие `quiz_answers` для вопросов, не отвеченных в новом проходе. Победителей это не ломает (завершённость — по `quiz_attempts.finished_at`), однако формулировка ADR и поведение расходятся. — `quiz`/`step_8`, `quiz-answer` (ветки `next`/`finish`) — свести ADR к реализации (в каталоге так и описано) либо добавить удаление старых строк при старте заново; зафиксировать решение.
+
+2. **на будущее** — закрытие окна по ходу викторины не закрывает сессию: `quiz-answer/step_5` в ветке `reply` отвечает `quiz.closed`, но `sessions` остаётся `scenario=quiz`, `step=q_await_answer` (закрывает её только финал, `step_12`). До истечения суточной свежести `tg-router/step_8` сессия жива, `step_10` продолжает уводить любой обычный текст в `quiz_answer`, и гость получает `quiz.closed` вместо меню-фолбэка W73. — `quiz-answer` (ветка `reply`) / `tg-router/step_10` — UX-мелочь; лечится закрытием сессии и в ветке «окно закрыто».
+
+3. **на будущее** — колбэк `qz:start` не подтверждается: `tg-router/step_24` только зовёт `quiz`, `answer_callback_query` не вызывается (в `tg-router` он один — `step_22` ветки `menu_cb`, W99). Telegram держит прогресс на кнопке до `answerCallbackQuery`; на логику викторины не влияет, но клиент показывает «часики» до ~30 с. — `tg-router` (ветка `quiz`) — если подтвердится живым тапом на реальном боте, добавить ack рядом с вызовом, как для `menu_cb`.
+
+### Что проверено
+
+- **Живой проект (MCP, `app-flow-events-dev`)** — `ap_flow_structure`/`ap_read_step_code` по `quiz` (`6wceNeNPjDvHW7zXOOBi2`, 12 шагов), `quiz-answer` (`g2CN4zwC3cJXj59bCYOMR`, 16), `tg-router` (`nyaBzgKGG8TTTsryjc9tW`, 26), `menu` (`1DORFhP9F3W00KpKz5wDw`, 15), `reg-api` (`SiYL8m6k4oy4YunAdZ1W7`, 46); `ap_validate_flow` — 12/12, 16/16, 26/26, 15/15, 46 (45 valid, 1 skipped `step_12`, W60). Структуры, входы CODE и роутеры совпадают с `catalog/flows/*`.
+- **Логика окна/одной попытки/`elapsed`/`late`** — прочитан код `quiz/step_2/step_5`, `quiz-answer/step_2/step_5`: окно `now ∈ [starts_at, ends_at]` (выбор позднейшей), `finished_at` как замок одной попытки, `elapsed = now - shownAt`, `late = elapsed > 10000`, ответ обрезан до 500. Сентинел `__none__` в фильтрах на месте.
+- **Различающие прогоны** — `quiz` вход `FDFucHlvFWVHHA4l9qtGQ` (`start`, попытка+сессия созданы, вопрос 1 отправлен), повтор после финала `FvY72yNwqY0NkbLTmzutP` (`reply`/`quiz.already`), окно закрыто `QiwIBTlwf7MbsDs65u46V` (`reply`/`quiz.closed`); `quiz-answer` финал `fjEiu0V6I4su4XkrSjWlZ` (запись ответа, `finished_at`, сессия `-`/`-`, `quiz.done`); `tg-router` `qz:start` `CTRhQ9MvFelHxKDyHiJtP` (`route:quiz` → `step_24`), текст при сессии `43PVt1OnaNKB6QlTbMJQI` (`route:quiz_answer` → `step_25`), фото `sHzenmq48sYGgos9S5Icd` (`route:none` → `Otherwise`); `menu` `kOql1WMFTZdPOrTBUDw5h` (`reply_markup` первой строкой `[Викторина / qz:start]`, затем `События`). Прогоны читал через `ap_get_run`, а не по журналу.
+- **`reg-api` ветка `delete_account`** — живая структура и опубликованный экспорт: `step_40→42` (`quiz_answers`) и `step_43→45` (`quiz_attempts`) стоят после петли `sessions` и **до** чтения/удаления `users` (`step_36→38`), профиль удаляется последним; удаление по внутреннему id через `LOOP_ON_ITEMS` (паттерн, отработанный на `registrations`); проекция — только `quiz_id` (текст ответа/имя в лог не пишутся, Q31); фильтры — по `step_2.telegramId` из проверенного `initData`. IDOR-гейт `step_9` (`target.ne.telegramId → 403`) и обязательный `confirm: true` не задеты. Сквозной `delete_account` с данными викторины не прогонялся (заявлено хвостом журнала).
+- **Таблицы** — `ap_list_tables`: `quizzes` (4 поля), `quiz_questions` (3), `quiz_attempts` (4), `quiz_answers` (8, `late` = dropdown `true`/`false`) совпадают с `catalog/tables/*` и `docs/DATA-MODEL.md` (id/externalId/типы). После тестов `quiz_attempts`/`quiz_answers` пусты (тестовые данные вычищены), `quizzes` — 1 строка `booth1`, `quiz_questions` — 12.
+- **Экспорт ↔ инстанс** — `ap_export_flow` по пяти флоу: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `quiz-answer` `DE2d4DwGmtOgd1s7EyLqZ`, `tg-router` `7XN2bitvXcuHXOPFieWRl`, `menu` `dZckEYYzOiEiE912a6hgn`, `reg-api` `9rwrhD8PZJbMNvpfDfJoD` — все `state: LOCKED` и равны `publishedVersionId` в `flows/_manifest.json`; `flows/*.json` в репозитории — `LOCKED`. `migrations`: строки `2026-09-24-w103-01…09` на месте, `version_id` совпадают с манифестом.
+- **AppSec** — `telegram_id` в `quiz`/`quiz-answer` берётся из апдейта, в `reg-api` — из проверенного `initData`; пользовательский текст в Telegram уходит с `format: "None"` (разметка не инъектируется, имя не эхоится); IDOR/confirm в `reg-api` целы; новых секретов и значений в экспорте нет. CSV-выгрузки пакет не строит — CSV-инъекция к пакету не относится.
+- **Офлайн** — `tools/check-texts.py i18n/ru.json flows/*.json` → 31 флоу, 264 пары, 0 расхождений; `tools/check-commands.py flows/*.json` → 0 нарушений; `bash tools/check-export-secrets.sh` → чисто (токен/ключ — ссылками, значений нет). `tools/check-migrations.py` **прогнать не удалось** — на машине нет ключа платформы (`QADAM_API_KEY`/Keychain); манифест ↔ инстанс сверен точечно по пяти флоу, остальные 26 записей W103 не менял (диф `_manifest.json` в `c034f04`/`547dfa7` — только `menu`, `tg-router`, `reg-api` + две новые записи `quiz`, `quiz-answer`). Пред-существующее расхождение (`ChatBot` есть в проекте, но не в манифесте) к W103 не относится — отсутствовал и до пакета.
 
 ## Хвосты и блокеры
 
@@ -148,6 +172,12 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
   и проходят `ap_validate_flow` (46 шагов), но сквозной `delete_account` с
   реальным `initData` и ответами викторины — отдельная проверка (сложно
   воспроизвести фикстуру).
+- **Перезапуск недоделанной попытки не стирает старые ответы сразу** (находка
+  ревью, «на будущее»): `quiz/step_8` сбрасывает только `sessions.draft`,
+  старые `quiz_answers` перезаписываются по ключу по мере повторных ответов.
+  Брошенная-перезапущенная-снова брошенная попытка может оставить строки
+  с прежним `answered_at`. Для выгрузки ИИ это шум, а не потеря; лечение —
+  `find→loop→delete` по `quiz_answers` в старте (`quiz`) при взятии хвоста.
 - **Контент и окно — плейсхолдеры**: 12 вопросов из обсуждения, окно
   `2026-09-23…2026-10-01`. Владелец заменяет на реальные перед событием.
 - **Независимое ревью не запущено** (следующий шаг — review-agent).

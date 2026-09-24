@@ -538,48 +538,72 @@
                               "valid": true
                             },
                             {
-                              "displayName": "call quiz (entry)",
-                              "name": "step_24",
+                              "displayName": "ack quiz callback",
+                              "name": "step_26",
+                              "nextAction": {
+                                "displayName": "call quiz (entry)",
+                                "name": "step_24",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "executionMode": "inline",
+                                    "flow": {
+                                      "exampleData": {
+                                        "callbackData": "qz:start",
+                                        "callbackQueryId": "sample-cbq-id",
+                                        "chatId": "322876545",
+                                        "firstName": "Тест",
+                                        "messageId": "0",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "WE8CzyJMuEnEXm1iBufk7"
+                                    },
+                                    "flowProps": {
+                                      "payload": {
+                                        "callbackData": "{{step_1['output'].callbackData}}",
+                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "firstName": "{{step_1['output'].firstName}}",
+                                        "messageId": "{{step_1['output'].messageId}}",
+                                        "messageText": "{{step_1['output'].text}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      }
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.15"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
                               "settings": {
-                                "actionName": "callFlow",
+                                "actionName": "answer_callback_query",
                                 "errorHandlingOptions": {
                                   "continueOnFailure": {
-                                    "value": false
+                                    "value": true
                                   },
                                   "retryOnFailure": {
                                     "value": false
                                   }
                                 },
                                 "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "callbackData": "qz:start",
-                                      "callbackQueryId": "sample-cbq-id",
-                                      "chatId": "322876545",
-                                      "firstName": "Тест",
-                                      "messageId": "0",
-                                      "telegramId": "322876545"
-                                    },
-                                    "externalId": "WE8CzyJMuEnEXm1iBufk7"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "firstName": "{{step_1['output'].firstName}}",
-                                      "messageId": "{{step_1['output'].messageId}}",
-                                      "messageText": "{{step_1['output'].text}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    }
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
+                                  "callback_query_id": "{{step_1['output'].callbackQueryId}}",
+                                  "show_alert": false
                                 },
                                 "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.15"
+                                "qadamName": "@aiqadam/qadam-telegram-bot",
+                                "qadamVersion": "0.9.0"
                               },
                               "type": "PIECE",
                               "valid": true

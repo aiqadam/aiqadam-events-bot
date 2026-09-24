@@ -14,7 +14,8 @@
 
 - **сессии/окна нет** (или номер вопроса вне диапазона) → `Outcome: ignore`,
   ничего не отправляется;
-- **окно закрылось по ходу** → `quiz.closed`, ответ не пишется;
+- **окно закрылось по ходу** → `quiz.closed`, ответ не пишется, сессия
+  закрывается (`step_16`), чтобы текст больше не уходил в викторину;
 - **ответ** → upsert `quiz_answers` (`answer` ≤500 символов, `elapsed_ms`,
   `late = elapsed > 10000`, `display_name`), затем следующий вопрос или финал.
   Финал: upsert `quiz_attempts.finished_at`, сессия закрывается (`scenario='-'`,
@@ -34,6 +35,7 @@
 | step_7→9 | upsert `quiz_answers` → upsert `sessions` → `send_text_message` | ветка `next`: запись ответа, `idx+1`, вопрос |
 | step_10→13 | upsert `quiz_answers` → upsert `quiz_attempts` → upsert `sessions` → `send_text_message` | ветка `finish`: запись ответа, `finished_at`, закрытие сессии, `quiz.done` |
 | step_14 | `send_text_message` | ветка `reply`: `quiz.closed` |
+| step_16 | `tables-upsert-records sessions` | ветка `reply`: сессия закрывается (`scenario='-'`, `step='-'`) — иначе после закрытия окна `tg-router` продолжает уводить текст в `quiz_answer` вместо меню |
 | step_15 | CODE noop | непустой fallback ROUTER'а |
 
 ## Зависимости

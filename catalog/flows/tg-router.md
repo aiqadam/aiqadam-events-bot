@@ -84,6 +84,7 @@
 | step_21 | `callFlow staff-accept` (`inline`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
 | step_15 | `callFlow menu` (`inline`, `waitForResponse: false`) | меню-хаб: голый `/start`, любая незнакомая команда (ADR-0025), обычный текст (W73, #125); получает `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
 | step_22→23 | `answer_callback_query` (`continueOnFailure`) → `callFlow menu` (`inline`, `waitForResponse: false`) | ветка `menu_cb`: ack колбэка `menu:*` (W99) и то же меню-хаб, но по колбэку организатора (W68, #120) |
+| step_26 | `answer_callback_query` (`continueOnFailure`) | ветка `quiz`: ack колбэка `qz:start` **до** вызова `quiz` (W103; тот же приём, что W99 у `menu_cb`) — иначе Telegram держит «часики» на кнопке |
 | step_24 | `callFlow quiz` (`inline`, `waitForResponse: false`) | ветка `quiz`: вход викторины, `qz:start` (W103, ADR-0041) |
 | step_25 | `callFlow quiz-answer` (`inline`, `waitForResponse: false`) | ветка `quiz_answer`: приём свободного ответа викторины (W103, ADR-0041) |
 | step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
@@ -198,4 +199,6 @@
   заведены — префиксы колбэка, ADR-0025 не затронут. Различающие прогоны:
   `qz:start` → `route: quiz`, ветка `quiz`, вызов `quiz`; текст в сессии
   викторины → `route: quiz_answer`, ветка `quiz_answer`, вызов `quiz-answer`;
-  фото на том же шаге → `Otherwise` (ответом не считается).
+  фото на том же шаге → `Otherwise` (ответом не считается). Ack колбэка
+  `qz:start` — `step_26` в ветке `quiz`, до вызова `quiz` (тот же приём, что
+  W99 у `menu_cb`).
