@@ -92,13 +92,25 @@
   {
     "flow": "menu",
     "flowId": "1DORFhP9F3W00KpKz5wDw",
-    "publishedVersionId": "BTl8TqBftj2zmNhgChZDP",
+    "publishedVersionId": "dZckEYYzOiEiE912a6hgn",
     "source": "mcp"
   },
   {
     "flow": "my-qr-api",
     "flowId": "WYmnxVM4xPAWZA1IvNZok",
     "publishedVersionId": "TTGweXrUUJZpntWXiWuO2"
+  },
+  {
+    "flow": "quiz",
+    "flowId": "6wceNeNPjDvHW7zXOOBi2",
+    "publishedVersionId": "NWzlzmSOieVWIrU4hlR1J",
+    "source": "mcp"
+  },
+  {
+    "flow": "quiz-answer",
+    "flowId": "g2CN4zwC3cJXj59bCYOMR",
+    "publishedVersionId": "DE2d4DwGmtOgd1s7EyLqZ",
+    "source": "mcp"
   },
   {
     "flow": "reg-afterword",
@@ -163,7 +175,7 @@
   {
     "flow": "tg-router",
     "flowId": "nyaBzgKGG8TTTsryjc9tW",
-    "publishedVersionId": "IUhunmfHugu5pUFBx6gYR",
+    "publishedVersionId": "7XN2bitvXcuHXOPFieWRl",
     "source": "mcp"
   }
 ]

@@ -538,6 +538,101 @@
                               "valid": true
                             },
                             {
+                              "displayName": "call quiz (entry)",
+                              "name": "step_24",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "inline",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "qz:start",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "firstName": "Тест",
+                                      "messageId": "0",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "WE8CzyJMuEnEXm1iBufk7"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "messageId": "{{step_1['output'].messageId}}",
+                                      "messageText": "{{step_1['output'].text}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.15"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call quiz-answer",
+                              "name": "step_25",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "inline",
+                                  "flow": {
+                                    "exampleData": {
+                                      "chatId": "322876545",
+                                      "firstName": "Тест",
+                                      "lastName": "Тестов",
+                                      "messageId": "0",
+                                      "messageText": "Мой ответ",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "dCl7H1XhNWfqDx5BMR4UA"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "lastName": "{{step_1['output'].lastName}}",
+                                      "messageId": "{{step_1['output'].messageId}}",
+                                      "messageText": "{{step_1['output'].text}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.15"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
                               "displayName": "намерение без обработчика",
                               "name": "step_16",
                               "settings": {
@@ -694,6 +789,34 @@
                                 ]
                               },
                               {
+                                "branchName": "quiz",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "caseSensitive": true,
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "quiz"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "quiz_answer",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "caseSensitive": true,
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "quiz_answer"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
                                 "branchName": "Otherwise",
                                 "branchType": "FALLBACK"
                               }
@@ -731,7 +854,7 @@
                             "startPayload": "{{step_1['output'].startPayload}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const messageText = String(inputs.messageText === undefined || inputs.messageText === null ? '' : inputs.messageText);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n  const parsedToken = String(parsed.token === undefined || parsed.token === null ? '' : parsed.token);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const mediaGroupId = String(inputs.mediaGroupId === undefined || inputs.mediaGroupId === null ? '' : inputs.mediaGroupId);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // W59 / ADR-0034 п.4: голый /start во время незавершённого онбординга,\n  // начатого по диплинку события, не должен уходить в menu — там ветка\n  // needs_onboard перетирает сессию черновиком без eventId, и финал\n  // становится finish_no_event (без регистрации), хотя человек пришёл по\n  // ссылке события. Возвращаем его в reg-start с сохранённым eventId.\n  // Только шаги ob_* (не await_marketing): завершивший профиль и ждущий\n  // ответа о рассылке голым /start в регистрацию не возвращается.\n  let draftObj = {};\n  try { draftObj = JSON.parse(sessionDraft || '{}'); } catch (e) { draftObj = {}; }\n  const draftUtm = String(draftObj.utm === undefined || draftObj.utm === null ? '' : draftObj.utm);\n  const continueEventOnboard = command === 'start' && parsedKind === '' && sessionActive\n    && sessionScenario === 'registration' && draftEventId !== '' && starts(sessionStep, 'ob_');\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). W79 (#131): черновик заводится и на фото без подписи\n  // (hasPhoto) — анонс спикера часто без текста; альбомные апдейты\n  // (mediaGroupId) без подписи не берём — это Part 2. Проверки стоят до\n  // командной цепочки, чтобы не сравнивать вычисленный маршрут ни с чем,\n  // кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s уходят в свои обработчики.\n  let badPayload = false;\n  // W73 (#125): обычный текст вне формы отвечает меню-карточкой, как /start,\n  // но с другой преамбулой (menu.fallback_text). Форма — шаг ob_await_*:\n  // там текст это ответ на вопрос, а не запрос меню.\n  let fallback = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (starts(callbackData, 'menu:')) {\n    // W68 (#120): кнопка «Как сделать рассылку» в меню-карточке staff'а —\n    // колбэк menu:bcast_help. Отвечает то же меню (инструкция bcast.howto.*).\n    // W99: ack колбэка делается отдельным шагом ветки menu_cb здесь, до входа\n    // в menu, — сам menu больше не зовёт answer_callback_query ни на /start,\n    // ни на тексте (пустой id давал холостой 400-вызов Bot API). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'menu_cb';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedValid && parsedKind === 's') {\n    // W10 / OWN-14: инвайт-ссылка контролёра s<eventId>-<token>.\n    route = 'staff_accept';\n  } else if (continueEventOnboard) {\n    // голый /start, но идёт онбординг по диплинку — продолжаем с событием\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true\n             && (fwdText !== '' || (hasPhoto === true && mediaGroupId === ''))) {\n    route = 'bcast_draft';\n  } else if (command === '' && callbackData === '' && forwarded !== true && messageText.trim() !== ''\n             && !(sessionActive && sessionScenario === 'registration' && starts(sessionStep, 'ob_await_'))) {\n    // W73 (#125): «привет»/«передумал» вне активной формы — короткий ответ\n    // меню-карточкой. Фото/стикеры без текста, старые колбэки, пересылки и\n    // свободный ввод в онбординге сюда не попадают — остаются как были.\n    route = 'menu';\n    fallback = true;\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    } else if (starts(callbackData, 'ob:')) {\n      // W50 / PAR-8: онбординг C — колбэки ob:* ведёт reg-profile.\n      route = 'reg_profile';\n    } else if (callbackData === '' && messageText.trim() !== '' && starts(sessionStep, 'ob_await_')) {\n      // W50 / PAR-8: свободный ввод в онбординге (имя/работа/город) —\n      // тоже reg-profile; чужие тексты вне шагов — в Otherwise молча.\n      route = 'reg_profile';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload, fallback: fallback,\n    eventId: continueEventOnboard ? draftEventId : parsedEventId,\n    token: parsedToken,\n    utm: continueEventOnboard ? draftUtm : parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
+                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const messageText = String(inputs.messageText === undefined || inputs.messageText === null ? '' : inputs.messageText);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n  const parsedToken = String(parsed.token === undefined || parsed.token === null ? '' : parsed.token);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const mediaGroupId = String(inputs.mediaGroupId === undefined || inputs.mediaGroupId === null ? '' : inputs.mediaGroupId);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // W59 / ADR-0034 п.4: голый /start во время незавершённого онбординга,\n  // начатого по диплинку события, не должен уходить в menu — там ветка\n  // needs_onboard перетирает сессию черновиком без eventId, и финал\n  // становится finish_no_event (без регистрации), хотя человек пришёл по\n  // ссылке события. Возвращаем его в reg-start с сохранённым eventId.\n  // Только шаги ob_* (не await_marketing): завершивший профиль и ждущий\n  // ответа о рассылке голым /start в регистрацию не возвращается.\n  let draftObj = {};\n  try { draftObj = JSON.parse(sessionDraft || '{}'); } catch (e) { draftObj = {}; }\n  const draftUtm = String(draftObj.utm === undefined || draftObj.utm === null ? '' : draftObj.utm);\n  const continueEventOnboard = command === 'start' && parsedKind === '' && sessionActive\n    && sessionScenario === 'registration' && draftEventId !== '' && starts(sessionStep, 'ob_');\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). W79 (#131): черновик заводится и на фото без подписи\n  // (hasPhoto) — анонс спикера часто без текста; альбомные апдейты\n  // (mediaGroupId) без подписи не берём — это Part 2. Проверки стоят до\n  // командной цепочки, чтобы не сравнивать вычисленный маршрут ни с чем,\n  // кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s уходят в свои обработчики.\n  let badPayload = false;\n  // W73 (#125): обычный текст вне формы отвечает меню-карточкой, как /start,\n  // но с другой преамбулой (menu.fallback_text). Форма — шаг ob_await_*:\n  // там текст это ответ на вопрос, а не запрос меню.\n  let fallback = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (starts(callbackData, 'menu:')) {\n    // W68 (#120): кнопка «Как сделать рассылку» в меню-карточке staff'а —\n    // колбэк menu:bcast_help. Отвечает то же меню (инструкция bcast.howto.*).\n    // W99: ack колбэка делается отдельным шагом ветки menu_cb здесь, до входа\n    // в menu, — сам menu больше не зовёт answer_callback_query ни на /start,\n    // ни на тексте (пустой id давал холостой 400-вызов Bot API). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'menu_cb';\n  } else if (starts(callbackData, 'qz:')) {\n    // W103 / ADR-0041: кнопка «Викторина» в меню — колбэк qz:start. Вход в\n    // викторину ведёт `quiz` (окно, одна попытка, первый вопрос). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'quiz';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedValid && parsedKind === 's') {\n    // W10 / OWN-14: инвайт-ссылка контролёра s<eventId>-<token>.\n    route = 'staff_accept';\n  } else if (continueEventOnboard) {\n    // голый /start, но идёт онбординг по диплинку — продолжаем с событием\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true\n             && (fwdText !== '' || (hasPhoto === true && mediaGroupId === ''))) {\n    route = 'bcast_draft';\n  } else if (sessionActive && sessionScenario === 'quiz' && callbackData === ''\n             && messageText.trim() !== '' && starts(sessionStep, 'q_await_')) {\n    // W103 / ADR-0041: свободный ответ викторины (шаг q_await_answer) —\n    // до ветки W73, иначе текст ушёл бы в меню-фолбэк.\n    route = 'quiz_answer';\n  } else if (command === '' && callbackData === '' && forwarded !== true && messageText.trim() !== ''\n             && !(sessionActive && sessionScenario === 'registration' && starts(sessionStep, 'ob_await_'))) {\n    // W73 (#125): «привет»/«передумал» вне активной формы — короткий ответ\n    // меню-карточкой. Фото/стикеры без текста, старые колбэки, пересылки и\n    // свободный ввод в онбординге сюда не попадают — остаются как были.\n    route = 'menu';\n    fallback = true;\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    } else if (starts(callbackData, 'ob:')) {\n      // W50 / PAR-8: онбординг C — колбэки ob:* ведёт reg-profile.\n      route = 'reg_profile';\n    } else if (callbackData === '' && messageText.trim() !== '' && starts(sessionStep, 'ob_await_')) {\n      // W50 / PAR-8: свободный ввод в онбординге (имя/работа/город) —\n      // тоже reg-profile; чужие тексты вне шагов — в Otherwise молча.\n      route = 'reg_profile';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload, fallback: fallback,\n    eventId: continueEventOnboard ? draftEventId : parsedEventId,\n    token: parsedToken,\n    utm: continueEventOnboard ? draftUtm : parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
                             "packageJson": "{}"
                           }
                         },
