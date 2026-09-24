@@ -60,11 +60,6 @@ W26 закрыт («готов», независимое ревью, три кр
 не построен (см. Flows выше); источник правды для строк —
 `i18n/*.json` в репозитории.
 
-В `events`/`registrations`/`event_staff` намеренно оставлена фикстура
-`demo` — нужна ревьюеру и последующим прогонам, чтобы проверять STF-2
-(права контролёра) без пересборки окружения. Подробности —
-[checkin-api.md](flows/checkin-api.md).
-
 ## Переменные и Connections
 
 [variables.md](variables.md), [connections.md](connections.md).

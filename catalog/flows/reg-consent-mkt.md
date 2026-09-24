@@ -17,10 +17,10 @@
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId`, `sessionDraft` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack |
-| step_2 | CODE «decide yes/no + разбор draft» | `isYes`, `cardMessageId`, `eventId`, `utm` |
+| step_2 | CODE «decide yes/no + разбор draft» | `isYes`, `cardMessageId`, `eventId`, `utm`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_4` (пустой `eq` валит шаг) |
 | step_3 | `tables-upsert-records users` (`continueOnFailure`) | `consent_marketing = true/false` + отметка времени **всегда** |
 | step_6 | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
-| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки: `title`, `starts_at`, `ends_at`, `address`, `lat`, `lon` (W76 — карта и календарь) |
+| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки: `title`, `starts_at`, `ends_at`, `address`, `lat`, `lon` (W76 — карта и календарь); фильтр `id eq eventIdOrNone` — при онбординге без события (ADR-0034) даёт пустую выборку, а не падение |
 | step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`/`ticketReplyMarkup`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic`; заголовок карточки и содержимое второго сообщения зависят от `hasEvent = eventId !== ''`. W76: карточка несёт адрес и «Открыть на карте» (только при валидных координатах, не `(0,0)`), в билет добавлена кнопка «Добавить в календарь» |
 | step_7 | `edit_message_text` (`continueOnFailure`) | карточка → итог диалога, **кнопки сняты** |
 | step_8 (On failure) | `send_text_message` | фолбэк: новая карточка если редактирование не удалось |
@@ -56,3 +56,7 @@
 - **Тексты `step_5` (W76):** в карточке — адрес и «Открыть на карте» (ссылка
   только при валидных координатах, не `(0,0)`), в билете — вторая кнопка
   «Добавить в календарь» (`event.card.btn_calendar`, ссылка Google Calendar).
+- **`step_4` фильтрует по `eventIdOrNone` (W102).** `tables-find-records`
+  fail-closed отклоняет пустой `eq`, а при онбординге без события `eventId`
+  в черновике пуст (ADR-0034). Sentinel даёт пустую выборку, и `step_5`
+  выбирает ветку «события нет» как раньше; платформенная гоча — `AGENTS.md`.

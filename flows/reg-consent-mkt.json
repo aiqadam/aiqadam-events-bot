@@ -181,7 +181,7 @@
                           "type": "TEXT"
                         },
                         "operator": "eq",
-                        "value": "{{step_2['output'].eventId}}"
+                        "value": "{{step_2['output'].eventIdOrNone}}"
                       }
                     ]
                   },
@@ -274,7 +274,7 @@
             "sessionDraft": "{{trigger['output'].data.sessionDraft}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:mkt:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  return {\n    isYes: isYes,\n    consentValue: isYes ? 'true' : 'false',\n    eventId: eventId, utm: utm, cardMessageId: cardId,\n    // Черновик на следующий шаг: promptMessageId допишется после отправки\n    // вопроса о телефоне — его message_id до отправки неизвестен.\n    draftJson: JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId, promptMessageId: 0 }),\n    now: new Date().toISOString()\n  };\n};",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:mkt:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  return {\n    isYes: isYes,\n    consentValue: isYes ? 'true' : 'false',\n    eventId: eventId,\n    // W102: непустой sentinel для фильтра step_4 (пустой eq валит шаг).\n    eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    utm: utm, cardMessageId: cardId,\n    // Черновик на следующий шаг: promptMessageId допишется после отправки\n    // вопроса о телефоне — его message_id до отправки неизвестен.\n    draftJson: JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId, promptMessageId: 0 }),\n    now: new Date().toISOString()\n  };\n};",
             "packageJson": "{}"
           }
         },

@@ -4,7 +4,7 @@
   "connectionIds": [],
   "displayName": "staff-events-api",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "catch_webhook",
@@ -13,20 +13,51 @@
       "displayName": "verify initData",
       "name": "step_1",
       "nextAction": {
-        "displayName": "read my staff rows",
-        "name": "step_2",
+        "displayName": "normalize initData",
+        "name": "step_6",
         "nextAction": {
-          "displayName": "read published events",
-          "name": "step_3",
+          "displayName": "read my staff rows",
+          "name": "step_2",
           "nextAction": {
-            "displayName": "shape staff events",
-            "name": "step_4",
+            "displayName": "read published events",
+            "name": "step_3",
             "nextAction": {
-              "displayName": "respond (staff events)",
-              "name": "step_5",
-              "nextAction": null,
+              "displayName": "shape staff events",
+              "name": "step_4",
+              "nextAction": {
+                "displayName": "respond (staff events)",
+                "name": "step_5",
+                "settings": {
+                  "actionName": "return_response",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "fields": {
+                      "body": {
+                        "error": "{{step_4['output'].error}}",
+                        "eventIds": "{{step_4['output'].eventIds}}",
+                        "ok": "{{step_4['output'].ok}}"
+                      },
+                      "headers": {},
+                      "status": "{{step_4['output'].httpStatus}}"
+                    },
+                    "respond": "stop",
+                    "responseType": "json"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-webhook",
+                  "qadamVersion": "0.1.35"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
               "settings": {
-                "actionName": "return_response",
                 "errorHandlingOptions": {
                   "continueOnFailure": {
                     "value": false
@@ -36,26 +67,20 @@
                   }
                 },
                 "input": {
-                  "fields": {
-                    "body": {
-                      "error": "{{step_4['output'].error}}",
-                      "eventIds": "{{step_4['output'].eventIds}}",
-                      "ok": "{{step_4['output'].ok}}"
-                    },
-                    "headers": {},
-                    "status": "{{step_4['output'].httpStatus}}"
-                  },
-                  "respond": "stop",
-                  "responseType": "json"
+                  "events": "{{step_3['output']}}",
+                  "hmac": "{{step_1['output'].data}}",
+                  "staff": "{{step_2['output']}}"
                 },
-                "propertySettings": {},
-                "qadamName": "@aiqadam/qadam-webhook",
-                "qadamVersion": "0.1.35"
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  // W50 (вердикт W49): какие события контролёру показывать кнопку сканера —\n  // решает сервер, страница только рисует. Активная строка event_staff\n  // (пустой revoked_at) на ещё не закончившееся опубликованное событие.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const hmac = inputs.hmac || {};\n  if (str(hmac.valid) !== 'true') {\n    return { httpStatus: 401, ok: false, error: 'invalid_init_data', eventIds: [] };\n  }\n  const me = str(hmac.telegramId);\n  const nowMs = Date.now();\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const byId = {};\n  arr(inputs.events).map(flat).forEach((r) => { if (r.status === 'published') byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const ids = arr(inputs.staff).map(flat)\n    .filter((r) => r.telegram_id === me && r.revoked_at === '' && byId[r.event_id] && notPast(byId[r.event_id]))\n    .map((r) => r.event_id);\n  return { httpStatus: 200, ok: true, error: '', eventIds: [...new Set(ids)] };\n};",
+                  "packageJson": "{}"
+                }
               },
-              "type": "PIECE",
+              "type": "CODE",
               "valid": true
             },
             "settings": {
+              "actionName": "tables-find-records",
               "errorHandlingOptions": {
                 "continueOnFailure": {
                   "value": false
@@ -65,16 +90,34 @@
                 }
               },
               "input": {
-                "events": "{{step_3['output']}}",
-                "hmac": "{{step_1['output'].data}}",
-                "staff": "{{step_2['output']}}"
+                "columns": [
+                  "39qJ4o2MYyNYsT2VtxfcK",
+                  "8me4o2U2wj6cyrv8lfJv9",
+                  "zIA6xEHm7y1bwkajoYDQn",
+                  "iUPI69WFE2B8w3BBHdrak"
+                ],
+                "filters": {
+                  "filters": [
+                    {
+                      "field": {
+                        "id": "iUPI69WFE2B8w3BBHdrak",
+                        "name": "status",
+                        "type": "STATIC_DROPDOWN"
+                      },
+                      "operator": "eq",
+                      "value": "published"
+                    }
+                  ]
+                },
+                "limit": 200,
+                "record_ids": [],
+                "table_id": "R4aSQpLZvw7d3u6DVOSjH"
               },
-              "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  // W50 (вердикт W49): какие события контролёру показывать кнопку сканера —\n  // решает сервер, страница только рисует. Активная строка event_staff\n  // (пустой revoked_at) на ещё не закончившееся опубликованное событие.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const hmac = inputs.hmac || {};\n  if (str(hmac.valid) !== 'true') {\n    return { httpStatus: 401, ok: false, error: 'invalid_init_data', eventIds: [] };\n  }\n  const me = str(hmac.telegramId);\n  const nowMs = Date.now();\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const byId = {};\n  arr(inputs.events).map(flat).forEach((r) => { if (r.status === 'published') byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const ids = arr(inputs.staff).map(flat)\n    .filter((r) => r.telegram_id === me && r.revoked_at === '' && byId[r.event_id] && notPast(byId[r.event_id]))\n    .map((r) => r.event_id);\n  return { httpStatus: 200, ok: true, error: '', eventIds: [...new Set(ids)] };\n};",
-                "packageJson": "{}"
-              }
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
             },
-            "type": "CODE",
+            "type": "PIECE",
             "valid": true
           },
           "settings": {
@@ -89,27 +132,26 @@
             },
             "input": {
               "columns": [
-                "39qJ4o2MYyNYsT2VtxfcK",
-                "8me4o2U2wj6cyrv8lfJv9",
-                "zIA6xEHm7y1bwkajoYDQn",
-                "iUPI69WFE2B8w3BBHdrak"
+                "r5WohfFLBagrxVrPDgB9s",
+                "Rs62LH1YLr1QBsnpIrJzH",
+                "zX2FO3bZZJuAZcVyZHiRw"
               ],
               "filters": {
                 "filters": [
                   {
                     "field": {
-                      "id": "iUPI69WFE2B8w3BBHdrak",
-                      "name": "status",
-                      "type": "STATIC_DROPDOWN"
+                      "id": "Rs62LH1YLr1QBsnpIrJzH",
+                      "name": "telegram_id",
+                      "type": "TEXT"
                     },
                     "operator": "eq",
-                    "value": "published"
+                    "value": "{{step_6['output'].telegramIdOrNone}}"
                   }
                 ]
               },
               "limit": 200,
               "record_ids": [],
-              "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+              "table_id": "t1g8Vae3iEoDk93D6Rle7"
             },
             "propertySettings": {},
             "qadamName": "@aiqadam/qadam-tables",
@@ -119,7 +161,6 @@
           "valid": true
         },
         "settings": {
-          "actionName": "tables-find-records",
           "errorHandlingOptions": {
             "continueOnFailure": {
               "value": false
@@ -129,33 +170,14 @@
             }
           },
           "input": {
-            "columns": [
-              "r5WohfFLBagrxVrPDgB9s",
-              "Rs62LH1YLr1QBsnpIrJzH",
-              "zX2FO3bZZJuAZcVyZHiRw"
-            ],
-            "filters": {
-              "filters": [
-                {
-                  "field": {
-                    "id": "Rs62LH1YLr1QBsnpIrJzH",
-                    "name": "telegram_id",
-                    "type": "TEXT"
-                  },
-                  "operator": "eq",
-                  "value": "{{step_1['output'].data.telegramId}}"
-                }
-              ]
-            },
-            "limit": 200,
-            "record_ids": [],
-            "table_id": "t1g8Vae3iEoDk93D6Rle7"
+            "telegramId": "{{step_1['output'].data.telegramId}}"
           },
-          "propertySettings": {},
-          "qadamName": "@aiqadam/qadam-tables",
-          "qadamVersion": "0.4.5"
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const telegramId = str(inputs.telegramId).trim();\n  // W102: tables-find-records fail-closed на пустом eq. Невалидный initData\n  // даёт telegramId '', фильтр step_2 получает sentinel и возвращает пусто\n  // (как раньше), а не валит прогон.\n  return { telegramIdOrNone: telegramId !== '' ? telegramId : '__none__' };\n};",
+            "packageJson": "{}"
+          }
         },
-        "type": "PIECE",
+        "type": "CODE",
         "valid": true
       },
       "settings": {

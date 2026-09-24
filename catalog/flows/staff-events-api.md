@@ -15,7 +15,8 @@
 |------|----------------|-----------|
 | trigger | `catch_webhook` | приём sync-запроса SPA (`body.initData`) |
 | step_1 | `callFlow fn-hmac-init-data` (`inline`) | проверка `initData`, `telegram_id` только оттуда (STF-2); окно 300 c |
-| step_2 | `tables-find-records event_staff` | строки вызывающего (`telegram_id`, limit 200) |
+| step_6 | CODE «normalize initData» | `telegramIdOrNone = telegramId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); невалидный `initData` даёт пустую выборку, а `step_4` отдаёт `401` |
+| step_2 | `tables-find-records event_staff` | строки вызывающего (`telegram_id eq telegramIdOrNone`, limit 200) |
 | step_3 | `tables-find-records events` | опубликованные события (status = `published`, limit 200) |
 | step_4 | CODE «shape staff events» | активные строки (`revoked_at` пуст) на не прошедшие опубликованные события → `eventIds[]`; невалидный `initData` → `401 invalid_init_data` |
 | step_5 | `return_response` (`stop`) | `200 {ok, eventIds[]}` |
@@ -40,3 +41,8 @@
   на приёмку W15, негатив (`401` на мусоре) доказан прогоном.
 - **Потребители**: `Events.tsx` (кнопки на карточках каталога) и `Manage.tsx`
   (кнопки в строках списка) — оба молча прячут кнопку при пустом ответе.
+- **`step_2` фильтрует по `telegramIdOrNone` (W102).** У флоу нет ROUTER-гейта
+  на `initData`: при невалидном `initData` `telegramId` пуст, и раньше
+  `tables-find-records` падал (fail-closed на пустом `eq`) до того, как
+  `step_4` успевал ответить `401`. Sentinel `__none__` возвращает прежнее
+  поведение: пустая выборка → `401` из `step_4`; платформенная гоча — `AGENTS.md`.

@@ -19,8 +19,8 @@
 |------|----------------|-----------|
 | trigger | `callableFlow` | `callbackData`, `messageText`, `messageId`, `sessionDraft`, `callbackQueryId`, `firstName`, `lastName`, `chatId`, `telegramId` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack колбэка; текстовый путь (пустой id) — мимо, без останова |
-| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
-| step_2 | `tables-find-records events` | событие по `id` из draft (после парсинга — ссылка вперёд невозможна) |
+| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
+| step_2 | `tables-find-records events` | событие по `id eq eventIdOrNone` (после парсинга — ссылка вперёд невозможна); при онбординге без события (голый `/start`) пустая выборка, а не падение |
 | step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); тексты — вход `texts` (ADR-0014) |
 | step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `finish_no_event` / `Otherwise` |
 | step_6 (`ignore`), step_7 (`Otherwise`) | CODE noop | чужой вход — тишина |
@@ -78,6 +78,12 @@
   дублированная цепочка шагов, а не условный шаг внутри одной ветки
   (ROUTER — единственный способ на платформе безопасно пропустить один
   шаг посреди цепочки).
+- **`step_2` фильтрует по `eventIdOrNone` (W102).** `tables-find-records`
+  fail-closed отклоняет пустой `eq`. Без sentinel онбординг без события
+  (голый `/start`, `draft.eventId: ''`) падал `500` на `step_2` до `step_4`,
+  то есть ветка `finish_no_event` была недостижима. Sentinel `__none__` даёт
+  пустую выборку — `step_4` выбирает `finish_no_event` как задумано;
+  платформенная гоча — `AGENTS.md`.
 - **Без атомарности**: между upsert `users` и `registrations` провал оставляет
   профиль без регистрации — повторный `/start` ведёт в `register` (профиль
   заполнен) и дооформляет; между записью и отправкой — IDM-1 в `reg-consent-mkt`.
