@@ -1,10 +1,10 @@
 # W103. Викторина в боте: свободный ответ, окно, одна попытка
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн
 - **Зависит от**: —
-- **Начат**: 2026-09-24 · **Закрыт**: —
+- **Начат**: 2026-09-24 · **Закрыт**: 2026-09-24
 
 ## Цель
 
@@ -159,11 +159,26 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
 - **AppSec** — `telegram_id` в `quiz`/`quiz-answer` берётся из апдейта, в `reg-api` — из проверенного `initData`; пользовательский текст в Telegram уходит с `format: "None"` (разметка не инъектируется, имя не эхоится); IDOR/confirm в `reg-api` целы; новых секретов и значений в экспорте нет. CSV-выгрузки пакет не строит — CSV-инъекция к пакету не относится.
 - **Офлайн** — `tools/check-texts.py i18n/ru.json flows/*.json` → 31 флоу, 264 пары, 0 расхождений; `tools/check-commands.py flows/*.json` → 0 нарушений; `bash tools/check-export-secrets.sh` → чисто (токен/ключ — ссылками, значений нет). `tools/check-migrations.py` **прогнать не удалось** — на машине нет ключа платформы (`QADAM_API_KEY`/Keychain); манифест ↔ инстанс сверен точечно по пяти флоу, остальные 26 записей W103 не менял (диф `_manifest.json` в `c034f04`/`547dfa7` — только `menu`, `tg-router`, `reg-api` + две новые записи `quiz`, `quiz-answer`). Пред-существующее расхождение (`ChatBot` есть в проекте, но не в манифесте) к W103 не относится — отсутствовал и до пакета.
 
+### Круг 2 — 2026-09-24 (после правок владельца)
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-24 · **Вердикт**: **замечаний нет** — оба исправления подтверждены живым проектом; ранее открытый пункт 1 остаётся осознанным хвостом (владелец завёл его в «Хвосты»).
+
+Проверено:
+
+- **`tg-router`** (`nyaBzgKGG8TTTsryjc9tW`, версия `92PCVEseESWMxOZCKKBOX`) — живая структура: `step_26` `ack quiz callback` (`@aiqadam/qadam-telegram-bot : answer_callback_query`, `callback_query_id = {{step_1['output'].callbackQueryId}}`, `show_alert:false`, **`continueOnFailure: true`**) стоит в ветке `quiz` **до** `step_24` (`callFlow quiz`; `step_24` — дочерний у `step_26`). Порядок ack → вызов верный; `continueOnFailure` не даёт упавшему ack заблокировать вход в викторину. `ap_validate_flow` — 27/27.
+- **`quiz-answer`** (`g2CN4zwC3cJXj59bCYOMR`, версия `0qb8WuWk3LvRSJN2LniKE`) — живая структура: `step_16` `clear closed session` (`tables-upsert-records sessions`, `scenario='-'`, `step='-'`, `draft='{}'`, ключ `telegram_id = {{trigger['output'].data.telegramId}}`) в ветке `reply` **перед** `step_14` (`send_text_message quiz.closed`). После закрытия окна `tg-router/step_8` больше не видит активной `scenario=quiz`, и обычный текст уходит в меню-фолбэк W73, а не в `quiz_answer`. `ap_validate_flow` — 17/17.
+- **Экспорт ↔ инстанс** — `ap_export_flow`: live `id` обоих флоу равны `92PCVEseESWMxOZCKKBOX` / `0qb8WuWk3LvRSJN2LniKE`, `state: LOCKED`; `flows/_manifest.json` и `flows/tg-router.json`/`flows/quiz-answer.json` — те же версии (`LOCKED`); диф `_manifest.json` в `b912218` — ровно эти две записи. `migrations`: `2026-09-24-w103-10` (`tg-router`, `92PCVE…`) и `2026-09-24-w103-11` (`quiz-answer`, `0qb8WuW…`), commit `b912218`.
+- **Каталог синхронен** — `catalog/flows/tg-router.md` (шаг `step_26`, заметка про ack) и `catalog/flows/quiz-answer.md` (`step_16`, контракт ветки `reply`) описывают ровно то, что в проекте.
+- **Регресс** — `ap_validate_flow` зелёный; маршруты `qz:`/`q_await_*`, фильтры и тексты не менялись. Офлайн: `check-texts.py` (31 флоу, 264 пары, 0 расхождений), `check-commands.py` (0), `check-export-secrets.sh` (чисто).
+
+К закрытию (на вердикт не влияет): в разделе «Хвосты» строка `migrations` всё ещё называет `w103-01…08` + `w103-09`, а последний пункт — «Независимое ревью не запущено»; при проставлении `готов` обновить (есть `w103-10/11`, оба круга ревью пройдены).
+
 ## Хвосты и блокеры
 
-- **`migrations`**: строки `2026-09-24-w103-01…08` (4 таблицы `create`, 4 флоу
-  `publish`), плюс `w103-09` — публикация `reg-api`. Экспорт — файлы `flows/`
-  и `_manifest.json` (source `mcp`), коммит `c034f04` + следующий.
+- **`migrations`**: строки `2026-09-24-w103-01…11` (4 таблицы `create`; публикации
+  `quiz`, `quiz-answer`, `tg-router`, `menu`, `reg-api` и перепубликации
+  `tg-router`/`quiz-answer` после правок по ревью). Экспорт — файлы `flows/` и
+  `_manifest.json` (source `mcp`).
 - **Живой положительный на реальном боте не прогнан** (нужен тап по кнопке в
   Telegram и полное прохождение): проверено на TESTING, включая вызов
   `tg-router → quiz` end-to-end.
@@ -180,4 +195,5 @@ ID опубликованных версий: `quiz` `NWzlzmSOieVWIrU4hlR1J`, `q
   `find→loop→delete` по `quiz_answers` в старте (`quiz`) при взятии хвоста.
 - **Контент и окно — плейсхолдеры**: 12 вопросов из обсуждения, окно
   `2026-09-23…2026-10-01`. Владелец заменяет на реальные перед событием.
-- **Независимое ревью не запущено** (следующий шаг — review-agent).
+- **Независимое ревью пройдено**: круг 1 — блокеров и «важно» нет, три
+  «на будущее» (два исправлены, одно — хвост выше); круг 2 — **«замечаний нет»**.
