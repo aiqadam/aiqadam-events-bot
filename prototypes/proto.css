@@ -338,7 +338,18 @@
 }
 @keyframes scan { 0% { top: 18%; } 50% { top: 82%; } 100% { top: 18%; } }
 @media (prefers-reduced-motion: reduce) { .scan-line { animation: none; top: 50%; } }
-.scan-hint { text-align: center; font-size: 13px; color: var(--muted-foreground); margin: -4px 0 14px; }
+/* Кадр — мок нативного попапа Telegram (showScanQrPopup, W62): подпись среды
+   и текст параметра text внутри кадра, а не строкой страницы под ним. */
+.scan-native-tag {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; white-space: nowrap;
+  color: color-mix(in oklch, var(--background) 70%, transparent);
+}
+.scan-native-hint {
+  position: absolute; left: 16px; right: 16px; bottom: 14px; text-align: center;
+  font-size: 13px; color: color-mix(in oklch, var(--background) 82%, transparent);
+}
 .verdict {
   display: flex; align-items: center; gap: 12px;
   border: 1px solid var(--border);
@@ -401,6 +412,8 @@
 }
 .ev-row:hover { border-color: color-mix(in oklch, var(--primary) 40%, var(--border)); }
 .ev-row .ev-main { flex: 1; min-width: 0; }
+/* ссылка-обёртка строки: вся область кликабельна, вид — как у строки */
+a.ev-main { display: block; text-decoration: none; color: inherit; }
 .ev-row .ev-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.3; }
 .ev-row .ev-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
 .ev-row .ev-tail { color: var(--muted-foreground); display: inline-flex; }
@@ -479,6 +492,17 @@
 .tabs-scroll .tabs { border-bottom: 0; min-width: max-content; }
 .tabs-scroll .tab { padding: 0 12px; }
 .tabs-wrap { border-bottom: 1px solid var(--border); margin: 0 -16px 12px; padding: 0 16px; }
+/* W71 (#123): в узком окне (~380px) табы умещаются без горизонтальной прокрутки.
+   Ширину окна Mini App задать нельзя, поэтому табы сжимаются равномерно;
+   overflow-x: auto выше остаётся фолбэком для совсем узких окон.
+   `:not(#parts-filter)` — в продукте фильтр участников переиспользует .tabs/.tab
+   со счётчиками (в эталоне это .segmented); его сжимать нельзя — подписи
+   наложатся. */
+@media (max-width: 400px) {
+  .tabs:not(#parts-filter) .tab { flex: 1 1 0; min-width: 0; padding: 0 6px; justify-content: center; }
+  .tabs-scroll .tabs { min-width: 0; }
+  .tabs-scroll .tab { padding: 0 6px; }
+}
 
 /* ---------- каталог: EventCard ---------- */
 .event-card { display: grid; grid-template-columns: 68px 1fr; gap: 16px; align-items: start; padding: 16px; margin-bottom: 12px; }
@@ -539,7 +563,7 @@
 
 /* =========================================================
    Продуктовые экраны v2 (вердикт владельца 2026-09-16):
-   каталог с «Моими билетами», регистрация, визард ивента, гео,
+   каталог с «Моими билетами», регистрация, визард события, гео,
    выбор контролёра, форма отзыва. Только брендовые токены.
    ========================================================= */
 
@@ -590,7 +614,7 @@
 .ticket-card .event-body { gap: 4px; }
 .ticket-cancel { margin-top: 18px; }
 
-/* ---------- визард ивента ---------- */
+/* ---------- визард события ---------- */
 .wizard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .step-dots { display: flex; gap: 5px; }
 .step-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
@@ -605,33 +629,10 @@
 }
 .capacity-live-value { font-family: var(--font-display); font-weight: 600; font-size: 24px; color: var(--primary); }
 
-/* ---------- гео: ссылка и точка на карте ---------- */
+/* ---------- гео: ссылка ---------- */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
-.loc-preview {
-  position: relative; height: 150px; overflow: hidden;
-  border: 1px solid var(--border); border-radius: var(--radius-lg);
-  background: var(--muted); margin-bottom: 8px;
-}
-.loc-grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.loc-preview::after {
-  content: '';
-  position: absolute; left: -10%; right: -10%; top: 58%; height: 24px;
-  background: color-mix(in oklch, var(--foreground) 10%, transparent);
-  transform: rotate(-8deg);
-}
-.loc-pin {
-  position: absolute; transform: translate(-50%, -100%);
-  color: var(--primary);
-  filter: drop-shadow(0 2px 3px color-mix(in oklch, var(--foreground) 30%, transparent));
-}
-.loc-preview.pickable { cursor: crosshair; }
-.loc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--primary); margin-top: 2px; }
+/* Превью-карта (.loc-preview, .loc-grid, .loc-pin) и ссылка «Открыть на
+   карте» (.loc-link) удалены вердиктом 2026-09-18 вместе с JS. */
 
 /* ---------- выбор контролёра ---------- */
 .person-row {
@@ -640,6 +641,19 @@
 }
 .person-row:hover { background: var(--muted); }
 .person-add { color: var(--primary); display: inline-flex; margin-left: auto; flex-shrink: 0; }
+
+/* ---------- профиль гостя (таб в #/events) ---------- */
+.profile-head { display: flex; align-items: center; gap: 14px; padding: 16px; }
+.profile-avatar {
+  width: 56px; height: 56px; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--primary-foreground);
+  font-family: var(--font-display); font-weight: 600; font-size: 20px;
+}
+.profile-name { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.profile-sub { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; }
+.profile-note { font-size: 12px; color: var(--muted-foreground); padding: 0 16px 12px; }
+.city-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
 /* В списке контролёров кнопка отзыва длинная — имя переносится, а не режется. */
 .staff-row .name { white-space: normal; overflow: visible; }
 

@@ -1,7 +1,6 @@
 // Прототип W41 — мок Mini App (ADR-0027).
 // Hash-роутер как у продукта: #/ticket, #/scan, #/manage, #/manage/:id,
-// #/events. Форма отзыва #/feedback — предложение (черновик ADR-0028),
-// пятого роута в продукте ещё нет. Фейковые данные, никаких вызовов
+// #/events, #/feedback (пятый роут принят ADR-0028, W45). Фейковые данные, никаких вызовов
 // (ADR-0026). Экраны — как продукт: брендовые токены, компоненты и иконки
 // Lucide; требования SPEC — в отдельном шите трассировки.
 'use strict';
@@ -9,7 +8,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
 (function () {
   const screen = document.getElementById('screen');
-  const barTitle = document.getElementById('app-bar-title');
   const D = PROTO.data;
   const T = (k, v) => PROTO.t(k, v);
   const E = PROTO.el;
@@ -23,6 +21,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let participantsEmpty = false;
   let catalogTab = 'mine';
   let catalogEmpty = false;
+  let profileTried = false;
   let ticketDemo = null;
   let backUrl = '';
   let hashParams = new URLSearchParams('');
@@ -33,6 +32,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let feedbackRating = 0;
   let feedbackSent = false;
   let staffQuery = '';
+  let staffInviteShown = false;
 
   function currentHash() {
     const raw = location.hash.startsWith('#') ? location.hash.slice(1) : '';
@@ -47,7 +47,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
   function go(route) { location.href = appHref(route); }
   function clear() { PROTO.clear(screen); screen.scrollTop = 0; }
-  function setBar(title) { if (barTitle) barTitle.textContent = title; }
+  // Шапка мока — хром клиента: всегда имя приложения, как в настоящем
+  // Telegram. Заголовок несёт сам экран (H1), setBar-пер-экран убран
+  // вердиктом владельца 2026-09-18 (дублирование заголовка).
 
   // ---------- хелперы ----------
   function card(children, cls) {
@@ -182,18 +184,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
   function closeSheet() { if (sheet) sheet.root.setAttribute('hidden', ''); }
 
-  function searchField(placeholder, value, onInput) {
-    const wrap = E('div', 'input-wrap');
-    wrap.appendChild(PROTO.icon('search', 16));
-    const input = E('input', 'input');
-    input.type = 'search';
-    input.placeholder = placeholder;
-    input.value = value || '';
-    input.addEventListener('input', onInput);
-    wrap.appendChild(input);
-    return wrap;
-  }
-
   function mulberry32(a) {
     return function () {
       a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -244,8 +234,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
   function eventInvite(id) {
     const ev = ownerEvent(id);
-    // У нового ивента ссылки ещё нет — показываем будущий id, а не чужой.
+    // У нового события ссылки ещё нет — показываем будущий id, а не чужой.
     return (ev && ev.inviteLink) || ('https://t.me/' + D.botUsername + '?start=e' + (id === 'new' ? '10' : id));
+  }
+  // W10 (OWN-14): одноразовая ссылка-инвайт контролёра. В продукте токен
+  // генерирует flow, ссылка одноразовая и живёт 24 часа — здесь мок.
+  function staffInviteUrl(id) {
+    return 'https://t.me/' + D.botUsername + '?start=s' + (id === 'new' ? '10' : id) + '-9f2c1a';
   }
   function eventUtm(id) {
     const base = eventInvite(id);
@@ -255,11 +250,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       { utm: 'friends', url: base + '-friends' },
     ];
   }
-  function mapUrl(lat, lon) {
-    return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
-  }
   const seatsLeft = PROTO.seatsLeft;
-  function fmtCoord(n) { return Number(n).toFixed(5); }
   function parseYandexLink(text) {
     const s = String(text || '');
     let m = /(?:pt|ll)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
@@ -291,7 +282,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderTicket() {
     const id = hashParams.get('event_id') || D.main.id;
     const ev = eventById(id);
-    setBar(T('ticket.title'));
     PROTO.setTrace(['PAR-6', 'IDM-2', 'ADR-0007', 'PAR-5']);
     clear();
 
@@ -305,7 +295,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (!ev) {
       screen.appendChild(emptyState(T('common.err.event_not_found'), 'ticket'));
       const acts = E('div', 'app-actions');
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events', 'btn-primary'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-primary'));
       screen.appendChild(acts);
       PROTO.setDemo(demoItems);
       return;
@@ -338,8 +328,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (finished) {
       screen.appendChild(ticketState('check-circle', T('reg.event_finished')));
       const acts = E('div', 'app-actions');
-      if (ticket && !ticket.feedbackGiven) acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events?tab=past', 'btn-primary'));
+      if (ticket && !ticket.feedbackGiven) acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events?tab=past', 'btn-primary'));
       screen.appendChild(acts);
       PROTO.setDemo(demoItems);
       return;
@@ -349,7 +339,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       screen.appendChild(ticketState('ticket', T('proto.ticket_none')));
       const acts = E('div', 'app-actions');
       acts.appendChild(btn(T('event.card.btn_register'), { kind: 'btn-primary', onClick: () => openRegistration(ev) }));
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events', 'btn-secondary'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-secondary'));
       screen.appendChild(acts);
       PROTO.setDemo(demoItems);
       return;
@@ -419,13 +409,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- роут: сканер ----------
   const scanOutcomes = [
-    { key: 'ok', tone: 'ok', icon: 'check-circle', label: (scan) => T('checkin.ok', { name: scan.nextCheckin || T('checkin.name_unknown') }), sub: 'proto.result_ok' },
-    { key: 'already', tone: 'warn', icon: 'clock', label: (scan) => T('checkin.already', { time: scan.alreadyAt }), sub: 'proto.result_already' },
-    { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'proto.result_denied' },
-    { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'proto.result_denied' },
+    { key: 'ok', tone: 'ok', icon: 'check-circle', label: (scan) => T('checkin.ok', { name: scan.nextCheckin || T('checkin.name_unknown') }), sub: 'checkin.sub_ok' },
+    { key: 'already', tone: 'warn', icon: 'clock', label: (scan) => T('checkin.already', { time: scan.alreadyAt }), sub: 'checkin.sub_already' },
+    { key: 'not_registered', tone: 'bad', icon: 'x-circle', label: () => T('checkin.not_registered'), sub: 'checkin.sub_denied' },
+    { key: 'wrong_event', tone: 'bad', icon: 'alert', label: () => T('checkin.wrong_event'), sub: 'checkin.sub_denied' },
   ];
   // Действие в состоянии ошибки: `resume` — вернуться к сканеру (сеть,
-  // повтор), `close` — выйти из сканера (нет прав, ивент не передан:
+  // повтор), `close` — выйти из сканера (нет прав, событие не передан:
   // сканировать дальше бессмысленно).
   const scanErrors = {
     forbidden: { icon: 'shield', text: 'checkin.forbidden', action: 'close' },
@@ -438,17 +428,16 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   };
 
   function renderScan() {
-    setBar(T('scan.title'));
     PROTO.setTrace(['STF-1', 'STF-2', 'STF-4', 'IDM-2']);
     clear();
 
     const ed = eventData(hashParams.get('event_id') || D.main.id);
-    // На ивенте без регистраций успешный скан невозможен — открываемся
+    // На событии без регистраций успешный скан невозможен — открываемся
     // на исходе «нет регистрации», а не на успехе с чужим именем.
     const baseState = scanState % scanOutcomes.length;
     const state = (ed.scan.registered === 0 && baseState === 0) ? 2 : baseState;
     const outcomeLabels = ['Успех', 'Повторный скан', 'Нет регистрации', 'Чужой QR'];
-    const errorLabels = { forbidden: 'Нет прав', stale: 'Данные устарели', network: 'Нет связи', server: 'Ошибка сервера', unsupported: 'Камера недоступна', no_event: 'Ивент не передан', not_tg: 'Не из Telegram' };
+    const errorLabels = { forbidden: 'Нет прав', stale: 'Данные устарели', network: 'Нет связи', server: 'Ошибка сервера', unsupported: 'Камера недоступна', no_event: 'Событие не передан', not_tg: 'Не из Telegram' };
     const items = scanOutcomes.map((o, i) => ({
       label: outcomeLabels[i] || o.key,
       active: !scanError && i === state,
@@ -466,7 +455,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ic.appendChild(PROTO.icon(e.icon, 24));
       box.appendChild(ic);
       box.appendChild(E('div', 'state-title', T(e.text)));
-      box.appendChild(btn(e.action === 'close' ? T('proto.app_close') : T('scan.rescan'), {
+      box.appendChild(btn(e.action === 'close' ? T('common.btn.close') : T('scan.rescan'), {
         kind: 'btn-primary',
         onClick: () => { if (e.action === 'close') { go('#/events'); return; } scanError = null; renderScan(); },
       }));
@@ -479,6 +468,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const view = E('div', 'scan-view');
     ['tl', 'tr', 'bl', 'br'].forEach((c) => view.appendChild(E('span', 'scan-corner ' + c)));
     view.appendChild(E('div', 'scan-line'));
+    // Кадр — мок нативного попапа Telegram (showScanQrPopup): камеру рисует
+    // клиент, страница показывает только вердикт и счётчик; подсказка scan.hint
+    // уходит в попап параметром text (W62), поэтому живёт внутри кадра, а не под ним.
+    view.appendChild(E('div', 'scan-native-tag', T('proto.scan_native')));
+    view.appendChild(E('div', 'scan-native-hint', T('scan.hint')));
     view.style.cursor = 'pointer';
     view.addEventListener('click', () => {
       // Успешный скан в демо двигает счётчик — иначе «отмечен» и «0 из 67»
@@ -488,7 +482,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       renderScan();
     });
     screen.appendChild(view);
-    screen.appendChild(E('div', 'scan-hint', T('scan.hint')));
 
     const verdict = E('div', 'verdict ' + outcome.tone);
     const vi = E('span', 'verdict-icon');
@@ -514,24 +507,25 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     screen.appendChild(prog);
   }
 
-  // ---------- роут: список ивентов овнера ----------
+  // ---------- роут: список событий овнера ----------
   function renderManageList() {
-    setBar(T('manage.list.title'));
-    PROTO.setTrace(['OWN-4', 'ADR-0024', 'ADR-0025']);
+    PROTO.setTrace(['OWN-4', 'ADR-0024', 'ADR-0025', 'STF-2']);
     clear();
-    const add = linkBtn(T('manage.btn.new'), '#/manage/new', 'btn-primary btn-lg', 'plus');
-    add.style.marginBottom = '14px';
-    screen.appendChild(add);
-
+    // Кнопки «Новое событие» здесь нет: на форму создания овнер попадает
+    // из чата (кнопка меню → #/manage/new). Вердикт владельца 2026-09-18.
     if (!D.ownerEvents.length) screen.appendChild(emptyState(T('manage.list.empty'), 'calendar'));
     D.ownerEvents.forEach((ev) => screen.appendChild(manageRow(ev)));
     PROTO.setDemo([]);
   }
 
   function manageRow(ev) {
-    const a = E('a', 'ev-row');
+    // Овнер — всегда staff своих событий: кнопка сканера рядом с событием.
+    // В продукте видимость — по правам (STF-2); здесь показана всегда.
+    const row = E('div', 'ev-row');
+    row.style.flexWrap = 'wrap';
+    const a = E('a', 'ev-main');
     a.href = appHref('#/manage/' + ev.id);
-    const main = E('div', 'ev-main');
+    const main = E('div', '');
     main.appendChild(E('div', 'ev-title', ev.title));
     const meta = E('div', 'ev-row-meta');
     meta.appendChild(statusBadge(ev.statusKey));
@@ -539,19 +533,29 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     main.appendChild(meta);
     main.appendChild(E('div', 'app-muted', T('participants.counters', { registered: ev.registered, checked_in: ev.checkedIn, cancelled: ev.cancelled })));
     a.appendChild(main);
+    row.appendChild(a);
     const tail = E('span', 'ev-tail');
     tail.appendChild(PROTO.icon('chevron-right', 18));
-    a.appendChild(tail);
-    return a;
+    row.appendChild(tail);
+    const scan = linkBtn(T('menu.btn.scanner'), '#/scan?event_id=' + ev.id, 'btn-outline btn-sm', 'qr');
+    scan.style.width = '100%';
+    scan.style.marginTop = '10px';
+    row.appendChild(scan);
+    return row;
   }
 
-  // ---------- роут: ивент овнера — визард ----------
+  // ---------- роут: событие овнера — визард ----------
   const WIZARD_STEPS = ['main', 'where', 'capacity', 'review'];
 
   function wizardFields(id) {
     if (wizardDraft) return wizardDraft;
     const src = id === 'new' ? null : D.ownerEvents.find((e) => String(e.id) === String(id));
+    const hasCoords = !!src && src.lat !== null && src.lat !== undefined && src.lon !== null && src.lon !== undefined;
     wizardDraft = {
+      // Формат участия (вердикт 2026-09-18): новое событие — офлайн
+      // по умолчанию; у существующего с координатами — тоже офлайн.
+      online: src ? !hasCoords : false,
+      mapLink: '',
       title: src ? src.title : '',
       description: src ? (src.description || '') : '',
       address: src ? (src.address || '') : '',
@@ -571,13 +575,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const title = String(f.title || '').trim();
     if (title.length < 2 || title.length > 200) e.main.title = T('manage.err.title_length');
     if (String(f.description || '').length > 4000) e.main.description = T('manage.err.description_length');
-    if (String(f.address || '').trim().length < 2) e.where.address = T('manage.err.address_length');
+    // Адрес — только офлайну (онлайн — только даты, решение 2026-09-20).
+    if (!f.online && String(f.address || '').trim().length < 2) e.where.address = T('manage.err.address_length');
     if (!f.startsLocal) e.where.starts = T('manage.err.datetime');
     if (!f.endsLocal) e.where.ends = T('manage.err.datetime');
     if (!f.deadlineLocal) e.where.deadline = T('manage.err.datetime');
     else if (f.startsLocal && f.deadlineLocal > f.startsLocal) e.where.deadline = T('manage.err.deadline_after_starts');
-    if (f.startsLocal && f.endsLocal && f.endsLocal < f.startsLocal) e.where.ends = T('manage.err.ends_before_starts');
-    if ((f.lat === null) !== (f.lon === null)) e.where.geo = T('manage.err.geo_pair');
+    // Офлайн без ссылки не публикуется: ссылка обязательна
+    // (вердикт владельца 2026-09-18), проверяется сама ссылка, не координаты.
+    if (!f.online && !parseYandexLink(f.mapLink || '')) e.where.geo = T('manage.geo.link_bad');
     if (f.capacity !== '') {
       const cap = parseInt(f.capacity, 10);
       if (isNaN(cap) || cap < 1) e.capacity.capacity = T('manage.err.capacity');
@@ -609,7 +615,6 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   function renderManageEvent(id) {
     eventId = id;
     const isNew = id === 'new';
-    setBar(isNew ? T('manage.title.new') : T('manage.title.edit'));
     clear();
 
     const back = E('button', 'btn btn-ghost btn-sm', T('manage.btn.back'));
@@ -648,10 +653,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
     const head = E('div', 'wizard-head');
     head.appendChild(stepDots(wizardStep, WIZARD_STEPS.length));
-    head.appendChild(E('div', 'wizard-step-label', T('proto.wizard_step', { n: wizardStep + 1, m: WIZARD_STEPS.length })));
+    head.appendChild(E('div', 'wizard-step-label', T('manage.step.label', { n: wizardStep + 1, m: WIZARD_STEPS.length })));
     body.appendChild(head);
 
-    const stepTitle = { main: T('proto.section_main'), where: T('proto.section_where'), capacity: T('proto.section_capacity'), review: T('proto.step_review') }[step];
+    const stepTitle = { main: T('manage.step.main'), where: T('manage.step.where'), capacity: T('manage.step.capacity'), review: T('manage.step.review') }[step];
     body.appendChild(E('div', 'wizard-title', stepTitle));
 
     if (step === 'main') renderWizardMain(body, f, errs.main, show);
@@ -667,7 +672,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (step !== 'review') {
       // Ошибки считаем в момент нажатия, а не из закрытия рендера: поля
       // обновляются без перерисовки, и старое состояние уже неактуально.
-      nav.appendChild(btn(T('proto.wizard_next'), { kind: 'btn-primary', onClick: () => {
+      nav.appendChild(btn(T('manage.btn.next'), { kind: 'btn-primary', onClick: () => {
         const fresh = wizardErrors(wizardFields(eventId));
         if (!stepValid(fresh, step)) { wizardTried = true; renderManageEvent(eventId); return; }
         wizardStep++;
@@ -686,7 +691,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       }));
     } else {
       // OWN-5: уведомление уходит только при изменении полей notify-on-change
-      // (DATA-MODEL). Сравниваем с исходным ивентом — и тост говорит правду.
+      // (DATA-MODEL). Сравниваем с исходным событием — и тост говорит правду.
       nav.appendChild(btn(T('manage.btn.save'), { kind: 'btn-primary', onClick: () => {
         const src = ownerEvent(eventId) || {};
         const notify = ['title', 'address', 'startsLocal', 'endsLocal', 'deadlineLocal'];
@@ -722,51 +727,102 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function renderWizardWhere(body, f, errors, show) {
     const sec = E('div', 'form-section');
-    sec.appendChild(field(T('field.address'), f.address, {
-      hint: T('manage.hint.address'),
-      error: show ? errors.address : '',
-      onInput: (e) => { f.address = e.target.value; },
-    }));
-
+    // Формат — первое поле шага (решение владельца 2026-09-20): онлайн —
+    // только даты, офлайн — адрес + ссылка Яндекс.Карт.
     const loc = E('div', 'app-field');
-    loc.appendChild(E('label', 'label', T('field.geo')));
-    const chips = E('div', 'chip-row');
-    chips.appendChild(btn(T('proto.paste_link'), { kind: 'btn-outline', size: 'btn-sm', icon: 'link', onClick: () => openLinkSheet(f) }));
-    chips.appendChild(btn(T('proto.pick_on_map'), { kind: 'btn-outline', size: 'btn-sm', icon: 'map-pin', onClick: () => openMapSheet(f) }));
-    loc.appendChild(chips);
-    if (f.lat !== null && f.lon !== null) {
-      loc.appendChild(locPreview(f));
-      loc.appendChild(E('div', 'helper', T('proto.coords', { lat: fmtCoord(f.lat), lon: fmtCoord(f.lon) })));
-      const a = E('a', 'loc-link', T('event.card.btn_map'));
-      a.href = mapUrl(f.lat, f.lon);
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.appendChild(PROTO.icon('external', 14));
-      loc.appendChild(a);
-    } else {
-      loc.appendChild(E('div', 'helper', show && errors.geo ? errors.geo : T('proto.location_none')));
-    }
+    loc.appendChild(E('label', 'label', T('manage.geo.format')));
+    const mode = E('div', 'segmented');
+    [['online', T('manage.geo.online')], ['offline', T('manage.geo.offline')]].forEach(([key, label]) => {
+      const on = (key === 'online') === !!f.online;
+      const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { f.online = (key === 'online'); renderManageEvent(eventId); } });
+      if (on) b.classList.add('active');
+      mode.appendChild(b);
+    });
+    loc.appendChild(mode);
     sec.appendChild(loc);
 
-    sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
-    sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: T('manage.hint.datetime'), error: show ? errors.ends : '', onInput: (e) => { f.endsLocal = e.target.value; } }));
+    if (!f.online) {
+      // Адрес овнер пишет руками («Как его прочтёт участник»): ссылка несёт
+      // только точку, имени места в ней нет.
+      sec.appendChild(field(T('field.address'), f.address, {
+        hint: T('manage.hint.address'),
+        error: show ? errors.address : '',
+        onInput: (e) => { f.address = e.target.value; },
+      }));
+
+      // Ссылка — единственный ввод точки: вставка сразу разбирается, кнопки
+      // «Взять координаты» нет. Недавних мест нет: без ссылки офлайн не
+      // публикуется, а у мест из списка ссылок нет.
+      if (!f.mapLink && f.lat !== null && f.lon !== null) {
+        f.mapLink = 'https://yandex.ru/maps/?pt=' + f.lon + ',' + f.lat + '&z=17';
+      }
+      const linkWrap = E('div', 'app-field');
+      linkWrap.appendChild(E('label', 'label', T('manage.geo.link')));
+      const linkInput = E('input', 'input');
+      linkInput.type = 'url';
+      linkInput.placeholder = T('manage.geo.link_placeholder');
+      linkInput.value = f.mapLink || '';
+      linkWrap.appendChild(linkInput);
+      const linkStatus = E('div', 'helper');
+      function paintLink() {
+        // Очевидное не показываем (вердикт 2026-09-18): координаты не дублируем —
+        // их видно превью и ссылкой «Открыть на карте». Строка живёт только
+        // для пустого (подсказка) и битой ссылки (ошибка).
+        const parsed = parseYandexLink(f.mapLink || '');
+        linkStatus.classList.remove('error');
+        if (!parsed) {
+          f.lat = null;
+          f.lon = null;
+          if (f.mapLink) {
+            linkStatus.textContent = T('manage.geo.link_bad');
+            linkStatus.classList.add('error');
+          } else {
+            linkStatus.textContent = T('manage.geo.none');
+          }
+        } else {
+          f.lat = parsed.lat;
+          f.lon = parsed.lon;
+          linkStatus.textContent = '';
+        }
+        if (!parsed && show && errors.geo) {
+          linkStatus.textContent = errors.geo;
+          linkStatus.classList.add('error');
+        }
+      }
+      linkInput.addEventListener('input', (e) => { f.mapLink = e.target.value; paintLink(); });
+      // Вставка ссылки: координаты + адрес подтягиваются сразу (без потери
+      // фокуса при наборе — только paste). Адрес заполняем лишь в пустое
+      // поле; в продукте его отдаёт resolve_geo (может быть пустым).
+      // Вердикт владельца 2026-09-18 (геокодер есть).
+      linkInput.addEventListener('paste', () => setTimeout(() => {
+        f.mapLink = linkInput.value;
+        const pasted = parseYandexLink(f.mapLink || '');
+        if (!pasted) { paintLink(); return; }
+        f.lat = pasted.lat;
+        f.lon = pasted.lon;
+        if (!f.address) {
+          const venue = (D.venues || []).find((v) => v.lat === pasted.lat && v.lon === pasted.lon);
+          if (venue) f.address = venue.name;
+        }
+        renderManageEvent(eventId);
+      }, 0));
+      paintLink();
+      linkWrap.appendChild(linkStatus);
+      sec.appendChild(linkWrap);
+      // Превью-карты с пином и ссылки «Открыть на карте» здесь нет: в моке
+      // это театр без толку (вердикт владельца 2026-09-18). Успех вставки —
+      // тишина, битую ссылку показывает ошибка валидации.
+    }
+
+    // Время ташкентское — очевидно, хинта нет вовсе (вердикт 2026-09-18, W49).
+    sec.appendChild(field(T('field.starts_at'), f.startsLocal, { type: 'datetime-local', hint: '', error: show ? errors.starts : '', onInput: (e) => { f.startsLocal = e.target.value; } }));
+    sec.appendChild(field(T('field.ends_at'), f.endsLocal, { type: 'datetime-local', hint: '', error: show ? errors.ends : '', onInput: (e) => { f.endsLocal = e.target.value; } }));
     sec.appendChild(field(T('field.reg_deadline_at'), f.deadlineLocal, {
-      type: 'datetime-local', hint: T('manage.hint.datetime'),
+      type: 'datetime-local', hint: '',
       error: show ? errors.deadline : '',
       onInput: (e) => { f.deadlineLocal = e.target.value; },
     }));
     body.appendChild(sec);
-  }
-
-  function locPreview(f) {
-    const box = E('div', 'loc-preview');
-    box.appendChild(E('div', 'loc-grid'));
-    const pin = E('span', 'loc-pin');
-    pin.appendChild(PROTO.icon('map-pin', 20));
-    pin.style.left = '50%';
-    pin.style.top = '46%';
-    box.appendChild(pin);
-    return box;
   }
 
   function renderWizardCapacity(body, f, errors, show) {
@@ -781,7 +837,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const over = f.overbook === '' ? 40 : parseInt(f.overbook, 10);
       const limit = Math.ceil(cap * (1 + (isNaN(over) ? 0 : over) / 100));
       live.appendChild(E('div', 'capacity-live-value', String(limit)));
-      live.appendChild(E('div', 'app-muted', T('proto.capacity_limit', { limit: limit })));
+      live.appendChild(E('div', 'app-muted', T('manage.capacity.limit', { limit: limit })));
     }
     const sec = E('div', 'form-section');
     sec.appendChild(row2(
@@ -822,12 +878,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
 
   function renderWizardReview(body, f, isNew, errs, show) {
-    body.appendChild(E('div', 'app-muted', T('proto.review_hint')));
+    body.appendChild(E('div', 'app-muted', T('manage.review.hint')));
     body.appendChild(previewCard(f));
 
     const isDraft = isNew || String(eventId) === '5';
     if (isDraft) {
-      const saveDraft = btn(T('proto.save_draft'), { kind: 'btn-outline', block: true, onClick: () => PROTO.toast(T('manage.saved.draft')) });
+      const saveDraft = btn(T('manage.btn.save_draft'), { kind: 'btn-outline', block: true, onClick: () => PROTO.toast(T('manage.saved.draft')) });
       saveDraft.style.marginTop = '14px';
       body.appendChild(saveDraft);
     } else {
@@ -881,7 +937,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   function openCancelEventSheet(f, id) {
     openSheet(T('owner.event.btn.cancel_event'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('proto.confirm_cancel_event', { title: f.title })));
+      body.appendChild(E('div', 'app-muted', T('manage.cancel.confirm', { title: f.title })));
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('common.btn.confirm'), { kind: 'btn-destructive', onClick: () => {
         closeSheet();
@@ -893,91 +949,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     });
   }
 
-  // ---------- гео: ссылка Яндекс.Карт и точка на карте ----------
-  function openLinkSheet(f) {
-    let error = '';
-    let value = '';
-    openSheet(T('proto.paste_link'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('manage.hint.geo')));
-      const input = E('input', 'input');
-      input.type = 'url';
-      input.placeholder = T('proto.link_placeholder');
-      input.value = value;
-      input.addEventListener('input', () => { value = input.value; });
-      body.appendChild(input);
-      if (error) body.appendChild(E('div', 'helper error', error));
-      body.appendChild(E('div', 'section-label', T('proto.venue_recent')));
-      const recent = E('div', 'sheet-actions');
-      D.venues.forEach((v) => {
-        if (v.lat === null || v.lon === null) return;
-        recent.appendChild(btn(v.name, { kind: 'btn-outline', onClick: () => {
-          f.lat = v.lat;
-          f.lon = v.lon;
-          closeSheet();
-          renderManageEvent(eventId);
-        } }));
-      });
-      body.appendChild(recent);
-      const acts = E('div', 'sheet-actions');
-      acts.appendChild(btn(T('proto.link_apply'), { kind: 'btn-primary', onClick: () => {
-        const parsed = parseYandexLink(value);
-        if (!parsed) { error = T('proto.link_bad'); renderSheet(); return; }
-        f.lat = parsed.lat;
-        f.lon = parsed.lon;
-        closeSheet();
-        PROTO.toast(T('proto.link_applied'));
-        renderManageEvent(eventId);
-      } }));
-      body.appendChild(acts);
-    });
-  }
-
-  function openMapSheet(f) {
-    let lat = f.lat !== null ? f.lat : 41.311081;
-    let lon = f.lon !== null ? f.lon : 69.279737;
-    openSheet(T('proto.pick_on_map'), (body) => {
-      body.appendChild(E('div', 'app-muted', T('proto.map_hint')));
-      const map = E('div', 'loc-preview pickable');
-      map.appendChild(E('div', 'loc-grid'));
-      const pin = E('span', 'loc-pin');
-      pin.appendChild(PROTO.icon('map-pin', 20));
-      map.appendChild(pin);
-      const coords = E('div', 'helper');
-      function paint() {
-        const x = Math.min(96, Math.max(4, ((lon - 69.15) / 0.3) * 100));
-        const y = Math.min(96, Math.max(4, ((41.38 - lat) / 0.14) * 100));
-        pin.style.left = x + '%';
-        pin.style.top = y + '%';
-        coords.textContent = T('proto.coords', { lat: fmtCoord(lat), lon: fmtCoord(lon) });
-      }
-      map.addEventListener('click', (e) => {
-        const r = map.getBoundingClientRect();
-        lon = 69.15 + ((e.clientX - r.left) / r.width) * 0.3;
-        lat = 41.38 - ((e.clientY - r.top) / r.height) * 0.14;
-        paint();
-      });
-      paint();
-      body.appendChild(map);
-      body.appendChild(coords);
-      const acts = E('div', 'sheet-actions');
-      acts.appendChild(btn(T('proto.map_apply'), { kind: 'btn-primary', onClick: () => {
-        f.lat = lat;
-        f.lon = lon;
-        closeSheet();
-        renderManageEvent(eventId);
-      } }));
-      body.appendChild(acts);
-    });
-  }
-
   // ---------- таб «Участники» ----------
   function renderParticipants(body) {
     PROTO.setTrace(['OWN-7', 'OWN-8']);
     const ed = eventData(eventId);
     const grid = E('div', 'stat-grid');
-    grid.appendChild(stat(ed.counts.registered, T('proto.registered_short'), ''));
-    grid.appendChild(stat(ed.counts.checkedIn, T('proto.checked_in_short'), 'ok'));
-    grid.appendChild(stat(ed.counts.cancelled, T('proto.cancelled_short'), 'warn'));
+    grid.appendChild(stat(ed.counts.registered, T('manage.parts.stat_registered'), ''));
+    grid.appendChild(stat(ed.counts.checkedIn, T('manage.parts.stat_checked_in'), 'ok'));
+    grid.appendChild(stat(ed.counts.cancelled, T('manage.parts.stat_cancelled'), 'warn'));
     body.appendChild(grid);
 
     const filters = E('div', 'segmented');
@@ -1026,8 +1005,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   // ---------- таб «Рассылка» ----------
   function renderBroadcastTab(body) {
     PROTO.setTrace(['OWN-9', 'OWN-10', 'OWN-11', 'OWN-12', 'OWN-13']);
-    body.appendChild(card([muted(PROTO.protoDict['proto.broadcast_chat_hint'])]));
-    // Чат открывается про этот же ивент: название, сегменты и обратный путь.
+    body.appendChild(card([muted(T('proto.broadcast_chat_hint'))]));
+    // Чат открывается про этот же событие: название, сегменты и обратный путь.
     body.appendChild(btn(PROTO.t('proto.open_chat'), { kind: 'btn-primary btn-lg', block: true, icon: 'megaphone', onClick: () => { location.href = PROTO.chatUrl('owner', 'broadcast', true, eventId); } }));
 
     const ed = eventData(eventId);
@@ -1050,7 +1029,24 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setDemo([]);
   }
 
-  // ---------- таб «Контролёры»: выбор из списка, не ID руками ----------
+  // ---------- таб «Контролёры»: ввод по логину инлайн, без шита (W55) ----------
+  // Резолв логин→id — точным совпадением username среди известных боту
+  // (D.people); запись — по id (DAT-1). Кого бот не видел — добавить нельзя.
+  let staffLoginError = '';
+  function normLogin(s) {
+    return String(s || '').trim().replace(/^@+/, '').toLowerCase();
+  }
+  function staffMatches(ed, q) {
+    const needle = normLogin(q);
+    if (needle.length < 2) return [];
+    const known = {};
+    ed.controllers.forEach((c) => { known[c.id] = true; });
+    return D.people.filter((p) => {
+      if (known[p.id]) return false;
+      return p.name.toLowerCase().indexOf(needle) >= 0
+        || String(p.username || '').toLowerCase().replace(/^@/, '').indexOf(needle) >= 0;
+    });
+  }
   function renderStaff(body) {
     PROTO.setTrace(['OWN-14', 'STF-2', 'DAT-1']);
     const ed = eventData(eventId);
@@ -1065,7 +1061,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
         r.appendChild(avatar(s.name, 'avatar-md'));
         const b = E('div', 'body');
         b.appendChild(E('div', 'name', s.name));
-        b.appendChild(E('div', 'sub', s.username + ' · ' + T('proto.staff_since', { when: s.since })));
+        b.appendChild(E('div', 'sub', s.username + ' · ' + T('manage.staff.since', { when: s.since })));
         r.appendChild(b);
         r.appendChild(btn(T('manage.staff.btn.revoke'), { kind: 'btn-outline', size: 'btn-sm', onClick: () => {
           ed.controllers = ed.controllers.filter((x) => x.id !== s.id);
@@ -1077,67 +1073,126 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       body.appendChild(box);
     }
 
-    const add = btn(T('proto.staff_add'), { kind: 'btn-primary btn-lg', block: true, icon: 'plus', onClick: openStaffPicker });
-    add.style.marginTop = '14px';
-    body.appendChild(add);
-    body.appendChild(E('div', 'helper', T('proto.staff_invite_alt')));
-    PROTO.setDemo([]);
-  }
+    const wrap = E('div', 'app-field');
+    wrap.style.marginTop = '16px';
+    wrap.appendChild(E('label', 'label', T('manage.staff.login_label')));
+    const row = E('div', 'app-row2');
+    const input = E('input', 'input');
+    input.type = 'text';
+    input.id = 'f-staff-login';
+    input.placeholder = T('manage.staff.login_placeholder');
+    input.value = staffQuery;
+    input.setAttribute('aria-label', T('manage.staff.login_label'));
+    row.appendChild(input);
+    const addBtn = btn(T('manage.staff.btn.add'), { kind: 'btn-primary', size: 'btn-sm', onClick: addByLogin });
+    addBtn.id = 'staff-add';
+    row.appendChild(addBtn);
+    wrap.appendChild(row);
+    wrap.appendChild(E('div', 'helper', T('manage.staff.login_hint')));
+    const errBox = E('div', '');
+    wrap.appendChild(errBox);
+    body.appendChild(wrap);
+    const feed = E('div', '');
+    body.appendChild(feed);
 
-  function openStaffPicker() {
-    openSheet(T('proto.staff_add'), (body) => {
-      body.appendChild(searchField(T('proto.staff_search'), staffQuery, (e) => {
-        staffQuery = e.target.value;
-        renderSheet();
-        const inp = sheet.body.querySelector('input[type="search"]');
-        if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
-      }));
-      const q = staffQuery.trim().toLowerCase().replace(/^@/, '');
-      const known = eventData(eventId).controllers.map((c) => c.id);
-      const found = D.people.filter((p) => {
-        if (known.indexOf(p.id) >= 0) return false;
-        if (!q) return true;
-        return p.name.toLowerCase().indexOf(q) >= 0 || p.username.toLowerCase().replace(/^@/, '').indexOf(q) >= 0;
-      });
-      body.appendChild(E('div', 'section-label', T('proto.staff_section_participants')));
-      if (!found.length) {
-        body.appendChild(emptyState(T('proto.staff_nobody'), 'users'));
+    // W10 (OWN-14): альтернатива логину — одноразовая ссылка-инвайт.
+    // Создаётся здесь же, в Mini App: овнер всё делает на экране, в чат
+    // карточка-инвайт не приходит (вердикт владельца 2026-09-21).
+    const inv = E('div', 'app-field');
+    inv.style.marginTop = '18px';
+    if (!staffInviteShown) {
+      inv.appendChild(btn(T('staff.btn.invite'), { kind: 'btn-outline', block: true, icon: 'link', onClick: () => {
+        staffInviteShown = true;
+        renderManageEvent(eventId);
+      } }));
+    } else {
+      const url = staffInviteUrl(eventId);
+      const box = card([], 'invite-card');
+      box.appendChild(E('div', 'card-title', T('staff.btn.invite')));
+      box.appendChild(E('div', 'invite-link', url));
+      box.appendChild(muted(T('staff.invite.hint')));
+      const acts = E('div', 'app-actions');
+      acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary', icon: 'copy', onClick: () => PROTO.copy(url) }));
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(url), '_blank', 'noopener') }));
+      box.appendChild(acts);
+      inv.appendChild(box);
+    }
+    body.appendChild(inv);
+
+    function paintError() {
+      PROTO.clear(errBox);
+      if (staffLoginError) {
+        errBox.appendChild(E('div', 'helper error', staffLoginError));
+        input.classList.add('error');
+      } else {
+        input.classList.remove('error');
+      }
+    }
+    function paintFeed() {
+      PROTO.clear(feed);
+      const list = staffMatches(ed, staffQuery);
+      if (normLogin(staffQuery).length >= 2 && !list.length) {
+        feed.appendChild(emptyState(T('manage.staff.login_not_found'), 'users'));
         return;
       }
+      if (!list.length) return;
       const box = card([], 'list-card');
-      found.forEach((p) => {
-        const r = E('button', 'list-row person-row');
-        r.type = 'button';
+      list.forEach((p) => {
+        const r = E('div', 'list-row');
         r.appendChild(avatar(p.name, 'avatar-md'));
         const b = E('div', 'body');
         b.appendChild(E('div', 'name', p.name));
         b.appendChild(E('div', 'sub', p.username));
         r.appendChild(b);
-        const plus = E('span', 'person-add');
-        plus.appendChild(PROTO.icon('plus', 18));
-        r.appendChild(plus);
-        r.addEventListener('click', () => {
-          eventData(eventId).controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
+        r.appendChild(btn(T('manage.staff.btn.add'), { kind: 'btn-primary', size: 'btn-sm', onClick: () => {
+          ed.controllers.push({ id: p.id, name: p.name, username: p.username, since: '26 сентября, 12:00' });
           staffQuery = '';
-          closeSheet();
+          staffLoginError = '';
           PROTO.toast(T('manage.staff.added'));
           renderManageEvent(eventId);
-        });
+        } }));
         box.appendChild(r);
       });
-      body.appendChild(box);
+      feed.appendChild(box);
+    }
+    function addByLogin() {
+      const login = normLogin(staffQuery);
+      if (!login) return;
+      const hit = staffMatches(ed, staffQuery).find(
+        (p) => String(p.username || '').toLowerCase().replace(/^@/, '') === login
+      );
+      if (!hit) {
+        staffLoginError = T('manage.staff.login_not_found');
+        paintError();
+        paintFeed();
+        return;
+      }
+      ed.controllers.push({ id: hit.id, name: hit.name, username: hit.username, since: '26 сентября, 12:00' });
+      staffQuery = '';
+      staffLoginError = '';
+      PROTO.toast(T('manage.staff.added'));
+      renderManageEvent(eventId);
+    }
+    input.addEventListener('input', () => {
+      staffQuery = input.value;
+      staffLoginError = '';
+      paintError();
+      paintFeed();
     });
+    paintError();
+    paintFeed();
+    PROTO.setDemo([]);
   }
 
   // ---------- роут: каталог — мои билеты / будущие / прошедшие ----------
   function renderEvents() {
     const tabsDef = [
-      ['mine', T('proto.tab_my_tickets')],
+      ['mine', T('events.tab.mine')],
       ['upcoming', T('events.list.btn.upcoming')],
       ['past', T('events.list.btn.past')],
+      ['profile', T('profile.tab')],
     ];
-    setBar(catalogTab === 'mine' ? T('proto.tab_my_tickets') : catalogTab === 'upcoming' ? T('events.list.upcoming_title') : T('events.list.past_title'));
-    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1']);
+    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2', 'OWN-6']);
     clear();
 
     const tw = E('div', 'tabs-wrap');
@@ -1157,15 +1212,18 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     } else if (catalogTab === 'upcoming') {
       if (catalogEmpty) screen.appendChild(emptyState(T('events.list.empty_upcoming'), 'calendar'));
       else D.catalog.upcoming.forEach((ev) => screen.appendChild(eventCardEl(ev)));
+    } else if (catalogTab === 'profile') {
+      renderProfile();
     } else {
       if (catalogEmpty) screen.appendChild(emptyState(T('events.list.empty_past'), 'calendar'));
       else D.catalog.past.forEach((ev) => screen.appendChild(eventCardEl(ev)));
     }
 
     PROTO.setDemo([
-      { label: T('proto.tab_my_tickets'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; catalogEmpty = false; renderEvents(); } },
+      { label: T('events.tab.mine'), active: catalogTab === 'mine', onClick: () => { catalogTab = 'mine'; catalogEmpty = false; renderEvents(); } },
       { label: T('events.list.btn.upcoming'), active: catalogTab === 'upcoming', onClick: () => { catalogTab = 'upcoming'; catalogEmpty = false; renderEvents(); } },
       { label: T('events.list.btn.past'), active: catalogTab === 'past', onClick: () => { catalogTab = 'past'; catalogEmpty = false; renderEvents(); } },
+      { label: T('profile.tab'), active: catalogTab === 'profile', onClick: () => { catalogTab = 'profile'; catalogEmpty = false; renderEvents(); } },
       { label: 'Пустой срез', active: catalogEmpty, onClick: () => { catalogEmpty = !catalogEmpty; renderEvents(); } },
     ]);
   }
@@ -1191,8 +1249,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const acts = E('div', 'event-actions');
     if (t.upcoming) {
       acts.appendChild(linkBtn(T('reg.qr.button'), '#/ticket?event_id=' + t.eventId, 'btn-primary', 'qr'));
+      if (t.canCancel) acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline btn-sm', icon: 'share', onClick: () => openShareSheet(t) }));
     } else if (!t.feedbackGiven) {
-      acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + t.eventId, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + t.eventId, 'btn-outline', 'message-square'));
     } else {
       acts.appendChild(E('span', 'badge badge-success', T('proto.feedback_given')));
     }
@@ -1232,8 +1291,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       } else {
         acts.appendChild(btn(T('event.card.btn_register'), { kind: 'btn-primary', onClick: () => openRegistration(ev) }));
       }
+      // Кнопка чекина рядом с событием — только staff этого события (STF-2).
+      // В продукте видимость решает сервер по правам; в моке флаг в данных.
+      // Вердикт владельца 2026-09-18: из чата кнопка чекина убрана.
+      if (ev.staff) acts.appendChild(linkBtn(T('menu.btn.scanner'), '#/scan?event_id=' + ev.id, 'btn-outline btn-sm', 'qr'));
+      // Поделиться событием доступно обычному пользователю (OWN-6).
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline btn-sm', icon: 'share', onClick: () => openShareSheet(ev) }));
     } else if (ev.attendedMe && !ev.feedbackGiven) {
-      acts.appendChild(linkBtn(T('proto.afterword_feedback'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
+      acts.appendChild(linkBtn(T('afterword.feedback_btn'), '#/feedback?event_id=' + ev.id, 'btn-outline', 'message-square'));
     } else if (ev.attendedMe && ev.feedbackGiven) {
       acts.appendChild(E('span', 'badge badge-success', T('proto.feedback_given')));
     }
@@ -1242,19 +1307,108 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     return c;
   }
 
+  // ---------- поделиться событием (обычный пользователь, OWN-6) ----------
+  // Паттерн продукта (MINIAPP-UX п. 7): ссылка — текстом на экране, а не
+  // кнопка шаринга Mini App; действия — «Скопировать» (navigator.clipboard)
+  // и «Поделиться» (t.me/share/url). Тот же блок, что у овнера в `manage`.
+  function openShareSheet(ev) {
+    const id = ev.id !== undefined && ev.id !== null ? ev.id : ev.eventId;
+    const link = eventInvite(id);
+    openSheet(T('events.share.title'), (body) => {
+      body.appendChild(E('div', 'sheet-event', ev.title));
+      const sub = [ev.when, ev.where].filter(Boolean).join(' · ');
+      if (sub) body.appendChild(E('div', 'app-muted', sub));
+      body.appendChild(E('div', 'invite-link', link));
+      body.appendChild(E('div', 'app-muted', T('events.share.hint')));
+      const acts = E('div', 'sheet-actions');
+      acts.appendChild(btn(T('manage.btn.copy'), { kind: 'btn-primary btn-lg', icon: 'copy', onClick: () => PROTO.copy(link) }));
+      acts.appendChild(btn(T('manage.btn.share'), { kind: 'btn-outline', icon: 'share', onClick: () => window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(ev.title), '_blank', 'noopener') }));
+      body.appendChild(acts);
+    });
+  }
+
   // ---------- регистрация внутри Mini App (PAR-1, PAR-2) ----------
+  // ---------- таб «Профиль» в каталоге: правка данных онбординга ----------
+  function renderProfile() {
+    PROTO.setTrace(['PAR-1', 'PAR-2', 'DAT-1', 'ADR-0017']);
+    const p = D.profile;
+    const initials = ((p.first || '').trim().slice(0, 1) + (p.last || '').trim().slice(0, 1)).toUpperCase() || '•';
+
+    const head = E('div', 'card profile-head');
+    head.appendChild(E('div', 'profile-avatar', initials));
+    const who = E('div', '');
+    const fullName = ((p.first || '') + ' ' + (p.last || '')).trim();
+    who.appendChild(E('div', 'profile-name', fullName || T('common.value.none')));
+    const sub = [p.position, p.company].filter(Boolean).join(', ') + (p.city ? ' · ' + p.city : '');
+    if (sub) who.appendChild(E('div', 'profile-sub', sub));
+    head.appendChild(who);
+    screen.appendChild(head);
+    screen.appendChild(E('div', 'profile-note', T('profile.head_note')));
+
+    const form = E('div', 'form-section');
+    form.appendChild(field(T('manage.parts.col_name'), p.first, {
+      error: profileTried && !(p.first || '').trim() ? T('profile.err') : '',
+      onInput: (e) => { p.first = e.target.value; },
+    }));
+    form.appendChild(field(T('profile.last'), p.last, {
+      error: profileTried && !(p.last || '').trim() ? T('profile.err') : '',
+      onInput: (e) => { p.last = e.target.value; },
+    }));
+    form.appendChild(field(T('profile.position'), p.position, {
+      onInput: (e) => { p.position = e.target.value; },
+    }));
+    form.appendChild(field(T('profile.company'), p.company, {
+      hint: T('profile.company_hint'),
+      onInput: (e) => { p.company = e.target.value; },
+    }));
+    // Город — простой текстовый ввод: чипы «Ташкент/Алматы» живут только
+    // в онбординге чата (W60), в форме профиля их нет, как и в продукте.
+    form.appendChild(field(T('profile.city'), p.city, {
+      onInput: (e) => { p.city = e.target.value; },
+    }));
+    screen.appendChild(form);
+
+    // Рассылка — отдельное согласие (PAR-2), меняется здесь же.
+    const mktRow = E('label', 'control-row');
+    const mktBox = E('input', 'checkbox');
+    mktBox.type = 'checkbox';
+    mktBox.checked = !!p.mkt;
+    mktBox.addEventListener('change', () => { p.mkt = mktBox.checked; });
+    mktRow.appendChild(mktBox);
+    // Подписи под чекбоксом в профиле нет: там не происходит регистрации,
+    // и успокаивать «на регистрацию не влияет» нечего (W60).
+    mktRow.appendChild(E('span', '', T('reg.mkt.label')));
+    screen.appendChild(mktRow);
+
+    // Согласие на ПД — подписью, не чекбоксом: дано один раз, здесь не
+    // меняется (в продукте тот же текст, W60).
+    screen.appendChild(E('div', 'helper', T('profile.pdn_done', { when: p.pdnAt })));
+
+    const acts = E('div', 'sticky-actions');
+    acts.appendChild(btn(T('manage.btn.save'), {
+      kind: 'btn-primary', onClick: () => {
+        profileTried = true;
+        if (!(p.first || '').trim() || !(p.last || '').trim()) { renderEvents(); return; }
+        profileTried = false;
+        PROTO.toast(T('manage.saved.updated'));
+        renderEvents();
+      },
+    }));
+    screen.appendChild(acts);
+  }
+
   function openRegistration(ev) {
     let pdn = false;
     let mkt = false;
     let done = false;
-    openSheet(T('proto.reg_title'), (body) => {
+    openSheet(T('reg.sheet.title'), (body) => {
       if (done) {
         const ok = E('div', 'sheet-success');
         const ic = E('div', 'success-icon');
         ic.appendChild(PROTO.icon('check-circle', 34));
         ok.appendChild(ic);
         ok.appendChild(E('div', 'success-title', T('reg.done.header')));
-        ok.appendChild(E('div', 'app-muted', T('proto.reg_done_hint')));
+        ok.appendChild(E('div', 'app-muted', T('reg.done.hint')));
         body.appendChild(ok);
         const acts = E('div', 'sheet-actions');
         acts.appendChild(btn(T('reg.qr.button'), { kind: 'btn-primary', icon: 'qr', onClick: () => {
@@ -1274,7 +1428,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       pdnBox.checked = pdn;
       pdnBox.addEventListener('change', () => { pdn = pdnBox.checked; renderSheet(); });
       pdnRow.appendChild(pdnBox);
-      pdnRow.appendChild(E('span', '', T('proto.reg_pdn')));
+      pdnRow.appendChild(E('span', '', T('reg.pdn.label')));
       body.appendChild(pdnRow);
 
       const mktRow = E('label', 'control-row');
@@ -1283,9 +1437,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       mktBox.checked = mkt;
       mktBox.addEventListener('change', () => { mkt = mktBox.checked; });
       mktRow.appendChild(mktBox);
-      mktRow.appendChild(E('span', '', T('proto.reg_mkt')));
+      mktRow.appendChild(E('span', '', T('reg.mkt.label')));
       body.appendChild(mktRow);
-      body.appendChild(E('div', 'helper', T('proto.reg_mkt_hint')));
+      body.appendChild(E('div', 'helper', T('reg.mkt.hint')));
 
       const acts = E('div', 'sheet-actions');
       acts.appendChild(btn(T('event.card.btn_register'), {
@@ -1309,12 +1463,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     });
   }
 
-  // ---------- роут: форма отзыва (предложение, черновик ADR-0028) ----------
+  // ---------- роут: форма отзыва (пятый роут, принят ADR-0028) ----------
   function renderFeedback() {
     const id = hashParams.get('event_id') || D.feedback.eventId;
     const ev = eventById(id);
     const title = ev ? ev.title : D.feedback.eventTitle;
-    setBar(T('proto.feedback_title'));
     PROTO.setTrace(['ADR-0028', 'ADR-0017']);
     clear();
 
@@ -1323,22 +1476,22 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const ic = E('div', 'success-icon');
       ic.appendChild(PROTO.icon('check-circle', 34));
       ok.appendChild(ic);
-      ok.appendChild(E('div', 'success-title', T('proto.feedback_done_title')));
-      ok.appendChild(E('div', 'app-muted', T('proto.feedback_done')));
+      ok.appendChild(E('div', 'success-title', T('feedback.done_title')));
+      ok.appendChild(E('div', 'app-muted', T('feedback.done')));
       screen.appendChild(ok);
       const acts = E('div', 'app-actions');
-      acts.appendChild(linkBtn(T('proto.feedback_to_events'), '#/events?tab=past', 'btn-primary'));
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events?tab=past', 'btn-primary'));
       screen.appendChild(acts);
       PROTO.setDemo([]);
       return;
     }
 
-    screen.appendChild(E('div', 'app-title', T('proto.feedback_title')));
+    screen.appendChild(E('div', 'app-title', T('feedback.title')));
     screen.appendChild(E('div', 'app-sub', title));
-    screen.appendChild(E('div', 'app-muted', T('proto.feedback_lead')));
+    screen.appendChild(E('div', 'app-muted', T('feedback.lead')));
 
     const rate = E('div', 'form-section');
-    rate.appendChild(E('div', 'section-label', T('proto.feedback_rate')));
+    rate.appendChild(E('div', 'section-label', T('feedback.rate')));
     const stars = E('div', 'rating');
     for (let i = 1; i <= 5; i++) {
       const b = E('button', 'rating-star' + (i <= feedbackRating ? ' on' : ''));
@@ -1349,15 +1502,15 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       stars.appendChild(b);
     }
     rate.appendChild(stars);
-    if (feedbackRating === 0) rate.appendChild(E('div', 'helper', T('proto.feedback_rate_hint')));
+    if (feedbackRating === 0) rate.appendChild(E('div', 'helper', T('feedback.rate_hint')));
     screen.appendChild(rate);
 
     const text = E('div', 'form-section');
-    text.appendChild(field(T('proto.feedback_text'), '', { textarea: true, placeholder: T('proto.feedback_placeholder') }));
+    text.appendChild(field(T('feedback.text'), '', { textarea: true, placeholder: T('feedback.placeholder') }));
     screen.appendChild(text);
 
     const acts = E('div', 'app-actions');
-    acts.appendChild(btn(T('proto.feedback_submit'), {
+    acts.appendChild(btn(T('feedback.submit'), {
       kind: 'btn-primary btn-lg', block: true, disabled: feedbackRating === 0,
       onClick: () => {
         if (ev) ev.feedbackGiven = true;
@@ -1390,7 +1543,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     else if (r.name === 'scan') { scanError = null; renderScan(); }
     else if (r.name === 'manage') renderManageList();
     else if (r.name === 'manage-event') {
-      // Новый ивент открывается с первой вкладки и без чужих фильтров.
+      // Новое событие открывается с первой вкладки и без чужих фильтров.
       manageTab = 'event'; participantFilter = 'all'; participantsEmpty = false;
       wizardDone = false; wizardStep = 0; wizardDraft = null; wizardTried = false;
       renderManageEvent(r.id);

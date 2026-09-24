@@ -1,0 +1,1404 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "reg-profile",
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "ack callback (текстовый путь — мимо)",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "ob step: parse + route",
+        "name": "step_3",
+        "nextAction": {
+          "displayName": "read event",
+          "name": "step_2",
+          "nextAction": {
+            "displayName": "render ob card",
+            "name": "step_4",
+            "nextAction": {
+              "children": [
+                {
+                  "displayName": "ignore — ничего не делаем",
+                  "name": "step_6",
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {},
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => { return { ignored: true }; };",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                },
+                {
+                  "displayName": "save ob session",
+                  "name": "step_8",
+                  "nextAction": {
+                    "continueOnFailureBranches": {
+                      "onFailure": {
+                        "displayName": "фолбэк: шлём новую карточку",
+                        "name": "step_10",
+                        "nextAction": {
+                          "displayName": "фолбэк: новый cardMessageId в draft",
+                          "name": "step_11",
+                          "nextAction": {
+                            "displayName": "фолбэк: перезаписать draft новой карточкой",
+                            "name": "step_12",
+                            "settings": {
+                              "actionName": "tables-upsert-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "key_columns": [
+                                  "N8CdPxcdxLX9vFCINvZbL"
+                                ],
+                                "table_id": "toTKgngMTqDNJWDpQMh4d",
+                                "values": {
+                                  "values": [
+                                    {
+                                      "ESthrMwpn29JLvE2BNIj4": "registration",
+                                      "IdGimBh539UlGSz6L0Pyo": "{{step_4['output'].nextStep}}",
+                                      "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                      "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                                      "sctBFEsMf10UobeFgzsVt": "{{step_11['output'].draftJson}}"
+                                    }
+                                  ]
+                                }
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "cardMessageId": "{{step_10['output'].body.result.message_id}}",
+                              "eventId": "{{step_4['output'].eventId}}",
+                              "nextStep": "{{step_4['output'].nextStep}}",
+                              "profile": "{{step_4['output'].profile}}",
+                              "utm": "{{step_4['output'].utm}}"
+                            },
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  // Фолбэк ADR-0017: карточку не отредактировать — шлём новую и переписываем\n  // draft новым cardMessageId (копия паттерна reg-consent-pdn/step_15).\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const id = Number(inputs.cardMessageId);\n  const prof = (inputs.profile && typeof inputs.profile === 'object') ? inputs.profile : {};\n  return {\n    draftJson: JSON.stringify({\n      eventId: str(inputs.eventId), utm: str(inputs.utm),\n      cardMessageId: isFinite(id) && id > 0 ? id : 0, profile: prof,\n      step: str(inputs.nextStep)\n    })\n  };\n};",
+                              "packageJson": "{}"
+                            }
+                          },
+                          "type": "CODE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "MarkdownV2",
+                            "message": "{{step_4['output'].cardText}}",
+                            "protect_content": false,
+                            "reply_markup": "{{step_4['output'].replyMarkup}}",
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      }
+                    },
+                    "displayName": "edit card",
+                    "name": "step_9",
+                    "settings": {
+                      "actionName": "edit_message_text",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": true
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "chat_id": "{{trigger['output'].data.chatId}}",
+                        "disable_web_page_preview": false,
+                        "format": "MarkdownV2",
+                        "message_id": "{{step_4['output'].cardMessageId}}",
+                        "reply_markup": "{{step_4['output'].replyMarkup}}",
+                        "text": "{{step_4['output'].cardText}}"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                      "qadamVersion": "0.8.0"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-upsert-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "key_columns": [
+                        "N8CdPxcdxLX9vFCINvZbL"
+                      ],
+                      "table_id": "toTKgngMTqDNJWDpQMh4d",
+                      "values": {
+                        "values": [
+                          {
+                            "ESthrMwpn29JLvE2BNIj4": "registration",
+                            "IdGimBh539UlGSz6L0Pyo": "{{step_4['output'].nextStep}}",
+                            "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                            "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                            "sctBFEsMf10UobeFgzsVt": "{{step_4['output'].draftJson}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "save consent_pdn",
+                  "name": "step_13",
+                  "nextAction": {
+                    "displayName": "save ob session (consent)",
+                    "name": "step_14",
+                    "nextAction": {
+                      "continueOnFailureBranches": {
+                        "onFailure": {
+                          "displayName": "фолбэк (consent): шлём новую карточку",
+                          "name": "step_16",
+                          "nextAction": {
+                            "displayName": "фолбэк (consent): новый cardMessageId",
+                            "name": "step_17",
+                            "nextAction": {
+                              "displayName": "фолбэк (consent): перезаписать draft",
+                              "name": "step_18",
+                              "settings": {
+                                "actionName": "tables-upsert-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "key_columns": [
+                                    "N8CdPxcdxLX9vFCINvZbL"
+                                  ],
+                                  "table_id": "toTKgngMTqDNJWDpQMh4d",
+                                  "values": {
+                                    "values": [
+                                      {
+                                        "ESthrMwpn29JLvE2BNIj4": "registration",
+                                        "IdGimBh539UlGSz6L0Pyo": "{{step_4['output'].nextStep}}",
+                                        "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                        "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                                        "sctBFEsMf10UobeFgzsVt": "{{step_17['output'].draftJson}}"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.4.5"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "cardMessageId": "{{step_16['output'].body.result.message_id}}",
+                                "eventId": "{{step_4['output'].eventId}}",
+                                "nextStep": "{{step_4['output'].nextStep}}",
+                                "profile": "{{step_4['output'].profile}}",
+                                "utm": "{{step_4['output'].utm}}"
+                              },
+                              "sourceCode": {
+                                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const id = Number(inputs.cardMessageId);\n  const prof = (inputs.profile && typeof inputs.profile === 'object') ? inputs.profile : {};\n  return {\n    draftJson: JSON.stringify({\n      eventId: str(inputs.eventId), utm: str(inputs.utm),\n      cardMessageId: isFinite(id) && id > 0 ? id : 0, profile: prof,\n      step: str(inputs.nextStep)\n    })\n  };\n};",
+                                "packageJson": "{}"
+                              }
+                            },
+                            "type": "CODE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "send_text_message",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "disable_notification": false,
+                              "format": "MarkdownV2",
+                              "message": "{{step_4['output'].cardText}}",
+                              "protect_content": false,
+                              "reply_markup": "{{step_4['output'].replyMarkup}}",
+                              "web_page_preview": false
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-telegram-bot",
+                            "qadamVersion": "0.8.0"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        }
+                      },
+                      "displayName": "edit card (consent)",
+                      "name": "step_15",
+                      "settings": {
+                        "actionName": "edit_message_text",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": true
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_web_page_preview": false,
+                          "format": "MarkdownV2",
+                          "message_id": "{{step_4['output'].cardMessageId}}",
+                          "reply_markup": "{{step_4['output'].replyMarkup}}",
+                          "text": "{{step_4['output'].cardText}}"
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-upsert-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "key_columns": [
+                          "N8CdPxcdxLX9vFCINvZbL"
+                        ],
+                        "table_id": "toTKgngMTqDNJWDpQMh4d",
+                        "values": {
+                          "values": [
+                            {
+                              "ESthrMwpn29JLvE2BNIj4": "registration",
+                              "IdGimBh539UlGSz6L0Pyo": "{{step_4['output'].nextStep}}",
+                              "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                              "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                              "sctBFEsMf10UobeFgzsVt": "{{step_4['output'].draftJson}}"
+                            }
+                          ]
+                        }
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-upsert-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "key_columns": [
+                        "JtylZU291K7TuMn9c9F2t"
+                      ],
+                      "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                      "values": {
+                        "values": [
+                          {
+                            "JtylZU291K7TuMn9c9F2t": "{{trigger['output'].data.telegramId}}",
+                            "KtdV8plfevjdnKlLko08q": "true",
+                            "LeY6BeUOzWIyEtUFfKNbI": "{{step_4['output'].now}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "clear session (declined)",
+                  "name": "step_19",
+                  "nextAction": {
+                    "continueOnFailureBranches": {
+                      "onFailure": {
+                        "displayName": "фолбэк (declined): отказ новым сообщением",
+                        "name": "step_21",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "MarkdownV2",
+                            "message": "{{step_4['output'].cardText}}",
+                            "protect_content": false,
+                            "reply_markup": "{{step_4['output'].replyMarkup}}",
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      }
+                    },
+                    "displayName": "edit card → отказ",
+                    "name": "step_20",
+                    "settings": {
+                      "actionName": "edit_message_text",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": true
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "chat_id": "{{trigger['output'].data.chatId}}",
+                        "disable_web_page_preview": false,
+                        "format": "MarkdownV2",
+                        "message_id": "{{step_4['output'].cardMessageId}}",
+                        "reply_markup": "{{step_4['output'].replyMarkup}}",
+                        "text": "{{step_4['output'].cardText}}"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                      "qadamVersion": "0.8.0"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-upsert-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "key_columns": [
+                        "N8CdPxcdxLX9vFCINvZbL"
+                      ],
+                      "table_id": "toTKgngMTqDNJWDpQMh4d",
+                      "values": {
+                        "values": [
+                          {
+                            "ESthrMwpn29JLvE2BNIj4": "-",
+                            "IdGimBh539UlGSz6L0Pyo": "-",
+                            "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "save profile + consent",
+                  "name": "step_22",
+                  "nextAction": {
+                    "displayName": "create registration",
+                    "name": "step_23",
+                    "nextAction": {
+                      "displayName": "session → await_marketing",
+                      "name": "step_24",
+                      "nextAction": {
+                        "continueOnFailureBranches": {
+                          "onFailure": {
+                            "displayName": "фолбэк (finish): done новым сообщением",
+                            "name": "step_26",
+                            "nextAction": {
+                              "displayName": "фолбэк (finish): новый cardMessageId",
+                              "name": "step_27",
+                              "nextAction": {
+                                "displayName": "фолбэк (finish): перезаписать draft",
+                                "name": "step_28",
+                                "settings": {
+                                  "actionName": "tables-upsert-records",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "key_columns": [
+                                      "N8CdPxcdxLX9vFCINvZbL"
+                                    ],
+                                    "table_id": "toTKgngMTqDNJWDpQMh4d",
+                                    "values": {
+                                      "values": [
+                                        {
+                                          "ESthrMwpn29JLvE2BNIj4": "registration",
+                                          "IdGimBh539UlGSz6L0Pyo": "await_marketing",
+                                          "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                          "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                                          "sctBFEsMf10UobeFgzsVt": "{{step_27['output'].draftJson}}"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.4.5"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "cardMessageId": "{{step_26['output'].body.result.message_id}}",
+                                  "eventId": "{{step_4['output'].eventId}}",
+                                  "nextStep": "await_marketing",
+                                  "profile": "{{step_4['output'].profile}}",
+                                  "utm": "{{step_4['output'].utm}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const id = Number(inputs.cardMessageId);\n  const prof = (inputs.profile && typeof inputs.profile === 'object') ? inputs.profile : {};\n  return {\n    draftJson: JSON.stringify({\n      eventId: str(inputs.eventId), utm: str(inputs.utm),\n      cardMessageId: isFinite(id) && id > 0 ? id : 0, profile: prof,\n      step: str(inputs.nextStep)\n    })\n  };\n};",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "send_text_message",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "chat_id": "{{trigger['output'].data.chatId}}",
+                                "disable_notification": false,
+                                "format": "MarkdownV2",
+                                "message": "{{step_4['output'].cardText}}",
+                                "protect_content": false,
+                                "reply_markup": "{{step_4['output'].replyMarkup}}",
+                                "web_page_preview": false
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-telegram-bot",
+                              "qadamVersion": "0.8.0"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          }
+                        },
+                        "displayName": "edit card → done + mkt",
+                        "name": "step_25",
+                        "settings": {
+                          "actionName": "edit_message_text",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": true
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_web_page_preview": false,
+                            "format": "MarkdownV2",
+                            "message_id": "{{step_4['output'].cardMessageId}}",
+                            "reply_markup": "{{step_4['output'].replyMarkup}}",
+                            "text": "{{step_4['output'].cardText}}"
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "actionName": "tables-upsert-records",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "key_columns": [
+                            "N8CdPxcdxLX9vFCINvZbL"
+                          ],
+                          "table_id": "toTKgngMTqDNJWDpQMh4d",
+                          "values": {
+                            "values": [
+                              {
+                                "ESthrMwpn29JLvE2BNIj4": "registration",
+                                "IdGimBh539UlGSz6L0Pyo": "await_marketing",
+                                "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                                "sctBFEsMf10UobeFgzsVt": "{{step_4['output'].draftJson}}"
+                              }
+                            ]
+                          }
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-tables",
+                        "qadamVersion": "0.4.5"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-upsert-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "key_columns": [
+                          "qQPYl9c0ew6n8w2CGYZII",
+                          "mVfpZFCwAZskWXNT7iCuI"
+                        ],
+                        "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
+                        "values": {
+                          "values": [
+                            {
+                              "BGTxyxBZqagpqUB3UqXta": "{{step_3['output'].regId}}",
+                              "RZYFhQBQbSfNzIVEvmYgd": "{{step_4['output'].now}}",
+                              "TZyqC63UAWrPbzxuf2q4w": "registered",
+                              "WFWifafyD6UNNCxLQyML1": "{{step_4['output'].utm}}",
+                              "mVfpZFCwAZskWXNT7iCuI": "{{trigger['output'].data.telegramId}}",
+                              "qQPYl9c0ew6n8w2CGYZII": "{{step_4['output'].eventId}}"
+                            }
+                          ]
+                        }
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-upsert-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "key_columns": [
+                        "JtylZU291K7TuMn9c9F2t"
+                      ],
+                      "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                      "values": {
+                        "values": [
+                          {
+                            "EAlXy4XsXGAeM7UrS0TIQ": "{{step_4['output'].now}}",
+                            "JtylZU291K7TuMn9c9F2t": "{{trigger['output'].data.telegramId}}",
+                            "KsKN4eTmjZN2IxrZxm5qZ": "{{step_4['output'].profile.last}}",
+                            "KtdV8plfevjdnKlLko08q": "true",
+                            "LeY6BeUOzWIyEtUFfKNbI": "{{step_4['output'].now}}",
+                            "em7af2g9kyaNXC2tPNvXF": "{{step_4['output'].profile.first}}",
+                            "p5TNNHUYCrHv3L6SWCRWb": "{{step_4['output'].profile.position}}",
+                            "t89wutkSapoK3QKmZ0Vb8": "{{step_4['output'].profile.city}}",
+                            "wz2jSqAxfldiP8b0YOokJ": "{{step_4['output'].profile.company}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "create registration (repeat)",
+                  "name": "step_29",
+                  "nextAction": {
+                    "displayName": "clear session (repeat)",
+                    "name": "step_30",
+                    "nextAction": {
+                      "continueOnFailureBranches": {
+                        "onFailure": {
+                          "displayName": "фолбэк (repeat): done новым сообщением",
+                          "name": "step_32",
+                          "settings": {
+                            "actionName": "send_text_message",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "disable_notification": false,
+                              "format": "MarkdownV2",
+                              "message": "{{step_4['output'].cardText}}",
+                              "protect_content": false,
+                              "reply_markup": "{{step_4['output'].replyMarkup}}",
+                              "web_page_preview": false
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-telegram-bot",
+                            "qadamVersion": "0.8.0"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        }
+                      },
+                      "displayName": "edit card → done + mkt (repeat)",
+                      "name": "step_31",
+                      "nextAction": {
+                        "displayName": "send ticket (repeat)",
+                        "name": "step_33",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "MarkdownV2",
+                            "message": "{{step_4['output'].ticketText}}",
+                            "protect_content": false,
+                            "reply_markup": "{{step_4['output'].ticketReplyMarkup}}",
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.8.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "actionName": "edit_message_text",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": true
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_web_page_preview": false,
+                          "format": "MarkdownV2",
+                          "message_id": "{{step_4['output'].cardMessageId}}",
+                          "reply_markup": "{{step_4['output'].replyMarkup}}",
+                          "text": "{{step_4['output'].cardText}}"
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-upsert-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "key_columns": [
+                          "N8CdPxcdxLX9vFCINvZbL"
+                        ],
+                        "table_id": "toTKgngMTqDNJWDpQMh4d",
+                        "values": {
+                          "values": [
+                            {
+                              "ESthrMwpn29JLvE2BNIj4": "-",
+                              "IdGimBh539UlGSz6L0Pyo": "-",
+                              "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}"
+                            }
+                          ]
+                        }
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-upsert-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "key_columns": [
+                        "qQPYl9c0ew6n8w2CGYZII",
+                        "mVfpZFCwAZskWXNT7iCuI"
+                      ],
+                      "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
+                      "values": {
+                        "values": [
+                          {
+                            "BGTxyxBZqagpqUB3UqXta": "{{step_3['output'].regId}}",
+                            "RZYFhQBQbSfNzIVEvmYgd": "{{step_4['output'].now}}",
+                            "TZyqC63UAWrPbzxuf2q4w": "registered",
+                            "WFWifafyD6UNNCxLQyML1": "{{step_4['output'].utm}}",
+                            "mVfpZFCwAZskWXNT7iCuI": "{{trigger['output'].data.telegramId}}",
+                            "qQPYl9c0ew6n8w2CGYZII": "{{step_4['output'].eventId}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "save profile + consent (no event)",
+                  "name": "step_35",
+                  "nextAction": {
+                    "displayName": "session → await_marketing (no event)",
+                    "name": "step_36",
+                    "nextAction": {
+                      "continueOnFailureBranches": {
+                        "onFailure": {
+                          "displayName": "фолбэк (no event): done новым сообщением",
+                          "name": "step_38",
+                          "nextAction": {
+                            "displayName": "фолбэк (no event): новый cardMessageId",
+                            "name": "step_39",
+                            "nextAction": {
+                              "displayName": "фолбэк (no event): перезаписать draft",
+                              "name": "step_40",
+                              "settings": {
+                                "actionName": "tables-upsert-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "key_columns": [
+                                    "N8CdPxcdxLX9vFCINvZbL"
+                                  ],
+                                  "table_id": "toTKgngMTqDNJWDpQMh4d",
+                                  "values": {
+                                    "values": [
+                                      {
+                                        "ESthrMwpn29JLvE2BNIj4": "registration",
+                                        "IdGimBh539UlGSz6L0Pyo": "await_marketing",
+                                        "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                        "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                                        "sctBFEsMf10UobeFgzsVt": "{{step_39['output'].draftJson}}"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.4.5"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "cardMessageId": "{{step_38['output'].body.result.message_id}}",
+                                "eventId": "{{step_4['output'].eventId}}",
+                                "nextStep": "await_marketing",
+                                "profile": "{{step_4['output'].profile}}",
+                                "utm": "{{step_4['output'].utm}}"
+                              },
+                              "sourceCode": {
+                                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const id = Number(inputs.cardMessageId);\n  const prof = (inputs.profile && typeof inputs.profile === 'object') ? inputs.profile : {};\n  return {\n    draftJson: JSON.stringify({\n      eventId: str(inputs.eventId), utm: str(inputs.utm),\n      cardMessageId: isFinite(id) && id > 0 ? id : 0, profile: prof,\n      step: str(inputs.nextStep)\n    })\n  };\n};",
+                                "packageJson": "{}"
+                              }
+                            },
+                            "type": "CODE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "send_text_message",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "chat_id": "{{trigger['output'].data.chatId}}",
+                              "disable_notification": false,
+                              "format": "MarkdownV2",
+                              "message": "{{step_4['output'].cardText}}",
+                              "protect_content": false,
+                              "reply_markup": "{{step_4['output'].replyMarkup}}",
+                              "web_page_preview": false
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-telegram-bot",
+                            "qadamVersion": "0.8.0"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        }
+                      },
+                      "displayName": "edit card → done + mkt (no event)",
+                      "name": "step_37",
+                      "settings": {
+                        "actionName": "edit_message_text",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": true
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "chat_id": "{{trigger['output'].data.chatId}}",
+                          "disable_web_page_preview": false,
+                          "format": "MarkdownV2",
+                          "message_id": "{{step_4['output'].cardMessageId}}",
+                          "reply_markup": "{{step_4['output'].replyMarkup}}",
+                          "text": "{{step_4['output'].cardText}}"
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-telegram-bot",
+                        "qadamVersion": "0.8.0"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-upsert-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "key_columns": [
+                          "N8CdPxcdxLX9vFCINvZbL"
+                        ],
+                        "table_id": "toTKgngMTqDNJWDpQMh4d",
+                        "values": {
+                          "values": [
+                            {
+                              "ESthrMwpn29JLvE2BNIj4": "registration",
+                              "IdGimBh539UlGSz6L0Pyo": "await_marketing",
+                              "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                              "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
+                              "sctBFEsMf10UobeFgzsVt": "{{step_4['output'].draftJson}}"
+                            }
+                          ]
+                        }
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-upsert-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "key_columns": [
+                        "JtylZU291K7TuMn9c9F2t"
+                      ],
+                      "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                      "values": {
+                        "values": [
+                          {
+                            "EAlXy4XsXGAeM7UrS0TIQ": "{{step_4['output'].now}}",
+                            "JtylZU291K7TuMn9c9F2t": "{{trigger['output'].data.telegramId}}",
+                            "KsKN4eTmjZN2IxrZxm5qZ": "{{step_4['output'].profile.last}}",
+                            "KtdV8plfevjdnKlLko08q": "true",
+                            "LeY6BeUOzWIyEtUFfKNbI": "{{step_4['output'].now}}",
+                            "em7af2g9kyaNXC2tPNvXF": "{{step_4['output'].profile.first}}",
+                            "p5TNNHUYCrHv3L6SWCRWb": "{{step_4['output'].profile.position}}",
+                            "t89wutkSapoK3QKmZ0Vb8": "{{step_4['output'].profile.city}}",
+                            "wz2jSqAxfldiP8b0YOokJ": "{{step_4['output'].profile.company}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.5"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "fallback ignore — ничего не делаем",
+                  "name": "step_7",
+                  "settings": {
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {},
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => { return { ignored: true }; };",
+                      "packageJson": "{}"
+                    }
+                  },
+                  "type": "CODE",
+                  "valid": true
+                }
+              ],
+              "displayName": "route write",
+              "name": "step_5",
+              "settings": {
+                "branches": [
+                  {
+                    "branchName": "ignore",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "ignore"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "card",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "card"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "consent",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "consent"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "declined",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "declined"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "finish",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "finish"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "finish_lite",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "finish_lite"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "finish_no_event",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_4['output'].writeKind}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "finish_no_event"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "Otherwise",
+                    "branchType": "FALLBACK"
+                  }
+                ],
+                "executionType": "EXECUTE_FIRST_MATCH"
+              },
+              "type": "ROUTER",
+              "valid": true
+            },
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "eventRows": "{{step_2['output']}}",
+                "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                "parsed": "{{step_3['output']}}",
+                "sourceCode": null,
+                "texts": {
+                  "event.card.btn_calendar": "Добавить в календарь",
+                  "event.card.deadline_short": "Регистрация до {when}",
+                  "onb.ask_city": "Из какого вы города?",
+                  "onb.ask_name": "Напишите имя и фамилию — как поставить в список участников.",
+                  "onb.ask_work": "Где работаете? Пришлите должность и компанию одним сообщением. Пример: ML-инженер, Payme. Компанию можно пропустить.",
+                  "onb.btn.agree": "Согласен",
+                  "onb.btn.all_good": "Всё верно",
+                  "onb.btn.continue": "Дальше",
+                  "onb.btn.details": "Подробнее",
+                  "onb.btn.fix": "Исправить",
+                  "onb.btn.fix_name": "Поправить имя",
+                  "onb.btn.itsme": "Это я",
+                  "onb.btn.understood": "Понятно, согласен",
+                  "onb.btn.write": "Написать",
+                  "onb.btn.write_name": "Написать имя",
+                  "onb.consent": "Согласны на обработку данных: имя, фамилия, должность, компания, город и telegram_id. Храним у себя, третьим не отдаём. Без согласия оформить не сможем.",
+                  "onb.details": "Что храним и зачем: имя, фамилия, должность, компания, город и telegram_id — чтобы вести список участников и пускать на события. Храним у себя, третьим лицам не передаём, в продажу не пускаем. Отозвать согласие и удалить данные можно в табе «Профиль» приложения.",
+                  "onb.name_ok": "Вы — {name}? Подтянули из профиля Telegram. Если там никнейм — не жмите «Это я», поправьте.",
+                  "onb.review": "Проверьте: {profile}. Пока ничего не записано — можно поправить.",
+                  "onb.suspect": "В профиле Telegram — «{name}»: такое в список участников не поставим. Напишите имя и фамилию руками.",
+                  "onb.why": "Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем.",
+                  "profile.err": "Заполните имя и фамилию.",
+                  "profile.saved": "Теперь вас видно в списке участников AI Qadam.",
+                  "profile.saved.header": "✅ Профиль сохранён",
+                  "reg.consent_marketing.ask": "Присылать анонсы следующих событий? На регистрацию это никак не влияет.",
+                  "reg.consent_marketing.btn_no": "Не нужно",
+                  "reg.consent_marketing.btn_yes": "Да, присылайте",
+                  "reg.consent_pdn.btn_no": "Не сейчас",
+                  "reg.consent_pdn.declined": "Хорошо, регистрацию не оформляем — без согласия на обработку данных мы не вправе. Если передумаете, откройте ту же ссылку ещё раз.",
+                  "reg.consent_pdn.declined_no_link": "Хорошо, профиль не сохраняем — без согласия на обработку данных мы не вправе. Если передумаете, нажмите /start.",
+                  "reg.done": "Вы зарегистрированы на «{title}».",
+                  "reg.done.header": "✅ Вы зарегистрированы",
+                  "ticket.btn.open": "Открыть билет",
+                  "ticket.header": "🎟 Ваш билет",
+                  "ticket.hint": "Покажите QR на входе. Он откроется по кнопке ниже — сохранять ничего не надо."
+                }
+              },
+              "sourceCode": {
+                "code": "export const code = async (inputs) => {\n  // W50 / PAR-8 / ADR-0034: рендер карточки онбординга + план записи. Пишет\n  // только в свой вывод: таблицы трогают шаги веток, отправка — edit-шаги\n  // веток. writeKind finish_lite (повторное касание) — тем же кодом, но\n  // ветка пропускает запись users: профиль уже в таблице, пустым не\n  // затираем. writeKind finish_no_event (ADR-0034: онбординг на голый\n  // /start, без диплинка события) — профиль пишется, регистрация нет:\n  // создавать её не на что.\n  // W76: финальная карточка несёт дату/адрес/карту (как карточка события), а\n  // в билет добавляется ссылка «Добавить в календарь» (Google Calendar).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n    });\n    return out;\n  };\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const ev = arr(inputs.eventRows).map(flat)[0] || {};\n  const p = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const action = str(p.action);\n  const prof = (p.profile && typeof p.profile === 'object') ? p.profile : {};\n  const text = str(p.text);\n  const lat = Number(ev.lat);\n  const lon = Number(ev.lon);\n  // W76/W72: пустые координаты и (0,0) — не гео (Number('') === 0, баг #124);\n  // координаты должны быть в диапазоне.\n  const hasGeo = str(ev.lat) !== '' && str(ev.lon) !== '' && isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && !(lat === 0 && lon === 0);\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  // W76: Google Calendar без ключей; дата в UTC-формате YYYYMMDDTHHMMSSZ.\n  const utcStamp = (iso) => {\n    const s = str(iso);\n    if (!s) return '';\n    const ms = parseIso(s);\n    return isFinite(ms) ? new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '') : '';\n  };\n  const calUrl = (() => {\n    const start = utcStamp(ev.starts_at);\n    if (!start) return '';\n    let end = utcStamp(ev.ends_at);\n    if (!end) {\n      const ms = parseIso(str(ev.starts_at));\n      end = isFinite(ms) ? new Date(ms + 3600000).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '') : '';\n    }\n    if (!start || !end) return '';\n    const params = ['action=TEMPLATE', 'text=' + encodeURIComponent(str(ev.title)), 'dates=' + start + '/' + end];\n    if (str(ev.address)) params.push('location=' + encodeURIComponent(str(ev.address)));\n    return 'https://calendar.google.com/calendar/render?' + params.join('&');\n  })();\n  const eventFacts = (() => {\n    const facts = [];\n    if (ev.title) facts.push('*' + esc(ev.title) + '*');\n    const meta = [];\n    if (ev.starts_at) meta.push('📅 ' + esc(fmt(ev.starts_at)) + (ev.ends_at ? ' — ' + esc(fmt(ev.ends_at)) : ''));\n    if (ev.address) meta.push('📍 ' + esc(ev.address));\n    if (mapsUrl) meta.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n    if (meta.length) facts.push(meta.join('\\n'));\n    return facts.join('\\n\\n');\n  })();\n  const eventCard = (extra) => {\n    const lines = [];\n    if (ev.title) lines.push('*' + esc(ev.title) + '*');\n    if (ev.description) lines.push(esc(ev.description));\n    const facts = [];\n    if (ev.starts_at) facts.push('📅 ' + esc(fmt(ev.starts_at)) + (ev.ends_at ? ' — ' + esc(fmt(ev.ends_at)) : ''));\n    if (ev.address) facts.push('📍 ' + esc(ev.address));\n    if (mapsUrl) facts.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n    if (ev.reg_deadline_at) facts.push('⏳ ' + esc(t('event.card.deadline_short', { when: fmt(ev.reg_deadline_at) })));\n    if (facts.length) lines.push(facts.join('\\n'));\n    if (extra) lines.push(esc(extra));\n    return lines.join('\\n\\n');\n  };\n  const btn = (label, cb) => ({ text: label, callback_data: cb });\n  const kb = (rows) => ({ inline_keyboard: rows });\n  const profileLine = (o) => {\n    const nm = (str(o.first) + ' ' + str(o.last)).trim();\n    const work = str(o.position) + (str(o.company) ? ', ' + str(o.company) : '');\n    return [nm, work, str(o.city)].filter((x) => x !== '').join(' · ');\n  };\n  const fullName = (str(p.firstName).trim() + ' ' + str(p.lastName).trim()).trim();\n  let writeKind = 'card';\n  let cardText = '';\n  let replyMarkup = {};\n  let nextStep = '';\n  let profile = Object.assign({}, prof);\n  let saveConsent = false;\n  let ticketText = '';\n  let ticketReplyMarkup = {};\n  const now = str(p.now) || new Date().toISOString();\n  const cardId = Number(p.cardMessageId) || 0;\n  const eventId = str(p.eventId);\n  const miniappUrl = str(inputs.miniappUrl);\n  const miniappBase = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  // Правка (2026-09-20): step отсутствовал в draft — step_3 читает\n  // draft.step, а не отдельную колонку sessions.step, поэтому ни один\n  // колбэк не находил свой шаг и уходил в ignore (онбординг «скипался»).\n  const draftOf = (step, pr) => JSON.stringify({ eventId: eventId, utm: str(p.utm), cardMessageId: cardId, profile: pr || {}, step: step });\n  let draftJson = draftOf(nextStep, profile);\n  const ticketRows = (withCalendar) => {\n    const rows = [[{ text: t('ticket.btn.open'), web_app: { url: miniappBase + '/#/ticket?event_id=' + eventId } }]];\n    if (withCalendar && calUrl) rows.push([{ text: t('event.card.btn_calendar'), url: calUrl }]);\n    return rows;\n  };\n  if (action === 'show_consent') {\n    cardText = eventCard(t('onb.consent'));\n    replyMarkup = kb([[btn(t('onb.btn.agree'), 'ob:agree'), btn(t('onb.btn.details'), 'ob:details')]]);\n    nextStep = 'ob_consent';\n  } else if (action === 'show_details') {\n    cardText = eventCard(t('onb.details'));\n    replyMarkup = kb([[btn(t('onb.btn.understood'), 'ob:understood'), btn(t('reg.consent_pdn.btn_no'), 'ob:decline')]]);\n    nextStep = 'ob_details';\n  } else if (action === 'consent_namecheck') {\n    writeKind = 'consent';\n    saveConsent = true;\n    const chk = (p.check && typeof p.check === 'object') ? p.check : { suspicious: true };\n    if (chk.suspicious) {\n      cardText = eventCard(t('onb.suspect', { name: fullName || '?' }));\n      replyMarkup = kb([[btn(t('onb.btn.write_name'), 'ob:fixname')]]);\n    } else {\n      cardText = eventCard(t('onb.name_ok', { name: fullName }));\n      replyMarkup = kb([[btn(t('onb.btn.itsme'), 'ob:itsme'), btn(t('onb.btn.fix_name'), 'ob:fixname')]]);\n    }\n    nextStep = 'ob_name';\n  } else if (action === 'show_work') {\n    if (p.useTgName) profile = { first: str(p.firstName).trim(), last: str(p.lastName).trim() };\n    cardText = eventCard(t('onb.ask_work'));\n    replyMarkup = {};\n    nextStep = 'ob_await_work';\n  } else if (action === 'show_ask_name') {\n    cardText = eventCard(t('onb.ask_name'));\n    replyMarkup = {};\n    nextStep = 'ob_await_name';\n  } else if (action === 'text_name') {\n    const parts = text.split(/\\s+/).filter((w) => w.length >= 2);\n    if (parts.length >= 2 && text.length <= 80) {\n      profile = { first: parts[0], last: parts.slice(1).join(' ') };\n      cardText = eventCard(t('onb.ask_work'));\n      replyMarkup = {};\n      nextStep = 'ob_await_work';\n    } else {\n      cardText = eventCard(t('profile.err') + '\\n' + t('onb.ask_name'));\n      replyMarkup = {};\n      nextStep = 'ob_await_name';\n    }\n  } else if (action === 'text_work') {\n    const ci = text.indexOf(',');\n    const position = (ci >= 0 ? text.slice(0, ci) : text).trim();\n    const company = (ci >= 0 ? text.slice(ci + 1) : '').trim();\n    if (position !== '' && text.length <= 200) {\n      profile = Object.assign({}, prof, { position: position, company: company });\n      cardText = eventCard(t('onb.ask_city'));\n      replyMarkup = kb([[{ text: 'Ташкент', callback_data: 'ob:city:Tashkent' }, { text: 'Алматы', callback_data: 'ob:city:Almaty' }], [btn(t('onb.btn.write'), 'ob:city:write')]]);\n      nextStep = 'ob_city';\n    } else {\n      cardText = eventCard(t('profile.err') + '\\n' + t('onb.ask_work'));\n      replyMarkup = {};\n      nextStep = 'ob_await_work';\n    }\n  } else if (action === 'show_ask_city') {\n    cardText = eventCard(t('onb.ask_city'));\n    replyMarkup = {};\n    nextStep = 'ob_await_city';\n  } else if (action === 'show_review') {\n    profile = Object.assign({}, prof, { city: str(p.city) });\n    cardText = eventCard(t('onb.review', { profile: profileLine(profile) }));\n    replyMarkup = kb([[btn(t('onb.btn.all_good'), 'ob:allgood'), btn(t('onb.btn.fix'), 'ob:fix')]]);\n    nextStep = 'ob_review';\n  } else if (action === 'text_city') {\n    if (text !== '' && text.length <= 100) {\n      profile = Object.assign({}, prof, { city: text });\n      cardText = eventCard(t('onb.review', { profile: profileLine(profile) }));\n      replyMarkup = kb([[btn(t('onb.btn.all_good'), 'ob:allgood'), btn(t('onb.btn.fix'), 'ob:fix')]]);\n      nextStep = 'ob_review';\n    } else {\n      cardText = eventCard(t('onb.ask_city'));\n      replyMarkup = {};\n      nextStep = 'ob_await_city';\n    }\n  } else if (action === 'finish' || action === 'finish_lite') {\n    // ADR-0034: первое касание без диплинка (eventId пуст) не может создать\n    // регистрацию — создавать её не на что. Профиль и оба согласия пишутся\n    // так же, финальная карточка и текст — другие (см. writeKind ниже).\n    const noEvent = action === 'finish' && eventId === '';\n    writeKind = action === 'finish_lite' ? 'finish_lite' : (noEvent ? 'finish_no_event' : 'finish');\n    profile = Object.assign({}, prof);\n    if (action === 'finish_lite') {\n      // Владелец (после W59, W60): consent на рассылку уже дан или отклонён\n      // при первом заполнении профиля — без него profile_completed_at не\n      // взводится, а finish_lite достижим только с заполненным профилем\n      // (reg-start/step_3, гейт «профиль заполнен → register»).\n      // Переспрашивать не нужно: сразу финальная карточка с датой/адресом,\n      // билет вторым сообщением, сессия закрывается (следующего колбэка нет).\n      cardText = '*' + esc(t('reg.done.header')) + '*' + (eventFacts ? '\\n\\n' + eventFacts : '');\n      replyMarkup = {};\n      nextStep = '';\n      ticketText = [esc(t('ticket.header')), esc(t('ticket.hint'))].join('\\n\\n');\n      ticketReplyMarkup = { inline_keyboard: ticketRows(true) };\n    } else if (noEvent) {\n      cardText = '*' + esc(t('profile.saved.header')) + '*' + '\\n\\n' + esc(t('profile.saved')) + '\\n' + esc(t('reg.consent_marketing.ask'));\n      replyMarkup = kb([[{ text: t('reg.consent_marketing.btn_yes'), callback_data: 'reg:mkt:yes' }, { text: t('reg.consent_marketing.btn_no'), callback_data: 'reg:mkt:no' }]]);\n      nextStep = 'await_marketing';\n    } else {\n      cardText = '*' + esc(t('reg.done.header')) + '*' + (eventFacts ? '\\n\\n' + eventFacts : '') + '\\n' + esc(t('reg.consent_marketing.ask'));\n      replyMarkup = kb([[{ text: t('reg.consent_marketing.btn_yes'), callback_data: 'reg:mkt:yes' }, { text: t('reg.consent_marketing.btn_no'), callback_data: 'reg:mkt:no' }]]);\n      nextStep = 'await_marketing';\n    }\n  } else if (action === 'declined') {\n    writeKind = 'declined';\n    cardText = eventCard(eventId === '' ? t('reg.consent_pdn.declined_no_link') : t('reg.consent_pdn.declined'));\n    replyMarkup = {};\n    nextStep = '';\n  } else {\n    return { writeKind: 'ignore' };\n  }\n  draftJson = draftOf(nextStep, profile);\n  return { writeKind: writeKind, cardText: cardText, replyMarkup: replyMarkup, nextStep: nextStep, draftJson: draftJson, profile: profile, saveConsent: saveConsent, eventId: eventId, utm: str(p.utm), cardMessageId: cardId, now: now, ticketText: ticketText, ticketReplyMarkup: ticketReplyMarkup };\n};\n",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "tables-find-records",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "columns": [
+                "39qJ4o2MYyNYsT2VtxfcK",
+                "tQEzfGR3hYG0ztG50Po00",
+                "8PdNUVtOvTuwRzJFQDgfy",
+                "kSRM3ouou0Owj2yDYk92W",
+                "8me4o2U2wj6cyrv8lfJv9",
+                "zIA6xEHm7y1bwkajoYDQn",
+                "j4BZ0Z6VMwWbHc5RlTBfB",
+                "EKEX5zyhKo3WChz5ZquY0",
+                "Br2f0wjLugSGIS2kjfoFE"
+              ],
+              "filters": {
+                "filters": [
+                  {
+                    "field": {
+                      "id": "39qJ4o2MYyNYsT2VtxfcK",
+                      "name": "id",
+                      "type": "TEXT"
+                    },
+                    "operator": "eq",
+                    "value": "{{step_3['output'].eventId}}"
+                  }
+                ]
+              },
+              "limit": 1,
+              "record_ids": [],
+              "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-tables",
+            "qadamVersion": "0.4.5"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "callbackData": "{{trigger['output'].data.callbackData}}",
+            "firstName": "{{trigger['output'].data.firstName}}",
+            "lastName": "{{trigger['output'].data.lastName}}",
+            "messageText": "{{trigger['output'].data.messageText}}",
+            "sessionDraft": "{{trigger['output'].data.sessionDraft}}",
+            "telegramId": "{{trigger['output'].data.telegramId}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  // W50 / PAR-8 / ADR-0032: онбординг C — разбор входа и маршрутизация.\n  // Чистая функция: тексты не нужны, только ветвление и эвристика имени.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const cb = str(inputs.callbackData);\n  const text = str(inputs.messageText).trim();\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const step = str(draft.step);\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const telegramId = str(inputs.telegramId);\n  const cardMessageId = Number(draft.cardMessageId);\n  const profile = (draft.profile && typeof draft.profile === 'object') ? draft.profile : {};\n  // Эвристика «подозрительное имя» (ADR-0032 п.4): только роутинг, не запрет.\n  // Порядок проверок — из ADR: короткое → цифра → эмодзи → мусор → длинное.\n  const nameCheck = (first, last) => {\n    const fn = str(first).trim(), ln = str(last).trim();\n    if (fn.length < 2 || ln.length < 2) return { suspicious: true, reason: 'too_short' };\n    const both = fn + ' ' + ln;\n    if (/[0-9]/.test(both)) return { suspicious: true, reason: 'has_digit' };\n    if (/\\p{Extended_Pictographic}/u.test(both)) return { suspicious: true, reason: 'has_emoji' };\n    // Правка (2026-09-20): было `/regex/.u.test(...)` — точка перед `u`\n    // отрывала флаг в обращение к несуществующему свойству regex-объекта\n    // (undefined.test → TypeError). Падало на каждом «чистом» имени, то\n    // есть почти на любом реальном входе в consent_namecheck.\n    if (/[^\\p{L}\\s\\-'’‘ʼʻ`]/u.test(both)) return { suspicious: true, reason: 'bad_chars' };\n    if (both.length > 40) return { suspicious: true, reason: 'too_long' };\n    return { suspicious: false, reason: '' };\n  };\n  const starts = (s, p) => s.indexOf(p) === 0;\n  const out = (action, extra) => Object.assign({\n    action: action, eventId: eventId, utm: utm,\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    firstName: str(inputs.firstName), lastName: str(inputs.lastName),\n    profile: profile, text: text,\n    check: nameCheck(inputs.firstName, inputs.lastName),\n    regId: eventId !== '' && telegramId !== '' ? eventId + '-' + telegramId : '',\n    now: new Date().toISOString()\n  }, extra || {});\n  if (starts(cb, 'ob:')) {\n    const sub = cb.slice(3);\n    if (sub === 'continue' && step === 'ob_consent') return out('show_consent');\n    if (sub === 'agree' && step === 'ob_consent') return out('consent_namecheck');\n    if (sub === 'details' && step === 'ob_consent') return out('show_details');\n    if (sub === 'understood' && step === 'ob_details') return out('consent_namecheck');\n    // Ревью W50 круг 1: decline тоже привязываем к шагам (consent/details),\n    // иначе сессионно-пустой ob:decline чистит чужую сессию и шлёт отказ.\n    if (sub === 'decline' && (step === 'ob_consent' || step === 'ob_details')) return out('declined');\n    if (sub === 'itsme' && step === 'ob_name') return out('show_work', { useTgName: true });\n    if (sub === 'fixname' && step === 'ob_name') return out('show_ask_name');\n    if (starts(sub, 'city:') && step === 'ob_city') {\n      const city = sub.slice(5);\n      if (city === 'Tashkent') return out('show_review', { city: 'Ташкент' });\n      if (city === 'Almaty') return out('show_review', { city: 'Алматы' });\n      if (city === 'write') return out('show_ask_city');\n    }\n    if (sub === 'allgood' && step === 'ob_review') return out('finish');\n    if (sub === 'fix' && step === 'ob_review') return out('show_ask_name');\n    if (sub === 'register' && step === 'ob_register') return out('finish_lite');\n    return out('ignore');\n  }\n  if (text !== '') {\n    if (step === 'ob_await_name') return out('text_name');\n    if (step === 'ob_await_work') return out('text_work');\n    if (step === 'ob_await_city') return out('text_city');\n  }\n  return out('ignore');\n};",
+            "packageJson": "{}"
+          }
+        },
+        "type": "CODE",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "answer_callback_query",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": true
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}",
+          "show_alert": false
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-telegram-bot",
+        "qadamVersion": "0.8.0"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "callbackData": "ob:continue",
+          "callbackQueryId": "sample-cbq-id",
+          "chatId": "322876545",
+          "firstName": "Тест",
+          "lastName": "Тестов",
+          "messageId": "0",
+          "sessionDraft": "{\"eventId\":\"demo\",\"step\":\"ob_consent\"}",
+          "telegramId": "322876545"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.14",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

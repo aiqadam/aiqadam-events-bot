@@ -9,6 +9,12 @@ PROTO.data = {
 
   // Гость, который проходит регистрацию.
   guest: { name: 'Дилшод' },
+  // Профиль гостя (таб «Профиль» в #/events): то, что собрал онбординг C.
+  // first/last/username из Telegram лежат отдельно и здесь не дублируются.
+  profile: {
+    first: 'Дилшод', last: 'Азимов', position: 'ML-инженер',
+    company: 'Payme', city: 'Ташкент', pdnAt: '26 сентября', mkt: false,
+  },
   // Организатор (staff чаптера Ташкент).
   owner: { name: 'Азиза' },
 
@@ -53,7 +59,7 @@ PROTO.data = {
     statusKey: 'status.draft',
   },
 
-  // Ближайший ивент для каталога.
+  // Ближайшее событие для каталога.
   next: {
     id: '6',
     title: 'RAG Reading Group · The Faiss Library',
@@ -64,25 +70,27 @@ PROTO.data = {
     // seats не хранится: остаток считается по OWN-15 (PROTO.seatsLeft)
     // от лимита ceil(capacity × (1 + overbook/100)) минус зарегистрированные.
     upcoming: [
+      // staff: зритель мока — staff этого события (кнопка чекина видна);
+      // staff: false — обычный гость (кнопки нет). В продукте решает сервер.
       {
         id: '4', title: 'AI Qadam #4 · LLM Engineering in Production',
         when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park',
         capacity: 120, overbook: 40, registeredCount: 48,
-        status: 'published', tag: 'LLM', registered: true,
+        status: 'published', tag: 'LLM', registered: true, staff: true,
         d: { weekday: 'сб', day: '26', month: 'сент' },
       },
       {
         id: '6', title: 'RAG Reading Group · The Faiss Library',
         when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom',
         capacity: null, overbook: null, registeredCount: 0,
-        status: 'published', tag: 'RAG', registered: false,
+        status: 'published', tag: 'RAG', registered: false, staff: false,
         d: { weekday: 'пн', day: '5', month: 'окт' },
       },
       {
         id: '7', title: 'Хакатон AI Qadam · RAG for Business',
         when: 'сб, 17 октября · 10:00', where: 'Ташкент · IT Park',
         capacity: 60, overbook: 40, registeredCount: 67,
-        status: 'published', tag: 'Hackathon', registered: false,
+        status: 'published', tag: 'Hackathon', registered: false, staff: false,
         d: { weekday: 'сб', day: '17', month: 'окт' },
       },
     ],
@@ -118,8 +126,8 @@ PROTO.data = {
     },
   ],
 
-  // Организатор: ивенты чаптера (список #/manage). Поля полные — форма
-  // правки открывает любой ивент, а не только свой (W32: правит любой staff).
+  // Организатор: события чаптера (список #/manage). Поля полные — форма
+  // правки открывает любое событие, а не только свой (W32: правит любой staff).
   ownerEvents: [
     {
       id: '4', title: 'AI Qadam #4 · LLM Engineering in Production',
@@ -167,8 +175,8 @@ PROTO.data = {
     },
   ],
 
-  // Данные по каждому ивенту: табы «Участники», «Рассылка», «Контролёры» и
-  // сканер показывают ивент, который открыт, а не главный.
+  // Данные по каждому событию: табы «Участники», «Рассылка», «Контролёры» и
+  // сканер показывают событие, который открыт, а не главный.
   eventData: {
     '4': {
       participants: [
@@ -217,7 +225,7 @@ PROTO.data = {
     },
   },
 
-  // Люди, известные боту: участники ивента и уже добавленные контролёры.
+  // Люди, известные боту: участники события и уже добавленные контролёры.
   // Поиск в выборе контролёра идёт по имени и @username; права выдаются
   // по telegram_id (DAT-1) — username здесь только подпись для поиска.
   people: [
@@ -241,6 +249,6 @@ PROTO.data = {
     { name: 'Astana Hub, Мангилик Ел 55/8', lat: 51.090488, lon: 71.418153 },
   ],
 
-  // Фидбек после ивента (предложение).
+  // Фидбек после события (принят ADR-0028, тексты — из ru.json).
   feedback: { eventId: '3', eventTitle: 'AI Qadam #3 · Embeddings & Vector DB Day' },
 };

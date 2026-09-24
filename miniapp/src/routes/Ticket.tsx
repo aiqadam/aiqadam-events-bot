@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticNotification } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
-import { utcMs } from '../lib/dates';
+import { utcMs, utcToWhen } from '../lib/dates';
 import Icon from '../components/Icon';
+import BackButton from '../components/BackButton';
+import MapLinks from '../components/MapLinks';
 import Sheet from '../components/Sheet';
 
 const QR_MAX = 224;
 
-export default function Ticket({ eventId }: { eventId: string }) {
+export default function Ticket({ eventId, fromApp = false }: { eventId: string; fromApp?: boolean }) {
   const tg = getTelegram();
   const initData = tg?.initData ?? '';
   const qrElRef = useRef<HTMLDivElement>(null);
@@ -22,7 +25,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   const [retryable, setRetryable] = useState(false);
   const [showRetry, setShowRetry] = useState(false);
 
-  // W43: отмена регистрации (PAR-5) — с экрана билета, до старта ивента.
+  // W43: отмена регистрации (PAR-5) — с экрана билета, до старта события.
   const [canCancel, setCanCancel] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -31,6 +34,14 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
   // Для заголовка после i18n
   const [title, setTitle] = useState('AI Qadam Events');
+
+  // W51: контекст события над QR (прототип ticket-top) — название/дата/адрес
+  // из публичной афиши, чтобы при нескольких билетах было видно, чей QR открыт.
+  const [evTitle, setEvTitle] = useState('');
+  const [evWhen, setEvWhen] = useState('');
+  const [evAddress, setEvAddress] = useState('');
+  const [evLat, setEvLat] = useState('');
+  const [evLon, setEvLon] = useState('');
 
   const qrSize = useCallback(() => {
     const el = qrElRef.current;
@@ -101,6 +112,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   );
 
   const showError = useCallback((text: string, retry: boolean) => {
+    hapticNotification('error');
     setErrorText(text);
     setIsError(true);
     setRetryable(retry);
@@ -146,7 +158,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
     return res;
   }, [initData, eventId]);
 
-  // Отмена показывается только для активной регистрации до старта ивента:
+  // Отмена показывается только для активной регистрации до старта события:
   // статус и старт — из reg-api (`mine`) и events-api (публичная афиша).
   const loadCancelInfo = useCallback(async () => {
     if (!tg || !initData || !eventId) return;
@@ -170,6 +182,19 @@ export default function Ticket({ eventId }: { eventId: string }) {
     }
   }, [tg, initData, eventId]);
 
+  // W47/W70: нативная «Назад» — при открытом подтверждении отмены закрывает
+  // его, а не весь Mini App; иначе, если билет открыт изнутри приложения,
+  // возвращает на прошлый экран. Открытый из чата билет «Назад» не показывает
+  // (правило MINIAPP-UX п.1).
+  const handleBack = useCallback(() => {
+    if (cancelConfirm) {
+      setCancelConfirm(false);
+      return;
+    }
+    window.history.back();
+  }, [cancelConfirm]);
+  useBackButton(fromApp || cancelConfirm, handleBack);
+
   const cancelRegistration = useCallback(async () => {
     if (cancelBusy) return;
     setCancelBusy(true);
@@ -177,20 +202,24 @@ export default function Ticket({ eventId }: { eventId: string }) {
     const res = await postJson(REG_API, { action: 'cancel', initData, eventId });
     setCancelBusy(false);
     if (res.kind === 'network') {
+      hapticNotification('error');
       setCancelError(t('events.err.network'));
       return;
     }
     if (res.kind === 'server') {
+      hapticNotification('error');
       setCancelError(t('events.err.server'));
       return;
     }
     const d = res.data as Record<string, unknown>;
     if (d['ok']) {
+      hapticNotification('success');
       setCancelConfirm(false);
       setCanCancel(false);
       setCancelled(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('cancel.kept'));
       return;
     }
+    hapticNotification('error');
     setCancelError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
   }, [cancelBusy, initData, eventId]);
 
@@ -210,6 +239,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
   }, [tg]);
 
   // Запрос QR сразу, не дожидаясь словаря — на плохой связи это единственное, ради чего страницу открыли.
+  // Контекст события — тем же жизненным циклом из публичной афиши (initData не нужен).
   const qrRequestRef = useRef<Promise<{ kind: string; data?: Record<string, unknown> }> | null>(null);
   useEffect(() => {
     if (tg && initData && eventId) {
@@ -217,6 +247,21 @@ export default function Ticket({ eventId }: { eventId: string }) {
       void loadCancelInfo();
     } else {
       qrRequestRef.current = null;
+    }
+    if (eventId) {
+      void postJson(EVENTS_API, {}).then((res) => {
+        if (res.kind !== 'json') return;
+        const list = ([] as Array<Record<string, unknown>>)
+          .concat(Array.isArray(res.data['upcoming']) ? (res.data['upcoming'] as Array<Record<string, unknown>>) : [])
+          .concat(Array.isArray(res.data['past']) ? (res.data['past'] as Array<Record<string, unknown>>) : []);
+        const ev = list.find((e) => String(e['id'] || '') === eventId);
+        if (!ev) return;
+        setEvTitle(String(ev['title'] || ''));
+        setEvWhen(utcToWhen(String(ev['startsAt'] || '')));
+        setEvAddress(String(ev['address'] || ''));
+        setEvLat(String(ev['lat'] || ''));
+        setEvLon(String(ev['lon'] || ''));
+      });
     }
   }, [tg, initData, eventId, requestQr, loadCancelInfo]);
 
@@ -260,13 +305,34 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
   const statusText = cancelled || (statusKey ? t(statusKey) : errorText);
   const retryLabel = t('ticket.retry');
+  // Название для подтверждения отмены — как в прототипе: без «ёлочек».
+  const cancelTitle = (evTitle || '').replace(/[«»]/g, '').trim() || title;
 
   return (
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
+      <BackButton show={fromApp} onBack={handleBack} />
       <div className={`card ticket-card ${isError && !cancelled ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         <h1 className="empty-heading" id="title">
           {title}
         </h1>
+        {evTitle && (
+          <div className="ticket-top" id="ticket-event">
+            <div className="ticket-event">{evTitle}</div>
+            {evWhen && (
+              <div className="ticket-when">
+                <Icon name="calendar" size={15} />
+                <span>{evWhen}</span>
+              </div>
+            )}
+            {evAddress && (
+              <div className="ticket-when">
+                <Icon name="map-pin" size={15} />
+                <span>{evAddress}</span>
+              </div>
+            )}
+            <MapLinks lat={evLat} lon={evLon} address={evAddress} />
+          </div>
+        )}
         {!cancelled && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         <p className="empty-desc msg" id="status" role="status" style={{ margin: '16px 0 0' }}>
           {statusText}
@@ -291,7 +357,7 @@ export default function Ticket({ eventId }: { eventId: string }) {
 
       <Sheet open={cancelConfirm} title={t('myreg.btn.cancel')} onClose={() => setCancelConfirm(false)}>
         <div className="app-muted" id="cancel-confirm-text">
-          {t('cancel.confirm', { title })}
+          {t('cancel.confirm', { title: cancelTitle })}
         </div>
         {cancelError && (
           <div className="card result bad" id="cancel-error">

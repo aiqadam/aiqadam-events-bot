@@ -29,6 +29,12 @@
       <section class="proto-roles" id="roles"></section>
 
       <section class="proto-section">
+        <h2 class="proto-home-h2">Шторм: онбординг первого касания</h2>
+        <p class="proto-home-note">Три варианта сбора профиля (имя, фамилия, должность, компания, город): чат по шагам, форма в Mini App, гибрид с предзаполнением. Базовый — гибрид (ADR-0032).</p>
+        <div class="proto-states-row"><a class="proto-btn proto-btn-primary" href="onboard.html">Шторм: три варианта</a><a class="proto-btn proto-btn-outline" href="chat.html?s=guest">Онбординг в чате гостя</a></div>
+      </section>
+
+      <section class="proto-section">
         <h2 class="proto-home-h2">Состояния, которые ломают экран</h2>
         <p class="proto-home-note">Пустой срез, истёкший доступ, отказ по правам, нет связи. Открываются прямо в моке.</p>
         <div id="states" class="proto-states"></div>
@@ -43,8 +49,8 @@
         PROTO.initTheme();
         const roles = [
           { name: 'Гость', icon: 'user', desc: 'Каталог с «Моими билетами», регистрация прямо в Mini App, билет с QR, напоминания, послесловие с отзывом.', chat: PROTO.chatUrl('guest'), app: 'app.html#/events?tab=mine', appLabel: 'Мои билеты', app2: 'app.html#/events' },
-          { name: 'Организатор', icon: 'sliders', desc: 'Визард создания и правки ивента, ссылка-приглашение, участники и экспорт, рассылка, контролёры из списка.', chat: PROTO.chatUrl('owner'), app: 'app.html#/manage', appLabel: 'Ивенты и правка', app2: 'app.html#/scan?event_id=4' },
-          { name: 'Контролёр', icon: 'scan-line', desc: 'Инвайт-ссылка, права на конкретный ивент, сканер Mini App и луп без закрытия.', chat: PROTO.chatUrl('controller'), app: 'app.html#/scan?event_id=4', appLabel: 'Сканер', app2: 'app.html#/events' },
+          { name: 'Организатор', icon: 'sliders', desc: 'Визард создания и правки события, ссылка-приглашение, участники и экспорт, рассылка, контролёры из списка.', chat: PROTO.chatUrl('owner'), app: 'app.html#/manage', appLabel: 'События и правка', app2: 'app.html#/scan?event_id=4' },
+          { name: 'Контролёр', icon: 'scan-line', desc: 'Инвайт-ссылка, права на конкретное событие, сканер Mini App и луп без закрытия.', chat: PROTO.chatUrl('controller'), app: 'app.html#/scan?event_id=4', appLabel: 'Сканер', app2: 'app.html#/events' },
         ];
         const rolesBox = document.getElementById('roles');
         roles.forEach((r) => {

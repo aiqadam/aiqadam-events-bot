@@ -6,7 +6,7 @@
   ],
   "displayName": "tg-router",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "new_telegram_message",
@@ -58,6 +58,8 @@
                                     "exampleData": {
                                       "chatId": "322876545",
                                       "eventId": "demo",
+                                      "firstName": "Тест",
+                                      "lastName": "Тестов",
                                       "telegramId": "322876545"
                                     },
                                     "externalId": "HGX7KPhFsyFrapBRvlIAT"
@@ -65,9 +67,13 @@
                                   "flowProps": {
                                     "chatId": "{{step_1['output'].chatId}}",
                                     "eventId": "{{step_10['output'].eventId}}",
+                                    "firstName": "{{step_1['output'].firstName}}",
+                                    "lastName": "{{step_1['output'].lastName}}",
                                     "payload": {
                                       "chatId": "{{step_1['output'].chatId}}",
                                       "eventId": "{{step_10['output'].eventId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "lastName": "{{step_1['output'].lastName}}",
                                       "telegramId": "{{step_1['output'].tgId}}",
                                       "utm": "{{step_10['output'].utm}}"
                                     },
@@ -200,6 +206,7 @@
                                     "exampleData": {
                                       "badPayload": "false",
                                       "chatId": "322876545",
+                                      "fallback": "false",
                                       "firstName": "Тест",
                                       "telegramId": "322876545"
                                     },
@@ -208,7 +215,10 @@
                                   "flowProps": {
                                     "payload": {
                                       "badPayload": "{{step_10['output'].badPayload}}",
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
                                       "chatId": "{{step_1['output'].chatId}}",
+                                      "fallback": "{{step_10['output'].fallback}}",
                                       "firstName": "{{step_1['output'].firstName}}",
                                       "telegramId": "{{step_1['output'].tgId}}"
                                     }
@@ -221,27 +231,6 @@
                                 "qadamVersion": "0.4.14"
                               },
                               "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "намерение без обработчика",
-                              "name": "step_16",
-                              "settings": {
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {},
-                                "sourceCode": {
-                                  "code": "export const code = async (inputs) => {\n  return { unhandled: true };\n};",
-                                  "packageJson": "{}"
-                                }
-                              },
-                              "type": "CODE",
                               "valid": true
                             },
                             {
@@ -371,6 +360,131 @@
                               },
                               "type": "PIECE",
                               "valid": true
+                            },
+                            {
+                              "displayName": "call reg-profile",
+                              "name": "step_20",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "callbackData": "ob:continue",
+                                      "callbackQueryId": "sample-cbq-id",
+                                      "chatId": "322876545",
+                                      "firstName": "Тест",
+                                      "lastName": "Тестов",
+                                      "messageId": "0",
+                                      "sessionDraft": "{\"eventId\":\"demo\",\"step\":\"ob_consent\"}",
+                                      "telegramId": "322876545"
+                                    },
+                                    "externalId": "bEd0cScLAymIT44Dmtnxu"
+                                  },
+                                  "flowProps": {
+                                    "callbackData": "{{step_1['output'].callbackData}}",
+                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                    "chatId": "{{step_1['output'].chatId}}",
+                                    "firstName": "{{step_1['output'].firstName}}",
+                                    "lastName": "{{step_1['output'].lastName}}",
+                                    "messageId": "{{step_1['output'].messageId}}",
+                                    "messageText": "{{step_1['output'].text}}",
+                                    "payload": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "lastName": "{{step_1['output'].lastName}}",
+                                      "messageId": "{{step_1['output'].messageId}}",
+                                      "messageText": "{{step_1['output'].text}}",
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                    "telegramId": "{{step_1['output'].tgId}}"
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "call staff-accept",
+                              "name": "step_21",
+                              "settings": {
+                                "actionName": "callFlow",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "executionMode": "queue",
+                                  "flow": {
+                                    "exampleData": {
+                                      "sampleData": {
+                                        "chatId": "322876545",
+                                        "eventId": "demo",
+                                        "telegramId": "322876545",
+                                        "token": "aaaaaaaaaaaaaaaaaaaaaa"
+                                      }
+                                    },
+                                    "externalId": "dvKFrQsi45NHHz1vAyjlc"
+                                  },
+                                  "flowProps": {
+                                    "payload": {
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "eventId": "{{step_10['output'].eventId}}",
+                                      "telegramId": "{{step_1['output'].tgId}}",
+                                      "token": "{{step_10['output'].token}}"
+                                    }
+                                  },
+                                  "mode": "simple",
+                                  "waitForResponse": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-subflows",
+                                "qadamVersion": "0.4.14"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "намерение без обработчика",
+                              "name": "step_16",
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {},
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  return { unhandled: true };\n};",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
                             }
                           ],
                           "displayName": "делегирование обработчику",
@@ -434,13 +548,11 @@
                                 "branchType": "CONDITION",
                                 "conditions": [
                                   [
-                                    [
-                                      {
-                                        "firstValue": "{{step_10['output'].route}}",
-                                        "operator": "TEXT_EXACTLY_MATCHES",
-                                        "secondValue": "bcast_draft"
-                                      }
-                                    ]
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "bcast_draft"
+                                    }
                                   ]
                                 ]
                               },
@@ -449,13 +561,11 @@
                                 "branchType": "CONDITION",
                                 "conditions": [
                                   [
-                                    [
-                                      {
-                                        "firstValue": "{{step_10['output'].route}}",
-                                        "operator": "TEXT_EXACTLY_MATCHES",
-                                        "secondValue": "bcast_step"
-                                      }
-                                    ]
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "bcast_step"
+                                    }
                                   ]
                                 ]
                               },
@@ -464,13 +574,37 @@
                                 "branchType": "CONDITION",
                                 "conditions": [
                                   [
-                                    [
-                                      {
-                                        "firstValue": "{{step_10['output'].route}}",
-                                        "operator": "TEXT_EXACTLY_MATCHES",
-                                        "secondValue": "bcast_unsub"
-                                      }
-                                    ]
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "bcast_unsub"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "reg_profile",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "reg_profile"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "staff_accept",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_10['output'].route}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "staff_accept"
+                                    }
                                   ]
                                 ]
                               },
@@ -501,6 +635,9 @@
                             "forwarded": "{{step_1['output'].forwarded}}",
                             "fwdText": "{{step_1['output'].fwdText}}",
                             "hasContact": "{{step_1['output'].hasContact}}",
+                            "hasPhoto": "{{step_1['output'].hasPhoto}}",
+                            "mediaGroupId": "{{step_1['output'].mediaGroupId}}",
+                            "messageText": "{{step_1['output'].text}}",
                             "parsed": "{{step_9['output'].data}}",
                             "sessionActive": "{{step_8['output'].active}}",
                             "sessionDraft": "{{step_8['output'].draft}}",
@@ -509,7 +646,7 @@
                             "startPayload": "{{step_1['output'].startPayload}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). Проверки стоят до командной цепочки, чтобы не сравнивать\n  // вычисленный маршрут ни с чем, кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s остаются в Otherwise: чекин — только сканером (Q41).\n  let badPayload = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true && fwdText !== '') {\n    route = 'bcast_draft';\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload,\n    eventId: parsedEventId, utm: parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
+                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const messageText = String(inputs.messageText === undefined || inputs.messageText === null ? '' : inputs.messageText);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n  const parsedToken = String(parsed.token === undefined || parsed.token === null ? '' : parsed.token);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const mediaGroupId = String(inputs.mediaGroupId === undefined || inputs.mediaGroupId === null ? '' : inputs.mediaGroupId);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // W59 / ADR-0034 п.4: голый /start во время незавершённого онбординга,\n  // начатого по диплинку события, не должен уходить в menu — там ветка\n  // needs_onboard перетирает сессию черновиком без eventId, и финал\n  // становится finish_no_event (без регистрации), хотя человек пришёл по\n  // ссылке события. Возвращаем его в reg-start с сохранённым eventId.\n  // Только шаги ob_* (не await_marketing): завершивший профиль и ждущий\n  // ответа о рассылке голым /start в регистрацию не возвращается.\n  let draftObj = {};\n  try { draftObj = JSON.parse(sessionDraft || '{}'); } catch (e) { draftObj = {}; }\n  const draftUtm = String(draftObj.utm === undefined || draftObj.utm === null ? '' : draftObj.utm);\n  const continueEventOnboard = command === 'start' && parsedKind === '' && sessionActive\n    && sessionScenario === 'registration' && draftEventId !== '' && starts(sessionStep, 'ob_');\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). W79 (#131): черновик заводится и на фото без подписи\n  // (hasPhoto) — анонс спикера часто без текста; альбомные апдейты\n  // (mediaGroupId) без подписи не берём — это Part 2. Проверки стоят до\n  // командной цепочки, чтобы не сравнивать вычисленный маршрут ни с чем,\n  // кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s уходят в свои обработчики.\n  let badPayload = false;\n  // W73 (#125): обычный текст вне формы отвечает меню-карточкой, как /start,\n  // но с другой преамбулой (menu.fallback_text). Форма — шаг ob_await_*:\n  // там текст это ответ на вопрос, а не запрос меню.\n  let fallback = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (starts(callbackData, 'menu:')) {\n    // W68 (#120): кнопка «Как сделать рассылку» в меню-карточке staff'а —\n    // колбэк menu:bcast_help. Отвечает то же меню (инструкция bcast.howto.*).\n    // Это не команда: префикс колбэка, ADR-0025 не затронут.\n    route = 'menu';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedValid && parsedKind === 's') {\n    // W10 / OWN-14: инвайт-ссылка контролёра s<eventId>-<token>.\n    route = 'staff_accept';\n  } else if (continueEventOnboard) {\n    // голый /start, но идёт онбординг по диплинку — продолжаем с событием\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true\n             && (fwdText !== '' || (hasPhoto === true && mediaGroupId === ''))) {\n    route = 'bcast_draft';\n  } else if (command === '' && callbackData === '' && forwarded !== true && messageText.trim() !== ''\n             && !(sessionActive && sessionScenario === 'registration' && starts(sessionStep, 'ob_await_'))) {\n    // W73 (#125): «привет»/«передумал» вне активной формы — короткий ответ\n    // меню-карточкой. Фото/стикеры без текста, старые колбэки, пересылки и\n    // свободный ввод в онбординге сюда не попадают — остаются как были.\n    route = 'menu';\n    fallback = true;\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    } else if (starts(callbackData, 'ob:')) {\n      // W50 / PAR-8: онбординг C — колбэки ob:* ведёт reg-profile.\n      route = 'reg_profile';\n    } else if (callbackData === '' && messageText.trim() !== '' && starts(sessionStep, 'ob_await_')) {\n      // W50 / PAR-8: свободный ввод в онбординге (имя/работа/город) —\n      // тоже reg-profile; чужие тексты вне шагов — в Otherwise молча.\n      route = 'reg_profile';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload, fallback: fallback,\n    eventId: continueEventOnboard ? draftEventId : parsedEventId,\n    token: parsedToken,\n    utm: continueEventOnboard ? draftUtm : parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
                             "packageJson": "{}"
                           }
                         },
@@ -761,7 +898,7 @@
           "update": "{{trigger['output']}}"
         },
         "sourceCode": {
-          "code": "export const code = async (inputs) => {\n  const upd = inputs.update || {};\n  const updateId = upd.update_id;\n  const msg = upd.message;\n  const cbq = upd.callback_query;\n\n  const src = cbq ? cbq : msg;\n  const from = (src && src.from) || {};\n  const isBot = from.is_bot === true;\n\n  const chat = cbq ? (cbq.message && cbq.message.chat) : (msg && msg.chat);\n  const isPrivate = !!(chat && chat.type === 'private');\n\n  const text = msg && typeof msg.text === 'string' ? msg.text : '';\n  let command = '';\n  let startPayload = '';\n  let commandArgs = '';\n  if (text.charAt(0) === '/') {\n    const sp = text.indexOf(' ');\n    const cmdRaw = sp < 0 ? text.slice(1) : text.slice(1, sp);\n    command = cmdRaw.split('@')[0];\n    commandArgs = sp < 0 ? '' : text.slice(sp + 1).trim();\n    if (command === 'start') startPayload = commandArgs;\n  }\n\n  const contact = msg && msg.contact;\n  const contactPhone = contact ? String(contact.phone_number || '') : '';\n  const contactIsOwn = !!(contact && String(contact.user_id || '') === String(from.id || ''));\n\n  const photos = msg && Array.isArray(msg.photo) ? msg.photo : null;\n  const hasPhoto = !!(photos && photos.length > 0);\n  const photoFileId = hasPhoto ? String(photos[photos.length - 1].file_id || '') : '';\n\n  const location = msg && msg.location;\n  const hasLocation = !!(location && typeof location.latitude === 'number' && typeof location.longitude === 'number');\n  const locationLat = hasLocation ? String(location.latitude) : '';\n  const locationLon = hasLocation ? String(location.longitude) : '';\n\n  const callbackData = cbq ? String(cbq.data || '') : '';\n  const callbackQueryId = cbq ? String(cbq.id || '') : '';\n\n  // Пересылка для рассылок (W14): текст либо подпись под медиа; форматирование\n  // пересылки не переносим — parse_mode черновика всегда None, овнер видит\n  // ровно то, что уйдёт, на тестовой отправке себе.\n  const fwd = msg && (msg.forward_origin || msg.forward_from || msg.forward_from_chat);\n  const forwarded = !!fwd;\n  const caption = msg && typeof msg.caption === 'string' ? msg.caption : '';\n  const fwdText = forwarded ? (text || caption) : '';\n\n  // messageId — входящее сообщение гостя. Нужен, чтобы убрать из ленты\n  // ответ на транзиентный вопрос (ADR-0017: в ленте остаются карточка и билет).\n  const messageId = msg && msg.message_id !== undefined && msg.message_id !== null ? Number(msg.message_id) : 0;\n\n  const tgId = String(from.id === undefined || from.id === null ? '' : from.id);\n  const chatId = String(chat && chat.id !== undefined && chat.id !== null ? chat.id : tgId);\n\n  const dedupKey = 'upd:' + String(updateId === undefined || updateId === null ? '' : updateId);\n  const bad = (updateId === undefined || updateId === null) || tgId === '';\n\n  return {\n    ok: !bad,\n    updateId: updateId, dedupKey: dedupKey,\n    tgId: tgId, chatId: chatId, messageId: messageId,\n    text: text, command: command, startPayload: startPayload, commandArgs: commandArgs,\n    callbackData: callbackData, callbackQueryId: callbackQueryId,\n    contactPhone: contactPhone, contactIsOwn: contactIsOwn,\n    hasContact: !!contact,\n    hasPhoto: hasPhoto, photoFileId: photoFileId,\n    hasLocation: hasLocation, locationLat: locationLat, locationLon: locationLon,\n    forwarded: forwarded, fwdText: fwdText,\n    isBot: isBot, isPrivate: isPrivate,\n    firstName: String(from.first_name || ''), lastName: String(from.last_name || ''),\n    username: String(from.username || ''), languageCode: String(from.language_code || ''),\n    now: new Date().toISOString()\n  };\n};",
+          "code": "export const code = async (inputs) => {\n  const upd = inputs.update || {};\n  const updateId = upd.update_id;\n  const msg = upd.message;\n  const cbq = upd.callback_query;\n\n  const src = cbq ? cbq : msg;\n  const from = (src && src.from) || {};\n  const isBot = from.is_bot === true;\n\n  const chat = cbq ? (cbq.message && cbq.message.chat) : (msg && msg.chat);\n  const isPrivate = !!(chat && chat.type === 'private');\n\n  const text = msg && typeof msg.text === 'string' ? msg.text : '';\n  let command = '';\n  let startPayload = '';\n  let commandArgs = '';\n  if (text.charAt(0) === '/') {\n    const sp = text.indexOf(' ');\n    const cmdRaw = sp < 0 ? text.slice(1) : text.slice(1, sp);\n    command = cmdRaw.split('@')[0];\n    commandArgs = sp < 0 ? '' : text.slice(sp + 1).trim();\n    if (command === 'start') startPayload = commandArgs;\n  }\n\n  const contact = msg && msg.contact;\n  const contactPhone = contact ? String(contact.phone_number || '') : '';\n  const contactIsOwn = !!(contact && String(contact.user_id || '') === String(from.id || ''));\n\n  const photos = msg && Array.isArray(msg.photo) ? msg.photo : null;\n  const hasPhoto = !!(photos && photos.length > 0);\n  const photoFileId = hasPhoto ? String(photos[photos.length - 1].file_id || '') : '';\n\n  const location = msg && msg.location;\n  const hasLocation = !!(location && typeof location.latitude === 'number' && typeof location.longitude === 'number');\n  const locationLat = hasLocation ? String(location.latitude) : '';\n  const locationLon = hasLocation ? String(location.longitude) : '';\n\n  const callbackData = cbq ? String(cbq.data || '') : '';\n  const callbackQueryId = cbq ? String(cbq.id || '') : '';\n\n  // Пересылка для рассылок (W14, W79): текст либо подпись под медиа. Фото\n  // доезжает до получателя копией исходного сообщения (copyMessage) — так\n  // форматирование и медиа переносятся как есть, а не пересказываются.\n  const fwd = msg && (msg.forward_origin || msg.forward_from || msg.forward_from_chat);\n  const forwarded = !!fwd;\n  const caption = msg && typeof msg.caption === 'string' ? msg.caption : '';\n  const fwdText = forwarded ? (text || caption) : '';\n\n  // mediaGroupId — альбом приходит несколькими апдейтами с общим id (Part 2).\n  // Part 1 (W79) — одно фото; альбомные апдейты без подписи в черновик не\n  // заводим, иначе овнер получит по вопросу на каждое фото.\n  const mediaGroupId = msg && msg.media_group_id !== undefined && msg.media_group_id !== null ? String(msg.media_group_id) : '';\n\n  // messageId — входящее сообщение. Нужен, чтобы убрать из ленты ответ на\n  // транзиентный вопрос (ADR-0017), и как источник copyMessage (W79).\n  const messageId = msg && msg.message_id !== undefined && msg.message_id !== null ? Number(msg.message_id) : 0;\n\n  const tgId = String(from.id === undefined || from.id === null ? '' : from.id);\n  const chatId = String(chat && chat.id !== undefined && chat.id !== null ? chat.id : tgId);\n\n  const dedupKey = 'upd:' + String(updateId === undefined || updateId === null ? '' : updateId);\n  const bad = (updateId === undefined || updateId === null) || tgId === '';\n\n  return {\n    ok: !bad,\n    updateId: updateId, dedupKey: dedupKey,\n    tgId: tgId, chatId: chatId, messageId: messageId,\n    text: text, command: command, startPayload: startPayload, commandArgs: commandArgs,\n    callbackData: callbackData, callbackQueryId: callbackQueryId,\n    contactPhone: contactPhone, contactIsOwn: contactIsOwn,\n    hasContact: !!contact,\n    hasPhoto: hasPhoto, photoFileId: photoFileId, mediaGroupId: mediaGroupId,\n    hasLocation: hasLocation, locationLat: locationLat, locationLon: locationLon,\n    forwarded: forwarded, fwdText: fwdText,\n    isBot: isBot, isPrivate: isPrivate,\n    firstName: String(from.first_name || ''), lastName: String(from.last_name || ''),\n    username: String(from.username || ''), languageCode: String(from.language_code || ''),\n    now: new Date().toISOString()\n  };\n};",
           "packageJson": "{}"
         }
       },

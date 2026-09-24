@@ -39,11 +39,17 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `telegram_id` | text, **PK** | единственный ключ (DAT-1) |
 | `first_name` | text | из апдейта, обновляется при каждом контакте |
 | `last_name` | text | может отсутствовать |
+| `profile_first_name` | text | имя из онбординга (PAR-8), руками или кнопкой «Это я» |
+| `profile_last_name` | text | фамилия из онбординга |
 | `username` | text | справочно, может отсутствовать и меняться |
 | `phone` | text | только из `request_contact` (DAT-2), иначе пусто; **с 2026-09-14 в регистрации не спрашивается** — остаётся в схеме на будущее |
 | `lang` | text | `ru` \| `uz` \| `en` |
 | `consent_pdn` | bool | согласие на обработку данных (PAR-1) |
 | `consent_pdn_at` | timestamp | когда дано |
+| `position` | text | должность из онбординга (PAR-8, [ADR-0032](../docs/adr/0032-onboarding-first-touch-profile.md)) |
+| `company` | text | компания, может отсутствовать (фриланс/студент) |
+| `city` | text | город из онбординга |
+| `profile_completed_at` | timestamp | когда профиль заполнен полностью |
 | `consent_marketing` | bool | отдельное и необязательное (PAR-2), по умолчанию `false` |
 | `consent_marketing_at` | timestamp | |
 | `blocked_bot` | bool | выставляется при `403` (OWN-12), снимается при новом апдейте от пользователя |
@@ -51,13 +57,17 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 
 `consent_marketing` **никогда** не проставляется как побочный эффект `consent_pdn`.
 
+Имя/фамилия профиля (PAR-8) хранятся **отдельно** от `first_name`/`last_name` —
+те перезаписываются каждым апдейтом из Telegram: `profile_first_name`,
+`profile_last_name` (TEXT, имена решены пакетом W50, [Q58](../docs/OPEN-QUESTIONS.md#q58)).
+
 ## `events`
 
 | Поле | Тип | Примечание |
 | --- | --- | --- |
 | `id` | text, **PK** | короткий slug в алфавите `A-Za-z0-9_` — влезает в 64 символа deep link |
 | `staff_id` | text → `staff.telegram_id` | **автор** (кто создал); не гейт прав ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)) |
-| `chapter_id` | text → `chapters.id` | чаптер ивента; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
+| `chapter_id` | text → `chapters.id` | чаптер события; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
@@ -80,7 +90,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ```
 
 Дефолт `overbook_pct = 40` выбран под бесплатные митапы, где неявка обычно
-30–50%. Значение правится у каждого ивента: у камерного воркшопа с ограниченным
+30–50%. Значение правится у каждого события: у камерного воркшопа с ограниченным
 залом перебор в 40% — это люди, которым негде сесть. Как накопится своя
 статистика неявок, дефолт стоит пересмотреть на фактах.
 
@@ -107,15 +117,15 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `note` | text | справочно |
 | `added_at` | timestamp | UTC |
 
-Строка в `staff` — право **создавать и править** ивенты своего чаптера
-([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)). Доступ к ивенту:
+Строка в `staff` — право **создавать и править** события своего чаптера
+([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)). Доступ к событию:
 `staff.chapter_id === '' ` или `staff.chapter_id === event.chapter_id`. Нет строки —
 отказ и на создание, и на правку, одним `403 forbidden`. Ведётся человеком в UI
-платформы; это не `users` (реестр контактов) и не `event_staff` (контролёры ивента).
+платформы; это не `users` (реестр контактов) и не `event_staff` (контролёры события).
 
 ### notify-on-change
 
-Правка опубликованного ивента рассылает уведомление зарегистрированным (OWN-5),
+Правка опубликованного события рассылает уведомление зарегистрированным (OWN-5),
 если изменилось любое из: `starts_at`, `ends_at`, `address`, `lat`, `lon`, `title`,
 `reg_deadline_at`, `status`.
 
@@ -142,7 +152,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 Счётчики owner'а (OWN-7): зарегистрировано = `status=registered`;
 пришло = `checked_in_at` не пусто; отменило = `status=cancelled`.
 Сегмент «зарегались, но не пришли» = `status=registered` и `checked_in_at` пусто.
-Доступен **только после `ends_at`** (OWN-9) — до конца ивента он означает
+Доступен **только после `ends_at`** (OWN-9) — до конца события он означает
 «ещё не дошёл», а не «не пришёл».
 
 ## `event_staff`
@@ -159,7 +169,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 Проверка прав контролёра (STF-2) — это ровно «есть строка с этим `event_id`,
 этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
 глобальный `staff` — это команда/организаторы, к чекину отношения не имеет.
-Выдаёт и отзывает права **любой staff с доступом к ивенту** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
+Выдаёт и отзывает права **любой staff с доступом к событию** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
 
 ## `staff_invites`
 
@@ -181,6 +191,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `event_id` | text | пусто для сегмента «все с consent» |
 | `segment` | enum | `all_consent` \| `registered` \| `attended` \| `no_show` (OWN-9) |
 | `body`, `parse_mode` | text | |
+| `media_chat_id`, `media_message_id` | text | источник `copyMessage` (чат и `message_id` пересланного поста) для фото-рассылок; пусто у текстовых/старых (W79, #131) |
 | `created_by` | text | |
 | `test_sent_at` | timestamp | **пусто → отправка запрещена** (OWN-10) |
 | `status` | enum | `draft` \| `running` \| `done` \| `failed` |
@@ -205,7 +216,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ## `sessions`
 
 Состояние многошаговых диалогов в чате (регистрация, составление рассылки). Памяти процесса нет.
-Создание и правка ивента сессий не используют — это форма `manage` (ADR-0017 п. 3, W31);
+Создание и правка события сессий не используют — это форма `manage` (ADR-0017 п. 3, W31);
 строки `event_create`/`event_edit` — остатки удалённого чатового визарда.
 
 | Поле | Тип | Примечание |
@@ -230,7 +241,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 
 ## `feedback`
 
-Отзывы участников об ивенте — оценка и необязательный комментарий
+Отзывы участников об событии — оценка и необязательный комментарий
 ([ADR-0028](adr/0028-feedback-screen-fifth-miniapp-page.md), [Q53](OPEN-QUESTIONS.md#q53), W45).
 
 | Поле | Тип | Примечание |
@@ -246,7 +257,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 `tables-upsert-records` с ключом по этой паре — повторная отправка
 перезаписывает прежний отзыв, а не создаёт второй. Пишет только
 `feedback-api`, после проверки участия (регистрация с чекином на конкретный
-`event_id`). Читают — автор/staff ивента через `#/manage` (та же граница
+`event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
 уведомления организатору отдельным сообщением.
 
@@ -258,8 +269,9 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ниже — это соглашение наших флоу, а не гарантия БД.
 
 Как мы с этим живём — [ADR-0003](adr/0003-idempotency-without-atomicity.md).
-Коротко: повтор делаем безвредным, дубли схлопываем при чтении, остаток убирает
-`dedup-sweep`.
+Коротко: повтор делаем безвредным, дубли схлопываем при чтении, остаток
+**считает** `dedup-report` — диагностика, а не уборка
+([Q42](OPEN-QUESTIONS.md#q42), W12b).
 
 | Требование | Ключ | Механизм |
 | --- | --- | --- |
@@ -273,7 +285,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 и сегменты (OWN-9) считают **уникальные `telegram_id`**, а не строки: иначе один
 задвоенный участник станет двумя.
 
-Ключи `upd:*` копятся без TTL — их подчищает `dedup-sweep` вместе с дублями строк.
+Ключи `upd:*` истекают по TTL (`store put_if_absent`, [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md));
+дубли строк не убираются, а считаются — `dedup-report` ([Q42](OPEN-QUESTIONS.md#q42)).
 
 ## `migrations` (служебная, ADR-0021)
 

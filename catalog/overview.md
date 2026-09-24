@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 23 | [flows/](flows/) |
+| Флоу | 29 | [flows/](flows/) |
 | Таблицы | 13 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -25,13 +25,15 @@ W26 закрыт («готов», независимое ревью, три кр
 | Группа | Флоу |
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
-| Меню-хаб | [menu](flows/menu.md) — голый `/start` и любая незнакомая команда (ADR-0025) |
-| Регистрация участника | [reg-start](flows/reg-start.md), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) |
+| Меню-хаб | [menu](flows/menu.md) — голый `/start`, любая незнакомая команда и обычный текст (W73); у организатора кнопка «Как сделать рассылку» (`menu:bcast_help`, W68) |
+| Регистрация участника | [reg-start](flows/reg-start.md) (вход + гейт профиля: заполнен — один тап, нет — онбординг), [reg-profile](flows/reg-profile.md) (онбординг C, PAR-8), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) (старые сессии `await_pdn`/`await_marketing` — новых касаний туда нет) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) (только заполненный профиль) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
-| Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+ивент; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53) |
+| Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+событие; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [checkin-counter-api](flows/checkin-counter-api.md) — счётчики прогресса для сканера (W62), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт), [staff-invite](flows/staff-invite.md) — одноразовая ссылка-инвайт контролёра (W10, OWN-14) |
+| Контролёры | [staff-accept](flows/staff-accept.md) — приём инвайт-ссылки `?start=s…` (W10, OWN-14), вызывает `tg-router` |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
+| Диагностика (опс) | [dedup-report](flows/dedup-report.md) — раз в сутки считает дубли строк в `registrations`/`event_staff`/`broadcast_targets` и сообщает организаторам; ничего не удаляет (W12b, Q42) |
 | Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
 
 Как читать карточки, проверенные факты про MCP/subflow'ы — [flows/README.md](flows/README.md).
@@ -45,7 +47,7 @@ W26 закрыт («готов», независимое ревью, три кр
 [tables/README.md](tables/README.md).
 `staff` — глобальные права организаторов по чаптеру
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
-`feedback` — отзывы участников об ивенте, оценка 1–5 + комментарий
+`feedback` — отзывы участников об событии, оценка 1–5 + комментарий
 ([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
 `strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
 не построен (см. Flows выше); источник правды для строк —
@@ -74,25 +76,31 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Роут | Роль | API |
 |---|---|---|
-| `#/ticket?event_id=` | гость показывает QR на входе | [my-qr-api](flows/my-qr-api.md) |
-| `#/scan?event_id=` | контролёр отмечает гостей | [checkin-api](flows/checkin-api.md) |
-| `#/manage` и `#/manage/:id` | staff чаптера видит список своих ивентов и правит их (OWN-1…OWN-5, OWN-15), ведёт список контролёров ивента (W36: выдача/отзыв по `telegram_id`), видит
+| `#/ticket?event_id=` | гость показывает QR на входе; над кодом — название/дата/адрес события, текст подтверждения отмены — с названием | [my-qr-api](flows/my-qr-api.md) |
+| `#/scan?event_id=` | контролёр отмечает гостей; прогресс «Отмечено X из Y» | [checkin-api](flows/checkin-api.md), [checkin-counter-api](flows/checkin-counter-api.md) |
+| `#/manage` и `#/manage/:id` | staff чаптера видит список своих событий и правит их табами `Событие / Участники / Рассылка / Контролёры` (OWN-1…OWN-5, OWN-15; таб рассылки — инструкция в 3 шага + выход в чат + сегменты, включая «подписчики анонсов» (`all_consent`, W68), сам сценарий — пересылка боту в чате, W14; табы — W53); ведёт список контролёров события (W36: выдача/отзыв по `telegram_id`; W55 — добавление по логину; W10 — одноразовая ссылка-инвайт на 24 ч в самом табе), видит
 участников со счётчиками и выгружает CSV/JSON (W13), получает ссылку
 регистрации (W37), видит отзывы участников (W45) | [manage-api](flows/manage-api.md) |
-| `#/events?tab=mine\|upcoming\|past` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; регистрация — шитом PAR-1/PAR-2 на месте, подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
-| `#/feedback?event_id=` | гость, который был на ивенте, оставляет оценку 1–5 и необязательный комментарий; вход из послесловия ([reg-afterword](flows/reg-afterword.md)) и из «Прошедших» в `#/events`; доступ — по факту участия, решает сервер (W45, ADR-0028, [Q53](../docs/OPEN-QUESTIONS.md#q53)) | [feedback-api](flows/feedback-api.md) |
+| `#/manage/new` | создание — сразу форма визарда из чата (кнопки создания в списке нет, вердикт W49/W50) | [manage-api](flows/manage-api.md) |
+| `#/events?tab=mine\|upcoming\|past\|profile` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; билет живёт до конца события (QR доступен и после старта); карточка с закрытым дедлайном объясняет это текстом, а не молчит; прошлое событие с чекином ведёт на отзыв; регистрация — шитом PAR-1/PAR-2 на месте (+ поля профиля, если пуст, PAR-8), подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)); вход из бота (`#/events` без таба) переключает таб на «Мои билеты», даже если каталог уже открыт; таб «Профиль» (четвёртый) — правка имени/должности/компании/города, согласие залочено, кнопка «Удалить аккаунт» с подтверждением (GDPR, W73/[ADR-0039](../docs/adr/0039-account-self-deletion-gdpr.md)); кнопка сканера — на карточке, видно только контролёру (гейт — [staff-events-api](flows/staff-events-api.md), W50); «Поделиться» на карточке «Будущих» и на билете — диплинк регистрации `?start=e<id>` в Telegram или копией (PAR-9, W65) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
+| `#/feedback?event_id=` | гость, который был на событии, оставляет оценку 1–5 и необязательный комментарий; вход из послесловия ([reg-afterword](flows/reg-afterword.md)) и из «Прошедших» в `#/events`; доступ — по факту участия, решает сервер (W45, ADR-0028, [Q53](../docs/OPEN-QUESTIONS.md#q53)) | [feedback-api](flows/feedback-api.md) |
 
-Роут `manage` открывается кнопкой «Мои ивенты» в карточке [menu](flows/menu.md)
-(`web_app` на `#/manage`; W13: вход в создание — кнопка на экране списка); права на создание **и** правку решает `manage-api` по `initData`,
+Роут `manage` открывается кнопками карточки [menu](flows/menu.md): «Новое событие»
+(`web_app` сразу на `#/manage/new`; W50: кнопки создания в списке нет) и
+«Панель администратора» (`web_app` на `#/manage` — список с входом в правку, W51).
+Список `#/manage` — экран без кнопки создания (вердикт W49). Права на создание
+**и** правку решает `manage-api` по `initData`,
 таблице [`staff`](tables/staff.md) и `chapter_id` — страница ничего не решает
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)). Фото афиши
 форма не трогает ([Q46](../docs/OPEN-QUESTIONS.md#q46), временно снято из OWN-1);
-гео — координатами из ссылки Яндекс.Карт (`pt`/`ll`/`@lat,lon`/`q`), кнопкой
-«Взять моё местоположение» или недавним местом из своих ивентов; интерактивной
-карты нет ([Q52](../docs/OPEN-QUESTIONS.md#q52)). Визард помнит черновик
-создания в `localStorage` и после публикации показывает экран успеха со ссылкой
-(W42). Даты вводятся как Asia/Tashkent (`datetime-local`) и уходят серверу
-строкой без зоны; в UTC переводит `manage-api`.
+гео — тогл Онлайн/Офлайн: онлайн — без точки, офлайн — голое поле ссылки
+Яндекс.Карт с живым разбором (успех — тишина, пустое — подсказка, битая —
+ошибка; орг-ссылка — через Геокодер с подстановкой адреса); превью с пином,
+ссылки «Открыть на карте», шита ссылки, недавних мест и кнопки геолокации
+больше нет (вердикт W49, W50); интерактивной карты нет ([Q52](../docs/OPEN-QUESTIONS.md#q52)).
+Визард помнит черновик создания в `localStorage` и после публикации показывает
+экран успеха со ссылкой (W42). Даты вводятся как Asia/Tashkent (`datetime-local`)
+и уходят серверу строкой без зоны; в UTC переводит `manage-api`.
 
 Стек: Vite+React+TypeScript, hash-роутер (без `browser` history и без `404.html`),
 Tailwind 4 + брендовые компоненты, `qrcode` npm lazy только на `ticket`,
@@ -130,6 +138,21 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   брендовый, шапка клиента своя, шов между ними виден. Это следствие
   ADR-0019 (свои цвета не заводим, цвета клиента — не наши), принятая цена;
   в живом WebView не проверялось.
+- **Safe Area учтена в одном месте** (W48): `viewport-fit=cover` в
+  `index.html`, переменные `--safe-top`/`--safe-bottom` в `index.css`
+  (`max()` от `env(safe-area-inset-*)` и `--tg-content-safe-area-inset-*`,
+  Bot API 8.0+) — паддинг сверху на `#root`, снизу на `.sticky-actions`/
+  `.app-sheet-panel`. Живая проверка на устройстве с вырезом — не сделана
+  ([Q48](../docs/OPEN-QUESTIONS.md#q48)).
+- **Платформенные функции второго уровня** (W47): нативный `BackButton`
+  (видна на экране события и при открытом шите, скрыта на корневых экранах;
+  с W70 — видна также на `#/ticket`/`#/scan`/`#/feedback` при внутреннем
+  переходе, а на клиентах без нативной экран рисует свою —
+  `components/BackButton.tsx`),
+  `HapticFeedback` (успех/ошибка/повтор чекина, публикация, отзыв, копирование
+  ссылки, табы), `enableClosingConfirmation` — только при несохранённом
+  черновике визарда. `disableVerticalSwipes` не вызывается (конфликта нет).
+  Правила — [MINIAPP-UX](../docs/MINIAPP-UX.md) п. 1 и 9.
 
 - **`miniapp/src/vendor/brand/tokens.css` + `components.css`** — дословные
   файлы бренда с зафиксированным в шапке `BRAND_COMMIT`
@@ -140,7 +163,7 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   редактированием на месте; обновление — отдельный коммит с переснятием.
 - **Веб-шрифтов нет ни на одном из роутов** (включая `manage`).
   Три брендовых семейства — 444 КиБ, и `ticket`/`scan` открываются на площадке
-  ивента, где связь плохая ([Q40](../docs/OPEN-QUESTIONS.md#q40),
+  события, где связь плохая ([Q40](../docs/OPEN-QUESTIONS.md#q40),
   [ADR-0020](../docs/adr/0020-no-web-fonts-on-venue-pages.md)). Для `manage`
   решение принято отдельно и тем же замером (ADR-0020 п. 3): 444 КиБ шрифтов
   против ~35 КиБ страницы с CSS, и вторая типографика внутри одной Mini App —

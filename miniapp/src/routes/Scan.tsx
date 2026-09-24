@@ -1,78 +1,62 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticNotification } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
-import { CHECKIN_API } from '../lib/api';
+import { CHECKIN_API, CHECKIN_COUNTER_API } from '../lib/api';
+import Icon, { type IconName } from '../components/Icon';
+import BackButton from '../components/BackButton';
 
 const RESULT_MS = 1600;
 
-const TONE: Record<string, string> = {
-  ok: 'ok',
-  already: 'warn',
-  wrong_event: 'bad',
-  not_registered: 'bad',
-  invalid: 'bad',
-  forbidden: 'bad',
-  invalid_init_data: 'bad',
+// Вердикт: тон, иконка и подпись — как в прототипе (`renderScan`).
+const VERDICT: Record<string, { tone: string; icon: IconName; sub?: string }> = {
+  ok: { tone: 'ok', icon: 'check-circle', sub: 'checkin.sub_ok' },
+  already: { tone: 'warn', icon: 'clock', sub: 'checkin.sub_already' },
+  wrong_event: { tone: 'bad', icon: 'alert', sub: 'checkin.sub_denied' },
+  event_cancelled: { tone: 'bad', icon: 'alert', sub: 'checkin.sub_denied' },
+  not_registered: { tone: 'bad', icon: 'x-circle', sub: 'checkin.sub_denied' },
+  invalid: { tone: 'bad', icon: 'alert', sub: 'checkin.sub_denied' },
 };
 
-type ResultState = { tone: string; text: string; sub?: string } | null;
+type View =
+  | { kind: 'verdict'; status: string; text: string; sub?: string }
+  | { kind: 'error'; icon: IconName; text: string; sub?: string; retryable: boolean }
+  | null;
 
-export default function Scan({ eventId: propEventId }: { eventId: string }) {
-  const tg = getTelegram();
-  const initData = tg?.initData ?? '';
+export default function Scan({ eventId: propEventId, fromApp = false }: { eventId: string; fromApp?: boolean }) {
   const eventIdRef = useRef(propEventId);
 
+  // W47/W70: «Назад» — только если сканер открыт изнутри приложения (из
+  // карточки события/списка), не из кнопки в чате (правило MINIAPP-UX п.1).
+  // Нативный попап сканера закрывается своим жестом.
+  useBackButton(fromApp, () => window.history.back());
+
   const [title, setTitle] = useState('AI Qadam Events');
-  const [statusKey, setStatusKey] = useState<string>(''); // key for t()
-  const [statusRaw, setStatusRaw] = useState<string>(''); // raw text when needed? but we use t
-  const [result, setResult] = useState<ResultState>(null);
-  const [showRescan, setShowRescan] = useState(false);
+  const [statusKey, setStatusKey] = useState<string>('');
+  const [view, setView] = useState<View>(null);
+  const [paused, setPaused] = useState(false);
   const [rescanLabel, setRescanLabel] = useState('Продолжить');
+  const [counters, setCounters] = useState<{ registered: number; checkedIn: number } | null>(null);
 
   const stoppedRef = useRef(false);
   const inFlightRef = useRef(false);
   const lastPayloadRef = useRef('');
   const lastAtRef = useRef(0);
 
-  const setStatus = useCallback((key: string) => {
-    setStatusKey(key);
-    setStatusRaw('');
+  const setStatus = useCallback((key: string) => setStatusKey(key), []);
+
+  const showVerdict = useCallback((status: string, text: string) => {
+    const v = VERDICT[status] || VERDICT.invalid;
+    hapticNotification(status === 'ok' ? 'success' : status === 'already' ? 'warning' : 'error');
+    setView({ kind: 'verdict', status, text, sub: v.sub });
   }, []);
 
-  const hideResult = useCallback(() => {
-    setResult(null);
-  }, []);
-
-  const showResult = useCallback((status: string, text: string, subKey?: string) => {
-    const tone = TONE[status] || 'bad';
-    setResult({ tone, text, sub: subKey ? t(subKey) : undefined });
-  }, []);
-
-  const offerRescan = useCallback(() => {
-    stoppedRef.current = false;
-    setRescanLabel(t('scan.rescan'));
-    setShowRescan(true);
-  }, []);
-
-  const stopAll = useCallback(
-    (status: string, text: string, subKey?: string) => {
-      stoppedRef.current = true;
-      hideResult();
-      showResult(status, text, subKey);
-      setStatusKey('');
-      setStatusRaw('');
-      const tg2 = getTelegram();
-      if (tg2?.closeScanQrPopup) {
-        try {
-          tg2.closeScanQrPopup();
-        } catch {}
-      }
-    },
-    [hideResult, showResult],
-  );
-
-  const closePopup = useCallback(() => {
+  const stopAll = useCallback((icon: IconName, text: string, retryable: boolean, sub?: string) => {
+    hapticNotification('error');
+    stoppedRef.current = true;
+    setStatusKey('');
+    setView({ kind: 'error', icon, text, retryable, sub });
     const tg2 = getTelegram();
     if (tg2?.closeScanQrPopup) {
       try {
@@ -85,14 +69,14 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
     if (stoppedRef.current) return;
     const tg2 = getTelegram();
     if (!tg2 || !tg2.showScanQrPopup) {
-      stopAll('forbidden', t('scan.unsupported'));
+      stopAll('alert', t('scan.unsupported'), false);
       return;
     }
-    hideResult();
+    setPaused(false);
     setStatus('scan.hint');
     try {
-      tg2.showScanQrPopup({}, (...args: unknown[]) => {
-        // vanilla: args = [err?, result?]
+      // Подсказка под заголовком нативного сканера (Bot API 6.4+, до 64 символов).
+      tg2.showScanQrPopup({ text: t('scan.hint') }, (...args: unknown[]) => {
         let err: string | null = null;
         let result: unknown = null;
         if (args.length === 2 && typeof args[0] === 'string') {
@@ -108,13 +92,12 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
           const r = result as Record<string, unknown>;
           text = String(r['text'] ?? r['data'] ?? '');
         }
-        onScanned(text);
+        onScannedRef.current(text);
       });
     } catch {
-      stopAll('forbidden', t('scan.unsupported'));
+      stopAll('alert', t('scan.unsupported'), false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hideResult, setStatus, stopAll]);
+  }, [setStatus, stopAll]);
 
   // onScanned defined after openScanner to avoid circular deps — use ref
   const onScannedRef = useRef<(text: string) => void>(() => {});
@@ -126,7 +109,12 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
       lastPayloadRef.current = text;
       lastAtRef.current = now;
       inFlightRef.current = true;
-      closePopup();
+      const tg2 = getTelegram();
+      if (tg2?.closeScanQrPopup) {
+        try {
+          tg2.closeScanQrPopup();
+        } catch {}
+      }
       setStatus('scan.checking');
       fetch(CHECKIN_API, {
         method: 'POST',
@@ -138,17 +126,21 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
           const d = res.body as Record<string, unknown>;
           inFlightRef.current = false;
           if (!d || typeof d['text'] !== 'string') {
-            stopAll('forbidden', t('scan.error_server'));
-            offerRescan();
+            stopAll('alert', t('scan.error_server'), true);
             return;
           }
           const st = (d['status'] as string) || '';
           if (st === 'invalid_init_data') {
-            stopAll('invalid_init_data', String(d['text']), 'scan.reopen_app');
+            stopAll('clock', String(d['text']), false);
           } else if (st === 'forbidden') {
-            stopAll('forbidden', String(d['text']));
+            stopAll('shield', String(d['text']), false);
           } else {
-            showResult(st || 'already', String(d['text']));
+            showVerdict(st || 'already', String(d['text']));
+            if (st === 'ok') {
+              setCounters((c) =>
+                c ? { registered: c.registered, checkedIn: Math.min(c.registered, c.checkedIn + 1) } : c,
+              );
+            }
             setTimeout(() => {
               if (!stoppedRef.current) openScanner();
             }, RESULT_MS);
@@ -156,21 +148,37 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
         })
         .catch(() => {
           inFlightRef.current = false;
-          stopAll('forbidden', t('scan.network_error'));
-          offerRescan();
+          stopAll('alert', t('scan.network_error'), true);
         });
     },
-    [closePopup, offerRescan, openScanner, showResult, stopAll],
+    [openScanner, showVerdict, stopAll],
   );
   onScannedRef.current = onScanned;
 
-  // wrapper for openScanner's callback to use latest onScanned
-  useEffect(() => {
-    // keep ref updated
-  }, [onScanned]);
+  const loadCounters = useCallback(async () => {
+    const eid = eventIdRef.current;
+    const tg2 = getTelegram();
+    if (!eid || !tg2?.initData || !CHECKIN_COUNTER_API) return;
+    try {
+      const r = await fetch(CHECKIN_COUNTER_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg2.initData, eventId: eid }),
+      });
+      const d = (await r.json()) as Record<string, unknown>;
+      if (!d || d['ok'] !== true) return;
+      const registered = Number(d['registered']);
+      const checkedIn = Number(d['checked_in']);
+      if (Number.isFinite(registered) && Number.isFinite(checkedIn)) {
+        setCounters({ registered, checkedIn });
+      }
+    } catch {}
+  }, []);
 
-  const handleRescan = useCallback(() => {
-    setShowRescan(false);
+  const resume = useCallback(() => {
+    stoppedRef.current = false;
+    setPaused(false);
+    setView(null);
     openScanner();
   }, [openScanner]);
 
@@ -179,77 +187,105 @@ export default function Scan({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   useEffect(() => {
-    // eventId from prop (hash query) — keep ref
     eventIdRef.current = propEventId;
   }, [propEventId]);
 
   useEffect(() => {
     void loadI18n().then((d) => {
-      const tt = d['scan.title'] || 'Сканер чекина';
-      setTitle(tt);
+      setTitle(d['scan.title'] || 'Сканер чекина');
       document.title = t('scan.title');
       setRescanLabel(t('scan.rescan'));
 
       const tg2 = getTelegram();
       if (!d || Object.keys(d).length === 0) {
-        // mimic vanilla: if err then stopAll forbidden network_error
-        // In vanilla, err truthy when fetch i18n fails -> stopAll forbidden network_error
-        // Our loadI18n resolves to {} on error, not err flag. We treat empty dict as error
-        stopAll('forbidden', t('scan.network_error'));
+        stopAll('alert', t('scan.network_error'), true);
         return;
       }
       if (!tg2 || !tg2.initData) {
-        stopAll('forbidden', t('scan.not_in_telegram'));
+        stopAll('alert', t('scan.not_in_telegram'), false);
         return;
       }
       const eid = propEventId || new URLSearchParams(window.location.hash.split('?')[1] || window.location.search).get('event_id') || '';
       if (!eid) {
-        stopAll('forbidden', t('scan.no_event'));
+        stopAll('calendar', t('scan.no_event'), false);
         return;
       }
-      // success path — ready
       try {
         tg2.ready();
         tg2.expand();
       } catch {}
       if (tg2.onEvent) {
-        tg2.onEvent('themeChanged', () => {
-          // theme already handled via setupThemeListener
-        });
         tg2.onEvent('scanQrPopupClosed', () => {
           if (!stoppedRef.current && !inFlightRef.current) {
-            setStatus('scan.hint');
-            offerRescan();
+            stoppedRef.current = true;
+            setStatusKey('');
+            setPaused(true);
           }
         });
       }
+      void loadCounters();
       openScanner();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // openScanner uses showResult etc which are stable
-
-  const statusText = statusKey ? t(statusKey) : statusRaw;
+  const statusText = statusKey ? t(statusKey) : '';
+  const progress =
+    counters && counters.registered > 0 ? Math.round((counters.checkedIn / counters.registered) * 100) : 0;
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+      <BackButton show={fromApp} onBack={() => window.history.back()} />
       <h1 className="empty-heading" id="title">
         {title}
       </h1>
-      {result && (
-        <div className={`card result ${result.tone}`} id="result" role="status">
-          <p className="empty-heading" id="resultText">
-            {result.text}
-          </p>
-          {result.sub && <p className="empty-desc" id="resultSub">{result.sub}</p>}
+
+      {view?.kind === 'verdict' && (
+        <div className={`verdict ${view.status === 'ok' ? 'ok' : view.status === 'already' ? 'warn' : 'bad'}`} id="result" role="status">
+          <span className="verdict-icon">
+            <Icon name={VERDICT[view.status]?.icon || 'alert'} size={22} />
+          </span>
+          <div className="verdict-body">
+            <div className="verdict-text" id="resultText">{view.text}</div>
+            {view.sub && <div className="verdict-sub" id="resultSub">{t(view.sub)}</div>}
+          </div>
         </div>
       )}
+
+      {view?.kind === 'error' && (
+        <div className="scan-state" id="result" role="status">
+          <div className="state-icon">
+            <Icon name={view.icon} size={24} />
+          </div>
+          <div className="state-title" id="resultText">{view.text}</div>
+          {view.sub && <div className="empty-desc" id="resultSub">{t(view.sub)}</div>}
+          <button
+            className="btn btn-primary"
+            id="errorAction"
+            onClick={() => (view.retryable ? resume() : (window.location.hash = '#/events'))}
+          >
+            {view.retryable ? rescanLabel : t('common.btn.close')}
+          </button>
+        </div>
+      )}
+
       <p className="empty-desc" id="status" style={{ minHeight: '1.5em' }}>
-        {statusText}
+        {paused ? t('scan.hint') : statusText}
       </p>
-      {showRescan && (
-        <button className="btn btn-primary btn-lg" id="rescan" onClick={handleRescan}>
+
+      {counters && (
+        <div className="scan-progress" id="progress">
+          <div className="scan-progress-bar">
+            <div className="scan-progress-fill" style={{ width: progress + '%' }} />
+          </div>
+          <div className="scan-progress-label">
+            {t('checkin.counter', { checked_in: counters.checkedIn, registered: counters.registered })}
+          </div>
+        </div>
+      )}
+
+      {paused && (
+        <button className="btn btn-primary btn-lg" id="rescan" onClick={resume}>
           {rescanLabel}
         </button>
       )}

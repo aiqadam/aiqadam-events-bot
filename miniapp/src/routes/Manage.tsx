@@ -1,15 +1,17 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import type { ReactNode } from 'react';
 import Icon from '../components/Icon';
+import Sheet from '../components/Sheet';
+import Toast, { useToast } from '../components/Toast';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram } from '../lib/telegram';
+import { getTelegram, hapticImpact, hapticNotification, setClosingConfirmation } from '../lib/telegram';
+import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, MANAGE_API } from '../lib/api';
+import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
 const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
 
-// Черновик нового ивента переживает уход со страницы (W42): localStorage,
+// Черновик нового события переживает уход со страницы (W42): localStorage,
 // ключ один — второй формы создания на устройстве быть не может.
 const DRAFT_KEY = 'manage.new.draft';
 
@@ -46,7 +48,7 @@ const EMPTY_FIELDS: Record<string, string> = {
 };
 
 type EventData = Record<string, unknown>;
-type StaffItem = { telegram_id: string; item: string };
+type StaffItem = { telegram_id: string; item: string; name: string; username: string; sub: string };
 type StaffCandidate = { telegram_id: string; name: string; username: string };
 // W13: строка участника от manage-api (action participants): status — ключ
 // ('registered'|'cancelled'), checked_in_at — «DD.MM.YYYY HH:mm» Tashkent или ''.
@@ -60,12 +62,13 @@ type ListItem = {
   title: string;
   starts_at: string;
   status: string;
+  // W74: сырой UTC-дедлайн регистрации — список решает, показать ли бейдж.
+  reg_deadline_at?: string;
   isAuthor: boolean;
   address?: string;
   lat?: string;
   lon?: string;
 };
-type RecentPlace = { address: string; lat: string; lon: string };
 type StepError = { step: number; field: string; text: string };
 
 function genNewId(): string {
@@ -93,17 +96,14 @@ function coordsInRange(lat: number, lon: number): boolean {
 }
 
 // Орг-ссылка (её даёт «Поделиться»): https://yandex.com/maps/org/<slug>/<oid>…
-// Координат в ней нет — их достаёт сервер через Геокодер (W42, Q55).
-const ORG_LINK_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\/org\//i;
+// Орг-ссылка координат не несёт — её разбирает только сервер через
+// Геокодер (Q55); resolveOrgLink ниже.
 const YANDEX_MAPS_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\//i;
 
-function mapUrl(lat: string, lon: string): string {
-  return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17&l=map';
-}
-
-function fmtCoord(v: string): string {
-  const n = Number(String(v).replace(',', '.'));
-  return isFinite(n) ? n.toFixed(5) : String(v);
+// Эквивалентная ссылка на точку — ею предзаполняем поле правки, когда ссылка
+// неизвестна, а координаты есть (вердикт W49: проверяется сама ссылка).
+function equivLink(lat: string, lon: string): string {
+  return 'https://yandex.ru/maps/?pt=' + lon + ',' + lat + '&z=17';
 }
 
 // --- предпросмотр карточки: локальное «YYYY-MM-DDTHH:mm» — ташкентское ------
@@ -124,6 +124,31 @@ function plateFromLocal(s: string): { month: string; day: string; weekday: strin
   return { month: MONTHS_NOM[p.mo], day: String(p.d), weekday: WEEKDAYS[wd] };
 }
 
+// W53: конец события из локальной («ташкентской», UTC+5 без DST) строки формы.
+function tashMs(local: string): number {
+  const p = localParts(local);
+  if (!p) return NaN;
+  return Date.UTC(p.y, p.mo, p.d, +p.h, +p.mi) - 5 * 3600 * 1000;
+}
+
+// W74: временная часть формулы «регистрация закрыта» — дедлайн уже прошёл,
+// а событие ещё не началось. Одна функция на список и форму: на вход идут
+// UTC-миллисекунды (список — utcMs, форма — tashMs), поэтому ветки не могут
+// разойтись. Пустой/нечитаемый дедлайн закрытия не означает (регистрация идёт
+// до начала). Гейт `published` — только у списка: issue #126, п. 3 не
+// ограничивает предупреждение формы статусом.
+function regDeadlinePassed(deadlineMs: number, startsMs: number, nowMs: number): boolean {
+  return isFinite(deadlineMs) && isFinite(startsMs) && deadlineMs < nowMs && startsMs > nowMs;
+}
+
+// «сб, 26 сентября · 22:00» — форма меты каталога, но из локальной строки.
+function endsWhen(local: string): string {
+  const p = plateFromLocal(local);
+  const lp = localParts(local);
+  if (!p || !lp) return '';
+  return `${p.weekday}, ${p.day} ${p.month} · ${lp.h}:${lp.mi}`;
+}
+
 function humanLocal(s: string): string {
   const p = localParts(s);
   if (!p) return String(s || '');
@@ -136,7 +161,11 @@ function humanLocal(s: string): string {
 // черновик можно вести по шагам недозаполненным.
 // strict=true — то же плюс обязательные поля (для «Опубликовать»).
 // Серверная валидация manage-api остаётся источником правды: это только UX.
-function clientErrors(f: Record<string, string>, strict: boolean): StepError[] {
+function clientErrors(
+  f: Record<string, string>,
+  strict: boolean,
+  geo?: { online: boolean; mapLink: string },
+): StepError[] {
   const out: StepError[] = [];
   const add = (step: number, field: string, key: string, vars?: Record<string, string | number>) => {
     out.push({ step, field, text: t(key, vars) });
@@ -146,9 +175,11 @@ function clientErrors(f: Record<string, string>, strict: boolean): StepError[] {
   else if (title && (title.length < 2 || title.length > 200)) add(0, 'title', 'manage.err.title_length');
   if ((f['description'] || '').length > 4000) add(0, 'description', 'manage.err.description_length');
 
+  // Адрес обязателен только офлайну (онлайн — только даты, решение
+  // владельца 2026-09-20): формат приходит в geo, без него — старое правило.
   const address = (f['address'] || '').trim();
-  if (strict && !address) add(1, 'address', 'manage.err.required');
-  else if (address && (address.length < 2 || address.length > 300)) add(1, 'address', 'manage.err.address_length');
+  if (address && (address.length < 2 || address.length > 300)) add(1, 'address', 'manage.err.address_length');
+  else if (strict && !address && (!geo || !geo.online)) add(1, 'address', 'manage.err.required');
   (['starts_at', 'ends_at', 'reg_deadline_at'] as const).forEach((k) => {
     if (strict && !f[k]) add(1, k, 'manage.err.datetime');
   });
@@ -160,6 +191,11 @@ function clientErrors(f: Record<string, string>, strict: boolean): StepError[] {
   if ((lat === '') !== (lon === '')) add(1, 'geo', 'manage.err.geo_pair');
   else if (lat !== '' && !coordsInRange(Number(lat.replace(',', '.')), Number(lon.replace(',', '.')))) {
     add(1, 'geo', 'manage.err.geo_range');
+  }
+  // Вердикт W49 (W50): офлайн без разбираемой ссылки не публикуется —
+  // проверяется сама ссылка, не координаты.
+  if (strict && geo && !geo.online && !parseYandexLink(geo.mapLink.trim())) {
+    add(1, 'geo', 'manage.geo.link_bad');
   }
 
   if ((f['capacity'] || '') !== '') {
@@ -189,8 +225,6 @@ function limitText(capacity: string, overbook: string): string {
   return limit === null ? t('event.card.seats_unlimited') : t('manage.capacity.limit', { limit });
 }
 
-// Шит — паттерн эталона (prototypes/proto.css `.app-sheet`): ручка, шапка
-// с крестиком, тело. В WebView позиционируется fixed, поверх sticky-бара.
 // W44: инициалы для аватара кандидата — кружок с буквами, как в прототипе.
 // Фото из Bot API не тянем; цвета — только семантические токены бренда.
 function candidateInitials(name: string, username: string): string {
@@ -198,58 +232,6 @@ function candidateInitials(name: string, username: string): string {
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return username.replace(/^@/, '').slice(0, 2).toUpperCase();
-}
-
-function Sheet({
-  open,
-  title,
-  onClose,
-  children,
-}: {
-  open: boolean;
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-  // Пока шит открыт, фон не прокручивается (дизайн-ревью W42, круг 4):
-  // колесо над подложкой уводило визард из-под модалки.
-  useEffect(() => {
-    if (!open) return;
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtml = html.style.overflow;
-    const prevBody = body.style.overflow;
-    html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
-    return () => {
-      html.style.overflow = prevHtml;
-      body.style.overflow = prevBody;
-    };
-  }, [open]);
-  if (!open) return null;
-  return (
-    <div className="app-sheet">
-      <div className="app-sheet-backdrop" onClick={onClose} />
-      <div className="app-sheet-panel" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="app-sheet-grab" />
-        <div className="app-sheet-head">
-          <span className="app-sheet-title">{title}</span>
-          <button type="button" className="app-sheet-close" aria-label={t('common.btn.close')} onClick={onClose}>
-            <Icon name="x" size={18} />
-          </button>
-        </div>
-        <div className="app-sheet-body">{children}</div>
-      </div>
-    </div>
-  );
 }
 
 export default function Manage({ eventId: propEventId }: { eventId: string }) {
@@ -261,7 +243,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [busy, setBusy] = useState(false);
 
   const [dictLoaded, setDictLoaded] = useState(false);
-  const [titleText, setTitleText] = useState('Новый ивент');
+  const [titleText, setTitleText] = useState('Новое событие');
   const [statusText, setStatusText] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showLoadfail, setShowLoadfail] = useState(false);
@@ -269,8 +251,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [loadfailRetryable, setLoadfailRetryable] = useState(true);
 
   // Результат сохранения и ошибки — тостом (паттерн эталона), не строкой в баре.
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<number | null>(null);
+  const { toast, setToast, showToast } = useToast();
 
   // W42: визард — шаг, ошибки шагов (клиентские и серверные), экран успеха.
   const [step, setStep] = useState(0);
@@ -278,10 +259,15 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const [done, setDone] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [cancelSheet, setCancelSheet] = useState(false);
+  // W66: удаление черновика — подтверждение и цель (событие из списка или открытое).
+  const [deleteSheet, setDeleteSheet] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
   // Снимок полей на момент загрузки/сохранения — чтобы «К списку» не терял
-  // несохранённые правки молча (дизайн-ревью W42).
-  const loadedRef = useRef<Record<string, string> | null>(null);
+  // несохранённые правки молча (дизайн-ревью W42). Состояние, а не ref: после
+  // сохранения снимок меняется, и подтверждение закрытия (W47) снимается тем
+  // же рендером, а не ожиданием ухода со страницы.
+  const [loaded, setLoaded] = useState<Record<string, string> | null>(null);
   // Счётчик запросов resolve_geo: поздний ответ при закрытом шите не применяем
   // (дизайн-ревью, круг 6).
   const geoReqRef = useRef(0);
@@ -289,64 +275,58 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // form fields
   const [fields, setFields] = useState<Record<string, string>>({ ...EMPTY_FIELDS });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [locateVisible, setLocateVisible] = useState(false);
 
-  // гео: шит ссылки, недавние места
-  const [geoSheet, setGeoSheet] = useState(false);
-  const [geoInput, setGeoInput] = useState('');
-  const [geoError, setGeoError] = useState('');
-  const [geoBusy, setGeoBusy] = useState(false);
+  // гео (вердикт W49): формат Онлайн/Офлайн + голое поле ссылки с живым
+  // разбором. Отдельного хранилища нет: онлайн ⟺ пустые lat/lon.
+  const [online, setOnline] = useState(false);
+  const [mapLink, setMapLink] = useState('');
 
-  // W36: секция «Контролёры» — только у существующего ивента (нужен eventId).
+  // W36: секция «Контролёры» — только у существующего события (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
   const [staffLoaded, setStaffLoaded] = useState(false);
   const [staffBusy, setStaffBusy] = useState(false);
-  const [staffIdInput, setStaffIdInput] = useState('');
   const [staffFieldError, setStaffFieldError] = useState('');
   const [staffResult, setStaffResult] = useState('');
 
-  // W13: секция «Участники» (OWN-7, OWN-8) — только у существующего ивента.
+  // W13: секция «Участники» (OWN-7, OWN-8) — только у существующего события.
   // Срезы (все/пришли/не пришли/отмены) режет страница из одного ответа, как
   // эталон; файлы csv/json собирает сервер — страница их только скачивает.
-  const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
+  const [parts, setParts] = useState<{ counters: { registered: number; checked_in: number; cancelled: number; all_consent: number }; rows: PartRow[]; csv: string; json: string } | null>(null);
   const [partsError, setPartsError] = useState('');
   const [partsFilter, setPartsFilter] = useState<PartsFilter>('all');
 
-  // W45 (Q53): секция «Отзывы» — только у существующего ивента, читает
+  // W45 (Q53): секция «Отзывы» — только у существующего события, читает
   // feedback-api через manage-api (action feedback_list), та же граница прав,
   // что у участников.
   const [feedback, setFeedback] = useState<{ average: number; count: number; rows: FeedbackRow[] } | null>(null);
   const [feedbackError, setFeedbackError] = useState('');
 
-  // W44: поиск кандидатов в контролёры — шит с выбором тапом (вердикт W41).
-  // Источник — участники ивента + staff чаптера (Q51); кого нет в списке —
-  // ручной ввод ID ниже остаётся запасным путём.
-  const [searchSheet, setSearchSheet] = useState(false);
+  // W55 (вердикт владельца 2026-09-19, отмена Q51-фолбэка): ввод контролёра —
+  // логин Telegram инлайн в секции, без шита. Источник совпадений — участники
+  // события + staff чаптера (Q51); резолв логин→ID — точным совпадением
+  // username среди кандидатов, запись — тем же staff_add по telegram_id (DAT-1).
   const [searchQuery, setSearchQuery] = useState('');
   const [candidates, setCandidates] = useState<StaffCandidate[]>([]);
   const [searchBusy, setSearchBusy] = useState(false);
 
-  // W37: список ивентов чаптера (#/manage без :id) и ссылка регистрации,
+  // W10 (OWN-14): одноразовая ссылка-инвайт вместо логина (альтернатива,
+  // вердикт владельца 2026-09-21). Создаётся здесь, в Mini App.
+  const [staffInviteUrl, setStaffInviteUrl] = useState('');
+  const [inviteBusy, setInviteBusy] = useState(false);
+
+  // W37: список событий чаптера (#/manage без :id) и ссылка регистрации,
   // которая живёт на экране (сервер отдаёт её в `load` и `save`).
   const [listItems, setListItems] = useState<ListItem[]>([]);
   const [listLoaded, setListLoaded] = useState(false);
+  // W50: события, где вызывающий — действующий контролёр (гейт кнопок сканера).
+  const [staffIds, setStaffIds] = useState<Record<string, boolean>>({});
   const [retryTarget, setRetryTarget] = useState<'list' | 'form'>('form');
+
+  // W53: табы правки (прототип tabs()) — только при открытом событии;
+  // создание идёт визардом без табов. Порядок — как в эталоне.
+  type ManageTab = 'event' | 'participants' | 'broadcast' | 'staff';
+  const [manageTab, setManageTab] = useState<ManageTab>('event');
   const [inviteLink, setInviteLink] = useState<{ eventId: string; url: string } | null>(null);
-
-  const showToast = useCallback((text: string, sticky = false) => {
-    if (toastTimer.current !== null) {
-      window.clearTimeout(toastTimer.current);
-      toastTimer.current = null;
-    }
-    setToast(text);
-    if (!sticky) {
-      toastTimer.current = window.setTimeout(() => setToast(null), 2500);
-    }
-  }, []);
-
-  useEffect(() => () => {
-    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
-  }, []);
 
   // keep prop sync (when hash changes)
   useEffect(() => setEventId(propEventId), [propEventId]);
@@ -408,8 +388,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         next[n] = utcToLocalInput(String(ev[n] || ''));
       });
       setFields(next);
-      loadedRef.current = next;
+      setLoaded(next);
       applyStatus(String(ev['status'] || 'draft'));
+      // Вердикт W49: формат выводится из координат (онлайн ⟺ точки нет);
+      // правка с координатами предзаполняет ссылку эквивалентной.
+      const hasCoords = String(next['lat'] || '').trim() !== '' && String(next['lon'] || '').trim() !== '';
+      setOnline(!hasCoords);
+      setMapLink(hasCoords ? equivLink(next['lon'], next['lat']) : '');
     },
     [applyStatus],
   );
@@ -439,6 +424,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   const showLoadFail = useCallback((text: string, retryable = true) => {
+    hapticNotification('error');
     setShowForm(false);
     setLoadfailText(text);
     setLoadfailRetryable(retryable);
@@ -463,9 +449,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setStatusText('');
       setStep(0);
       setErrs([]);
-      // Серверные ошибки полей не переезжают на другой ивент (ревью W42,
-      // круг 4): карта ключей не привязана к шагу, «starts_past» с ивента A
-      // горел бы под валидной датой ивента B, пока поле не тронут.
+      // Серверные ошибки полей не переезжают на другое событие (ревью W42,
+      // круг 4): карта ключей не привязана к шагу, «starts_past» с события A
+      // горел бы под валидной датой события B, пока поле не тронут.
       setFieldErrors({});
       setDone(false);
       setDraftRestored(false);
@@ -474,7 +460,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [eventId, initData, errorTextFor, fillForm, showLoadFail],
   );
 
-  // W37: список ивентов своего чаптера — вход в правку без команд (ADR-0025).
+  // W37: список событий своего чаптера — вход в правку без команд (ADR-0025).
   const loadList = useCallback(async () => {
     setShowLoadfail(false);
     setShowForm(false);
@@ -488,6 +474,20 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setListItems(res.data['events'] as ListItem[]);
     setListLoaded(true);
     setStatusText('');
+    // W50 (вердикт W49): сканер — в строках списка, видно только контролёру.
+    // Создание автора контролёром не делает (staff — только явной выдачей),
+    // поэтому гейт — тем же staff-events-api, что в каталоге. Тихо нет —
+    // значит нет.
+    try {
+      const se = await postJson(STAFF_EVENTS_API, { initData });
+      if (se.kind === 'json' && se.data['ok'] && Array.isArray(se.data['eventIds'])) {
+        const set: Record<string, boolean> = {};
+        (se.data['eventIds'] as unknown[]).forEach((id) => {
+          if (typeof id === 'string' && id) set[id] = true;
+        });
+        setStaffIds(set);
+      }
+    } catch {}
   }, [initData, errorTextFor, showLoadFail]);
 
   const resetFormState = useCallback(() => {
@@ -497,24 +497,17 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setDone(false);
     setDraftRestored(false);
     setCancelSheet(false);
+    setDeleteSheet(false);
+    setDeleteTarget(null);
     setConfirmExit(false);
     geoReqRef.current += 1; // ответ resolve_geo в полёте уже не применяется
-    setGeoSheet(false);
-    setGeoInput('');
-    setGeoError('');
-    setGeoBusy(false);
-  }, []);
-
-  // Закрытие шита ссылки: отменяет и поздний ответ resolve_geo (круг 6).
-  const closeGeoSheet = useCallback(() => {
-    geoReqRef.current += 1;
-    setGeoBusy(false);
-    setGeoSheet(false);
+    setOnline(false);
+    setMapLink('');
   }, []);
 
   const leaveForm = useCallback(() => {
     resetFormState();
-    // Если форма открыта из списка, hash ведёт на ивент — возвращаем его
+    // Если форма открыта из списка, hash ведёт на событие — возвращаем его
     // на #/manage (App пересоберёт роут); после создания hash не менялся.
     if (window.location.hash && window.location.hash !== '#/manage') {
       window.location.hash = '#/manage';
@@ -528,46 +521,94 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
   const isDirty = useCallback(() => {
     if (!eventId) return false;
-    const base = loadedRef.current;
+    const base = loaded;
     if (!base) return false;
     return FIELDS.some((n) => String(fields[n] || '').trim() !== String(base[n] || '').trim());
-  }, [eventId, fields]);
+  }, [eventId, fields, loaded]);
 
   // «К списку» не теряет несохранённые правки молча: спрашиваем (дизайн-ревью).
   // У создания правки не теряются — черновик лежит в localStorage, поэтому
-  // подтверждение выхода нужно только у существующего ивента (эталон не
+  // подтверждение выхода нужно только у существующего события (эталон не
   // спрашивает вовсе; это исправление дефекта, см. журнал W42).
   const backToList = useCallback(() => {
     if (!done && eventId && isDirty()) {
       setConfirmExit(true);
+      // W53: диалог подтверждения живёт в табе «Событие» — уводим туда же,
+      // иначе с других табов выход виснет без отзыва (ревью W53).
+      setManageTab('event');
       return;
     }
     leaveForm();
   }, [done, eventId, isDirty, leaveForm]);
+
+  // W47/W70: нативная «Назад» — открытый шит (отмена события / подтверждение
+  // выхода) закрывает; в визарде на шаге > 0 ведёт на предыдущий шаг (в т.ч.
+  // при создании из чата — раньше «Назад» там не было вовсе); экран события
+  // ведёт к списку; корневые экраны (список, создание с шага 0) её скрывают.
+  const goBack = useCallback(() => {
+    if (cancelSheet) {
+      setCancelSheet(false);
+      return;
+    }
+    if (deleteSheet) {
+      setDeleteSheet(false);
+      setDeleteTarget(null);
+      return;
+    }
+    if (confirmExit) {
+      setConfirmExit(false);
+      return;
+    }
+    if (showForm && !done && manageTab === 'event' && step > 0) {
+      setErrs([]);
+      setStep((s) => Math.max(0, s - 1));
+      return;
+    }
+    backToList();
+  }, [cancelSheet, deleteSheet, confirmExit, showForm, done, manageTab, step, backToList]);
+  useBackButton(
+    cancelSheet || deleteSheet || confirmExit || (showForm && !done && manageTab === 'event' && (!!eventId || step > 0)),
+    goBack,
+  );
 
   // W42: создание — визард с черновиком в localStorage (уход со страницы его
   // не теряет); после сохранения на сервере черновик больше не нужен.
   const startNew = useCallback(() => {
     // Ключ идемпотентности — один на открытие формы (ADR-0003): повторное
     // «Сохранить» апсертит ту же запись. Новое открытие формы — новый ключ,
-    // иначе второе создание перезаписало бы первый ивент (ревью W42, блокер).
+    // иначе второе создание перезаписало бы первое событие (ревью W42, блокер).
     newIdRef.current = genNewId();
     let next = { ...EMPTY_FIELDS };
     let nextStep = 0;
     let restored = false;
+    // Вердикт W49: новое — офлайн с пустой ссылкой.
+    let nextOnline = false;
+    let nextLink = '';
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {
-        const d = JSON.parse(raw) as { fields?: Record<string, string>; step?: number };
+        const d = JSON.parse(raw) as { fields?: Record<string, string>; step?: number; online?: boolean; mapLink?: string };
         if (d && d.fields && typeof d.fields === 'object') {
           next = { ...EMPTY_FIELDS, ...d.fields };
           nextStep = Math.min(LAST_STEP, Math.max(0, Number(d.step) || 0));
           restored = true;
+          // Черновик нового формата хранит и гео-состояние; старый (только
+          // поля) — выводится из координат, как правка существующего.
+          if (typeof d.online === 'boolean') {
+            nextOnline = d.online;
+            nextLink = typeof d.mapLink === 'string' ? d.mapLink : '';
+          } else {
+            const hasCoords =
+              String(next['lat'] || '').trim() !== '' && String(next['lon'] || '').trim() !== '';
+            nextLink = hasCoords ? equivLink(next['lon'], next['lat']) : '';
+          }
         }
       }
     } catch {}
     setFields(next);
-    loadedRef.current = next;
+    setLoaded(next);
+    setOnline(nextOnline);
+    setMapLink(nextLink);
     setStep(nextStep);
     setErrs([]);
     setFieldErrors({});
@@ -597,19 +638,21 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       });
       setBusy(false);
       if (res.kind !== 'json') {
+        hapticNotification('error');
         showToast(errorTextFor(res as never));
         return;
       }
       const d = res.data as Record<string, unknown>;
       if (d['ok']) {
+        hapticNotification('success');
         try {
           localStorage.removeItem(DRAFT_KEY);
         } catch {}
-        loadedRef.current = collecting;
+        setLoaded(collecting);
         if (d['eventId']) setEventId(String(d['eventId']));
         applyStatus(status);
-        // После публикации экран успеха живёт как «Новый ивент» (прототип);
-        // после черновика/правки форма — уже правка существующего ивента.
+        // После публикации экран успеха живёт как «Новое событие» (прототип);
+        // после черновика/правки форма — уже правка существующего события.
         setTitleText(t(status === 'published' && origStatus !== 'published' ? 'manage.title.new' : 'manage.title.edit'));
         const inv = typeof d['inviteLink'] === 'string' ? String(d['inviteLink']) : '';
         setInviteLink(inv ? { eventId: String(d['eventId'] || eventId), url: inv } : null);
@@ -630,6 +673,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
       if (d['error'] === 'validation') {
+        hapticNotification('error');
         const errFields = (d['fields'] as Record<string, unknown>) || {};
         showFieldErrors(errFields);
         const txt = typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.err.validation');
@@ -639,22 +683,61 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         if (first !== undefined) setStep(STEP_OF_FIELD[first]);
         return;
       }
+      hapticNotification('error');
       showToast(errorTextFor(res as never));
     },
     [busy, clearErrors, collect, eventId, initData, origStatus, applyStatus, errorTextFor, showFieldErrors, showToast, leaveForm],
   );
 
+  // W66 (OWN-4.1): удаление события. Права и «ноль регистраций» проверяет сервер
+  // (manage-api, action=delete); здесь — подтверждение и вызов. Удалять можно
+  // черновик (Part 1); причина отказа приходит текстом с сервера.
+  const openDelete = useCallback((id: string, title: string) => {
+    if (!id) return;
+    setDeleteTarget({ id, title });
+    setDeleteSheet(true);
+  }, []);
+
+  const doDelete = useCallback(async () => {
+    const tgt = deleteTarget;
+    if (!tgt || busy) return;
+    setDeleteSheet(false);
+    setBusy(true);
+    const res = await postJson(MANAGE_API, { initData, action: 'delete', eventId: tgt.id });
+    setBusy(false);
+    if (res.kind !== 'json') {
+      hapticNotification('error');
+      showToast(errorTextFor(res as never));
+      return;
+    }
+    const d = res.data as Record<string, unknown>;
+    if (d['ok']) {
+      hapticNotification('success');
+      showToast(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.delete.done'));
+      setDeleteTarget(null);
+      if (eventId === tgt.id) leaveForm();
+      else void loadList();
+      return;
+    }
+    hapticNotification('error');
+    showToast(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('manage.delete.failed'));
+  }, [deleteTarget, busy, initData, errorTextFor, showToast, eventId, leaveForm, loadList]);
+
   // Шаг проверяется на «Далее» — как в эталоне (дизайн-ревью W42): пустые
   // обязательные поля не пропускаем, точки шагов с ошибками помечаются.
   const nextStep = useCallback(() => {
-    const e = clientErrors(fields, true).filter((x) => x.step === step);
+    const e = clientErrors(fields, true, { online, mapLink }).filter((x) => x.step === step);
     if (e.length) {
       setErrs(e);
+      // W77: сводка ошибки стоит над кнопками, но на длинном шаге уходит под
+      // экран — подводим взгляд к первому полю с ошибкой (как в эталоне).
+      const elId = e[0].field === 'geo' ? 'f-geolink' : `f-${e[0].field}`;
+      requestAnimationFrame(() => document.getElementById(elId)?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
       return;
     }
     setErrs([]);
     setStep((s) => Math.min(LAST_STEP, s + 1));
-  }, [fields, step]);
+  }, [fields, step, online, mapLink]);
 
   const prevStep = useCallback(() => {
     setErrs([]);
@@ -662,83 +745,90 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   }, []);
 
   const publish = useCallback(() => {
-    const e = clientErrors(fields, true);
+    const e = clientErrors(fields, true, { online, mapLink });
     if (e.length) {
       setErrs(e);
       setStep(e[0].step);
       return;
     }
     void submit('published');
-  }, [fields, submit]);
+  }, [fields, online, mapLink, submit]);
 
-  // W42: ссылку на место разбираем на клиенте; орг-ссылка (в ней координат
-  // нет) уходит на сервер — Геокодер возвращает точку и адрес (Q55). Пока
-  // идёт запрос, кнопка выключена, чтобы не отправить два.
-  const applyGeoLink = useCallback(async () => {
-    if (geoBusy) return;
-    const raw = geoInput.trim();
-    // Орг-ссылка всегда уходит на сервер: координат в ней нет, а `ll`/`pt`
-    // в такой ссылке задают центр карты, а не точку (ревью W42, круг 5).
-    if (!ORG_LINK_RE.test(raw)) {
-      const parsed = parseYandexLink(raw);
+  // W50 (вердикт W49, перенос из prototypes/app.js): ссылка — голое поле
+  // с живым разбором на вводе. Успех — тишина, битая ссылка — ошибка,
+  // пустое — подсказка. Орг-ссылка координат не несёт — уходит на сервер
+  // (Геокодер возвращает точку и адрес, Q55); после успеха поле хранит
+  // эквивалентную ссылку, чтобы правило «проверяется сама ссылка» сходилось.
+  const onLinkChange = useCallback(
+    (v: string) => {
+      setMapLink(v);
+      const parsed = parseYandexLink(v.trim());
       if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
         setGeo(parsed.lat, parsed.lon);
-        setGeoInput('');
-        setGeoError('');
-        setGeoSheet(false);
-        showToast(t('manage.geo.link_applied'));
-        return;
+      } else {
+        // Как в эталоне: битая ссылка сносит координаты, а не оставляет
+        // прежнюю точку под чужим текстом.
+        setFields((prev) => ({ ...prev, lat: '', lon: '' }));
+        setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon'));
       }
-      if (!YANDEX_MAPS_RE.test(raw)) {
-        setGeoError(t('manage.geo.link_bad'));
-        return;
-      }
-    }
-    // Пока идёт запрос, кнопка, поле и «Недавние места» выключены, а поздний
-    // ответ не применяется, если шит уже закрыли (дизайн-ревью, круг 6) —
-    // иначе ответ перетирал бы выбор, сделанный после нажатия.
-    const reqId = ++geoReqRef.current;
-    setGeoBusy(true);
-    setGeoError('');
-    const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
-    if (geoReqRef.current !== reqId) return;
-    setGeoBusy(false);
-    if (res.kind === 'json' && res.data['ok']) {
-      const la = Number(res.data['lat']);
-      const lo = Number(res.data['lon']);
-      if (coordsInRange(la, lo)) {
-        setGeo(la, lo);
-        // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
-        const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
-        if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
-        setGeoInput('');
-        setGeoError('');
-        setGeoSheet(false);
-        showToast(t('manage.geo.link_applied'));
-        return;
-      }
-    }
-    const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
-    const errFields = d && d['fields'] && typeof d['fields'] === 'object' ? (d['fields'] as Record<string, unknown>) : null;
-    const key = errFields && typeof errFields['geo'] === 'string' ? String(errFields['geo']) : '';
-    setGeoError(key ? t(key) : errorTextFor(res as never));
-  }, [geoBusy, geoInput, initData, setGeo, showToast, errorTextFor]);
-
-  const applyRecent = useCallback(
-    (r: RecentPlace) => {
-      const la = Number(String(r.lat || '').replace(',', '.'));
-      const lo = Number(String(r.lon || '').replace(',', '.'));
-      if (r.lat !== '' && r.lon !== '' && coordsInRange(la, lo)) setGeo(la, lo);
-      setFields((prev) => ({ ...prev, address: r.address }));
-      closeGeoSheet();
     },
-    [setGeo, closeGeoSheet],
+    [setGeo],
+  );
+
+  const resolveOrgLink = useCallback(
+    async (raw: string) => {
+      const reqId = ++geoReqRef.current;
+      const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
+      if (geoReqRef.current !== reqId) return;
+      if (res.kind === 'json' && res.data['ok']) {
+        const la = Number(res.data['lat']);
+        const lo = Number(res.data['lon']);
+        if (coordsInRange(la, lo)) {
+          setGeo(la, lo);
+          setMapLink(equivLink(String(lo), String(la)));
+          // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
+          const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
+          if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
+          return;
+        }
+      }
+      // Не разобралось даже сервером — поле хранит ввод, статус покажет ошибку.
+    },
+    [initData, setGeo],
+  );
+
+  const onLinkPaste = useCallback(() => {
+    // Вставка: клиентский разбор — в onChange; здесь — добор сервером.
+    // Набор руками фокус не теряет: живого ререндера по буквам нет.
+    setTimeout(() => {
+      const el = document.getElementById('f-geolink') as HTMLInputElement | null;
+      const raw = (el ? el.value : mapLink).trim();
+      if (!raw) return;
+      setMapLink(raw);
+      if (parseYandexLink(raw)) return; // координаты уже встали в onChange
+      if (YANDEX_MAPS_RE.test(raw)) void resolveOrgLink(raw); // орг-ссылка — только сервер
+    }, 0);
+  }, [mapLink, resolveOrgLink]);
+
+  const setFormat = useCallback(
+    (nextOnline: boolean) => {
+      setOnline(nextOnline);
+      if (nextOnline) {
+        // Онлайн — только даты (решение владельца 2026-09-20): точку сносим,
+        // поле ссылки и адрес чистим, их ошибки снимаем.
+        setFields((prev) => ({ ...prev, address: '', lat: '', lon: '' }));
+        setMapLink('');
+        setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon' && e.field !== 'address'));
+      }
+    },
+    [],
   );
 
   // Копирование ссылки — тост «Скопировано» (эталон); если буфер недоступен,
   // показываем саму ссылку, чтобы её можно было скопировать руками.
   const copyInviteLink = useCallback(
     (url: string) => {
+      hapticImpact('light');
       if (!navigator.clipboard || !navigator.clipboard.writeText) {
         showToast(url);
         return;
@@ -751,7 +841,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [showToast],
   );
 
-  // W36: список контролёров ивента. Ответ staff_* всегда несёт `staff`
+  // W36: список контролёров события. Ответ staff_* всегда несёт `staff`
   // (готовые строки для показа) — им и обновляем состояние, без перезапроса.
   const loadStaff = useCallback(async () => {
     const res = await postJson(MANAGE_API, { initData, action: 'staff_list', eventId });
@@ -760,12 +850,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [eventId, initData]);
 
-  const addStaff = useCallback(async (id?: string) => {
-    if (staffBusy) return;
-    // W44: из шита поиска приходит готовый telegram_id кандидата; запись идёт
-    // тем же staff_add — решение и запись только по telegram_id (DAT-1).
-    const target = (id === undefined ? staffIdInput : id).trim();
-    if (target === '') return;
+  // W55: добавление — только по telegram_id кандидата (DAT-1). Логин
+  // резолвится в addByLogin точным совпадением username; цифры ID больше
+  // не принимаем (вердикт владельца 2026-09-19).
+  const addStaff = useCallback(async (telegramId: string) => {
+    const target = telegramId.trim();
+    if (staffBusy || target === '') return;
     setStaffFieldError('');
     setStaffResult('');
     setStaffBusy(true);
@@ -775,29 +865,60 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const d = res.data as Record<string, unknown>;
       if (d['ok']) {
         if (Array.isArray(d['staff'])) setStaffItems(d['staff'] as StaffItem[]);
-        if (id === undefined) setStaffIdInput('');
-        else {
-          // Добавление из поиска: шит закрываем, итог — строкой в секции.
-          setSearchSheet(false);
-          setSearchQuery('');
-          setCandidates([]);
-        }
+        setSearchQuery('');
+        setCandidates([]);
         setStaffResult(typeof d['text'] === 'string' ? String(d['text']) : '');
         return;
       }
       if (d['error'] === 'validation') {
         const errs2 = (d['fields'] as Record<string, unknown>) || {};
         const key = errs2['telegram_id'] ? String(errs2['telegram_id']) : 'manage.err.bad_telegram_id';
+        hapticNotification('error');
         setStaffFieldError(t(key));
         return;
       }
     }
+    hapticNotification('error');
     setStaffResult(errorTextFor(res as never));
-  }, [eventId, initData, staffBusy, staffIdInput, errorTextFor]);
+  }, [eventId, initData, staffBusy, errorTextFor]);
 
-  // W44: поиск кандидатов (manage-api action staff_search). Сервер отдаёт
-  // только совпадения (топ-20); запрос короче 2 символов не отправляем вовсе —
-  // базу без запроса не светим (решение при взятии пакета).
+  const normLogin = (s: string): string => s.trim().replace(/^@+/, '').toLowerCase();
+
+  // W55: кнопка «Добавить» при вводе: точный логин среди кандидатов (уже
+  // загруженных или свежим запросом) → addStaff; иначе — login_not_found.
+  const addByLogin = useCallback(async () => {
+    const login = normLogin(searchQuery);
+    if (staffBusy || searchBusy || login === '') return;
+    const matchIn = (list: StaffCandidate[]): StaffCandidate | undefined =>
+      list.find((c) => c.username.replace(/^@/, '').toLowerCase() === login);
+    const loaded = matchIn(candidates);
+    if (loaded) {
+      void addStaff(loaded.telegram_id);
+      return;
+    }
+    setSearchBusy(true);
+    const res = await postJson(MANAGE_API, { initData, action: 'staff_search', eventId, query: searchQuery.trim() });
+    setSearchBusy(false);
+    let list: StaffCandidate[] = [];
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && Array.isArray(d['candidates'])) {
+        list = d['candidates'] as StaffCandidate[];
+        setCandidates(list);
+      }
+    }
+    const hit = matchIn(list);
+    if (hit) {
+      void addStaff(hit.telegram_id);
+      return;
+    }
+    hapticNotification('error');
+    setStaffFieldError(t('manage.staff.login_not_found'));
+  }, [searchQuery, candidates, eventId, initData, staffBusy, searchBusy, addStaff]);
+
+  // W55: живой инлайн-поиск с дебаунсом — отдельный запрос на каждое
+  // нажатие не шлём. Запрос короче 2 символов не отправляем вовсе —
+  // базу без запроса не светим (решение W44, сохранено).
   const searchStaff = useCallback(async (q: string) => {
     const query = q.trim();
     if (query.length < 2 || staffBusy || searchBusy) {
@@ -817,16 +938,15 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     setCandidates([]);
   }, [eventId, initData, staffBusy, searchBusy]);
 
-  // W44: живой поиск с дебаунсом — отдельный запрос на каждое нажатие не шлём.
+  // W55: живой инлайн-поиск с дебаунсом — запрос уходит из секции, без шита.
   useEffect(() => {
-    if (!searchSheet) return;
     if (searchQuery.trim().length < 2) {
       setCandidates([]);
       return;
     }
     const timer = window.setTimeout(() => void searchStaff(searchQuery), 400);
     return () => window.clearTimeout(timer);
-  }, [searchSheet, searchQuery, searchStaff]);
+  }, [searchQuery, searchStaff]);
 
   const revokeStaff = useCallback(
     async (id: string) => {
@@ -844,12 +964,33 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           return;
         }
       }
+      hapticNotification('error');
       setStaffResult(errorTextFor(res as never));
     },
     [eventId, initData, staffBusy, errorTextFor],
   );
 
-  // W13: участники ивента. Ответ всегда несёт counters+rows+csv+json —
+  // W10 (OWN-14): создать одноразовую ссылку-инвайт на это событие.
+  // Сервер (staff-invite) проверяет initData и права staff+чаптер, кладёт
+  // sha256 токена в staff_invites и отдаёт ссылку ?start=s<eventId>-<token>.
+  const createStaffInvite = useCallback(async () => {
+    if (inviteBusy || eventId === '') return;
+    setStaffFieldError('');
+    setInviteBusy(true);
+    const res = await postJson(STAFF_INVITE_API, { initData, eventId });
+    setInviteBusy(false);
+    if (res.kind === 'json') {
+      const d = res.data as Record<string, unknown>;
+      if (d['ok'] && typeof d['inviteLink'] === 'string' && String(d['inviteLink']) !== '') {
+        setStaffInviteUrl(String(d['inviteLink']));
+        return;
+      }
+    }
+    hapticNotification('error');
+    setStaffResult(errorTextFor(res as never));
+  }, [eventId, initData, inviteBusy, errorTextFor]);
+
+  // W13: участники события. Ответ всегда несёт counters+rows+csv+json —
   // ими и обновляем состояние, без перезапроса (как staff_list у W36).
   const loadParts = useCallback(async () => {
     setPartsError('');
@@ -858,7 +999,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const d = res.data as Record<string, unknown>;
       if (d['ok'] && d['counters'] && Array.isArray(d['rows'])) {
         setParts({
-          counters: d['counters'] as { registered: number; checked_in: number; cancelled: number },
+          counters: d['counters'] as { registered: number; checked_in: number; cancelled: number; all_consent: number },
           rows: d['rows'] as PartRow[],
           csv: typeof d['csv'] === 'string' ? String(d['csv']) : '',
           json: typeof d['json'] === 'string' ? String(d['json']) : '[]',
@@ -866,10 +1007,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
     }
+    hapticNotification('error');
     setPartsError(errorTextFor(res as never));
   }, [eventId, initData, errorTextFor]);
 
-  // W45 (Q53): отзывы ивента — один запрос, без срезов (список обычно
+  // W45 (Q53): отзывы события — один запрос, без срезов (список обычно
   // короткий); average уже посчитан сервером.
   const loadFeedback = useCallback(async () => {
     setFeedbackError('');
@@ -885,6 +1027,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         return;
       }
     }
+    hapticNotification('error');
     setFeedbackError(errorTextFor(res as never));
   }, [eventId, initData, errorTextFor]);
 
@@ -938,54 +1081,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     return i >= 0 ? s.slice(i + 1) : s;
   }, []);
 
-  // locate setup
-  useEffect(() => {
-    if (!dictLoaded) return;
-    const tg2 = getTelegram();
-    const lm = tg2?.LocationManager;
-    if (lm && typeof lm.init === 'function') {
-      setLocateVisible(true);
-    } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      setLocateVisible(true);
-    } else {
-      setLocateVisible(false);
-    }
-  }, [dictLoaded]);
-
-  // Отказ/недоступность геолокации не оставляем молча (дизайн-ревью W42,
-  // круг 4): «кнопка не работает» — худший из возможных исходов.
-  const handleLocate = useCallback(() => {
-    const tg2 = getTelegram();
-    const lm = tg2?.LocationManager;
-    if (lm && typeof lm.init === 'function') {
-      try {
-        lm.init(() => {
-          if (!lm.isLocationAvailable || (!lm.isAccessGranted && lm.isAccessRequested)) {
-            showToast(t('manage.geo.locate_failed'));
-            if (typeof lm.openSettings === 'function') lm.openSettings();
-            return;
-          }
-          lm.getLocation((loc) => {
-            if (loc && typeof loc.latitude === 'number') setGeo(loc.latitude, loc.longitude);
-            else showToast(t('manage.geo.locate_failed'));
-          });
-        });
-      } catch {
-        showToast(t('manage.geo.locate_failed'));
-      }
-      return;
-    }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setGeo(pos.coords.latitude, pos.coords.longitude),
-        () => showToast(t('manage.geo.locate_failed')),
-        { timeout: 10000 },
-      );
-      return;
-    }
-    showToast(t('manage.geo.locate_failed'));
-  }, [setGeo, showToast]);
-
   // Подтверждение выхода заменяет содержимое — наверх.
   useEffect(() => {
     if (confirmExit) window.scrollTo(0, 0);
@@ -1010,7 +1105,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setDictLoaded(true);
       const isEdit = Boolean(propEventId);
       const key = isEdit ? 'manage.title.edit' : 'manage.list.title';
-      const tt = d[key] || (isEdit ? 'Правка ивента' : 'Ивенты');
+      const tt = d[key] || (isEdit ? 'Правка события' : 'События');
       setTitleText(tt);
       document.title = t(key);
 
@@ -1018,11 +1113,16 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         showLoadFail(t('manage.err.not_in_telegram'));
         return;
       }
-      if (propEventId) {
+      if (propEventId === 'new') {
+        // Вердикт W49 (W50): создание — из чата сразу на форму, кнопки
+        // создания в списке нет. 'new' — не id события, а новая запись.
+        setEventId('');
+        startNew();
+      } else if (propEventId) {
         setEventId(propEventId);
         void load(propEventId);
       } else {
-        // W37: без :id — список ивентов чаптера, форма создания — по кнопке.
+        // W37: без :id — список событий чаптера, форма создания — по кнопке.
         setEventId('');
         setShowForm(false);
         setListLoaded(false);
@@ -1033,13 +1133,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propEventId]);
 
-  // W36: список контролёров — один раз на ивент: после загрузки формы и после
+  // W36: список контролёров — один раз на событие: после загрузки формы и после
   // создания (eventId появляется из ответа save). Ошибка загрузки списка форму
   // не трогает — секция останется пустой.
-  // W13: участники грузятся тем же жизненным циклом (один запрос на ивент).
+  // W13: участники грузятся тем же жизненным циклом (один запрос на событие).
   useEffect(() => {
     setStaffItems([]);
-    setStaffIdInput('');
+    setSearchQuery('');
+    setCandidates([]);
     setStaffFieldError('');
     setStaffResult('');
     setParts(null);
@@ -1054,42 +1155,53 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     }
   }, [showForm, eventId, initData, loadStaff, loadParts, loadFeedback]);
 
-  // W42: черновик создания — в localStorage, пока ивента нет на сервере.
+  // W42: черновик создания — в localStorage, пока события нет на сервере.
   useEffect(() => {
     if (!showForm || eventId || done) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ fields, step }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ fields, step, online, mapLink }));
     } catch {}
-  }, [showForm, eventId, done, fields, step]);
+  }, [showForm, eventId, done, fields, step, online, mapLink]);
 
-  // W42: недавние места — адреса своих ивентов из уже загруженного списка
-  // (сервер отдаёт address/lat/lon только для isAuthor-строк).
-  const recents = useMemo<RecentPlace[]>(() => {
-    const seen = new Set<string>();
-    const out: RecentPlace[] = [];
-    listItems
-      .filter((e) => e.isAuthor && String(e.address || '').trim() !== '')
-      .slice()
-      .sort((a, b) => {
-        const am = utcMs(a.starts_at);
-        const bm = utcMs(b.starts_at);
-        return (isFinite(bm) ? bm : 0) - (isFinite(am) ? am : 0);
-      })
-      .forEach((e) => {
-        const address = String(e.address || '').trim();
-        if (seen.has(address)) return;
-        seen.add(address);
-        out.push({ address, lat: String(e.lat || ''), lon: String(e.lon || '') });
-      });
-    return out.slice(0, 5);
-  }, [listItems]);
+  // W47: подтверждение закрытия Mini App — только пока на экране есть
+  // несохранённый черновик (создание) или несохранённые правки; после
+  // публикации/сохранения и на выходе без изменений выключается. Это не
+  // защита данных (черновик и так переживает закрытие), а защита от ощущения
+  // потери.
+  const draftTouched = useCallback(() => {
+    if (!eventId) {
+      if (step > 0 || online || mapLink.trim() !== '') return true;
+      return FIELDS.some((n) => String(fields[n] || '').trim() !== '');
+    }
+    return isDirty();
+  }, [eventId, step, online, mapLink, fields, isDirty]);
+
+  useEffect(() => {
+    setClosingConfirmation(showForm && !done && !confirmExit && draftTouched());
+  }, [showForm, done, confirmExit, draftTouched]);
+
+  // Уход со страницы не должен оставлять подтверждение включённым.
+  useEffect(() => () => setClosingConfirmation(false), []);
 
   const canPublish = !origStatus || origStatus === 'draft';
   const plate = plateFromLocal(fields['starts_at']);
+  // W74: дедлайн уже прошёл, а событие ещё не началось — предупреждаем, но
+  // сохранять не мешаем (закрыть регистрацию раньше — иногда осознанно).
+  // Даты формы — локальные («ташкентские») строки, поэтому через tashMs;
+  // саму формулу держит общий regDeadlinePassed.
+  const regDeadlinePast = regDeadlinePassed(tashMs(fields['reg_deadline_at']), tashMs(fields['starts_at']), Date.now());
+  // W53: таб рассылки — сегменты из загруженных участников (прототип
+  // renderBroadcastTab). W68 (#120): сегмент all_consent возвращён — счётчик
+  // «подписчиков анонсов» считает сервер (participants.counters.all_consent,
+  // глобальный, не по событию); в списке он первый, как в эталоне.
+  const bcastNoShow = parts ? parts.rows.filter((p) => p.status === 'registered' && p.checked_in_at === '').length : 0;
+  const bcastEndsMs = tashMs(fields['ends_at']);
+  const bcastNoShowLocked = !isFinite(bcastEndsMs) || bcastEndsMs > Date.now();
+  const bcastEndsWhen = endsWhen(fields['ends_at']);
   const previewStatus = origStatus || 'draft';
   const capLimit = capacityLimit(fields['capacity'], fields['overbook_pct']);
   // «Опубликовать» включена только на валидной форме — состояние эталона.
-  const publishReady = clientErrors(fields, true).length === 0;
+  const publishReady = clientErrors(fields, true, { online, mapLink }).length === 0;
 
   return (
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, paddingBottom: showForm ? 120 : 16 }}>
@@ -1120,12 +1232,8 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
       {dictLoaded && !eventId && !showForm && !showLoadfail && (
         <section id="events">
-          <div className="field actions" style={{ marginBottom: 14 }}>
-            <button type="button" className="btn btn-primary btn-lg" id="new-event" onClick={startNew}>
-              <Icon name="plus" />
-              {t('manage.btn.new')}
-            </button>
-          </div>
+          {/* Вердикт W49 (W50): кнопки создания в списке нет — создание
+              приходит из чата сразу на форму #/manage/new. */}
           {listLoaded && listItems.length === 0 && (
             <div className="empty-state" id="events-empty">
               <div className="empty-icon">
@@ -1139,7 +1247,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               {listItems.map((ev) => {
                 const p = utcToPlate(ev.starts_at);
                 const ms = utcMs(ev.starts_at);
-                const past = isFinite(ms) && ms < Date.now();
+                const now = Date.now();
+                const past = isFinite(ms) && ms < now;
+                // W74: «Регистрация закрыта» — опубликованное событие, у которого
+                // дедлайн прошёл, а начало ещё в будущем. Время считает общий
+                // regDeadlinePassed (UTC-мс из utcMs), `published` — гейт списка.
+                const regClosed = ev.status === 'published' && regDeadlinePassed(utcMs(ev.reg_deadline_at || ''), ms, now);
                 return (
                   <li key={ev.id}>
                     <a className={`event-card${past ? ' past' : ''}`} href={`#/manage/${ev.id}`}>
@@ -1151,12 +1264,47 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       <div className="event-body">
                         <div className="event-top">
                           <span className="event-status">{t(`status.${ev.status}`)}</span>
+                          {regClosed && (
+                            <span className="badge badge-warning" id={`reg-closed-${ev.id}`}>
+                              {t('manage.badge.reg_closed')}
+                            </span>
+                          )}
                           {ev.isAuthor && <span className="badge mono">{t('manage.list.author')}</span>}
                         </div>
                         <h3 className="event-title">{ev.title}</h3>
                         <div className="event-meta">
                           <span className="meta-item">{utcToTime(ev.starts_at)}</span>
                         </div>
+                        {/* W50 (вердикт W49): сканер — в строке списка, видно
+                            только контролёру (гейт — staffIds с сервера). */}
+                        {staffIds[ev.id] && !past && (
+                          <div className="app-actions" style={{ marginTop: 8 }}>
+                            <a
+                              className="btn btn-secondary"
+                              href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {t('menu.btn.scanner')}
+                            </a>
+                          </div>
+                        )}
+                        {/* W66 (OWN-4.1): удаление черновика — прямо из строки списка. */}
+                        {ev.status === 'draft' && (
+                          <div className="app-actions" style={{ marginTop: 8 }}>
+                            <button
+                              type="button"
+                              className="btn btn-destructive"
+                              id={`delete-${ev.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openDelete(ev.id, ev.title);
+                              }}
+                            >
+                              {t('manage.delete.btn')}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </a>
                   </li>
@@ -1169,14 +1317,78 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
       {showForm && (
         <section id="wizard">
-          {!confirmExit && (
+          {/* «К списку» — только правка: из создания убрано по решению владельца. */}
+          {!confirmExit && !!eventId && (
             <button type="button" className="btn btn-ghost btn-sm" id="back-to-list" onClick={backToList} style={{ marginBottom: 10 }}>
               <Icon name="arrow-left" />
               {t('manage.btn.back')}
             </button>
           )}
 
-          {confirmExit ? (
+          {/* W53: табы правки — как в эталоне (tabs-wrap/tabs-scroll/tabs).
+              Только при открытом событии; создание — визард без табов. */}
+          {showForm && eventId && (
+            <div className="tabs-wrap" id="manage-tabs">
+              <div className="tabs-scroll">
+                <div className="tabs" role="tablist">
+                  {(
+                    [
+                      ['event', t('proto.tab_event')],
+                      ['participants', t('owner.event.btn.participants')],
+                      ['broadcast', t('owner.event.btn.broadcast')],
+                      ['staff', t('manage.staff.title')],
+                    ] as [ManageTab, string][]
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={manageTab === key}
+                      className={`tab${manageTab === key ? ' active' : ''}`}
+                      id={`mtab-${key}`}
+                      onClick={() => {
+                        hapticImpact('light');
+                        setManageTab(key);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* W66 (OWN-4.1): «Удалить»/«Отменить» — на первом экране события,
+              а не на последнем шаге визарда (issue #118). */}
+          {eventId && manageTab === 'event' && !done && !confirmExit && (origStatus === 'draft' || origStatus === 'published') && (
+            <div className="app-actions" id="event-danger-actions" style={{ marginBottom: 12 }}>
+              {origStatus === 'draft' && (
+                <button
+                  type="button"
+                  className="btn btn-destructive"
+                  id="delete-event"
+                  disabled={busy}
+                  onClick={() => openDelete(eventId, fields['title'])}
+                >
+                  {t('manage.delete.btn')}
+                </button>
+              )}
+              {origStatus === 'published' && (
+                <button
+                  type="button"
+                  className="btn btn-destructive"
+                  id="cancel-event-top"
+                  disabled={busy}
+                  onClick={() => setCancelSheet(true)}
+                >
+                  {t('owner.event.btn.cancel_event')}
+                </button>
+              )}
+            </div>
+          )}
+
+          {(!eventId || manageTab === 'event') && (confirmExit ? (
             <div className="card result bad" id="exit-confirm">
               <p className="empty-heading">{t('manage.exit.confirm')}</p>
               <div className="chip-row" style={{ marginBottom: 0 }}>
@@ -1294,76 +1506,90 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
               {step === 1 && (
                 <div className="form-section">
                   <div className="field">
-                    <label className="label" htmlFor="f-address">
-                      {t('field.address')}
-                    </label>
-                    <input
-                      className={`input ${fieldError('address') ? 'error' : ''}`}
-                      id="f-address"
-                      name="address"
-                      maxLength={300}
-                      autoComplete="street-address"
-                      value={fields['address']}
-                      onChange={(e) => setField('address', e.target.value)}
-                    />
-                    <p className="helper">{t('manage.hint.address')}</p>
-                    {fieldError('address') && (
-                      <p className="helper error" id="e-address">
-                        {fieldError('address')}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="field">
-                    <span className="label">{t('field.geo')}</span>
-                    <div className="chip-row">
+                    <span className="label">{t('manage.geo.format')}</span>
+                    {/* Формат — первое поле шага (решение владельца 2026-09-20):
+                        онлайн — только даты, офлайн — адрес + ссылка. */}
+                    <div className="chip-row" role="group" aria-label={t('manage.geo.format')}>
                       <button
                         type="button"
-                        className="btn btn-outline"
-                        id="geo-link"
-                        onClick={() => {
-                          setGeoSheet(true);
-                          setGeoError('');
-                        }}
+                        className={`btn btn-secondary btn-sm${online ? ' active' : ''}`}
+                        aria-pressed={online}
+                        onClick={() => setFormat(true)}
                       >
-                        <Icon name="link" />
-                        {t('manage.geo.link')}
+                        {t('manage.geo.online')}
                       </button>
-                      {locateVisible && (
-                        <button type="button" className="btn btn-outline" id="locate" onClick={handleLocate}>
-                          <Icon name="navigation" />
-                          {t('manage.btn.locate')}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className={`btn btn-secondary btn-sm${!online ? ' active' : ''}`}
+                        aria-pressed={!online}
+                        onClick={() => setFormat(false)}
+                      >
+                        {t('manage.geo.offline')}
+                      </button>
                     </div>
-
-                    {fields['lat'] !== '' && fields['lon'] !== '' ? (
-                      <>
-                        <div className="loc-preview" aria-hidden="true">
-                          <div className="loc-grid" />
-                          <span className="loc-pin">
-                            <Icon name="map-pin" size={20} />
-                          </span>
-                        </div>
-                        <p className="helper" id="geo-coords">
-                          {t('manage.geo.coords', { lat: fmtCoord(fields['lat']), lon: fmtCoord(fields['lon']) })}
-                        </p>
-                        <a className="loc-link" id="geo-map" href={mapUrl(fields['lat'], fields['lon'])} target="_blank" rel="noreferrer">
-                          {t('event.card.btn_map')}
-                          <Icon name="external" size={14} />
-                        </a>
-                      </>
-                    ) : (
-                      <p className="helper" id="geo-none">
-                        {t('manage.geo.none')}
-                      </p>
-                    )}
-                    {fieldError('geo') && (
-                      <p className="helper error" id="e-geo">
-                        {fieldError('geo')}
-                      </p>
-                    )}
                   </div>
+
+                  {!online && (
+                    <>
+                      <div className="field">
+                        <label className="label" htmlFor="f-address">
+                          {t('field.address')}
+                        </label>
+                        <input
+                          className={`input ${fieldError('address') ? 'error' : ''}`}
+                          id="f-address"
+                          name="address"
+                          maxLength={300}
+                          autoComplete="street-address"
+                          value={fields['address']}
+                          onChange={(e) => setField('address', e.target.value)}
+                        />
+                        <p className="helper">{t('manage.hint.address')}</p>
+                        {fieldError('address') && (
+                          <p className="helper error" id="e-address">
+                            {fieldError('address')}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="field">
+                        <label className="label" htmlFor="f-geolink">
+                          {t('manage.geo.link')}
+                        </label>
+                        <input
+                          className={`input ${fieldError('geo') ? 'error' : ''}`}
+                          id="f-geolink"
+                          type="url"
+                          inputMode="url"
+                          autoComplete="off"
+                          placeholder={t('manage.geo.link_placeholder')}
+                          value={mapLink}
+                          onChange={(e) => onLinkChange(e.target.value)}
+                          onPaste={() => onLinkPaste()}
+                        />
+                        {(() => {
+                          // Ошибка валидации («Далее»/«Опубликовать») уже
+                          // показана строкой ниже — не дублируем.
+                          if (fieldError('geo')) return null;
+                          const parsed = parseYandexLink(mapLink.trim());
+                          if (parsed) return null;
+                          if (mapLink.trim()) {
+                            return (
+                              <p className="helper error" id="e-geolink">
+                                {t('manage.geo.link_bad')}
+                              </p>
+                            );
+                          }
+                          return <p className="helper">{t('manage.geo.none')}</p>;
+                        })()}
+                        {fieldError('geo') && (
+                          <p className="helper error" id="e-geo">
+                            {fieldError('geo')}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   <div className="field">
                     <label className="label" htmlFor="f-starts_at">
@@ -1422,6 +1648,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     {fieldError('reg_deadline_at') && (
                       <p className="helper error" id="e-reg_deadline_at">
                         {fieldError('reg_deadline_at')}
+                      </p>
+                    )}
+                    {/* W74: предупреждение, не ошибка — сохранение не блокируем. */}
+                    {regDeadlinePast && (
+                      <p className="helper warning" id="w-reg_deadline_at">
+                        {t('manage.warn.deadline_past')}
                       </p>
                     )}
                   </div>
@@ -1560,18 +1792,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                         </section>
                       )}
 
-                      {origStatus === 'published' && (
-                        <button
-                          type="button"
-                          className="btn btn-destructive btn-block"
-                          id="cancel-event"
-                          disabled={busy}
-                          style={{ marginTop: 16 }}
-                          onClick={() => setCancelSheet(true)}
-                        >
-                          {t('owner.event.btn.cancel_event')}
-                        </button>
-                      )}
                     </>
                   )}
 
@@ -1581,7 +1801,36 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     </p>
                   )}
 
-              {eventId && (
+                </div>
+              )}
+
+              <div className="sticky-actions">
+                {step > 0 && (
+                  <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
+                    {t('common.btn.back')}
+                  </button>
+                )}
+                {step < LAST_STEP ? (
+                  <button type="button" className="btn btn-primary btn-lg" id="wizard-next" onClick={nextStep}>
+                    {t('manage.btn.next')}
+                  </button>
+                ) : canPublish ? (
+                  <button type="button" className="btn btn-primary btn-lg" id="publish" disabled={busy || !publishReady} onClick={publish}>
+                    {t('manage.btn.publish')}
+                  </button>
+                ) : origStatus === 'published' ? (
+                  <button type="button" className="btn btn-primary btn-lg" id="save-published" disabled={busy} onClick={() => void submit('published')}>
+                    {t('manage.btn.save')}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary btn-lg" id="save-status" disabled={busy} onClick={() => void submit(origStatus)}>
+                    {t('manage.btn.save')}
+                  </button>
+                )}
+              </div>
+            </>
+          ))}
+{eventId && manageTab === 'participants' && (
                 <section className="card" id="participants" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="parts-title">
                     {t('participants.title', { title: fields['title'] })}
@@ -1678,7 +1927,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   )}
                 </section>
               )}
-              {eventId && (
+              {eventId && manageTab === 'participants' && (
                 <section className="card" id="feedback" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="feedback-title">
                     {t('manage.feedback.title', { title: fields['title'] })}
@@ -1734,11 +1983,100 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                   )}
                 </section>
               )}
-              {eventId && (
+                            {eventId && manageTab === 'broadcast' && (
+                <>
+                  {/* W68 (#120, вариант A): рассылка остаётся в чате — таб
+                      показывает инструкцию в 3 шага, а не конструктор. */}
+                  <div className="card" id="bcast-hint" style={{ marginTop: 16, padding: 16 }}>
+                    <div className="card-title" style={{ padding: 0 }}>
+                      {t('bcast.howto.title')}
+                    </div>
+                    <p className="app-muted" style={{ margin: '8px 0 0' }}>
+                      {t('bcast.howto.step1')}
+                    </p>
+                    <p className="app-muted" style={{ margin: '4px 0 0' }}>
+                      {t('bcast.howto.step2')}
+                    </p>
+                    <p className="app-muted" style={{ margin: '4px 0 0' }}>
+                      {t('bcast.howto.step3')}
+                    </p>
+                  </div>
+                  {tg && (
+                    <div className="sheet-actions" style={{ marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-lg btn-block"
+                        id="bcast-open-chat"
+                        onClick={() => {
+                          try {
+                            tg.close();
+                          } catch {}
+                        }}
+                      >
+                        {t('proto.open_chat')}
+                      </button>
+                    </div>
+                  )}
+                  <section className="card list-card" id="bcast-segments" style={{ marginTop: 16 }}>
+                    <div className="card-title" id="bcast-segments-title" style={{ padding: '16px 16px 4px' }}>
+                      {t('bcast.ask.segment')}
+                    </div>
+                    {partsError ? (
+                      <>
+                        <p className="helper error" id="bcast-error" role="alert">
+                          {partsError}
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          id="bcast-retry"
+                          style={{ margin: '0 16px 16px' }}
+                          onClick={() => void loadParts()}
+                        >
+                          {t('manage.btn.retry')}
+                        </button>
+                      </>
+                    ) : !parts ? (
+                      <p className="empty-desc" id="bcast-loading" style={{ padding: 16 }}>
+                        {t('manage.loading')}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.all_consent')}</span>
+                          <span className="tail">{parts.counters.all_consent}</span>
+                        </div>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.registered')}</span>
+                          <span className="tail">{parts.counters.registered}</span>
+                        </div>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.checked_in')}</span>
+                          <span className="tail">{parts.counters.checked_in}</span>
+                        </div>
+                        <div className="list-row">
+                          <span className="body">{t('bcast.segment.no_show')}</span>
+                          <span className="tail">{bcastNoShowLocked ? '—' : bcastNoShow}</span>
+                          {bcastNoShowLocked && <Icon name="clock" size={15} />}
+                        </div>
+                        {bcastNoShowLocked && bcastEndsWhen !== '' && (
+                          <div className="helper" id="bcast-noshow-locked" style={{ padding: '4px 16px 12px' }}>
+                            {t('bcast.segment.no_show_locked', { when: bcastEndsWhen })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </section>
+                </>
+              )}
+{eventId && manageTab === 'staff' && (
                 <section className="card" id="staff" style={{ marginTop: 16 }}>
                   <h2 className="empty-heading" id="staff-title">
                     {t('manage.staff.title')}
                   </h2>
+                  <p className="app-muted" id="staff-hint" style={{ margin: '8px 0 0' }}>
+                    {t('proto.staff_hint')}
+                  </p>
                   {staffItems.length === 0 ? (
                     <p className="empty-desc" id="staff-empty">
                       {t('manage.staff.empty')}
@@ -1747,7 +2085,19 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     <ul id="staff-list" style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {staffItems.map((s) => (
                         <li key={s.telegram_id} data-telegram-id={s.telegram_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                          <span>{s.item}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                            <span className="avatar-initials" aria-hidden="true">
+                              {candidateInitials(s.name, s.username) || '?'}
+                            </span>
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: 'block', fontWeight: 500, overflowWrap: 'anywhere' }}>{s.name || s.item}</span>
+                              {s.sub !== '' && (
+                                <span className="app-muted" style={{ display: 'block', fontSize: 12 }}>
+                                  {s.sub}
+                                </span>
+                              )}
+                            </span>
+                          </span>
                           <button type="button" className="btn btn-outline btn-sm" disabled={staffBusy} onClick={() => void revokeStaff(s.telegram_id)}>
                             {t('manage.staff.btn.revoke')}
                           </button>
@@ -1755,27 +2105,35 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       ))}
                     </ul>
                   )}
-                  <div className="field">
-                    <label className="label" htmlFor="f-staff-id">
-                      {t('manage.staff.add_label')}
+                  {/* W55: ввод по логину инлайн (вердикт владельца 2026-09-19):
+                      поле + кнопка в секции, совпадения — списком ниже, шита нет. */}
+                  <div className="field" style={{ marginTop: 16 }}>
+                    <label className="label" htmlFor="f-staff-login">
+                      {t('manage.staff.login_label')}
                     </label>
                     <div className="row" style={{ display: 'flex', gap: 12 }}>
                       <input
                         className={`input ${staffFieldError ? 'error' : ''}`}
-                        id="f-staff-id"
-                        name="staff_telegram_id"
-                        inputMode="numeric"
-                        maxLength={16}
+                        id="f-staff-login"
+                        name="staff_username"
+                        type="text"
                         autoComplete="off"
-                        value={staffIdInput}
-                        onChange={(e) => setStaffIdInput(e.target.value)}
+                        maxLength={33}
+                        placeholder={t('manage.staff.login_placeholder')}
+                        value={searchQuery}
+                        disabled={staffBusy}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setStaffFieldError('');
+                        }}
                       />
-                      <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || staffIdInput.trim() === ''} onClick={() => void addStaff()}>
+                      <button type="button" className="btn btn-primary" id="staff-add" disabled={staffBusy || searchBusy || searchQuery.trim() === ''} onClick={() => void addByLogin()}>
                         {t('manage.staff.btn.add')}
                       </button>
                     </div>
+                    <p className="helper">{t('manage.staff.login_hint')}</p>
                     {staffFieldError && (
-                      <p className="helper error" id="e-staff-id">
+                      <p className="helper error" id="e-staff-login">
                         {staffFieldError}
                       </p>
                     )}
@@ -1785,105 +2143,81 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    id="staff-search-open"
-                    disabled={staffBusy}
-                    onClick={() => {
-                      setSearchQuery('');
-                      setCandidates([]);
-                      setSearchSheet(true);
-                    }}
-                  >
-                    {t('manage.staff.search_open')}
-                  </button>
+                  {searchQuery.trim().length >= 2 && (
+                    candidates.length === 0 && !searchBusy ? (
+                      <p className="empty-desc" id="staff-search-empty">
+                        {t('manage.staff.login_not_found')}
+                      </p>
+                    ) : (
+                      <ul id="staff-search-list" style={{ listStyle: 'none', margin: '12px 0 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {candidates.map((c) => (
+                          <li key={c.telegram_id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span className="avatar-initials" aria-hidden="true">
+                              {candidateInitials(c.name, c.username)}
+                            </span>
+                            <span style={{ flexGrow: 1, minWidth: 0 }}>
+                              <span style={{ display: 'block' }}>{c.name === '' ? `@${c.username.replace(/^@/, '')}` : c.name}</span>
+                              {c.username !== '' && (
+                                <span className="app-muted" style={{ display: 'block' }}>
+                                  @{c.username.replace(/^@/, '')}
+                                </span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              disabled={staffBusy}
+                              onClick={() => void addStaff(c.telegram_id)}
+                            >
+                              {t('manage.staff.btn.add')}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )
+                  )}
+                  {/* W10 (OWN-14): одноразовая ссылка-инвайт — альтернатива логину.
+                      Создаётся здесь, в Mini App; в чат карточка не приходит
+                      (вердикт владельца 2026-09-21, прототип). */}
+                  <div className="field" style={{ marginTop: 18 }}>
+                    {staffInviteUrl === '' ? (
+                      <button type="button" className="btn btn-outline" id="staff-invite" disabled={staffBusy || inviteBusy} onClick={() => void createStaffInvite()}>
+                        {t('staff.btn.invite')}
+                      </button>
+                    ) : (
+                      <>
+                        <label className="label" htmlFor="staff-invite-link">
+                          {t('staff.btn.invite')}
+                        </label>
+                        <input
+                          className="input"
+                          id="staff-invite-link"
+                          type="text"
+                          readOnly
+                          value={staffInviteUrl}
+                          onFocus={(e) => e.currentTarget.select()}
+                        />
+                        <p className="helper">{t('staff.invite.hint')}</p>
+                        <div className="row" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                          <button type="button" className="btn btn-primary" id="staff-invite-copy" onClick={() => copyInviteLink(staffInviteUrl)}>
+                            {t('manage.btn.copy')}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            id="staff-invite-share"
+                            onClick={() => window.open('https://t.me/share/url?url=' + encodeURIComponent(staffInviteUrl), '_blank', 'noopener')}
+                          >
+                            {t('manage.btn.share')}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </section>
               )}
-                </div>
-              )}
-
-              <div className="sticky-actions">
-                {step > 0 && (
-                  <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
-                    {t('common.btn.back')}
-                  </button>
-                )}
-                {step < LAST_STEP ? (
-                  <button type="button" className="btn btn-primary btn-lg" id="wizard-next" onClick={nextStep}>
-                    {t('manage.btn.next')}
-                  </button>
-                ) : canPublish ? (
-                  <button type="button" className="btn btn-primary btn-lg" id="publish" disabled={busy || !publishReady} onClick={publish}>
-                    {t('manage.btn.publish')}
-                  </button>
-                ) : origStatus === 'published' ? (
-                  <button type="button" className="btn btn-primary btn-lg" id="save-published" disabled={busy} onClick={() => void submit('published')}>
-                    {t('manage.btn.save')}
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn-primary btn-lg" id="save-status" disabled={busy} onClick={() => void submit(origStatus)}>
-                    {t('manage.btn.save')}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
         </section>
       )}
-
-      <Sheet open={geoSheet} title={t('manage.geo.link')} onClose={closeGeoSheet}>
-        <p className="app-muted">{t('manage.hint.geo')}</p>
-        <input
-          className={`input ${geoError ? 'error' : ''}`}
-          id="f-geo-link"
-          type="url"
-          inputMode="url"
-          autoComplete="off"
-          placeholder={t('manage.geo.link_placeholder')}
-          value={geoInput}
-          disabled={geoBusy}
-          onChange={(e) => {
-            setGeoInput(e.target.value);
-            setGeoError('');
-          }}
-        />
-        {geoError && (
-          <p className="helper error" id="e-geo-link" role="alert">
-            {geoError}
-          </p>
-        )}
-        {recents.length > 0 && (
-          <>
-            <div className="section-label">{t('manage.geo.recent')}</div>
-            <div className="sheet-actions" id="geo-recent">
-              {recents.map((r) => (
-                <button
-                  key={r.address}
-                  type="button"
-                  className="btn btn-outline"
-                  disabled={geoBusy}
-                  onClick={() => applyRecent(r)}
-                >
-                  <span className="chip-label">{r.address}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        <div className="sheet-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            id="geo-apply"
-            disabled={geoInput.trim() === '' || geoBusy}
-            aria-busy={geoBusy}
-            onClick={() => void applyGeoLink()}
-          >
-            {geoBusy ? t('manage.geo.searching') : t('manage.geo.link_apply')}
-          </button>
-        </div>
-      </Sheet>
 
       <Sheet open={cancelSheet} title={t('owner.event.btn.cancel_event')} onClose={() => setCancelSheet(false)}>
         <p className="app-muted">{t('manage.cancel.confirm', { title: fields['title'] })}</p>
@@ -1897,67 +2231,34 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         </div>
       </Sheet>
 
-      <Sheet open={searchSheet} title={t('manage.staff.search_title')} onClose={() => setSearchSheet(false)}>
-        <div className="field">
-          <label className="label" htmlFor="f-staff-search">
-            {t('manage.staff.search_label')}
-          </label>
-          <div className="row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ display: 'flex', flexShrink: 0 }} aria-hidden="true">
-              <Icon name="search" size={18} />
-            </span>
-            <input
-              className="input"
-              id="f-staff-search"
-              type="search"
-              autoComplete="off"
-              maxLength={100}
-              placeholder={t('manage.staff.search_placeholder')}
-              value={searchQuery}
-              disabled={staffBusy}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <p className="helper">{t('manage.staff.search_hint')}</p>
+      <Sheet
+        open={deleteSheet}
+        title={t('manage.delete.btn')}
+        onClose={() => {
+          setDeleteSheet(false);
+          setDeleteTarget(null);
+        }}
+      >
+        <p className="app-muted">{t('manage.delete.confirm', { title: deleteTarget?.title || fields['title'] })}</p>
+        <div className="sheet-actions">
+          <button type="button" className="btn btn-destructive" id="delete-yes" disabled={busy} onClick={() => void doDelete()}>
+            {t('manage.delete.btn')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            id="delete-no"
+            onClick={() => {
+              setDeleteSheet(false);
+              setDeleteTarget(null);
+            }}
+          >
+            {t('manage.delete.cancel')}
+          </button>
         </div>
-        {searchQuery.trim().length >= 2 && candidates.length === 0 && !searchBusy ? (
-          <p className="empty-desc" id="staff-search-empty">
-            {t('manage.staff.search_nobody')}
-          </p>
-        ) : (
-          <ul id="staff-search-list" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {candidates.map((c) => (
-              <li key={c.telegram_id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span className="avatar-initials" aria-hidden="true">
-                  {candidateInitials(c.name, c.username)}
-                </span>
-                <span style={{ flexGrow: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block' }}>{c.name === '' ? `@${c.username.replace(/^@/, '')}` : c.name}</span>
-                  {c.username !== '' && (
-                    <span className="app-muted" style={{ display: 'block' }}>
-                      @{c.username.replace(/^@/, '')}
-                    </span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={staffBusy}
-                  onClick={() => void addStaff(c.telegram_id)}
-                >
-                  {t('manage.staff.btn.add')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
       </Sheet>
 
-      {toast && (
-        <div className="toast show" id="toast" role="status">
-          {toast}
-        </div>
-      )}
+      {toast && <Toast text={toast} />}
     </main>
   );
 }

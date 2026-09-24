@@ -33,7 +33,7 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 задокументированное отдельным эталоном. Шаги с `texts` есть у флоу:
 `checkin-api`, `manage-api`, `menu`,
 `my-qr-api`, `reg-afterword`, `reg-api`, `reg-consent-mkt`,
-`reg-consent-pdn`, `reg-start` (полнота — по закоммиченному экспорту
+`reg-consent-pdn`, `reg-start`, `reminders` (полнота — по закоммиченному экспорту
 `flows/*.json`); список шагов каждого — в его карточке `catalog/flows/*.md`.
 
 **До W26 (историческая привязка к удалённым флоу, не текущая спека):**
@@ -60,7 +60,7 @@ ru-texts:                                      CODE(texts,   keys)  →  {texts,
 | `varsByKey` | подстановки, перекрывающие общие для конкретного ключа | нет |
 
 `varsByKey` обязателен там, где **одно и то же** имя значит разное: в карточке
-ивента `{when}` есть и у `event.card.when`, и у `.ends`, и у `.deadline`.
+события `{when}` есть и у `event.card.when`, и у `.ends`, и у `.deadline`.
 
 **`keys` можно оставить динамическим.** В `registration/step_11` он вычисляется
 из причины отказа; поэтому во вход положено надмножество — все пять причин.
@@ -101,7 +101,7 @@ export const code = async (inputs) => {
   const varsByKey = obj(inputs.varsByKey);
 
   // Подстановки для конкретного ключа перекрывают общие: одно и то же имя ({when})
-  // в разных ключах карточки ивента означает разное время.
+  // в разных ключах карточки события означает разное время.
   const substFor = (key, tpl) => {
     const local = obj(varsByKey[key]);
     return String(tpl).replace(/\{([A-Za-z0-9_.]+)\}/g, (m, name) => {

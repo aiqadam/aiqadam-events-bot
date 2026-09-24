@@ -4,7 +4,11 @@
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`,
   когда `session.step = await_marketing`
 - **Назначение**: отдельное согласие на рассылку (PAR-2, необязательное).
-  Любой ответ оставляет регистрацию в силе, закрывает сессию и выдаёт **билет отдельным сообщением** (телефон не спрашивается с 2026-09-14).
+  Любой ответ закрывает сессию. Если черновик несёт `eventId` — регистрация
+  остаётся в силе, выдаётся **билет отдельным сообщением** (телефон не
+  спрашивается с 2026-09-14). Если `eventId` пуст (ADR-0034: онбординг без
+  диплинка) — регистрации не было, вторым сообщением уходит кнопка каталога
+  Mini App вместо билета.
 - **Flow ID (MCP)**: `3gLF6TcbpFObHONATQ64N` · **externalId**: `JH42q9BkKDYUti7leKJrC`
 
 ## Шаги
@@ -16,11 +20,11 @@
 | step_2 | CODE «decide yes/no + разбор draft» | `isYes`, `cardMessageId`, `eventId`, `utm` |
 | step_3 | `tables-upsert-records users` (`continueOnFailure`) | `consent_marketing = true/false` + отметка времени **всегда** |
 | step_6 | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
-| step_4 | `tables-find-records events` (`continueOnFailure`) | ивент для финальной карточки (`title`, `starts_at`, `address`) |
-| step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic` |
+| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки: `title`, `starts_at`, `ends_at`, `address`, `lat`, `lon` (W76 — карта и календарь) |
+| step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`/`ticketReplyMarkup`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic`; заголовок карточки и содержимое второго сообщения зависят от `hasEvent = eventId !== ''`. W76: карточка несёт адрес и «Открыть на карте» (только при валидных координатах, не `(0,0)`), в билет добавлена кнопка «Добавить в календарь» |
 | step_7 | `edit_message_text` (`continueOnFailure`) | карточка → итог диалога, **кнопки сняты** |
 | step_8 (On failure) | `send_text_message` | фолбэк: новая карточка если редактирование не удалось |
-| step_9 | `send_text_message` | **билет** + кнопка `web_app` на `#/ticket?event_id=…` (SPA) |
+| step_9 | `send_text_message` | второе сообщение, `reply_markup` = `step_5['output'].ticketReplyMarkup`: билет + кнопка `web_app` на `#/ticket?event_id=…` (есть событие) или кнопка `web_app` на `#/events` (события нет, ADR-0034) |
 
 ## Зависимости
 
@@ -35,12 +39,20 @@
 - **`consent_pdn` этот флоу не трогает** (PAR-1/PAR-2).
 - **Билет уходит новым сообщением, а не редактированием карточки.** Правило ADR-0017: состояние диалога редактируется, факт, к которому вернутся, отправляется. Билет оказывается внизу ленты, а не наверху, где висит карточка начала диалога.
 - **У финального редактирования есть фолбэк** (`step_8`): `cardMessageId = 0` или удалённая карточка дают `400 «message to edit not found»`, шлём новую карточку. Это единственный фолбэк в этом флоу.
-- **Тексты — во входе `texts`** (ADR-0014); значения сверены с `i18n/ru.json`: `reg.done.header`, `reg.consent_marketing.saved_yes/no`, `ticket.header`, `ticket.hint`.
-- **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)):
-  `step_3`/`step_6`/`step_4` — `continueOnFailure`, без отдельной ветки отказа
+- **Тексты — во входе `texts`** (ADR-0014); значения сверены с `i18n/ru.json`: `reg.done.header`/`profile.saved.header` (заголовок карточки — по `hasEvent`), `reg.consent_marketing.saved_yes/no`, `ticket.header`, `ticket.hint`, `events.catalog.hint`, `menu.btn.events`.
+- **Без диплинка (ADR-0034) заголовок — «Профиль сохранён», не «Вы
+  зарегистрированы»**: `eventId` в черновике сессии пуст, регистрации не
+  было (её создавать было не на что — см. `catalog/flows/reg-profile.md`,
+  ветка `finish_no_event`). Кнопка «Открыть билет» здесь не имеет смысла
+  ни при каких данных: заменена кнопкой каталога `#/events` тем же кодом,
+  что выбирает и заголовок.
+- **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)):  `step_3`/`step_6`/`step_4` — `continueOnFailure`, без отдельной ветки отказа
   на каждом. `step_5` читает их `error` и при любом сбое отдаёт `common.err.generic`
   и в карточку, и в билет (не только карточку — иначе билет пришёл бы валидным
   текстом на несохранённое состояние). Регистрация уже создана в `reg-consent-pdn`,
   поэтому кнопка «Открыть билет» под текстом ошибки не ломает IDOR — билет
   по-прежнему проверяет `initData` и факт регистрации на сервере, а не то,
   что показал этот текст.
+- **Тексты `step_5` (W76):** в карточке — адрес и «Открыть на карте» (ссылка
+  только при валидных координатах, не `(0,0)`), в билете — вторая кнопка
+  «Добавить в календарь» (`event.card.btn_calendar`, ссылка Google Calendar).

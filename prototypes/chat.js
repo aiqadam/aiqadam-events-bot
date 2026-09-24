@@ -156,9 +156,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- демо-контролы (в шите обвязки, не на экране) ----------
   const quickIndex = {
-    guest: [['event', 'Карточка ивента'], ['consent-pdn', 'Согласие на данные'], ['consent-mkt', 'Согласие на анонсы'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
-    owner: [['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка ивента'], ['broadcast', 'Рассылка'], ['staff-invite', 'Инвайт контролёра']],
-    controller: [['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
+    guest: [['event', 'Карточка события'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['review', 'Всё верно?'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
+    owner: [['ob-event', 'Онбординг'], ['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка события'], ['broadcast', 'Рассылка']],
+    controller: [['ob-event', 'Онбординг'], ['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
   };
 
   function renderDemo() {
@@ -178,7 +178,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     await PROTO.loadI18n();
     PROTO.initChrome({ title: 'Мок чата · ' + scenarioId, dockLabel: 'Сценарий' });
     const eventParam = params.get('event') || '';
-    // Открыли чат без ивента — начинаем с главного, а не с прошлого выбора.
+    // Открыли чат без события — начинаем с главного, а не с прошлого выбора.
     PROTO.setChatEvent(eventParam);
     scenarios = PROTO.buildScenarios({ eventId: eventParam });
     sc = scenarios[scenarioId] || scenarios.guest;

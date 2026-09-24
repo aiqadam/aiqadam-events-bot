@@ -13,7 +13,7 @@ type Route =
   | { name: 'ticket'; eventId: string }
   | { name: 'scan'; eventId: string }
   | { name: 'manage'; eventId: string }
-  | { name: 'events'; tab: 'mine' | 'upcoming' | 'past' }
+  | { name: 'events'; tab: 'mine' | 'upcoming' | 'past' | 'profile' }
   | { name: 'feedback'; eventId: string }
   | { name: 'notfound'; hash: string };
 
@@ -45,8 +45,9 @@ function parseHash(hash: string): Route {
   if (pathPart === '/events' || pathPart === '/events/') {
     // W38/W43: каталог; `?tab=past` открывает прошедшие, `?tab=mine` — «Мои билеты»,
     // без параметра — «Мои билеты» первым табом (вердикт W41, прототип).
+    // W50: четвёртый таб `profile` — правка профиля (PAR-8, ADR-0032).
     const q = search.get('tab');
-    const tab = q === 'past' ? 'past' : q === 'upcoming' ? 'upcoming' : 'mine';
+    const tab = q === 'past' ? 'past' : q === 'upcoming' ? 'upcoming' : q === 'profile' ? 'profile' : 'mine';
     return { name: 'events', tab };
   }
   if (pathPart === '/feedback' || pathPart === '/feedback/') {
@@ -58,19 +59,40 @@ function parseHash(hash: string): Route {
   return { name: 'notfound', hash };
 }
 
-function useHash(): string {
-  const [hash, setHash] = useState(() => window.location.hash);
+// W70 (#122): роут SPA, который не является «не найдено» — точка, с которой
+// может начаться внутренний переход.
+function isAppRoute(r: Route): boolean {
+  return (
+    r.name === 'ticket' ||
+    r.name === 'scan' ||
+    r.name === 'manage' ||
+    r.name === 'events' ||
+    r.name === 'feedback'
+  );
+}
+
+// W70 (#122): кроме текущего роута помним, пришёл ли пользователь на него
+// внутренним переходом (hash сменился с одного роута SPA на другой), а не
+// кнопкой из чата. Экраны показывают «Назад» только в первом случае.
+function useRoute(): { hash: string; route: Route; fromApp: boolean } {
+  const [state, setState] = useState(() => ({ hash: window.location.hash, fromApp: false }));
   useEffect(() => {
-    const handler = () => setHash(window.location.hash);
+    const handler = () => {
+      setState((prev) => {
+        const nextHash = window.location.hash;
+        if (nextHash === prev.hash) return prev;
+        const fromApp = isAppRoute(parseHash(prev.hash)) && isAppRoute(parseHash(nextHash));
+        return { hash: nextHash, fromApp };
+      });
+    };
     window.addEventListener('hashchange', handler);
     return () => window.removeEventListener('hashchange', handler);
   }, []);
-  return hash;
+  return { hash: state.hash, route: parseHash(state.hash), fromApp: state.fromApp };
 }
 
 export default function App() {
-  const hash = useHash();
-  const route = parseHash(hash);
+  const { hash, route, fromApp } = useRoute();
 
   // Если пустой hash но есть search ?event_id — попробуем угадать (legacy ticket link)
   // Это не хэш-роут, но для совместимости покажем билет
@@ -121,11 +143,11 @@ export default function App() {
 
   return (
     <Suspense fallback={<p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>Загрузка…</p>}>
-      {route.name === 'ticket' && <Ticket eventId={route.eventId} />}
-      {route.name === 'scan' && <Scan eventId={route.eventId} />}
+      {route.name === 'ticket' && <Ticket eventId={route.eventId} fromApp={fromApp} />}
+      {route.name === 'scan' && <Scan eventId={route.eventId} fromApp={fromApp} />}
       {route.name === 'manage' && <Manage eventId={route.eventId} />}
       {route.name === 'events' && <Events tab={route.tab} />}
-      {route.name === 'feedback' && <Feedback eventId={route.eventId} />}
+      {route.name === 'feedback' && <Feedback eventId={route.eventId} fromApp={fromApp} />}
     </Suspense>
   );
 }

@@ -6,6 +6,24 @@
    длины — по 4-пиксельной шкале бренда, ни одного литерала цвета и шрифта. */
 [hidden] { display: none !important; }
 
+/* Safe Area (W48, Q48): `--tg-content-safe-area-inset-*` — зона под собственной
+   шапкой Telegram (три точки, имя приложения), отдаёт сам клиент как CSS-переменную
+   на `:root` (Bot API 8.0+, старые клиенты — переменная не определена, `max()`
+   тогда берёт `env()`). `env(safe-area-inset-*)` — вырезы/жестовая зона устройства,
+   работает только с `viewport-fit=cover` в `<meta name="viewport">` (без него всегда 0).
+   Правится в одном месте (`#root` — верх, `.sticky-actions`/`.app-sheet-panel` — низ,
+   там же уже жил `env()` до этого), не по роутам. */
+:root {
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px));
+}
+#root { padding-top: var(--safe-top); }
+
+/* Зум запрещён на всех экранах (решение владельца): viewport выше режет
+   pinch в WebView, `touch-action` без `pinch-zoom` — жест щипка и дабл-тап
+   на уровне CSS. Скролл (`pan-x pan-y`) сохранён. */
+html, body { touch-action: pan-x pan-y; }
+
 /* Плита QR принудительно в светлой теме бренда. Правило бренда, тот же
    раздел «Event stands → QR codes»: «Dark code on light ground. Never teal.»
    padding 32px — зона покоя «four modules, always» — правило бренда, не наше. */
@@ -29,11 +47,45 @@
 .result.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
 .result .empty-heading { color: var(--foreground); }
 
+/* W74: предупреждение под полем — тон warning, не ошибка: сохранение не
+   блокируется, поэтому красный цвет ошибки здесь был бы неверен. */
+.helper.warning { color: var(--warning); }
+
 /* Ticket card error — так же как result bad */
 .ticket-card.error { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
 .ticket-card.error .msg { color: var(--foreground); }
 
-/* W42: визард формы ивента — только раскладка, цвет и шрифт токенами бренда. */
+/* W51: четыре таба каталога не умещаются в 360px — едут в две строки.
+   Решение эталона (`.tabs-scroll` в proto.css): горизонтальный скролл,
+   табы в одну строку. Только раскладка, вид табов брендовый. */
+.tabs { overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs .tab { white-space: nowrap; flex: 0 0 auto; }
+/* W53: обёртка табов правки — как в эталоне (`.tabs-wrap`/`.tabs-scroll`
+   в proto.css): скролл в одну строку. Только раскладка и токен границы. */
+.tabs-wrap { border-bottom: 1px solid var(--border); margin: 0 -16px 12px; padding: 0 16px; }
+.tabs-scroll { overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px; }
+.tabs-scroll .tabs { border-bottom: 0; min-width: max-content; }
+.tabs-scroll .tab { padding: 0 12px; }
+/* W71 (#123): в узком окне (~380px) табы умещаются без горизонтальной прокрутки.
+   Ширину окна Mini App задать нельзя, поэтому табы сжимаются равномерно;
+   overflow-x: auto выше остаётся фолбэком для совсем узких окон.
+   `:not(#parts-filter)` — фильтр участников переиспользует .tabs/.tab со
+   счётчиками (в эталоне это .segmented); его сжимать нельзя — подписи
+   наложатся. */
+@media (max-width: 400px) {
+  .tabs:not(#parts-filter) .tab { flex: 1 1 0; min-width: 0; padding: 0 6px; justify-content: center; }
+  .tabs-scroll .tabs { min-width: 0; }
+  .tabs-scroll .tab { padding: 0 6px; }
+}
+/* W53: строки сегментов рассылки — как в эталоне (`.list-card`/`.list-row`
+   в proto.css). Только раскладка и токены. */
+.list-card { padding: 0; overflow: hidden; }
+.list-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.list-row:last-child { border-bottom: 0; }
+.list-row .body { flex: 1; min-width: 0; }
+.list-row .tail { margin-left: auto; flex-shrink: 0; font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground); }
+/* W42: визард формы события — только раскладка, цвет и шрифт токенами бренда. */
 .form-section .field { margin-bottom: 16px; }
 .wizard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .wizard-step-label { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
@@ -46,10 +98,16 @@
 .step-dot.warn { background: var(--destructive); }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
 .chip-row .btn { max-width: 100%; min-width: 0; }
+/* W77: выбранный чип/формат — подсветка primary (эталон `.segmented .btn.active`). */
+.chip-row .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
 /* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
 .chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */
 .event-title { overflow-wrap: anywhere; }
+/* W74: в шапке карточки списка теперь может быть три подписи (статус, бейдж
+   «Регистрация закрыта», «Вы создали»). Бренд-ряд не переносится — разрешаем
+   перенос, иначе «Вы создали» уезжает за край. */
+.event-card .event-top { flex-wrap: wrap; }
 /* Плита даты — по высоте содержимого, как в эталоне. */
 .event-card .date-plate { align-self: start; }
 /* Афиша (W38): мета двумя строками — дата и адрес не слипаются (как .preview). */
@@ -73,7 +131,7 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 16px;
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 0 calc(12px + var(--safe-bottom));
   background: var(--card);
   border-top: 1px solid var(--border);
 }
@@ -95,7 +153,7 @@
   border-top: 1px solid var(--border);
   border-radius: 20px 20px 0 0;
   box-shadow: var(--shadow-lg);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--safe-bottom);
 }
 .app-sheet-grab { width: 36px; height: 4px; border-radius: 999px; background: var(--border); margin: 8px auto 0; flex-shrink: 0; }
 .app-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px 6px; }
@@ -108,6 +166,15 @@
 }
 .app-sheet-close:hover { background: var(--muted); color: var(--foreground); }
 .app-sheet-body { overflow-y: auto; padding: 4px 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+/* W51: длинный адрес в шите не должен резать вёрстку — дети шита сжимаются,
+   длинные строки переносятся (скрин: адрес обрезан краем экрана). */
+.app-sheet-body > * { min-width: 0; }
+.app-sheet-body .card-title, .app-sheet-body .app-muted { overflow-wrap: anywhere; }
+/* W51: контекст события над QR (прототип `.ticket-top` в proto.css) —
+   название, дата и адрес билета. Только раскладка и токены бренда. */
+.ticket-top { margin-bottom: 4px; }
+.ticket-event { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.ticket-when { font-size: 13px; color: var(--muted-foreground); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; overflow-wrap: anywhere; }
 .sheet-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 .sheet-actions .btn { width: 100%; min-width: 0; }
 .sheet-actions .chip-label { max-width: 100%; }
@@ -196,3 +263,45 @@
 /* Нативные контролы (календарь datetime-local) — в теме страницы. */
 html[data-theme='dark'] { color-scheme: dark; }
 html[data-theme='light'] { color-scheme: light; }
+
+/* W62: вердикт и состояние ошибки сканера, счётчик — перенос из прототипа
+   (`.verdict`/`.scan-state`/`.scan-progress` в proto.css). Только раскладка,
+   цвет и шрифт — токенами бренда. */
+.verdict {
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  background: var(--card);
+  box-shadow: inset 0 4px 0 var(--border);
+}
+.verdict .verdict-icon {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.verdict.ok { border-color: var(--success); box-shadow: inset 0 4px 0 var(--success); }
+.verdict.ok .verdict-icon { background: color-mix(in oklch, var(--success) 16%, transparent); color: var(--success); }
+.verdict.warn { border-color: var(--warning); box-shadow: inset 0 4px 0 var(--warning); }
+.verdict.warn .verdict-icon { background: color-mix(in oklch, var(--warning) 18%, transparent); color: var(--warning); }
+.verdict.bad { border-color: var(--destructive); box-shadow: inset 0 4px 0 var(--destructive); }
+.verdict.bad .verdict-icon { background: color-mix(in oklch, var(--destructive) 16%, transparent); color: var(--destructive); }
+.verdict-text { font-family: var(--font-display); font-weight: 600; font-size: 18px; color: var(--foreground); line-height: 1.25; }
+.verdict-sub { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+.scan-state {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 32px 16px 8px; text-align: center;
+}
+.scan-state .state-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.scan-state .state-title {
+  font-family: var(--font-display); font-weight: 600; font-size: 17px; line-height: 1.3;
+  max-width: 300px;
+}
+.scan-progress { margin-top: 4px; align-self: stretch; }
+.scan-progress-bar { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+.scan-progress-fill { height: 100%; background: var(--primary); border-radius: 999px; }
+.scan-progress-label { font-size: 12px; color: var(--muted-foreground); margin-top: 6px; text-align: center; }

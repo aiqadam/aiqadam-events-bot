@@ -4,7 +4,7 @@
   "connectionIds": [],
   "displayName": "reg-api",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "catch_webhook",
@@ -27,19 +27,132 @@
                   "displayName": "read event",
                   "name": "step_8",
                   "nextAction": {
-                    "displayName": "decide",
-                    "name": "step_9",
+                    "displayName": "read user profile",
+                    "name": "step_17",
                     "nextAction": {
-                      "children": [
-                        {
-                          "displayName": "create or reactivate registration",
-                          "name": "step_11",
-                          "nextAction": {
-                            "displayName": "save consents",
-                            "name": "step_12",
+                      "displayName": "decide",
+                      "name": "step_9",
+                      "nextAction": {
+                        "children": [
+                          {
+                            "displayName": "create or reactivate registration",
+                            "name": "step_11",
                             "nextAction": {
-                              "displayName": "respond (registered)",
-                              "name": "step_13",
+                              "displayName": "save consents (skipped, W60 — profileDone уже несёт согласия)",
+                              "name": "step_12",
+                              "nextAction": {
+                                "displayName": "respond (registered)",
+                                "name": "step_13",
+                                "settings": {
+                                  "actionName": "return_response",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "fields": {
+                                      "body": {
+                                        "error": "{{step_9['output'].error}}",
+                                        "eventId": "{{step_9['output'].eventId}}",
+                                        "mine": "{{step_9['output'].mine}}",
+                                        "ok": "{{step_9['output'].ok}}",
+                                        "outcome": "{{step_9['output'].outcome}}",
+                                        "reason": "{{step_9['output'].reason}}",
+                                        "text": "{{step_9['output'].text}}"
+                                      },
+                                      "headers": {},
+                                      "status": "{{step_9['output'].httpStatus}}"
+                                    },
+                                    "respond": "stop",
+                                    "responseType": "json"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-webhook",
+                                  "qadamVersion": "0.1.35"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "actionName": "tables-upsert-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "key_columns": [
+                                    "JtylZU291K7TuMn9c9F2t"
+                                  ],
+                                  "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                                  "values": {
+                                    "values": [
+                                      {
+                                        "3t75byELQCZ1ejfTADsvp": "{{step_2['output'].now}}",
+                                        "FpWznk9Fgl8wUXXUKolRu": "{{step_9['output'].consentValue}}",
+                                        "JtylZU291K7TuMn9c9F2t": "{{step_2['output'].telegramId}}",
+                                        "KtdV8plfevjdnKlLko08q": "true",
+                                        "LeY6BeUOzWIyEtUFfKNbI": "{{step_2['output'].now}}"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.4.5"
+                              },
+                              "skip": true,
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-upsert-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "key_columns": [
+                                  "qQPYl9c0ew6n8w2CGYZII",
+                                  "mVfpZFCwAZskWXNT7iCuI"
+                                ],
+                                "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
+                                "values": {
+                                  "values": [
+                                    {
+                                      "BGTxyxBZqagpqUB3UqXta": "{{step_9['output'].regId}}",
+                                      "RZYFhQBQbSfNzIVEvmYgd": "{{step_2['output'].now}}",
+                                      "TZyqC63UAWrPbzxuf2q4w": "registered",
+                                      "mVfpZFCwAZskWXNT7iCuI": "{{step_2['output'].telegramId}}",
+                                      "qQPYl9c0ew6n8w2CGYZII": "{{step_9['output'].eventId}}"
+                                    }
+                                  ]
+                                }
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          {
+                            "displayName": "cancel registration",
+                            "name": "step_14",
+                            "nextAction": {
+                              "displayName": "respond (cancelled)",
+                              "name": "step_15",
                               "settings": {
                                 "actionName": "return_response",
                                 "errorHandlingOptions": {
@@ -86,17 +199,17 @@
                               },
                               "input": {
                                 "key_columns": [
-                                  "JtylZU291K7TuMn9c9F2t"
+                                  "qQPYl9c0ew6n8w2CGYZII",
+                                  "mVfpZFCwAZskWXNT7iCuI"
                                 ],
-                                "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                                "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
                                 "values": {
                                   "values": [
                                     {
-                                      "3t75byELQCZ1ejfTADsvp": "{{step_2['output'].now}}",
-                                      "FpWznk9Fgl8wUXXUKolRu": "{{step_9['output'].consentValue}}",
-                                      "JtylZU291K7TuMn9c9F2t": "{{step_2['output'].telegramId}}",
-                                      "KtdV8plfevjdnKlLko08q": "true",
-                                      "LeY6BeUOzWIyEtUFfKNbI": "{{step_2['output'].now}}"
+                                      "OlFAWgVQmrqhqxlraOPOZ": "{{step_2['output'].now}}",
+                                      "TZyqC63UAWrPbzxuf2q4w": "cancelled",
+                                      "mVfpZFCwAZskWXNT7iCuI": "{{step_2['output'].telegramId}}",
+                                      "qQPYl9c0ew6n8w2CGYZII": "{{step_9['output'].eventId}}"
                                     }
                                   ]
                                 }
@@ -108,47 +221,667 @@
                             "type": "PIECE",
                             "valid": true
                           },
-                          "settings": {
-                            "actionName": "tables-upsert-records",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
+                          {
+                            "displayName": "create registration (with profile)",
+                            "name": "step_18",
+                            "nextAction": {
+                              "displayName": "save consents + profile",
+                              "name": "step_19",
+                              "nextAction": {
+                                "displayName": "respond (registered with profile)",
+                                "name": "step_20",
+                                "settings": {
+                                  "actionName": "return_response",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "fields": {
+                                      "body": {
+                                        "consentMarketing": "{{step_9['output'].consentMarketing}}",
+                                        "error": "{{step_9['output'].error}}",
+                                        "eventId": "{{step_9['output'].eventId}}",
+                                        "mine": "{{step_9['output'].mine}}",
+                                        "ok": "{{step_9['output'].ok}}",
+                                        "outcome": "{{step_9['output'].outcome}}",
+                                        "pdnDone": "{{step_9['output'].pdnDone}}",
+                                        "profile": "{{step_9['output'].profile}}",
+                                        "reason": "{{step_9['output'].reason}}",
+                                        "text": "{{step_9['output'].text}}"
+                                      },
+                                      "headers": {},
+                                      "status": "{{step_9['output'].httpStatus}}"
+                                    },
+                                    "respond": "stop",
+                                    "responseType": "json"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-webhook",
+                                  "qadamVersion": "0.1.35"
+                                },
+                                "type": "PIECE",
+                                "valid": true
                               },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "key_columns": [
-                                "qQPYl9c0ew6n8w2CGYZII",
-                                "mVfpZFCwAZskWXNT7iCuI"
-                              ],
-                              "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
-                              "values": {
-                                "values": [
-                                  {
-                                    "BGTxyxBZqagpqUB3UqXta": "{{step_9['output'].regId}}",
-                                    "RZYFhQBQbSfNzIVEvmYgd": "{{step_2['output'].now}}",
-                                    "TZyqC63UAWrPbzxuf2q4w": "registered",
-                                    "mVfpZFCwAZskWXNT7iCuI": "{{step_2['output'].telegramId}}",
-                                    "qQPYl9c0ew6n8w2CGYZII": "{{step_9['output'].eventId}}"
+                              "settings": {
+                                "actionName": "tables-upsert-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
                                   }
-                                ]
-                              }
+                                },
+                                "input": {
+                                  "key_columns": [
+                                    "JtylZU291K7TuMn9c9F2t"
+                                  ],
+                                  "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                                  "values": {
+                                    "values": [
+                                      {
+                                        "3t75byELQCZ1ejfTADsvp": "{{step_2['output'].now}}",
+                                        "EAlXy4XsXGAeM7UrS0TIQ": "{{step_2['output'].now}}",
+                                        "FpWznk9Fgl8wUXXUKolRu": "{{step_9['output'].consentValue}}",
+                                        "JtylZU291K7TuMn9c9F2t": "{{step_2['output'].telegramId}}",
+                                        "KsKN4eTmjZN2IxrZxm5qZ": "{{step_9['output'].profile.last}}",
+                                        "KtdV8plfevjdnKlLko08q": "true",
+                                        "LeY6BeUOzWIyEtUFfKNbI": "{{step_2['output'].now}}",
+                                        "em7af2g9kyaNXC2tPNvXF": "{{step_9['output'].profile.first}}",
+                                        "p5TNNHUYCrHv3L6SWCRWb": "{{step_9['output'].profile.position}}",
+                                        "t89wutkSapoK3QKmZ0Vb8": "{{step_9['output'].profile.city}}",
+                                        "wz2jSqAxfldiP8b0YOokJ": "{{step_9['output'].profile.company}}"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.4.5"
+                              },
+                              "type": "PIECE",
+                              "valid": true
                             },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.4.5"
+                            "settings": {
+                              "actionName": "tables-upsert-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "key_columns": [
+                                  "qQPYl9c0ew6n8w2CGYZII",
+                                  "mVfpZFCwAZskWXNT7iCuI"
+                                ],
+                                "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
+                                "values": {
+                                  "values": [
+                                    {
+                                      "BGTxyxBZqagpqUB3UqXta": "{{step_9['output'].regId}}",
+                                      "RZYFhQBQbSfNzIVEvmYgd": "{{step_2['output'].now}}",
+                                      "TZyqC63UAWrPbzxuf2q4w": "registered",
+                                      "mVfpZFCwAZskWXNT7iCuI": "{{step_2['output'].telegramId}}",
+                                      "qQPYl9c0ew6n8w2CGYZII": "{{step_9['output'].eventId}}"
+                                    }
+                                  ]
+                                }
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
                           },
-                          "type": "PIECE",
-                          "valid": true
-                        },
-                        {
-                          "displayName": "cancel registration",
-                          "name": "step_14",
-                          "nextAction": {
-                            "displayName": "respond (cancelled)",
-                            "name": "step_15",
+                          {
+                            "displayName": "respond (profile)",
+                            "name": "step_21",
+                            "settings": {
+                              "actionName": "return_response",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "fields": {
+                                  "body": {
+                                    "consentMarketing": "{{step_9['output'].consentMarketing}}",
+                                    "error": "{{step_9['output'].error}}",
+                                    "eventId": "{{step_9['output'].eventId}}",
+                                    "mine": "{{step_9['output'].mine}}",
+                                    "ok": "{{step_9['output'].ok}}",
+                                    "outcome": "{{step_9['output'].outcome}}",
+                                    "pdnDone": "{{step_9['output'].pdnDone}}",
+                                    "profile": "{{step_9['output'].profile}}",
+                                    "reason": "{{step_9['output'].reason}}",
+                                    "text": "{{step_9['output'].text}}"
+                                  },
+                                  "headers": {},
+                                  "status": "{{step_9['output'].httpStatus}}"
+                                },
+                                "respond": "stop",
+                                "responseType": "json"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-webhook",
+                              "qadamVersion": "0.1.35"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          {
+                            "displayName": "save profile (tab)",
+                            "name": "step_22",
+                            "nextAction": {
+                              "displayName": "respond (profile saved)",
+                              "name": "step_23",
+                              "settings": {
+                                "actionName": "return_response",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "fields": {
+                                    "body": {
+                                      "consentMarketing": "{{step_9['output'].consentMarketing}}",
+                                      "error": "{{step_9['output'].error}}",
+                                      "eventId": "{{step_9['output'].eventId}}",
+                                      "mine": "{{step_9['output'].mine}}",
+                                      "ok": "{{step_9['output'].ok}}",
+                                      "outcome": "{{step_9['output'].outcome}}",
+                                      "pdnDone": "{{step_9['output'].pdnDone}}",
+                                      "profile": "{{step_9['output'].profile}}",
+                                      "reason": "{{step_9['output'].reason}}",
+                                      "text": "{{step_9['output'].text}}"
+                                    },
+                                    "headers": {},
+                                    "status": "{{step_9['output'].httpStatus}}"
+                                  },
+                                  "respond": "stop",
+                                  "responseType": "json"
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-webhook",
+                                "qadamVersion": "0.1.35"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-upsert-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "key_columns": [
+                                  "JtylZU291K7TuMn9c9F2t"
+                                ],
+                                "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                                "values": {
+                                  "values": [
+                                    {
+                                      "3t75byELQCZ1ejfTADsvp": "{{step_2['output'].now}}",
+                                      "EAlXy4XsXGAeM7UrS0TIQ": "{{step_2['output'].now}}",
+                                      "FpWznk9Fgl8wUXXUKolRu": "{{step_9['output'].consentValue}}",
+                                      "JtylZU291K7TuMn9c9F2t": "{{step_2['output'].telegramId}}",
+                                      "KsKN4eTmjZN2IxrZxm5qZ": "{{step_9['output'].profile.last}}",
+                                      "em7af2g9kyaNXC2tPNvXF": "{{step_9['output'].profile.first}}",
+                                      "p5TNNHUYCrHv3L6SWCRWb": "{{step_9['output'].profile.position}}",
+                                      "t89wutkSapoK3QKmZ0Vb8": "{{step_9['output'].profile.city}}",
+                                      "wz2jSqAxfldiP8b0YOokJ": "{{step_9['output'].profile.company}}"
+                                    }
+                                  ]
+                                }
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          {
+                            "displayName": "del: read registrations",
+                            "name": "step_24",
+                            "nextAction": {
+                              "displayName": "del: loop registrations",
+                              "firstLoopAction": {
+                                "displayName": "del: delete registration",
+                                "name": "step_26",
+                                "settings": {
+                                  "actionName": "tables-delete-record",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "records_ids": [
+                                      "{{step_25['output'].item.id}}"
+                                    ],
+                                    "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.4.5"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "name": "step_25",
+                              "nextAction": {
+                                "displayName": "del: read feedback",
+                                "name": "step_27",
+                                "nextAction": {
+                                  "displayName": "del: loop feedback",
+                                  "firstLoopAction": {
+                                    "displayName": "del: delete feedback",
+                                    "name": "step_29",
+                                    "settings": {
+                                      "actionName": "tables-delete-record",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "records_ids": [
+                                          "{{step_28['output'].item.id}}"
+                                        ],
+                                        "table_id": "GgGUQEHp6g076nDb2XddP"
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-tables",
+                                      "qadamVersion": "0.4.5"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  },
+                                  "name": "step_28",
+                                  "nextAction": {
+                                    "displayName": "del: read broadcast targets",
+                                    "name": "step_30",
+                                    "nextAction": {
+                                      "displayName": "del: loop broadcast targets",
+                                      "firstLoopAction": {
+                                        "displayName": "del: delete broadcast target",
+                                        "name": "step_32",
+                                        "settings": {
+                                          "actionName": "tables-delete-record",
+                                          "errorHandlingOptions": {
+                                            "continueOnFailure": {
+                                              "value": false
+                                            },
+                                            "retryOnFailure": {
+                                              "value": false
+                                            }
+                                          },
+                                          "input": {
+                                            "records_ids": [
+                                              "{{step_31['output'].item.id}}"
+                                            ],
+                                            "table_id": "PAH81WchbaOixGXSdFBK1"
+                                          },
+                                          "propertySettings": {},
+                                          "qadamName": "@aiqadam/qadam-tables",
+                                          "qadamVersion": "0.4.5"
+                                        },
+                                        "type": "PIECE",
+                                        "valid": true
+                                      },
+                                      "name": "step_31",
+                                      "nextAction": {
+                                        "displayName": "del: read sessions",
+                                        "name": "step_33",
+                                        "nextAction": {
+                                          "displayName": "del: loop sessions",
+                                          "firstLoopAction": {
+                                            "displayName": "del: delete session",
+                                            "name": "step_35",
+                                            "settings": {
+                                              "actionName": "tables-delete-record",
+                                              "errorHandlingOptions": {
+                                                "continueOnFailure": {
+                                                  "value": false
+                                                },
+                                                "retryOnFailure": {
+                                                  "value": false
+                                                }
+                                              },
+                                              "input": {
+                                                "records_ids": [
+                                                  "{{step_34['output'].item.id}}"
+                                                ],
+                                                "table_id": "toTKgngMTqDNJWDpQMh4d"
+                                              },
+                                              "propertySettings": {},
+                                              "qadamName": "@aiqadam/qadam-tables",
+                                              "qadamVersion": "0.4.5"
+                                            },
+                                            "type": "PIECE",
+                                            "valid": true
+                                          },
+                                          "name": "step_34",
+                                          "nextAction": {
+                                            "displayName": "del: read user",
+                                            "name": "step_36",
+                                            "nextAction": {
+                                              "displayName": "del: loop users",
+                                              "firstLoopAction": {
+                                                "displayName": "del: delete user",
+                                                "name": "step_38",
+                                                "settings": {
+                                                  "actionName": "tables-delete-record",
+                                                  "errorHandlingOptions": {
+                                                    "continueOnFailure": {
+                                                      "value": false
+                                                    },
+                                                    "retryOnFailure": {
+                                                      "value": false
+                                                    }
+                                                  },
+                                                  "input": {
+                                                    "records_ids": [
+                                                      "{{step_37['output'].item.id}}"
+                                                    ],
+                                                    "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                                                  },
+                                                  "propertySettings": {},
+                                                  "qadamName": "@aiqadam/qadam-tables",
+                                                  "qadamVersion": "0.4.5"
+                                                },
+                                                "type": "PIECE",
+                                                "valid": true
+                                              },
+                                              "name": "step_37",
+                                              "nextAction": {
+                                                "displayName": "respond (delete account)",
+                                                "name": "step_39",
+                                                "settings": {
+                                                  "actionName": "return_response",
+                                                  "errorHandlingOptions": {
+                                                    "continueOnFailure": {
+                                                      "value": false
+                                                    },
+                                                    "retryOnFailure": {
+                                                      "value": false
+                                                    }
+                                                  },
+                                                  "input": {
+                                                    "fields": {
+                                                      "body": {
+                                                        "error": "{{step_9['output'].error}}",
+                                                        "eventId": "{{step_9['output'].eventId}}",
+                                                        "ok": "{{step_9['output'].ok}}",
+                                                        "outcome": "{{step_9['output'].outcome}}",
+                                                        "reason": "{{step_9['output'].reason}}",
+                                                        "text": "{{step_9['output'].text}}"
+                                                      },
+                                                      "headers": {},
+                                                      "status": "{{step_9['output'].httpStatus}}"
+                                                    },
+                                                    "respond": "stop",
+                                                    "responseType": "json"
+                                                  },
+                                                  "propertySettings": {},
+                                                  "qadamName": "@aiqadam/qadam-webhook",
+                                                  "qadamVersion": "0.1.37"
+                                                },
+                                                "type": "PIECE",
+                                                "valid": true
+                                              },
+                                              "settings": {
+                                                "items": "{{step_36['output']}}"
+                                              },
+                                              "type": "LOOP_ON_ITEMS",
+                                              "valid": true
+                                            },
+                                            "settings": {
+                                              "actionName": "tables-find-records",
+                                              "errorHandlingOptions": {
+                                                "continueOnFailure": {
+                                                  "value": false
+                                                },
+                                                "retryOnFailure": {
+                                                  "value": false
+                                                }
+                                              },
+                                              "input": {
+                                                "columns": [
+                                                  "JtylZU291K7TuMn9c9F2t"
+                                                ],
+                                                "filters": {
+                                                  "filters": [
+                                                    {
+                                                      "field": {
+                                                        "id": "JtylZU291K7TuMn9c9F2t",
+                                                        "name": "telegram_id",
+                                                        "type": "TEXT"
+                                                      },
+                                                      "operator": "eq",
+                                                      "value": "{{step_2['output'].telegramId}}"
+                                                    }
+                                                  ]
+                                                },
+                                                "limit": 5,
+                                                "record_ids": [],
+                                                "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                                              },
+                                              "propertySettings": {},
+                                              "qadamName": "@aiqadam/qadam-tables",
+                                              "qadamVersion": "0.4.5"
+                                            },
+                                            "type": "PIECE",
+                                            "valid": true
+                                          },
+                                          "settings": {
+                                            "items": "{{step_33['output']}}"
+                                          },
+                                          "type": "LOOP_ON_ITEMS",
+                                          "valid": true
+                                        },
+                                        "settings": {
+                                          "actionName": "tables-find-records",
+                                          "errorHandlingOptions": {
+                                            "continueOnFailure": {
+                                              "value": false
+                                            },
+                                            "retryOnFailure": {
+                                              "value": false
+                                            }
+                                          },
+                                          "input": {
+                                            "columns": [
+                                              "ESthrMwpn29JLvE2BNIj4"
+                                            ],
+                                            "filters": {
+                                              "filters": [
+                                                {
+                                                  "field": {
+                                                    "id": "N8CdPxcdxLX9vFCINvZbL",
+                                                    "name": "telegram_id",
+                                                    "type": "TEXT"
+                                                  },
+                                                  "operator": "eq",
+                                                  "value": "{{step_2['output'].telegramId}}"
+                                                }
+                                              ]
+                                            },
+                                            "limit": 50,
+                                            "record_ids": [],
+                                            "table_id": "toTKgngMTqDNJWDpQMh4d"
+                                          },
+                                          "propertySettings": {},
+                                          "qadamName": "@aiqadam/qadam-tables",
+                                          "qadamVersion": "0.4.5"
+                                        },
+                                        "type": "PIECE",
+                                        "valid": true
+                                      },
+                                      "settings": {
+                                        "items": "{{step_30['output']}}"
+                                      },
+                                      "type": "LOOP_ON_ITEMS",
+                                      "valid": true
+                                    },
+                                    "settings": {
+                                      "actionName": "tables-find-records",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "columns": [
+                                          "P9k6Pfcwfn67JQHQHQBle"
+                                        ],
+                                        "filters": {
+                                          "filters": [
+                                            {
+                                              "field": {
+                                                "id": "vzeXDhJwTFpXrbt04g5HY",
+                                                "name": "telegram_id",
+                                                "type": "TEXT"
+                                              },
+                                              "operator": "eq",
+                                              "value": "{{step_2['output'].telegramId}}"
+                                            }
+                                          ]
+                                        },
+                                        "limit": 200,
+                                        "record_ids": [],
+                                        "table_id": "PAH81WchbaOixGXSdFBK1"
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-tables",
+                                      "qadamVersion": "0.4.5"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  },
+                                  "settings": {
+                                    "items": "{{step_27['output']}}"
+                                  },
+                                  "type": "LOOP_ON_ITEMS",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "actionName": "tables-find-records",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "columns": [
+                                      "A5njEy7i4BUwpG0kh5omn"
+                                    ],
+                                    "filters": {
+                                      "filters": [
+                                        {
+                                          "field": {
+                                            "id": "Due6SRYplDMqO1qZzcy0N",
+                                            "name": "telegram_id",
+                                            "type": "TEXT"
+                                          },
+                                          "operator": "eq",
+                                          "value": "{{step_2['output'].telegramId}}"
+                                        }
+                                      ]
+                                    },
+                                    "limit": 200,
+                                    "record_ids": [],
+                                    "table_id": "GgGUQEHp6g076nDb2XddP"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.4.5"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "items": "{{step_24['output']}}"
+                              },
+                              "type": "LOOP_ON_ITEMS",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-find-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "columns": [
+                                  "qQPYl9c0ew6n8w2CGYZII"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": {
+                                        "id": "mVfpZFCwAZskWXNT7iCuI",
+                                        "name": "telegram_id",
+                                        "type": "TEXT"
+                                      },
+                                      "operator": "eq",
+                                      "value": "{{step_2['output'].telegramId}}"
+                                    }
+                                  ]
+                                },
+                                "limit": 200,
+                                "record_ids": [],
+                                "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.4.5"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          {
+                            "displayName": "respond (mine / отказы)",
+                            "name": "step_16",
                             "settings": {
                               "actionName": "return_response",
                               "errorHandlingOptions": {
@@ -182,120 +915,159 @@
                             },
                             "type": "PIECE",
                             "valid": true
-                          },
-                          "settings": {
-                            "actionName": "tables-upsert-records",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
-                              },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "key_columns": [
-                                "qQPYl9c0ew6n8w2CGYZII",
-                                "mVfpZFCwAZskWXNT7iCuI"
-                              ],
-                              "table_id": "SM8tMxfQuQCHRDdAiNJyQ",
-                              "values": {
-                                "values": [
-                                  {
-                                    "OlFAWgVQmrqhqxlraOPOZ": "{{step_2['output'].now}}",
-                                    "TZyqC63UAWrPbzxuf2q4w": "cancelled",
-                                    "mVfpZFCwAZskWXNT7iCuI": "{{step_2['output'].telegramId}}",
-                                    "qQPYl9c0ew6n8w2CGYZII": "{{step_9['output'].eventId}}"
-                                  }
-                                ]
-                              }
-                            },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.4.5"
-                          },
-                          "type": "PIECE",
-                          "valid": true
-                        },
-                        {
-                          "displayName": "respond (mine / отказы)",
-                          "name": "step_16",
-                          "settings": {
-                            "actionName": "return_response",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
-                              },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "fields": {
-                                "body": {
-                                  "error": "{{step_9['output'].error}}",
-                                  "eventId": "{{step_9['output'].eventId}}",
-                                  "mine": "{{step_9['output'].mine}}",
-                                  "ok": "{{step_9['output'].ok}}",
-                                  "outcome": "{{step_9['output'].outcome}}",
-                                  "reason": "{{step_9['output'].reason}}",
-                                  "text": "{{step_9['output'].text}}"
-                                },
-                                "headers": {},
-                                "status": "{{step_9['output'].httpStatus}}"
-                              },
-                              "respond": "stop",
-                              "responseType": "json"
-                            },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-webhook",
-                            "qadamVersion": "0.1.35"
-                          },
-                          "type": "PIECE",
-                          "valid": true
-                        }
-                      ],
-                      "displayName": "outcome",
-                      "name": "step_10",
-                      "settings": {
-                        "branches": [
-                          {
-                            "branchName": "register",
-                            "branchType": "CONDITION",
-                            "conditions": [
-                              [
-                                {
-                                  "firstValue": "{{step_9['output'].outcome}}",
-                                  "operator": "TEXT_EXACTLY_MATCHES",
-                                  "secondValue": "registered"
-                                }
-                              ]
-                            ]
-                          },
-                          {
-                            "branchName": "cancel",
-                            "branchType": "CONDITION",
-                            "conditions": [
-                              [
-                                {
-                                  "firstValue": "{{step_9['output'].outcome}}",
-                                  "operator": "TEXT_EXACTLY_MATCHES",
-                                  "secondValue": "cancelled"
-                                }
-                              ]
-                            ]
-                          },
-                          {
-                            "branchName": "Otherwise",
-                            "branchType": "FALLBACK"
                           }
                         ],
-                        "executionType": "EXECUTE_FIRST_MATCH"
+                        "displayName": "outcome",
+                        "name": "step_10",
+                        "settings": {
+                          "branches": [
+                            {
+                              "branchName": "register",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_9['output'].outcome}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "registered"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "cancel",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_9['output'].outcome}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "cancelled"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "registered_profile",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_9['output'].outcome}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "registered_profile"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "profile",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_9['output'].outcome}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "profile"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "profile_saved",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_9['output'].outcome}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "profile_saved"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "delete_account",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_9['output'].outcome}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "delete_account"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "Otherwise",
+                              "branchType": "FALLBACK"
+                            }
+                          ],
+                          "executionType": "EXECUTE_FIRST_MATCH"
+                        },
+                        "type": "ROUTER",
+                        "valid": true
                       },
-                      "type": "ROUTER",
+                      "settings": {
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "action": "{{step_2['output'].action}}",
+                          "confirm": "{{step_2['output'].confirm}}",
+                          "consentMarketing": "{{step_2['output'].consentMarketing}}",
+                          "consentPdn": "{{step_2['output'].consentPdn}}",
+                          "eventId": "{{step_2['output'].eventId}}",
+                          "eventRecords": "{{step_8['output']}}",
+                          "eventRegs": "{{step_7['output']}}",
+                          "myRegs": "{{step_6['output']}}",
+                          "now": "{{step_2['output'].now}}",
+                          "profileCity": "{{step_2['output'].profileCity}}",
+                          "profileCompany": "{{step_2['output'].profileCompany}}",
+                          "profileFirst": "{{step_2['output'].profileFirst}}",
+                          "profileLast": "{{step_2['output'].profileLast}}",
+                          "profilePosition": "{{step_2['output'].profilePosition}}",
+                          "targetTelegramId": "{{step_2['output'].targetTelegramId}}",
+                          "telegramId": "{{step_2['output'].telegramId}}",
+                          "texts": {
+                            "cancel.done": "Регистрация на «{title}» отменена.",
+                            "cancel.not_found": "Активной регистрации не нашлось.",
+                            "cancel.too_late": "Событие уже началось — отменить регистрацию нельзя.",
+                            "common.err.event_not_found": "Событие не найдено.",
+                            "profile.delete.confirm_required": "Подтвердите удаление аккаунта.",
+                            "profile.delete.done": "Аккаунт удалён, данные стёрты из базы. Если захотите вернуться — нажмите /start.",
+                            "profile.delete.forbidden": "Так можно удалить только свой аккаунт.",
+                            "profile.err": "Заполните имя и фамилию.",
+                            "profile.pdn_done": "Согласие на обработку данных дано {when}. Храним у себя, третьим не отдаём.",
+                            "reg.already": "Вы уже зарегистрированы на «{title}». Ваш QR ниже.",
+                            "reg.deadline_passed": "Регистрация закрыта: срок вышел {when}.",
+                            "reg.done": "Вы зарегистрированы на «{title}».",
+                            "reg.err.bad_request": "Запрос не удалось разобрать. Переоткройте приложение и попробуйте ещё раз.",
+                            "reg.err.pdn_required": "Без согласия на обработку данных регистрация невозможна.",
+                            "reg.err.profile_required": "Профиль не заполнен. Начните регистрацию из чата бота — откройте ссылку на событие ещё раз.",
+                            "reg.event_cancelled": "Событие отменено, регистрация недоступна.",
+                            "reg.event_finished": "Событие уже прошло.",
+                            "reg.no_seats": "Свободных мест больше нет. Листа ожидания у нас нет — следите за анонсами.",
+                            "reg.not_published": "Событие ещё не опубликовано — регистрация закрыта."
+                          },
+                          "userRows": "{{step_17['output']}}"
+                        },
+                        "sourceCode": {
+                          "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    const ms = parseIso(iso);\n    return isFinite(ms) ? dateFmt.format(new Date(ms)) : '';\n  };\n\n  const telegramId = str(inputs.telegramId);\n  const action = str(inputs.action);\n  const eventId = str(inputs.eventId);\n  const consentPdn = inputs.consentPdn === true || str(inputs.consentPdn) === 'true';\n  const consentMarketing = inputs.consentMarketing === true || str(inputs.consentMarketing) === 'true';\n  const now = str(inputs.now);\n  const reqProfile = {\n    first: str(inputs.profileFirst).trim(),\n    last: str(inputs.profileLast).trim(),\n    position: str(inputs.profilePosition).trim(),\n    company: str(inputs.profileCompany).trim(),\n    city: str(inputs.profileCity).trim()\n  };\n  const validProfile = (o) => {\n    if (o.first.length < 2 || o.last.length < 2) return false;\n    if ((o.first + ' ' + o.last).length > 80) return false;\n    if (o.position === '' || o.position.length > 200) return false;\n    if (o.city === '' || o.city.length > 100) return false;\n    return true;\n  };\n\n  // Постфильтры повторяют фильтры шагов — defense in depth (Q25).\n  const myRegs = arr(inputs.myRegs).map(flat).filter((r) => str(r.telegram_id) === telegramId);\n  const eventRegs = arr(inputs.eventRegs).map(flat).filter((r) => str(r.event_id) === eventId);\n  const ev = arr(inputs.eventRecords).map(flat).find((r) => str(r.id) === eventId);\n  const userRow = arr(inputs.userRows).map(flat).find((r) => str(r.telegram_id) === telegramId) || {};\n  const profileDone = str(userRow.profile_completed_at) !== '';\n  const alreadyConsentedPdn = str(userRow.consent_pdn) === 'true';\n  const storedProfile = {\n    first: str(userRow.profile_first_name),\n    last: str(userRow.profile_last_name),\n    position: str(userRow.position),\n    company: str(userRow.company),\n    city: str(userRow.city)\n  };\n  const title = ev ? str(ev.title) : '';\n\n  const base = { ok: false, outcome: '', error: '', reason: '', text: '', eventId: eventId, mine: [], regId: '', consentValue: 'false', consentMarketing: false, profile: {}, httpStatus: 200 };\n\n  if (action === 'delete_account') {\n    // W73 (#125, ADR-0039): самоудаление аккаунта — GDPR. Удаляется только\n    // свой аккаунт: telegram_id берётся из проверенного initData (DAT-1).\n    // Чужой telegram_id в теле — это попытка IDOR, отказ 403 (не «тихо свой»),\n    // чтобы клиент не думал, что удалил другого. Явное подтверждение обязательно.\n    const target = str(inputs.targetTelegramId);\n    if (target !== '' && target !== telegramId) {\n      return Object.assign(base, { httpStatus: 403, error: 'forbidden', text: t('profile.delete.forbidden') });\n    }\n    if (!(inputs.confirm === true || str(inputs.confirm) === 'true')) {\n      return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('profile.delete.confirm_required') });\n    }\n    // Само удаление — отдельная цепочка find→loop→delete в ветке\n    // `delete_account` (гоча 18: удаление только по внутреннему id).\n    return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'delete_account', text: t('profile.delete.done') });\n  }\n\n  if (action === 'mine') {\n    // «Мои билеты»: только регистрации вызывающего, только живые (W43, PAR-4).\n    const mine = myRegs\n      .filter((r) => str(r.status) === 'registered' || str(r.status) === 'checked_in')\n      .map((r) => ({\n        eventId: str(r.event_id),\n        status: str(r.status),\n        registeredAt: str(r.registered_at),\n        checkedInAt: str(r.checked_in_at)\n      }));\n    return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'mine', mine: mine });\n  }\n\n  if (action === 'profile_get') {\n    // W50 / PAR-8: таб «Профиль» — поля и отметка согласия (согласие залочено).\n    // W60: и текущее состояние согласия на рассылку — таб даёт его переключить.\n    return Object.assign(base, {\n      httpStatus: 200, ok: true, outcome: 'profile', profile: storedProfile,\n      consentMarketing: str(userRow.consent_marketing) === 'true',\n      pdnDone: t('profile.pdn_done', { when: str(userRow.consent_pdn_at) })\n    });\n  }\n\n  if (action === 'profile_save') {\n    // W50 / PAR-8: правка профиля табом; валидация та же, что в шите.\n    // PAR-1 (ревью W50 круг 1): без данного согласия табом не пишем и\n    // completed_at не взводим — иначе учёт согласия для хранимых ПД дырявый.\n    if (str(userRow.consent_pdn) !== 'true') {\n      return Object.assign(base, { httpStatus: 400, error: 'pdn_required', text: t('reg.err.pdn_required') });\n    }\n    if (!validProfile(reqProfile)) {\n      return Object.assign(base, { httpStatus: 400, error: 'validation', text: t('profile.err') });\n    }\n    // W60: таб «Профиль» — единственное место переключить согласие на\n    // рассылку без новой регистрации (владелец: «один раз отказал —\n    // больше не спрашивать, включит сам»). Пишем всегда, как и везде\n    // с PAR-2 (`consent_marketing_at` — со временем, а не только при `true`).\n    return Object.assign(base, {\n      httpStatus: 200, ok: true, outcome: 'profile_saved', profile: reqProfile,\n      consentValue: consentMarketing ? 'true' : 'false', consentMarketing: consentMarketing\n    });\n  }\n\n  if (action === 'register') {\n    // W60 (ревью после того же фикса в чате): PDN уже дан раньше — не\n    // требуем его заново от клиента при повторной регистрации. Первое\n    // согласие (alreadyConsentedPdn === false) по-прежнему обязательно.\n    if (!consentPdn && !alreadyConsentedPdn) {\n      return Object.assign(base, { httpStatus: 400, error: 'pdn_required', text: t('reg.err.pdn_required') });\n    }\n    if (eventId === '') {\n      return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('reg.err.bad_request') });\n    }\n    const mineRow = eventRegs.find((r) => str(r.telegram_id) === telegramId);\n    const mineStatus = mineRow ? str(mineRow.status) : '';\n    if (mineStatus === 'registered' || mineStatus === 'checked_in') {\n      // IDM-1: повтор — та же регистрация, второго подтверждения нет.\n      // Стоит раньше профильного гейта (ревью W50 круг 1): уже\n      // зарегистрированный получает existing с QR, а не profile_required.\n      return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'existing', text: t('reg.already', { title: title }) });\n    }\n    // W50 / PAR-8: каталог регистрирует только заполненный профиль; первое\n    // касание идёт чатом (онбординг), шит профиля в каталоге — срез 6.\n    // Профиль из запроса (шит) тоже годится: валиден — пишем вместе с регистрацией.\n    let profile = storedProfile;\n    let writeProfile = false;\n    if (!profileDone) {\n      if (!validProfile(reqProfile)) {\n        return Object.assign(base, { httpStatus: 400, error: 'profile_required', text: t('reg.err.profile_required') });\n      }\n      profile = reqProfile;\n      writeProfile = true;\n    }\n    if (!ev) {\n      return Object.assign(base, { httpStatus: 404, error: 'not_found', reason: 'event_not_found', text: t('common.err.event_not_found') });\n    }\n    const evStatus = str(ev.status);\n    if (evStatus === 'cancelled') {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'event_cancelled', text: t('reg.event_cancelled') });\n    }\n    if (evStatus === 'finished') {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'event_finished', text: t('reg.event_finished') });\n    }\n    if (evStatus !== 'published') {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'not_published', text: t('reg.not_published') });\n    }\n    const deadlineIso = str(ev.reg_deadline_at);\n    const deadlineMs = deadlineIso ? parseIso(deadlineIso) : NaN;\n    if (isFinite(deadlineMs) && Date.now() > deadlineMs) {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'deadline_passed', text: t('reg.deadline_passed', { when: fmt(deadlineIso) }) });\n    }\n    // Лимит мест — capacity × (1 + overbook_pct/100), округление вверх; пустой overbook_pct = 40 (OWN-15).\n    const capacityRaw = str(ev.capacity);\n    const capacity = capacityRaw === '' ? NaN : Number(capacityRaw);\n    const overbookRaw = str(ev.overbook_pct);\n    const overbook = (overbookRaw === '' || !isFinite(Number(overbookRaw))) ? 40 : Number(overbookRaw);\n    const registeredCount = eventRegs.filter((r) => str(r.status) === 'registered').length;\n    if (isFinite(capacity)) {\n      const limit = Math.ceil(capacity * (1 + overbook / 100));\n      if (registeredCount >= limit) {\n        return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'no_seats', text: t('reg.no_seats') });\n      }\n    }\n    return Object.assign(base, {\n      httpStatus: 200, ok: true, outcome: writeProfile ? 'registered_profile' : 'registered',\n      text: t('reg.done', { title: title }),\n      regId: eventId + '-' + telegramId,\n      consentValue: consentMarketing ? 'true' : 'false',\n      consentMarketing: writeProfile ? consentMarketing : (str(userRow.consent_marketing) === 'true'),\n      profile: profile, writeProfile: writeProfile\n    });\n  }\n\n  if (action === 'cancel') {\n    if (eventId === '') {\n      return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('reg.err.bad_request') });\n    }\n    const active = eventRegs.find((r) => str(r.telegram_id) === telegramId && str(r.status) === 'registered');\n    if (!ev || !active) {\n      return Object.assign(base, { httpStatus: 404, error: 'not_found', reason: 'not_registered', text: t('cancel.not_found') });\n    }\n    // PAR-5: сервер перепроверяет срок — опоздавший запрос получает отказ, а не отмену.\n    const startMs = parseIso(str(ev.starts_at));\n    if (isFinite(startMs) && Date.now() >= startMs) {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'too_late', text: t('cancel.too_late') });\n    }\n    return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'cancelled', text: t('cancel.done', { title: title }) });\n  }\n\n  return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('reg.err.bad_request') });\n};\n",
+                          "packageJson": "{}"
+                        }
+                      },
+                      "type": "CODE",
                       "valid": true
                     },
                     "settings": {
+                      "actionName": "tables-find-records",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -305,37 +1077,40 @@
                         }
                       },
                       "input": {
-                        "action": "{{step_2['output'].action}}",
-                        "consentMarketing": "{{step_2['output'].consentMarketing}}",
-                        "consentPdn": "{{step_2['output'].consentPdn}}",
-                        "eventId": "{{step_2['output'].eventId}}",
-                        "eventRecords": "{{step_8['output']}}",
-                        "eventRegs": "{{step_7['output']}}",
-                        "myRegs": "{{step_6['output']}}",
-                        "now": "{{step_2['output'].now}}",
-                        "telegramId": "{{step_2['output'].telegramId}}",
-                        "texts": {
-                          "cancel.done": "Регистрация на «{title}» отменена.",
-                          "cancel.not_found": "Активной регистрации не нашлось.",
-                          "cancel.too_late": "Ивент уже начался — отменить регистрацию нельзя.",
-                          "common.err.event_not_found": "Ивент не найден.",
-                          "reg.already": "Вы уже зарегистрированы на «{title}». Ваш QR ниже.",
-                          "reg.deadline_passed": "Регистрация закрыта: срок вышел {when}.",
-                          "reg.done": "Вы зарегистрированы на «{title}».",
-                          "reg.err.bad_request": "Запрос не удалось разобрать. Переоткройте приложение и попробуйте ещё раз.",
-                          "reg.err.pdn_required": "Без согласия на обработку данных регистрация невозможна.",
-                          "reg.event_cancelled": "Ивент отменён, регистрация недоступна.",
-                          "reg.event_finished": "Ивент уже прошёл.",
-                          "reg.no_seats": "Свободных мест больше нет. Листа ожидания у нас нет — следите за анонсами.",
-                          "reg.not_published": "Ивент ещё не опубликован — регистрация закрыта."
-                        }
+                        "columns": [
+                          "JtylZU291K7TuMn9c9F2t",
+                          "EAlXy4XsXGAeM7UrS0TIQ",
+                          "em7af2g9kyaNXC2tPNvXF",
+                          "KsKN4eTmjZN2IxrZxm5qZ",
+                          "p5TNNHUYCrHv3L6SWCRWb",
+                          "wz2jSqAxfldiP8b0YOokJ",
+                          "t89wutkSapoK3QKmZ0Vb8",
+                          "LeY6BeUOzWIyEtUFfKNbI",
+                          "KtdV8plfevjdnKlLko08q",
+                          "FpWznk9Fgl8wUXXUKolRu"
+                        ],
+                        "filters": {
+                          "filters": [
+                            {
+                              "field": {
+                                "id": "JtylZU291K7TuMn9c9F2t",
+                                "name": "telegram_id",
+                                "type": "TEXT"
+                              },
+                              "operator": "eq",
+                              "value": "{{step_2['output'].telegramId}}"
+                            }
+                          ]
+                        },
+                        "limit": 1,
+                        "record_ids": [],
+                        "table_id": "xHhYjhwqKdONkrYJGcBsz"
                       },
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    const ms = parseIso(iso);\n    return isFinite(ms) ? dateFmt.format(new Date(ms)) : '';\n  };\n\n  const telegramId = str(inputs.telegramId);\n  const action = str(inputs.action);\n  const eventId = str(inputs.eventId);\n  const consentPdn = inputs.consentPdn === true || str(inputs.consentPdn) === 'true';\n  const consentMarketing = inputs.consentMarketing === true || str(inputs.consentMarketing) === 'true';\n  const now = str(inputs.now);\n\n  // Постфильтры повторяют фильтры шагов — defense in depth (Q25).\n  const myRegs = arr(inputs.myRegs).map(flat).filter((r) => str(r.telegram_id) === telegramId);\n  const eventRegs = arr(inputs.eventRegs).map(flat).filter((r) => str(r.event_id) === eventId);\n  const ev = arr(inputs.eventRecords).map(flat).find((r) => str(r.id) === eventId);\n  const title = ev ? str(ev.title) : '';\n\n  const base = { ok: false, outcome: '', error: '', reason: '', text: '', eventId: eventId, mine: [], regId: '', consentValue: 'false', httpStatus: 200 };\n\n  if (action === 'mine') {\n    // «Мои билеты»: только регистрации вызывающего, только живые (W43, PAR-4).\n    const mine = myRegs\n      .filter((r) => str(r.status) === 'registered' || str(r.status) === 'checked_in')\n      .map((r) => ({\n        eventId: str(r.event_id),\n        status: str(r.status),\n        registeredAt: str(r.registered_at),\n        checkedInAt: str(r.checked_in_at)\n      }));\n    return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'mine', mine: mine });\n  }\n\n  if (action === 'register') {\n    if (!consentPdn) {\n      return Object.assign(base, { httpStatus: 400, error: 'pdn_required', text: t('reg.err.pdn_required') });\n    }\n    if (eventId === '') {\n      return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('reg.err.bad_request') });\n    }\n    const mineRow = eventRegs.find((r) => str(r.telegram_id) === telegramId);\n    const mineStatus = mineRow ? str(mineRow.status) : '';\n    if (mineStatus === 'registered' || mineStatus === 'checked_in') {\n      // IDM-1: повтор — та же регистрация, второго подтверждения нет.\n      return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'existing', text: t('reg.already', { title: title }) });\n    }\n    if (!ev) {\n      return Object.assign(base, { httpStatus: 404, error: 'not_found', reason: 'event_not_found', text: t('common.err.event_not_found') });\n    }\n    const evStatus = str(ev.status);\n    if (evStatus === 'cancelled') {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'event_cancelled', text: t('reg.event_cancelled') });\n    }\n    if (evStatus === 'finished') {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'event_finished', text: t('reg.event_finished') });\n    }\n    if (evStatus !== 'published') {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'not_published', text: t('reg.not_published') });\n    }\n    const deadlineIso = str(ev.reg_deadline_at);\n    const deadlineMs = deadlineIso ? parseIso(deadlineIso) : NaN;\n    if (isFinite(deadlineMs) && Date.now() > deadlineMs) {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'deadline_passed', text: t('reg.deadline_passed', { when: fmt(deadlineIso) }) });\n    }\n    // Лимит мест — capacity × (1 + overbook_pct/100), округление вверх; пустой overbook_pct = 40 (OWN-15).\n    const capacityRaw = str(ev.capacity);\n    const capacity = capacityRaw === '' ? NaN : Number(capacityRaw);\n    const overbookRaw = str(ev.overbook_pct);\n    const overbook = (overbookRaw === '' || !isFinite(Number(overbookRaw))) ? 40 : Number(overbookRaw);\n    const registeredCount = eventRegs.filter((r) => str(r.status) === 'registered').length;\n    if (isFinite(capacity)) {\n      const limit = Math.ceil(capacity * (1 + overbook / 100));\n      if (registeredCount >= limit) {\n        return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'no_seats', text: t('reg.no_seats') });\n      }\n    }\n    return Object.assign(base, {\n      httpStatus: 200, ok: true, outcome: 'registered',\n      text: t('reg.done', { title: title }),\n      regId: eventId + '-' + telegramId,\n      consentValue: consentMarketing ? 'true' : 'false'\n    });\n  }\n\n  if (action === 'cancel') {\n    if (eventId === '') {\n      return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('reg.err.bad_request') });\n    }\n    const active = eventRegs.find((r) => str(r.telegram_id) === telegramId && str(r.status) === 'registered');\n    if (!ev || !active) {\n      return Object.assign(base, { httpStatus: 404, error: 'not_found', reason: 'not_registered', text: t('cancel.not_found') });\n    }\n    // PAR-5: сервер перепроверяет срок — опоздавший запрос получает отказ, а не отмену.\n    const startMs = parseIso(str(ev.starts_at));\n    if (isFinite(startMs) && Date.now() >= startMs) {\n      return Object.assign(base, { httpStatus: 409, error: 'declined', reason: 'too_late', text: t('cancel.too_late') });\n    }\n    return Object.assign(base, { httpStatus: 200, ok: true, outcome: 'cancelled', text: t('cancel.done', { title: title }) });\n  }\n\n  return Object.assign(base, { httpStatus: 400, error: 'bad_request', text: t('reg.err.bad_request') });\n};\n",
-                        "packageJson": "{}"
-                      }
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.5"
                     },
-                    "type": "CODE",
+                    "type": "PIECE",
                     "valid": true
                   },
                   "settings": {
@@ -565,13 +1340,20 @@
           },
           "input": {
             "action": "{{trigger['output'].body.action}}",
+            "confirm": "{{trigger['output'].body.confirm}}",
             "consentMarketing": "{{trigger['output'].body.consentMarketing}}",
             "consentPdn": "{{trigger['output'].body.consentPdn}}",
             "eventId": "{{trigger['output'].body.eventId}}",
-            "hmac": "{{step_1['output'].data}}"
+            "hmac": "{{step_1['output'].data}}",
+            "profileCity": "{{trigger['output'].body.profileCity}}",
+            "profileCompany": "{{trigger['output'].body.profileCompany}}",
+            "profileFirst": "{{trigger['output'].body.profileFirst}}",
+            "profileLast": "{{trigger['output'].body.profileLast}}",
+            "profilePosition": "{{trigger['output'].body.profilePosition}}",
+            "targetTelegramId": "{{trigger['output'].body.telegramId}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const bool = (v) => v === true || str(v).toLowerCase() === 'true';\n  const hmac = (inputs.hmac && typeof inputs.hmac === 'object') ? inputs.hmac : {};\n  return {\n    valid: hmac.valid === true || str(hmac.valid) === 'true',\n    telegramId: str(hmac.telegramId),\n    action: str(inputs.action).trim().toLowerCase(),\n    eventId: str(inputs.eventId).trim(),\n    consentPdn: bool(inputs.consentPdn),\n    consentMarketing: bool(inputs.consentMarketing),\n    now: new Date().toISOString()\n  };\n};\n",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const bool = (v) => v === true || str(v).toLowerCase() === 'true';\n  const hmac = (inputs.hmac && typeof inputs.hmac === 'object') ? inputs.hmac : {};\n  return {\n    valid: hmac.valid === true || str(hmac.valid) === 'true',\n    telegramId: str(hmac.telegramId),\n    action: str(inputs.action).trim().toLowerCase(),\n    eventId: str(inputs.eventId).trim(),\n    consentPdn: bool(inputs.consentPdn),\n    consentMarketing: bool(inputs.consentMarketing),\n    profileFirst: str(inputs.profileFirst).trim(),\n    profileLast: str(inputs.profileLast).trim(),\n    profilePosition: str(inputs.profilePosition).trim(),\n    profileCompany: str(inputs.profileCompany).trim(),\n    profileCity: str(inputs.profileCity).trim(),\n    // W73 (#125, ADR-0039): самоудаление аккаунта. `confirm` — явное\n    // подтверждение из шита; `targetTelegramId` — то, что пришло в теле\n    // (нормализация его не доверяет: решение в step_9, IDOR-гейт).\n    confirm: bool(inputs.confirm),\n    targetTelegramId: str(inputs.targetTelegramId).trim(),\n    now: new Date().toISOString()\n  };\n};\n",
             "packageJson": "{}"
           }
         },

@@ -4,14 +4,15 @@
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
   `POST /api/v1/webhooks/rKoDYtiIVdbzlW59b57uH/sync`
 - **Назначение**: основной путь чекина через Mini App-сканер. Проверяет
-  `initData` контролёра (STF-2), права на конкретный ивент, подпись QR,
-  состояние регистрации; пишет `checked_in_at` атомарно (IDM-2).
+  `initData` контролёра (STF-2), права на конкретное событие, подпись QR,
+  статус события (STF-3), состояние регистрации; пишет `checked_in_at`
+  атомарно (IDM-2).
 - **Flow ID (MCP)**: `rKoDYtiIVdbzlW59b57uH`
 
 ## Вход
 
 `POST` тела: `{ initData, payload, eventId }` — `payload` это `c<eventId>-<userId>-<sig>`
-из QR участника, `eventId` — какой ивент сканирует контролёр (из Mini App URL).
+из QR участника, `eventId` — какое событие сканирует контролёр (из Mini App URL).
 
 ## Шаги
 
@@ -33,7 +34,8 @@
 | step_4 (valid) | `callFlow fn-verify-qr` | подпись QR по `QR_SIGNING_KEY` |
 | step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса |
 | step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) |
-| step_7 (valid) | CODE «decide result» | пять оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
+| step_13 (valid) | `tables-find-records events` | статус события (`status`, проекция) — чекин отменённого события не проходит (STF-3, Part 1) |
+| step_7 (valid) | CODE «decide result» | семь оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
 | step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2. При исходе не-`ok` вместо id записи подставляется сентинел `-`: гарантированный 404, безопасный no-op |
 | step_9 (valid) | `return_response` | JSON-ответ Mini App |
 
@@ -48,12 +50,14 @@
 | подпись QR не сошлась | `invalid` | 200 | `step_7` |
 | нет регистрации / `status ≠ registered` | `not_registered` | 200 | `step_7` |
 | `checked_in_at` уже стоит | `already` (+ время Tashkent) | 200 | `step_7` |
+| событие в статусе `cancelled` | `event_cancelled` | 200 | `step_7` |
 | иначе | `ok` (+ имя) | 200 | `step_7` |
 
 ## Зависимости
 
 - **Таблицы**: `event_staff`, `registrations` (чтение через `fn-find-registration`,
-  запись — `only_if`-guarded update), `users` (чтение имени)
+  запись — `only_if`-guarded update), `users` (чтение имени), `events`
+  (статус события, `step_13`)
 - **Флоу**: `fn-hmac-init-data`, `fn-parse-start`, `fn-verify-qr`, `fn-find-registration`
 - **Переменные**: `BOT_TOKEN` (ADR-0008), `QR_SIGNING_KEY`
 - **Connections**: —
@@ -75,6 +79,15 @@
   это верхняя граница, свойство «завысить окно вызовом нельзя» сохраняется.
 - **Тексты (`step_7`, `step_11`) — через `inputs.texts`**, не литералом в коде
   (ADR-0014); значения сверены с `i18n/ru.json`.
+- **Статус события читается в `step_13` только после всех гейтов, но до
+  проверки регистрации** (STF-3, Part 1): отменённое событие даёт
+  `event_cancelled` независимо от того, был ли человек записан. Пишет
+  `checked_in_at` только исход `ok` (`shouldCheckin`), поэтому отменённый
+  скан ничего не записывает. Пустой результат `step_13` (событие не найдено)
+  безопасен — статус пуст, ветка не срабатывает.
+- **`table_id` у `step_13` — externalId таблицы `events` (`R4aSQpLZvw7d3u6DVOSjH`),
+  не внутренний id** из `ap_list_tables` (гоча 1). С внутренним id шаг падает
+  `Table with externalId … not found`, то есть весь `valid`-путь отдаёт 500.
 - **Менять этот ROUTER можно только пересборкой цепочки внутри ветки.**
   `ap_add_step` с `ROUTER` через `AFTER` на уже связанный шаг не гейтит
   существующее продолжение — старое ребро остаётся безусловным путём, и
@@ -82,6 +95,6 @@
   Для этого флоу цена ошибки максимальна: незагейченная ветка `valid` — это
   чекин без проверки `initData`.
 - **В таблицах `events`/`registrations` намеренно оставлена фикстура
-  `demo`** (ивент `id: demo`, регистрация `demo-322876545`, staff-запись
+  `demo`** (событие `id: demo`, регистрация `demo-322876545`, staff-запись
   в `event_staff` на того же контролёра) — нужна, чтобы STF-2 можно было
   проверить вживую без пересборки окружения.

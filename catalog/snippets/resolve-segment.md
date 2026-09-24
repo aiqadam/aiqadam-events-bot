@@ -2,7 +2,7 @@
 
 **Инвариант:** OWN-9, OWN-12, PAR-2, ADR-0003. Сегмент разворачивается в список
 уникальных `telegram_id`; заблокировавшие бота исключаются; `no_show` закрыт
-до `ends_at` ивента.
+до `ends_at` события.
 
 **Встраивают:**
 
@@ -118,7 +118,7 @@ export const code = async (inputs) => {
     endsAt = ev.ends_at || '';
   }
 
-  // OWN-9: no_show закрыт, пока ивент не закончился — до ends_at это
+  // OWN-9: no_show закрыт, пока событие не закончился — до ends_at это
   // "ещё не дошёл", а не "не пришёл".
   if (segment === 'no_show') {
     const endMs = ms(endsAt);

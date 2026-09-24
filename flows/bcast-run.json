@@ -6,7 +6,7 @@
   ],
   "displayName": "bcast-run",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -852,7 +852,7 @@
                                       "valid": true
                                     },
                                     "settings": {
-                                      "actionName": "send_text_message",
+                                      "actionName": "custom_api_call",
                                       "errorHandlingOptions": {
                                         "continueOnFailure": {
                                           "value": true
@@ -862,13 +862,24 @@
                                         }
                                       },
                                       "input": {
-                                        "chat_id": "{{step_26['output'].item.telegramId}}",
-                                        "disable_notification": false,
-                                        "format": "None",
-                                        "message": "{{step_25['output'].body}}",
-                                        "protect_content": false,
-                                        "reply_markup": "{{step_25['output'].unsubMarkup}}",
-                                        "web_page_preview": false
+                                        "body": {
+                                          "data": {
+                                            "chat_id": "{{step_26['output'].item.telegramId}}",
+                                            "from_chat_id": "{{step_25['output'].mediaChatId}}",
+                                            "message_id": "{{step_25['output'].mediaMessageId}}",
+                                            "reply_markup": "{{step_25['output'].unsubMarkup}}"
+                                          }
+                                        },
+                                        "body_type": "json",
+                                        "failsafe": false,
+                                        "followRedirects": false,
+                                        "headers": {},
+                                        "method": "POST",
+                                        "queryParams": {},
+                                        "response_is_binary": false,
+                                        "url": {
+                                          "url": "/copyMessage"
+                                        }
                                       },
                                       "propertySettings": {},
                                       "qadamName": "@aiqadam/qadam-telegram-bot",
@@ -1017,7 +1028,7 @@
                             "valid": true
                           },
                           "settings": {
-                            "actionName": "send_text_message",
+                            "actionName": "custom_api_call",
                             "errorHandlingOptions": {
                               "continueOnFailure": {
                                 "value": true
@@ -1027,13 +1038,24 @@
                               }
                             },
                             "input": {
-                              "chat_id": "{{step_26['output'].item.telegramId}}",
-                              "disable_notification": false,
-                              "format": "None",
-                              "message": "{{step_25['output'].body}}",
-                              "protect_content": false,
-                              "reply_markup": "{{step_25['output'].unsubMarkup}}",
-                              "web_page_preview": false
+                              "body": {
+                                "data": {
+                                  "chat_id": "{{step_26['output'].item.telegramId}}",
+                                  "from_chat_id": "{{step_25['output'].mediaChatId}}",
+                                  "message_id": "{{step_25['output'].mediaMessageId}}",
+                                  "reply_markup": "{{step_25['output'].unsubMarkup}}"
+                                }
+                              },
+                              "body_type": "json",
+                              "failsafe": false,
+                              "followRedirects": false,
+                              "headers": {},
+                              "method": "POST",
+                              "queryParams": {},
+                              "response_is_binary": false,
+                              "url": {
+                                "url": "/copyMessage"
+                              }
                             },
                             "propertySettings": {},
                             "qadamName": "@aiqadam/qadam-telegram-bot",
@@ -1383,13 +1405,15 @@
                       "input": {
                         "bid": "{{step_4['output'].bid}}",
                         "body": "{{step_4['output'].body}}",
+                        "mediaChatId": "{{step_4['output'].mediaChatId}}",
+                        "mediaMessageId": "{{step_4['output'].mediaMessageId}}",
                         "targetRecords": "{{step_24['output']}}",
                         "texts": {
                           "bcast.btn.unsubscribe": "Отписаться"
                         }
                       },
                       "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const items = arr(inputs.targetRecords).map(flat)\n    .filter((r) => str(r.state) === 'pending' && str(r.telegram_id) !== '' && str(r.__recordId) !== '')\n    .slice(0, 30)\n    .map((r) => ({ recordId: str(r.__recordId), telegramId: str(r.telegram_id) }));\n  return {\n    items: items, n: items.length, body: str(inputs.body), bid: str(inputs.bid),\n    unsubMarkup: { inline_keyboard: [[{ text: t('bcast.btn.unsubscribe'), callback_data: 'bcast:unsub:' + str(inputs.bid) }]] },\n    now: new Date().toISOString(),\n  };\n};",
+                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const items = arr(inputs.targetRecords).map(flat)\n    .filter((r) => str(r.state) === 'pending' && str(r.telegram_id) !== '' && str(r.__recordId) !== '')\n    .slice(0, 30)\n    .map((r) => ({ recordId: str(r.__recordId), telegramId: str(r.telegram_id) }));\n  return {\n    items: items, n: items.length, body: str(inputs.body), bid: str(inputs.bid),\n    mediaChatId: str(inputs.mediaChatId),\n    mediaMessageId: Number(str(inputs.mediaMessageId)) || 0,\n    unsubMarkup: { inline_keyboard: [[{ text: t('bcast.btn.unsubscribe'), callback_data: 'bcast:unsub:' + str(inputs.bid) }]] },\n    now: new Date().toISOString(),\n  };\n};",
                         "packageJson": "{}"
                       }
                     },
@@ -1569,14 +1593,14 @@
                 "phase": "{{trigger['output'].data.phase}}",
                 "telegramId": "{{trigger['output'].data.telegramId}}",
                 "texts": {
-                  "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания ивента — {when}. Пока часть людей ещё в дороге.",
+                  "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
                   "bcast.send.blocked_no_test": "Сначала отправьте тест себе — без этого рассылку не запускаем.",
-                  "common.err.event_not_found": "Ивент не найден.",
+                  "common.err.event_not_found": "Событие не найдено.",
                   "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
                 }
               },
               "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fmtTash = (iso) => {\n    const ms = parseDate(iso);\n    if (!isFinite(ms)) return '';\n    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date(ms));\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] || k);\n    if (vars) Object.keys(vars).forEach((key) => { s = s.split('{' + key + '}').join(String(vars[key])); });\n    return s;\n  };\n  const stop = (notify) => ({\n    action: 'stop', notify: notify, needNotify: notify !== '',\n    bid: '', body: '', segment: '', eventId: '', recordId: '', sent: 0,\n  });\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return stop('');\n  const phase = str(inputs.phase) || 'start';\n  const status = str(b.status);\n  const goSend = () => ({ action: 'send', notify: '', needNotify: false, bid: str(b.id), body: str(b.body), segment: str(b.segment), eventId: str(b.event_id), recordId: str(b.__recordId), sent: Number(b.sent) || 0 });\n  if (status === 'done' || status === 'failed') return stop('');\n  if (phase === 'send' && status === 'running') return goSend();\n  if (phase === 'send' && status === 'draft') {\n    // Самовызов send-фазы на несобранную рассылку — собираем сначала.\n  } else if (phase !== 'start') {\n    return stop('');\n  } else if (status === 'running') {\n    return goSend();\n  }\n  if (str(b.test_sent_at) === '') return stop(t('bcast.send.blocked_no_test'));\n  const seg = str(b.segment);\n  if (['all_consent', 'registered', 'attended', 'no_show'].indexOf(seg) < 0) return stop(t('common.err.generic'));\n  const ev = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(b.event_id))[0];\n  if (!ev && seg !== 'all_consent') return stop(t('common.err.event_not_found'));\n  if (seg === 'no_show' && ev) {\n    const endsMs = parseDate(ev.ends_at);\n    if (!isFinite(endsMs) || endsMs > Date.now()) {\n      const when = fmtTash(ev.ends_at) || str(ev.ends_at);\n      return stop(t('bcast.segment.no_show_locked', { when: when }));\n    }\n  }\n  return { action: 'materialize', notify: '', needNotify: false, bid: str(b.id), body: str(b.body), segment: seg, eventId: str(b.event_id), recordId: str(b.__recordId), sent: 0 };\n};",
+                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseDate = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const fmtTash = (iso) => {\n    const ms = parseDate(iso);\n    if (!isFinite(ms)) return '';\n    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date(ms));\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] || k);\n    if (vars) Object.keys(vars).forEach((key) => { s = s.split('{' + key + '}').join(String(vars[key])); });\n    return s;\n  };\n  const stop = (notify) => ({\n    action: 'stop', notify: notify, needNotify: notify !== '',\n    bid: '', body: '', segment: '', eventId: '', recordId: '', sent: 0,\n    mediaChatId: '', mediaMessageId: '',\n  });\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return stop('');\n  const phase = str(inputs.phase) || 'start';\n  const status = str(b.status);\n  const goSend = () => ({ action: 'send', notify: '', needNotify: false, bid: str(b.id), body: str(b.body), segment: str(b.segment), eventId: str(b.event_id), recordId: str(b.__recordId), sent: Number(b.sent) || 0, mediaChatId: str(b.media_chat_id), mediaMessageId: str(b.media_message_id) });\n  if (status === 'done' || status === 'failed') return stop('');\n  if (phase === 'send' && status === 'running') return goSend();\n  if (phase === 'send' && status === 'draft') {\n    // Самовызов send-фазы на несобранную рассылку — собираем сначала.\n  } else if (phase !== 'start') {\n    return stop('');\n  } else if (status === 'running') {\n    return goSend();\n  }\n  if (str(b.test_sent_at) === '') return stop(t('bcast.send.blocked_no_test'));\n  const seg = str(b.segment);\n  if (['all_consent', 'registered', 'attended', 'no_show'].indexOf(seg) < 0) return stop(t('common.err.generic'));\n  const ev = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(b.event_id))[0];\n  if (!ev && seg !== 'all_consent') return stop(t('common.err.event_not_found'));\n  if (seg === 'no_show' && ev) {\n    const endsMs = parseDate(ev.ends_at);\n    if (!isFinite(endsMs) || endsMs > Date.now()) {\n      const when = fmtTash(ev.ends_at) || str(ev.ends_at);\n      return stop(t('bcast.segment.no_show_locked', { when: when }));\n    }\n  }\n  return { action: 'materialize', notify: '', needNotify: false, bid: str(b.id), body: str(b.body), segment: seg, eventId: str(b.event_id), recordId: str(b.__recordId), sent: 0, mediaChatId: str(b.media_chat_id), mediaMessageId: str(b.media_message_id) };\n};",
                 "packageJson": "{}"
               }
             },
@@ -1633,7 +1657,7 @@
             "phase": "{{trigger['output'].data.phase}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return { found: false, bid: '', eventId: '', eventIdOrNone: '__none__', status: '', recordId: '' };\n  const eventId = str(b.event_id);\n  return {\n    found: true, bid: str(b.id), eventId: eventId, eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    status: str(b.status), recordId: str(b.__recordId),\n  };\n};",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const b = arr(inputs.broadcastRecords).map(flat)[0];\n  if (!b || str(b.id) === '') return { found: false, bid: '', eventId: '', eventIdOrNone: '__none__', status: '', recordId: '', mediaChatId: '', mediaMessageId: '' };\n  const eventId = str(b.event_id);\n  return {\n    found: true, bid: str(b.id), eventId: eventId, eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    status: str(b.status), recordId: str(b.__recordId),\n    mediaChatId: str(b.media_chat_id), mediaMessageId: str(b.media_message_id),\n  };\n};",
             "packageJson": "{}"
           }
         },

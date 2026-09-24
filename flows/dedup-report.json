@@ -1,0 +1,206 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "dedup-report",
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "cron_expression",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "read registrations",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "read event_staff",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "read broadcast_targets",
+          "name": "step_3",
+          "nextAction": {
+            "displayName": "read staff",
+            "name": "step_4",
+            "nextAction": {
+              "displayName": "dedup report",
+              "name": "step_5",
+              "nextAction": {
+                "displayName": "send to staff",
+                "firstLoopAction": {
+                  "displayName": "send report",
+                  "name": "step_7",
+                  "settings": {
+                    "actionName": "send_text_message",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": true
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "chat_id": "{{step_6['output'].item.telegramId}}",
+                      "format": "None",
+                      "message": "{{step_5['output'].text}}"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-telegram-bot",
+                    "qadamVersion": "0.8.0"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "name": "step_6",
+                "settings": {
+                  "items": "{{step_5['output'].recipients}}"
+                },
+                "type": "LOOP_ON_ITEMS",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "broadcastTargets": "{{step_3['output']}}",
+                  "eventStaff": "{{step_2['output']}}",
+                  "registrations": "{{step_1['output']}}",
+                  "staff": "{{step_4['output']}}",
+                  "texts": {
+                    "dedup.broadcast_targets": "broadcast_targets: строк {rows}, лишних {dupes}",
+                    "dedup.event_staff": "event_staff: строк {rows}, лишних {dupes}",
+                    "dedup.registrations": "registrations: строк {rows}, лишних {dupes}",
+                    "dedup.title": "Дубли строк за {date}",
+                    "dedup.total": "Лишних строк всего: {total}"
+                  }
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  // Дубли строк — данность ADR-0011: tables-upsert-records не уникальный\n  // индекс, дубли схлопываются при чтении. Здесь только счёт, без записи и\n  // удаления (Q42, вариант 2). «Лишние строки» = сумма (n-1) по ключам,\n  // встретившимся больше одного раза; строку с пустой половиной ключа не судим.\n  const countDupes = (records, keyFields) => {\n    const seen = {};\n    let rows = 0;\n    let dupes = 0;\n    arr(records).map(flat).forEach((r) => {\n      const parts = keyFields.map((f) => str(r[f]));\n      if (parts.some((p) => p === '')) return;\n      rows += 1;\n      const k = parts.join('|');\n      if (seen[k]) { dupes += 1; } else { seen[k] = true; }\n    });\n    return { rows: rows, dupes: dupes };\n  };\n  const regs = countDupes(inputs.registrations, ['event_id', 'telegram_id']);\n  const stf = countDupes(inputs.eventStaff, ['event_id', 'telegram_id']);\n  const tgts = countDupes(inputs.broadcastTargets, ['broadcast_id', 'telegram_id']);\n\n  const obj = (v) => v && typeof v === 'object' && !Array.isArray(v) ? v : {};\n  const texts = obj(inputs.texts);\n  const date = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n  const subst = (tpl, vars) => String(tpl).replace(/\\{([A-Za-z0-9_]+)\\}/g, (m, name) => (vars[name] === undefined || vars[name] === null ? m : String(vars[name])));\n  const line = (key, vars) => subst(texts[key] === undefined ? key : texts[key], vars);\n\n  const total = regs.dupes + stf.dupes + tgts.dupes;\n  const report = [\n    line('dedup.title', { date: date }),\n    '',\n    line('dedup.registrations', { rows: regs.rows, dupes: regs.dupes }),\n    line('dedup.event_staff', { rows: stf.rows, dupes: stf.dupes }),\n    line('dedup.broadcast_targets', { rows: tgts.rows, dupes: tgts.dupes }),\n    '',\n    line('dedup.total', { total: total })\n  ].join('\\n');\n\n  // Получатель — строки staff: единственный в проекте список организаторов\n  // (Q18: отдельного канала админов нет). Сегодня это ровно владелец проекта.\n  const seenR = {};\n  const recipients = arr(inputs.staff).map(flat)\n    .map((r) => str(r.telegram_id))\n    .filter((id) => id !== '')\n    .filter((id) => { if (seenR[id]) return false; seenR[id] = true; return true; })\n    .map((id) => ({ telegramId: id }));\n\n  return {\n    date: date,\n    rows: { registrations: regs.rows, event_staff: stf.rows, broadcast_targets: tgts.rows },\n    dupes: { registrations: regs.dupes, event_staff: stf.dupes, broadcast_targets: tgts.dupes },\n    total: total,\n    recipients: recipients,\n    text: report\n  };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-find-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "columns": [
+                  "ecOXPzqTqu2ktJ2Uj330k"
+                ],
+                "record_ids": [],
+                "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.5"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "tables-find-records",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "columns": [
+                "P9k6Pfcwfn67JQHQHQBle",
+                "vzeXDhJwTFpXrbt04g5HY"
+              ],
+              "record_ids": [],
+              "table_id": "PAH81WchbaOixGXSdFBK1"
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-tables",
+            "qadamVersion": "0.4.5"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "tables-find-records",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "columns": [
+              "r5WohfFLBagrxVrPDgB9s",
+              "Rs62LH1YLr1QBsnpIrJzH"
+            ],
+            "record_ids": [],
+            "table_id": "t1g8Vae3iEoDk93D6Rle7"
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-tables",
+          "qadamVersion": "0.4.5"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "tables-find-records",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "columns": [
+            "qQPYl9c0ew6n8w2CGYZII",
+            "mVfpZFCwAZskWXNT7iCuI"
+          ],
+          "record_ids": [],
+          "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-tables",
+        "qadamVersion": "0.4.5"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "cronExpression": "0 3 * * *",
+        "timezone": "Asia/Tashkent"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-schedule",
+      "qadamVersion": "0.1.17",
+      "triggerName": "cron_expression"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

@@ -77,18 +77,16 @@ if (PROTO.missing && PROTO.missing.length) {
 }
 
 // ---------- 4. структура сценариев ----------
-const ROUTES = new Set(['#/ticket', '#/scan', '#/manage', '#/manage/new', '#/events']);
-// Пятый роут — предложение (форма отзыва, черновик ADR-0028): в сценарии
-// допустим, но помечается предупреждением, а не проходит как разрешённый.
-const PROPOSED_ROUTES = new Set(['#/feedback']);
+const ROUTES = new Set(['#/ticket', '#/scan', '#/manage', '#/manage/new', '#/events', '#/feedback']);
+// #/feedback — пятый роут, принят ADR-0028 (W45): в сценариях проходит как разрешённый.
 function routeName(hash) {
   const p = String(hash).split('?')[0];
   return ROUTES.has(p) || /^#\/manage\/[^/]+$/.test(p);
 }
 const ENTRIES = {
   guest: ['reminders'],
-  owner: ['published', 'updated', 'cancelled', 'broadcast', 'staff-invite', 'finished'],
-  controller: ['menu', 'notify'],
+  owner: ['published', 'updated', 'cancelled', 'broadcast', 'finished'],
+  controller: ['menu'],
 };
 
 for (const [sid, sc] of Object.entries(scenarios)) {
@@ -108,9 +106,7 @@ for (const [sid, sc] of Object.entries(scenarios)) {
       if (!b.label) fail(`${sid}.${s.id}[${bi}]: кнопка без label`);
       if (b.go && b.go !== 'end' && !ids.has(b.go)) fail(`${sid}.${s.id}[${bi}]: go «${b.go}» не найден`);
       if (b.webApp && !routeName(b.webApp)) {
-        const p = String(b.webApp).split('?')[0];
-        if (PROPOSED_ROUTES.has(p)) warnings.push(`${sid}.${s.id}[${bi}]: webApp «${b.webApp}» — предложенный роут (черновик ADR-0028)`);
-        else fail(`${sid}.${s.id}[${bi}]: webApp «${b.webApp}» — неизвестный роут`);
+        fail(`${sid}.${s.id}[${bi}]: webApp «${b.webApp}» — неизвестный роут`);
       }
     });
   });

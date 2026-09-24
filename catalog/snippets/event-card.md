@@ -1,4 +1,4 @@
-# Эталон: сборка карточки ивента
+# Эталон: сборка карточки события
 
 **Инварианты:** I18N-2 (ни одной строки литералом), OWN-2 (ссылка на карты
 собирается из `lat`/`lon`, а не хранится), OWN-3 (время — в `Asia/Tashkent`).
@@ -19,7 +19,7 @@ assemble). [`reg-start`](../flows/reg-start.md) (`step_9`, «build event card»)
 Первый и последний приведены полностью — по выдержке побайтовая сверка
 невозможна (правило 1 [README](README.md)).
 
-### extract — выделение полей ивента
+### extract — выделение полей события
 
 ```js
 export const code = async (inputs) => {
@@ -46,7 +46,7 @@ export const code = async (inputs) => {
   const blank = {
     found: false, eventOk: eventOk, eventId: eventId, lang: lang,
     recordId: '', title: '', description: '', address: '', photoFileId: '', status: '',
-    // staffId — автор ивента (не гейт прав, ADR-0024); chapterId — чаптер.
+    // staffId — автор события (не гейт прав, ADR-0024); chapterId — чаптер.
     // Карточка сама никого не авторизует, но отдаёт вызывающему чем проверить.
     staffId: '', chapterId: '',
     startsAt: '', endsAt: '', regDeadlineAt: '', lat: '', lon: '', hasGeo: false,

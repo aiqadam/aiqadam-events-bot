@@ -7,7 +7,7 @@ AI-провайдеры платформенные (общие на всю пл�
 
 | Connection | Qadam | Тип auth | Назначение |
 |------------|-------|----------|-----------|
-| `AI Qadam Events (dev)` | `@aiqadam/qadam-telegram-bot` | Bot Token | **отдельный бот-аккаунт** только под ивенты (Q4); `externalId` `TZTlXaCEO2hEvimUowbSA` |
+| `AI Qadam Events (dev)` | `@aiqadam/qadam-telegram-bot` | Bot Token | **отдельный бот-аккаунт** только под события (Q4); `externalId` `TZTlXaCEO2hEvimUowbSA` |
 
 Один вебхук на бот-токен: описание триггера `new_telegram_message` говорит прямо —
 «One trigger per bot token». Поэтому токен существующего `aiqadam-telegram-bot`
