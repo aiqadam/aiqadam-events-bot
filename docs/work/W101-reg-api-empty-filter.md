@@ -77,13 +77,13 @@
   с `value:"__none__"` — `[]`.
 - После правки и публикации (версия `RFehqjpi0tvZ5u1y71ZpQ`), живые
   `curl POST /api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync` на `initData`
-  владельца:
-  - `mine` → `200 {ok:true, outcome:"mine", mine:[<событие + registered>]}`;
-  - `profile_get` → `200 {ok:true, outcome:"profile", consentMarketing:true, profile:{…}}`;
+  владельца, все четыре — на этой версии (прогоны 09:21 UTC):
+  - `mine` → `200 {ok:true, outcome:"mine", mine:[<событие + registered>]}` (`6N5qz2ApjRmNw3gNxeO8P`);
+  - `profile_get` → `200 {ok:true, outcome:"profile", consentMarketing:true, profile:{…}}` (`pXQNwW0saDXPIXMBIJLSu`);
   - `register` (существующее событие) → `200 {outcome:"existing"}` — повтор
-    идемпотентен, регресса нет;
+    идемпотентен, регресса нет (`jVzJiA9cGVKUVazYWjHda`);
   - `cancel` (несуществующее событие) → `404 {reason:"not_registered"}` —
-    непустой `eventId` проходит `step_7`/`step_8` как раньше.
+    непустой `eventId` проходит `step_7`/`step_8` как раньше (`3zMVU9ixpS5EOLZ2Mhea6`).
 - `ap_validate_flow reg-api` — «ready to publish». `ap_test_step` для этого
   флоу непригоден: вебхук-триггер, прогон исполнил все шаги, включая
   недостижимые ветки, с пустыми выходами — код-шаги не запускались.
@@ -102,13 +102,91 @@
 
 > Заполняет независимый ревьюер по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 
-- **Ревьюер**: <агент> · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash) · **Дата**: 2026-09-24 · **Вердикт**: есть замечания
+
+Блокеров и «важно» нет — правка делает ровно то, что заявлено, и прод-инцидент
+закрыт. Оба замечания — «на будущее»: их достаточно записать, чинить сейчас
+нечего.
 
 ### Замечания
 
-1. —
+1. **на будущее** — платформенный fail-closed на пустом `eq` бьёт шире
+   `reg-api`, а аудита нет. `AGENTS.md` получил общее правило («фильтр, чьё
+   значение может оказаться пустым, обязан получать сентинел»), но проверены
+   только `lifecycle`/`bcast-step`/`reg-api`. Подтверждённый пример того же
+   класса: `checkin-counter-api/step_3` («check staff rights») фильтрует
+   `event_id eq {{trigger['output'].body.eventId}}` без проверки формы и
+   непустоты. Пока SPA всегда шлёт `eventId`, это не видно; при пустом
+   значении прогон упадёт `Filter #1 ... requires a value` — до смены
+   поведения это был штатный `403 forbidden`, теперь станет `500`.
+   — где: `checkin-counter-api/step_3` (и, возможно, `my-qr-api`,
+   `feedback-api`, `reg-consent-*` — `eq` по значению из запроса/диплинка).
+   — почему важно: это не дефект W101, но цена того же изменения платформы;
+   записать в OPEN-QUESTIONS/бэклог отдельным пакетом и пройтись по остальным
+   `eq`-фильтрам с необязательным значением.
+   - *Принято*: аудит остальных `eq`-фильтров с необязательным значением
+     вынесен в «Хвосты» отдельным пакетом; W101 его не чинит — это не регресс
+     W101, а цена того же изменения платформы (2026-09-24).
+
+2. **на будущее** — журнал и `STATUS.md` приписывают все четыре живых `curl`
+   опубликованной версии `RFehqjpi0tvZ5u1y71ZpQ`, но по её метаданным
+   (`created 2026-09-24T09:15:31Z`) четыре из шести прогонов (`mine`,
+   `profile_get`, `register`, `cancel` — `0cm2ym1luAuH6lNkGPRyK`,
+   `CKpw4wdKyHP6BS9Ezoo9z`, `xOBEZEqGGQGM2GpUlDL1s`, `2pudzxbRX0jdqrdrmM6O5`,
+   все 09:13 UTC) завершились раньше её появления; на опубликованной версии
+   перепроверены только `mine`/`profile_get` (09:16 UTC). Регресс
+   `register`/`cancel` при непустом `eventId` закрыт чтением именно
+   опубликованного кода (`eventIdOrNone === eventId`, фильтры `step_7`/`step_8`
+   идентичны прежним), но живого прогона на `RFehqjpi…` для этих двух действий
+   нет. — где: «Как проверено» журнала и строка `W101` в `docs/STATUS.md`.
+   — почему важно: для прод-инцидента утверждение «проверено на опубликованной
+   версии» должно опираться на прогоны той самой версии; либо перепроверить
+   `register`/`cancel` на живом `curl`, либо поправить формулировку.
+   - *Исправлено*: все четыре действия перепрогнаны живым `curl` на
+     `RFehqjpi0tvZ5u1y71ZpQ` (09:21 UTC, прогоны `6N5qz2Ap…`, `pXQNwW0s…`,
+     `jVzJiA9c…`, `3zMVU9ix…`); «Как проверено» и строка `W101` в `STATUS`
+     поправлены (2026-09-24).
+
+### Чем проверено (ревьюер)
+
+- Живой проект через MCP: `ap_flow_structure` (includeInput) — `step_2` отдаёт
+  `eventIdOrNone`, `step_7`/`step_8` фильтруют `eq` по `{{step_2['output'].eventIdOrNone}}`,
+  `step_9` по-прежнему получает сырой `eventId`; `ap_read_step_code step_2`/`step_9`;
+  `ap_validate_flow` — «ready to publish» (40 шагов, 39 valid, 1 skipped);
+  `ap_list_flows` — `reg-api` ENABLED/published.
+- Прогоны: прод-свидетель `DqQeHS8hgl7cT2SOZw7rP` (`profile_get`, 08:30) — падение
+  `step_7` на пустом `eq`; успешные `mine`/`profile_get` (`i5NcSFWO45dNPtAgduKut`,
+  `8jPQIg7yAM0N0fM1iqgBD`, 09:16) — `step_2.eventIdOrNone = '__none__'`,
+  `step_7`/`step_8` = `[]`, исход `mine`/`profile` корректен; `register`
+  (`xOBEZ…`) → `existing`, `cancel` (`2pudzxb…`) → `404 not_registered` при
+  `eventIdOrNone === eventId`; `[TEST] 335i887…` — артефакт `ap_test_step`
+  (вебхук-триггер, пустые выходы), как и описано в журнале.
+- IDOR/владелец `initData` не затронуты: `step_2.telegramId` — только из
+  проверенного `hmac` (`{{step_1['output'].data}}`), фильтры чтения — по
+  `telegramId`/`event_id`, `targetTelegramId` сравнивается с `telegramId` в
+  `step_9` (403). Семантика `register`/`cancel` при непустом `eventId`
+  не меняется (`eventIdOrNone === eventId`). Проекции `columns` у `step_7`/`step_8`
+  не расширены — новых ПД в логах нет.
+- Офлайн: `tools/check-export-secrets.sh` (0), `tools/check-texts.py` (0),
+  `tools/check-commands.py` (0). `tools/check-migrations.py` не запустился —
+  нет ключа платформы (среда), вместо него вручную: `flows/_manifest.json`
+  (`RFehqjpi0tvZ5u1y71ZpQ`) ↔ `ap_export_flow.flows[0].id` ↔ `migrations`
+  (строка `W101`, `commit 45fb6f4`) — совпадают.
+- Каталог: `catalog/flows/reg-api.md` соответствует живой структуре (шаги,
+  фильтры, заметка про `eventIdOrNone`); гочу в `AGENTS.md` подтверждает
+  `ap_run_action`-находка журнала.
 
 ## Хвосты и блокеры
 
+- **Отдельный пакет: аудит `eq`-фильтров с необязательным значением** (ревью
+  круг 1, «на будущее»). Подтверждённый пример — `checkin-counter-api/step_3`
+  («check staff rights»): `event_id eq {{trigger['output'].body.eventId}}` без
+  проверки формы; при пустом `eventId` упадёт `Filter #1 … requires a value`
+  (был `403 forbidden`, станет `500`). Проверить также `my-qr-api`,
+  `feedback-api`, `reg-consent-*`. Не регресс W101 — цена того же изменения
+  платформы.
 - Живая проверка `delete_account` (разрушительное действие) на реальном
   аккаунте не выполняется — проверяется кодом и драфт-прогоном до чтений.
+- `tools/check-migrations.py` без ключа платформы в среде — сверка
+  manifest ↔ `ap_export_flow` ↔ `migrations` сделана вручную (ревьюер
+  подтвердил), автопроверка — на W15.
