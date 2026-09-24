@@ -1,10 +1,10 @@
 # W101. Прод-инцидент: пустой `eventId` в фильтрах `reg-api`
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн — инцидент в проде, решение владельца 2026-09-24
 - **Зависит от**: —
-- **Начат**: 2026-09-24 · **Закрыт**: —
+- **Начат**: 2026-09-24 · **Закрыт**: 2026-09-24
 
 ## Цель
 
@@ -59,15 +59,15 @@
 
 ## Чек-лист готовности
 
-- [ ] `ap_validate_flow reg-api` — чисто
-- [ ] `mine` и `profile_get` на живом `initData` — `200 {ok:true}` (пустой `eventId`)
-- [ ] `register`/`cancel` (непустой `eventId`) — без регресса
-- [ ] `flows/reg-api.json` перегенерён из LOCKED-версии тем же коммитом
-- [ ] `catalog/flows/reg-api.md` отражает живой проект; платформенная гоча — в `AGENTS.md`
-- [ ] строка `publish` в таблице `migrations` + `catalog/tables/migrations.md`
-- [ ] офлайн-проверки (`check-export-secrets.sh`, `check-texts.py`, `check-commands.py`) — зелёные
-- [ ] `catalog/` совпадает с живым проектом
-- [ ] независимое ревью, вердикт «замечаний нет»
+- [x] `ap_validate_flow reg-api` — чисто
+- [x] `mine` и `profile_get` на живом `initData` — `200 {ok:true}` (пустой `eventId`)
+- [x] `register`/`cancel` (непустой `eventId`) — без регресса
+- [x] `flows/reg-api.json` перегенерён из LOCKED-версии тем же коммитом
+- [x] `catalog/flows/reg-api.md` отражает живой проект; платформенная гоча — в `AGENTS.md`
+- [x] строка `publish` в таблице `migrations` (схема `catalog/tables/migrations.md` не менялась)
+- [x] офлайн-проверки (`check-export-secrets.sh`, `check-texts.py`, `check-commands.py`) — зелёные
+- [x] `catalog/` совпадает с живым проектом
+- [x] независимое ревью, вердикт «замечаний нет» (круг 3)
 
 ## Как проверено
 
@@ -97,6 +97,15 @@
   все шаги с пустыми выходами), поэтому после обсуждения фикс опубликован,
   снят живым `curl`, и только затем идёт ревью; `готов` — лишь по вердикту
   «замечаний нет».
+
+## Закрытие
+
+- **2026-09-24 — готов.** Ревью 3 круга: круг 1 — блокеров и «важно» нет, два
+  «на будущее» (аудит прочих `eq`-фильтров вынесен в хвост; точность
+  доказательств исправлена), круг 2 — только «на будущее» (шапка журнала,
+  пропущенная ветка `delete_account` в каталоге), круг 3 — «замечаний нет».
+  Прод-инцидент закрыт; на живом трафике Mini App пришёл прод-прогон
+  `mine` (`yNwTpHrQJdWNPzx3EJTZV`, 09:26 UTC) — `200 {ok:true, outcome:"mine"}`.
 
 ## Ревью
 
@@ -245,6 +254,64 @@
 - `AGENTS.md` (гоча W101 про пустой `eq`) содержит общее правило и ссылку на
   `__none__`; факт подтверждается диагностикой журнала (`ap_run_action` на
   пустом значении и на сентинеле).
+
+## Ревью, круг 3
+
+> Повторное ревью после ответа владельца на замечания круга 2 (коммит `d86b7d8`).
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash) · **Дата**: 2026-09-24 · **Вердикт**: замечаний нет
+
+Оба замечания круга 2 закрыты, новых расхождений правки не внесли; блокеров,
+«важно» и «на будущее» не осталось. Прежние «на будущее»-пункты (аудит прочих
+`eq`-фильтров, живой прогон `delete_account`) приняты хвостом — чинить в W101
+нечего.
+
+- **Замечание №1 круга 2 (шапка журнала) — закрыто.** Строка 3 журнала —
+  `- **Статус**: на проверке`; `docs/STATUS.md` (строка `W101`) — тоже
+  «**на проверке**». Статус читается одним значением.
+- **Замечание №2 круга 2 (неполный список веток `step_10`) — закрыто.**
+  `catalog/flows/reg-api.md`, строка `step_10`, перечисляет семь веток —
+  `register` / `cancel` / `registered_profile` / `profile` / `profile_saved` /
+  `delete_account` / `Otherwise`; живой ROUTER `step_10` (`ap_flow_structure`)
+  содержит ровно те же семь, с `delete_account` ветвью 5 и `Otherwise` ветвью 6,
+  в том же порядке.
+
+### Чем проверено (ревьюер, круг 3)
+
+- Диф `d86b7d8` — только две правки по замечаниям: строка статуса журнала и
+  строка `step_10` в карточке (плюс коммит вердикта круга 2); посторонних
+  изменений нет. `git diff --stat main...HEAD` — 6 файлов (`AGENTS.md`,
+  `catalog/flows/reg-api.md`, `docs/STATUS.md`, журнал, `flows/_manifest.json`,
+  `flows/reg-api.json`), все относятся к W101.
+- Живой проект через MCP: `ap_flow_structure` (includeInput) — `step_2` отдаёт
+  `eventIdOrNone` (`eventId !== '' ? eventId : '__none__'`), `step_7`/`step_8`
+  фильтруют `eq` по `{{step_2['output'].eventIdOrNone}}`, `step_9` читает сырой
+  `{{step_2['output'].eventId}}`; `step_10` — семь веток, как в карточке.
+  `ap_validate_flow` — «ready to publish» (40 шагов, 39 valid, 1 skipped);
+  `ap_list_flows` — `reg-api` ENABLED/published.
+- Версия и след: `ap_export_flow` отдаёт `flows[0].id = RFehqjpi0tvZ5u1y71ZpQ`
+  (`created 2026-09-24T09:15:31Z`, `updated 09:15:41Z`); `flows/_manifest.json`
+  (`publishedVersionId` `RFehqjpi…`) и живая строка `migrations`
+  (`2026-09-24-w101-01`, `publish`, `flow:reg-api`, `version_id`
+  `RFehqjpi0tvZ5u1y71ZpQ`, `commit 45fb6f4`) совпадают. Публикаций после
+  `09:15:41Z` не было.
+- Прогоны: четыре `curl`-прогона 09:21 UTC (`6N5qz2Ap…`, `pXQNwW0s…`,
+  `jVzJiA9c…`, `3zMVU9ix…`) на месте, все `SUCCEEDED`; свежий прод-прогон
+  09:26 UTC (`yNwTpHrQJdWNPzx3EJTZV`, `Environment: PRODUCTION`, origin
+  `miniapp.events.aiqadam.org`) — `action:"mine"`, `step_2.eventIdOrNone =
+  "__none__"`, `step_7`/`step_8` = `[]`, `step_10` семь веток (сработала
+  `Otherwise`), ответ `200 {ok:true, outcome:"mine"}`. Инцидент на живом
+  трафике закрыт.
+- Офлайн: `tools/check-export-secrets.sh` (0), `tools/check-texts.py
+  i18n/ru.json flows/*.json` (254 пары, 0 расхождений), `tools/check-commands.py
+  i18n/*.json flows/*.json` (0). `tools/check-migrations.py` — код 2: ключа
+  платформы в среде нет (`QADAM_API_KEY` unset, Keychain пуст); сверка
+  manifest ↔ `ap_export_flow` ↔ `migrations` сделана вручную.
+- AppSec по правке: `telegram_id` — только из `step_1` (проверенный `initData`),
+  фильтры чтения — по `telegram_id`/`event_id`; проекции `columns` `step_7`/`step_8`
+  не расширены (новых ПД в логах нет); `eventIdOrNone === eventId` при непустом
+  `eventId`, так что семантика `register`/`cancel` не меняется; коротких форм
+  `{{VAR}}` в `flows/reg-api.json` нет.
 
 ## Хвосты и блокеры
 
