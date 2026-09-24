@@ -181,6 +181,76 @@ http. Живое состояние — [catalog/overview.md](../../catalog/over
    `auth`-полей; токен-паттерн и hex-проверка работают. Проявилось от перехода
    на MCP-экспорт (Q38/ADR-0021), не дефект W100.
 
+### Круг 2
+
+- **Ревьюер**: агент (review-agent, чистый контекст), **дата**: 2026-09-24
+- **Вердикт**: есть замечания
+
+#### Замечания
+
+1. **важно** — `tg-router`: живая последняя версия — **DRAFT**
+   `IUhunmfHugu5pUFBx6gYR` (`updated 2026-09-24T07:51:13.619Z`, тот же момент,
+   что и тестовый прогон `zXpkNx66CQ0GY27ZUMoCB`), тогда как
+   `flows/_manifest.json` и `flows/tg-router.json` фиксируют опубликованную
+   `bKg9T7SQhxsPgsUEqDmfr`. Содержимое черновика побайтово совпадает со
+   снимком (отличия — только `state` LOCKED→DRAFT и метаданные), то есть это
+   ровно та же гоча #14, что и замечание 1 круга 1 у `staff-accept`, только на
+   флоу вне 15 перепривязанных. Прод не затронут (`publishedVersionId`, который
+   сверяет `check-migrations.py`, тестом не меняется), но `ap_export_flow`
+   отдаёт не тот слой, что закоммичен, — следующий агент снимет снимок
+   черновика. Лечение то же, что применил владелец к `staff-accept`:
+   `ap_lock_and_publish` `tg-router` и повторный MCP-снимок сразу после
+   (манифест + строка `migrations`). Черновик создан уже на момент снятия
+   снимков W100 (`created 07:08:26`, тесты W99) — если владелец относит
+   расхождение к незакрытому W99, это стоит явно назвать там, но не
+   оставлять неназванным.
+
+### Как проверено (круг 2)
+
+- Замечание 1 круга 1 закрыто: живой `ap_export_flow` `staff-accept`
+  (`8seS0t3EfBZbmMSxuuYwC`) отдаёт `flows[0].id = BLlc5yNIFIfbY3pXF34rC`,
+  `state: LOCKED` — совпадает и с `publishedVersionId` в
+  `flows/_manifest.json`, и с `version_id` строки `migrations`
+  `2026-09-24-w100-14` (прочитана `ap_find_records`). Все 15 строк
+  `package: W100` имеют `version_id` = `publishedVersionId` манифеста.
+- `ap_validate_flow` по всем **30** опубликованным флоу + 2 диагностическим
+  черновикам — ни одного «Unavailable Qadam Versions». Единственная находка —
+  у `zz-access-check-delete-me` невключённый триггер (диагностический,
+  DISABLED), к W100 не относится.
+- Топология и `sourceCode`: сравнение `git HEAD~2` (W99) ↔ рабочий по 15
+  флоу — множества шагов, рёбра (parent/relationship, включая
+  `continueOnFailureBranches` и тела `LOOP_ON_ITEMS` через `firstLoopAction`)
+  и каждый `sourceCode` идентичны; изменены только `qadamVersion` — **68**
+  bump'ов (2+6+14+3+1+4+2+1+4+5+14+5+1+4+2), совпадает с журналом.
+- Старые версии `0.8.0`/`0.0.21`/`0.11.9` не встречаются ни в одном
+  `flows/*.json`; короткой формы `{{VAR}}` нет.
+- Точечные живые `ap_export_flow`: `menu` — LOCKED, `flows[0].id` =
+  `BTl8TqBftj2zmNhgChZDP` = манифест; `tg-router` — расхождение (см.
+  замечание).
+- Тестовые прогоны после переопубликации (`~08:02`) отсутствуют — последние
+  TESTING-прогоны 07:51 (`staff-accept`, `menu`, `fn-parse-start`,
+  `tg-router`).
+- Офлайн: `tools/check-texts.py i18n/ru.json flows/*.json` (29 флоу, 254 пары,
+  0 расхождений), `tools/check-commands.py flows/*.json` (0),
+  `tools/check-export-secrets.sh` (0 токенов, 0 hex, переменные как
+  ожидалось) — все exit 0.
+- `tools/check-migrations.py` не запускался: ключа платформы
+  (`QADAM_API_KEY`/Keychain) нет, как и в круге 1; сверка
+  манифест↔инстанс↔`migrations` сделана вручную через `ap_export_flow` +
+  `ap_find_records`.
+
+### Ответы владельца (круг 2)
+
+1. **важно (tg-router DRAFT) — исправлено.** `tg-router` переопубликован
+   (`ap_lock_and_publish`), MCP-снимок переснят сразу после: содержимое
+   `flows/tg-router.json` не изменилось (черновик совпадал с опубликованным),
+   `_manifest.json` указывает на новую версию `IUhunmfHugu5pUFBx6gYR`
+   (было `bKg9T7SQhxsPgsUEqDmfr`), добавлена строка `migrations`
+   `2026-09-24-w100-16` (`flow:tg-router`, publish). `tg-router` — флоу W99;
+   перенос в W100-коммит сделан, чтобы инстанс и манифест были согласованы в
+   одной ветке. Урок тот же, что в круге 1: не гонять тесты между `publish`
+   и снятием снимка.
+
 ## Хвосты и блокеры
 
-- Повторное независимое ревью после исправления замечания 1 не запущено.
+- Повторное независимое ревью после круга 2 (закрытие `tg-router`) не запущено.
