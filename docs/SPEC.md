@@ -212,7 +212,9 @@ Payload обязан укладываться в эти рамки — см. [SE
 кнопка «Удалить аккаунт» с подтверждением. По подтверждению сервер удаляет
 **все** строки, касающиеся `telegram_id` вызывающего, из пользовательских
 таблиц: `users`, `registrations`, `feedback`, `broadcast_targets`,
-`sessions`. `telegram_id` берётся только из проверенного `initData`; чужой
+`sessions`, `quiz_answers`, `quiz_attempts` (викторина —
+[ADR-0041](adr/0041-quiz-in-chat-not-a-page.md), W103). `telegram_id` берётся
+только из проверенного `initData`; чужой
 `telegram_id` в теле запроса — отказ `403` (IDOR). Повторное удаление
 безвредно. Удаление жёсткое: строки исчезают, а не помечаются отменёнными.
 Права и организационные касания (`event_staff`, `staff`, `staff_invites`,
