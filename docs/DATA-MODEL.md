@@ -310,7 +310,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `answer` | text | свободный ответ, обрезан до 500 символов |
 | `answered_at` | timestamp UTC | момент приёма |
 | `elapsed_ms` | number | мс от отправки вопроса до ответа |
-| `late` | bool (dropdown) | `true` — ответ позже 10 с; не отказ, только метка |
+| `late` | bool (dropdown) | `true` — ответ позже 15 с; не отказ, только метка |
 | `display_name` | text | имя из Telegram на момент ответа, для читаемой выгрузки |
 
 Ключ `(quiz_id, telegram_id, question_idx)` — повторный ответ на тот же вопрос

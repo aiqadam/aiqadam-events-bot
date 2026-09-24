@@ -17,7 +17,7 @@
 - **окно закрылось по ходу** → `quiz.closed`, ответ не пишется, сессия
   закрывается (`step_16`), чтобы текст больше не уходил в викторину;
 - **ответ** → upsert `quiz_answers` (`answer` ≤500 символов, `elapsed_ms`,
-  `late = elapsed > 10000`, `display_name`), затем следующий вопрос или финал.
+  `late = elapsed > 15000`, `display_name`), затем следующий вопрос или финал.
   Финал: upsert `quiz_attempts.finished_at`, сессия закрывается (`scenario='-'`,
   `step='-'`), отправляется `quiz.done`.
 
