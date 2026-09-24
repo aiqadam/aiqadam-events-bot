@@ -29,13 +29,41 @@
                   "displayName": "read published events",
                   "name": "step_10",
                   "nextAction": {
-                    "displayName": "render menu",
-                    "name": "step_11",
+                    "displayName": "read quizzes",
+                    "name": "step_14",
                     "nextAction": {
-                      "displayName": "send menu",
-                      "name": "step_12",
+                      "displayName": "render menu",
+                      "name": "step_11",
+                      "nextAction": {
+                        "displayName": "send menu",
+                        "name": "step_12",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "None",
+                            "message": "{{step_11['output'].text}}",
+                            "protect_content": false,
+                            "reply_markup": "{{step_11['output'].reply_markup}}",
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.9.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
                       "settings": {
-                        "actionName": "send_text_message",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": false
@@ -45,22 +73,45 @@
                           }
                         },
                         "input": {
-                          "chat_id": "{{trigger['output'].data.chatId}}",
-                          "disable_notification": false,
-                          "format": "None",
-                          "message": "{{step_11['output'].text}}",
-                          "protect_content": false,
-                          "reply_markup": "{{step_11['output'].reply_markup}}",
-                          "web_page_preview": false
+                          "badPayload": "{{trigger['output'].data.badPayload}}",
+                          "callbackData": "{{trigger['output'].data.callbackData}}",
+                          "fallback": "{{trigger['output'].data.fallback}}",
+                          "firstName": "{{trigger['output'].data.firstName}}",
+                          "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                          "publishedRecords": "{{step_10['output']}}",
+                          "quizRecords": "{{step_14['output']}}",
+                          "staffRecords": "{{step_9['output']}}",
+                          "staffRoleRecords": "{{step_8['output']}}",
+                          "telegramId": "{{trigger['output'].data.telegramId}}",
+                          "texts": {
+                            "bcast.howto.step1": "1. Напишите пост в «Избранном»",
+                            "bcast.howto.step2": "2. Зажмите его → «Переслать» → этот бот",
+                            "bcast.howto.step3": "3. Выберите событие и аудиторию",
+                            "bcast.howto.title": "Как сделать рассылку",
+                            "menu.btn.bcast_help": "Как сделать рассылку",
+                            "menu.btn.events": "События",
+                            "menu.btn.manage": "Панель администратора",
+                            "menu.btn.new_event": "Новое событие",
+                            "menu.btn.quiz": "Викторина",
+                            "menu.fallback_text": "Не понял сообщение. Вот что можно сделать:",
+                            "menu.lead_controller": "Откройте каталог по кнопке ниже — сканер рядом с вашим событием",
+                            "menu.lead_guest": "Найдите свои билеты и регистрируйтесь на события по кнопке ниже",
+                            "menu.lead_owner": "Создайте событие или откройте каталог по кнопкам ниже",
+                            "start.bad_payload": "Ссылку не удалось разобрать. Вот что открыто сейчас:",
+                            "start.greeting": "Привет, {name}! Это бот событий AI Qadam.",
+                            "start.greeting_anon": "Привет! Это бот событий AI Qadam."
+                          }
                         },
-                        "propertySettings": {},
-                        "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.9.0"
+                        "sourceCode": {
+                          "code": "export const code = async (inputs) => {\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  // Вердикт W49 (ADR-0027/ADR-0033, перенос из prototypes/scenarios.js:39-49):\n  // гость — одна кнопка «События», свой текст без заголовка;\n  // овнер — «События» + «Новое событие» сразу на форму #/manage/new;\n  // кнопки сканера в чате нет — сканер только рядом с событием (STF-2).\n  // W51 (решение владельца 2026-09-19): овнеру вернули вход в свой список —\n  // «Панель администратора» сразу на #/manage (правка без команд, ADR-0025).\n  // W52 (решение владельца 2026-09-19): у овнера первой кнопкой —\n  // «Панель администратора», затем «События» и «Новое событие».\n  // ADR-0034: этот шаг выполняется только когда профиль уже заполнен —\n  // гейт стоит раньше (step_2/step_3), роли здесь ни при чём.\n  // W73 (#125): обычный текст приходит сюда с fallback=true — преамбула\n  // другая (menu.fallback_text), кнопки и лид те же, что у /start.\n  // W68 (#120): у овнера четвёртая кнопка «Как сделать рассылку»\n  // (колбэк menu:bcast_help, маршрут в tg-router); по колбэку меню отвечает\n  // инструкцией из bcast.howto.* — тем же текстом, что таб «Рассылка» Mini App.\n  // W103 (ADR-0041, решение владельца 2026-09-24): пока открыто окно хотя бы\n  // одной викторины, кнопка «Викторина» (колбэк qz:start → флоу `quiz`) видна\n  // ВСЕМ ролям: гостю и контролёру — первой строкой, организатору — после\n  // его кнопок (первой у овнера остаётся «Панель администратора», W52).\n  // Вне окна кнопки нет — мёртвых кнопок не держим.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n\n  const telegramId = str(inputs.telegramId);\n  const firstName = str(inputs.firstName).trim();\n  const badPayload = inputs.badPayload === true || str(inputs.badPayload) === 'true';\n  const fallback = inputs.fallback === true || str(inputs.fallback) === 'true';\n  const callbackData = str(inputs.callbackData);\n  const isHelp = callbackData === 'menu:bcast_help';\n  const miniappUrl = str(inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const nowMs = Date.now();\n\n  // Организатор — есть строка в `staff` с telegram_id = пользователь (ADR-0024).\n  // Это видимость, а не авторизация: правило прав решает manage-api.\n  // Постфильтр по telegram_id повторяет фильтр шага (defense in depth, Q25).\n  const isOwner = arr(inputs.staffRoleRecords).map(flat).some((r) => r.telegram_id === telegramId);\n\n  // Контролёр — активная строка event_staff (пустой revoked_at) на ещё не\n  // закончившееся опубликованное событие. Отдельной кнопки в чате больше нет:\n  // сканер — рядом с событием в Mini App + кнопка на конкретное событие\n  // в accept-карточке. Здесь флаг нужен только для текста и роли.\n  const published = arr(inputs.publishedRecords).map(flat).filter((r) => r.status === 'published');\n  const byId = {};\n  published.forEach((r) => { byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const isController = arr(inputs.staffRecords).map(flat)\n    .some((r) => r.telegram_id === telegramId && r.revoked_at === '' && byId[r.event_id] && notPast(byId[r.event_id]));\n\n  // W103 (ADR-0041): кнопка викторины — только пока открыто окно викторины.\n  // Окно проверяется в CODE (диапазонные фильтры по DATE не работают, Q15).\n  const activeQuiz = arr(inputs.quizRecords).map(flat).some((q) => {\n    const st = parseIso(str(q.starts_at));\n    const en = parseIso(str(q.ends_at));\n    return isFinite(st) && isFinite(en) && nowMs >= st && nowMs <= en;\n  });\n\n  const preamble = fallback\n    ? t('menu.fallback_text')\n    : (badPayload\n      ? t('start.bad_payload')\n      : (firstName ? t('start.greeting', { name: firstName }) : t('start.greeting_anon')));\n\n  // Порядок кнопок фиксирован, по одной в ряд. Двойная роль — объединение.\n  const eventsBtn = [{ text: t('menu.btn.events'), web_app: { url: base + '/#/events' } }];\n  const manageBtn = [{ text: t('menu.btn.manage'), web_app: { url: base + '/#/manage' } }];\n  const newEventBtn = [{ text: t('menu.btn.new_event'), web_app: { url: base + '/#/manage/new' } }];\n  const bcastHelpBtn = [{ text: t('menu.btn.bcast_help'), callback_data: 'menu:bcast_help' }];\n  const quizBtn = [{ text: t('menu.btn.quiz'), callback_data: 'qz:start' }];\n  // W103: в окне викторины кнопка есть у всех ролей; у гостя/контролёра —\n  // первой, у организатора — после его кнопок (W52 не ломаем).\n  const guestRows = activeQuiz ? [quizBtn, eventsBtn] : [eventsBtn];\n  const ownerBase = [manageBtn, eventsBtn, newEventBtn, bcastHelpBtn];\n  const ownerRows = activeQuiz ? ownerBase.concat([quizBtn]) : ownerBase;\n  let rows;\n  let lead;\n  let role;\n  if (isOwner && isController) {\n    rows = ownerRows;\n    lead = t('menu.lead_owner');\n    role = 'owner_controller';\n  } else if (isOwner) {\n    rows = ownerRows;\n    lead = t('menu.lead_owner');\n    role = 'owner';\n  } else if (isController) {\n    rows = guestRows;\n    lead = t('menu.lead_controller');\n    role = 'controller';\n  } else {\n    rows = guestRows;\n    lead = t('menu.lead_guest');\n    role = 'guest';\n  }\n\n  // W68 (#120): колбэк кнопки «Как сделать рассылку». Отвечаем инструкцией\n  // тем же меню-набором кнопок; гостю/контролёру (кнопки нет) — обычное меню.\n  if (isHelp && isOwner) {\n    const helpText = t('bcast.howto.title') + '\\n'\n      + t('bcast.howto.step1') + '\\n'\n      + t('bcast.howto.step2') + '\\n'\n      + t('bcast.howto.step3');\n    return {\n      text: helpText, reply_markup: { inline_keyboard: rows },\n      isOwner: isOwner, isController: isController, role: role,\n      badPayload: badPayload, fallback: fallback, help: true, buttons: rows.length\n    };\n  }\n\n  return {\n    text: preamble + '\\n\\n' + lead,\n    reply_markup: { inline_keyboard: rows },\n    isOwner: isOwner, isController: isController, role: role,\n    badPayload: badPayload, fallback: fallback, help: false, buttons: rows.length\n  };\n};",
+                          "packageJson": "{}"
+                        }
                       },
-                      "type": "PIECE",
+                      "type": "CODE",
                       "valid": true
                     },
                     "settings": {
+                      "actionName": "tables-find-records",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -70,39 +121,16 @@
                         }
                       },
                       "input": {
-                        "badPayload": "{{trigger['output'].data.badPayload}}",
-                        "callbackData": "{{trigger['output'].data.callbackData}}",
-                        "fallback": "{{trigger['output'].data.fallback}}",
-                        "firstName": "{{trigger['output'].data.firstName}}",
-                        "miniappUrl": "{{variables['MINIAPP_URL']}}",
-                        "publishedRecords": "{{step_10['output']}}",
-                        "staffRecords": "{{step_9['output']}}",
-                        "staffRoleRecords": "{{step_8['output']}}",
-                        "telegramId": "{{trigger['output'].data.telegramId}}",
-                        "texts": {
-                          "bcast.howto.step1": "1. Напишите пост в «Избранном»",
-                          "bcast.howto.step2": "2. Зажмите его → «Переслать» → этот бот",
-                          "bcast.howto.step3": "3. Выберите событие и аудиторию",
-                          "bcast.howto.title": "Как сделать рассылку",
-                          "menu.btn.bcast_help": "Как сделать рассылку",
-                          "menu.btn.events": "События",
-                          "menu.btn.manage": "Панель администратора",
-                          "menu.btn.new_event": "Новое событие",
-                          "menu.fallback_text": "Не понял сообщение. Вот что можно сделать:",
-                          "menu.lead_controller": "Откройте каталог по кнопке ниже — сканер рядом с вашим событием",
-                          "menu.lead_guest": "Найдите свои билеты и регистрируйтесь на события по кнопке ниже",
-                          "menu.lead_owner": "Создайте событие или откройте каталог по кнопкам ниже",
-                          "start.bad_payload": "Ссылку не удалось разобрать. Вот что открыто сейчас:",
-                          "start.greeting": "Привет, {name}! Это бот событий AI Qadam.",
-                          "start.greeting_anon": "Привет! Это бот событий AI Qadam."
-                        }
+                        "filters": {},
+                        "limit": 10,
+                        "record_ids": [],
+                        "table_id": "RA6NwbSZw7rGtcYW7dB9x"
                       },
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  // Вердикт W49 (ADR-0027/ADR-0033, перенос из prototypes/scenarios.js:39-49):\n  // гость — одна кнопка «События», свой текст без заголовка;\n  // овнер — «События» + «Новое событие» сразу на форму #/manage/new;\n  // кнопки сканера в чате нет — сканер только рядом с событием (STF-2).\n  // W51 (решение владельца 2026-09-19): овнеру вернули вход в свой список —\n  // «Панель администратора» сразу на #/manage (правка без команд, ADR-0025).\n  // W52 (решение владельца 2026-09-19): у овнера первой кнопкой —\n  // «Панель администратора», затем «События» и «Новое событие».\n  // ADR-0034: этот шаг выполняется только когда профиль уже заполнен —\n  // гейт стоит раньше (step_2/step_3), роли здесь ни при чём.\n  // W73 (#125): обычный текст приходит сюда с fallback=true — преамбула\n  // другая (menu.fallback_text), кнопки и лид те же, что у /start.\n  // W68 (#120): у овнера четвёртая кнопка «Как сделать рассылку»\n  // (колбэк menu:bcast_help, маршрут в tg-router); по колбэку меню отвечает\n  // инструкцией из bcast.howto.* — тем же текстом, что таб «Рассылка» Mini App.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n\n  const telegramId = str(inputs.telegramId);\n  const firstName = str(inputs.firstName).trim();\n  const badPayload = inputs.badPayload === true || str(inputs.badPayload) === 'true';\n  const fallback = inputs.fallback === true || str(inputs.fallback) === 'true';\n  const callbackData = str(inputs.callbackData);\n  const isHelp = callbackData === 'menu:bcast_help';\n  const miniappUrl = str(inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const nowMs = Date.now();\n\n  // Организатор — есть строка в `staff` с telegram_id = пользователь (ADR-0024).\n  // Это видимость, а не авторизация: правило прав решает manage-api.\n  // Постфильтр по telegram_id повторяет фильтр шага (defense in depth, Q25).\n  const isOwner = arr(inputs.staffRoleRecords).map(flat).some((r) => r.telegram_id === telegramId);\n\n  // Контролёр — активная строка event_staff (пустой revoked_at) на ещё не\n  // закончившееся опубликованное событие. Отдельной кнопки в чате больше нет:\n  // сканер — рядом с событием в Mini App + кнопка на конкретное событие\n  // в accept-карточке. Здесь флаг нужен только для текста и роли.\n  const published = arr(inputs.publishedRecords).map(flat).filter((r) => r.status === 'published');\n  const byId = {};\n  published.forEach((r) => { byId[r.id] = r; });\n  const notPast = (r) => {\n    const endMs = parseIso(r.ends_at || r.starts_at || '');\n    return isFinite(endMs) ? endMs > nowMs : true;\n  };\n  const isController = arr(inputs.staffRecords).map(flat)\n    .some((r) => r.telegram_id === telegramId && r.revoked_at === '' && byId[r.event_id] && notPast(byId[r.event_id]));\n\n  const preamble = fallback\n    ? t('menu.fallback_text')\n    : (badPayload\n      ? t('start.bad_payload')\n      : (firstName ? t('start.greeting', { name: firstName }) : t('start.greeting_anon')));\n\n  // Порядок кнопок фиксирован, по одной в ряд. Двойная роль — объединение.\n  const eventsBtn = [{ text: t('menu.btn.events'), web_app: { url: base + '/#/events' } }];\n  const manageBtn = [{ text: t('menu.btn.manage'), web_app: { url: base + '/#/manage' } }];\n  const newEventBtn = [{ text: t('menu.btn.new_event'), web_app: { url: base + '/#/manage/new' } }];\n  const bcastHelpBtn = [{ text: t('menu.btn.bcast_help'), callback_data: 'menu:bcast_help' }];\n  let rows;\n  let lead;\n  let role;\n  if (isOwner && isController) {\n    rows = [manageBtn, eventsBtn, newEventBtn, bcastHelpBtn];\n    lead = t('menu.lead_owner');\n    role = 'owner_controller';\n  } else if (isOwner) {\n    rows = [manageBtn, eventsBtn, newEventBtn, bcastHelpBtn];\n    lead = t('menu.lead_owner');\n    role = 'owner';\n  } else if (isController) {\n    rows = [eventsBtn];\n    lead = t('menu.lead_controller');\n    role = 'controller';\n  } else {\n    rows = [eventsBtn];\n    lead = t('menu.lead_guest');\n    role = 'guest';\n  }\n\n  // W68 (#120): колбэк кнопки «Как сделать рассылку». Отвечаем инструкцией\n  // тем же меню-набором кнопок; гостю/контролёру (кнопки нет) — обычное меню.\n  if (isHelp && isOwner) {\n    const helpText = t('bcast.howto.title') + '\\n'\n      + t('bcast.howto.step1') + '\\n'\n      + t('bcast.howto.step2') + '\\n'\n      + t('bcast.howto.step3');\n    return {\n      text: helpText, reply_markup: { inline_keyboard: rows },\n      isOwner: isOwner, isController: isController, role: role,\n      badPayload: badPayload, fallback: fallback, help: true, buttons: rows.length\n    };\n  }\n\n  return {\n    text: preamble + '\\n\\n' + lead,\n    reply_markup: { inline_keyboard: rows },\n    isOwner: isOwner, isController: isController, role: role,\n    badPayload: badPayload, fallback: fallback, help: false, buttons: rows.length\n  };\n};",
-                        "packageJson": "{}"
-                      }
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.6"
                     },
-                    "type": "CODE",
+                    "type": "PIECE",
                     "valid": true
                   },
                   "settings": {

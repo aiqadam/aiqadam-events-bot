@@ -6,7 +6,10 @@
 `staff` заведена в [W32](../../docs/work/W32-owners-initdata.md)
 ([ADR-0024](../../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)),
 [`feedback`](feedback.md) — в [W45](../../docs/BACKLOG.md#w45-послесловие-благодарность-и-форма-отзыва)
-([ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)). Модель и смысл полей —
+([ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
+Домен викторины — `quizzes`, `quiz_questions`, `quiz_attempts`, `quiz_answers` —
+в [W103](../../docs/BACKLOG.md#w103-викторина-в-боте-свободный-ответ-окно-одна-попытка)
+([ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md)). Модель и смысл полей —
 [docs/DATA-MODEL.md](../../docs/DATA-MODEL.md); здесь только то, что нужно,
 чтобы обращаться к ним из флоу и пересобрать их в другом проекте.
 
@@ -53,7 +56,8 @@
 
 ### Dropdown-значения
 
-Восемь полей на четыре таблицы. Список полный: других `STATIC_DROPDOWN` в схеме нет.
+Восемь полей на четыре таблицы **плюс** `late` в `quiz_answers` (девять на пять
+таблиц). Список полный: других `STATIC_DROPDOWN` в схеме нет.
 
 | Таблица | Field | `options` |
 |---------|-------|-----------|
@@ -65,6 +69,7 @@
 | `broadcasts` | `segment` | `["all_consent", "registered", "attended", "no_show"]` |
 | `broadcasts` | `status` | `["draft", "running", "done", "failed"]` |
 | `broadcast_targets` | `state` | `["pending", "sent", "blocked", "failed"]` |
+| `quiz_answers` | `late` | `["true", "false"]` |
 
 Порядок значимый только для UI; логика флоу на него не опирается и не должна.
 

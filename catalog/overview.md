@@ -15,8 +15,8 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 29 | [flows/](flows/) |
-| Таблицы | 13 | [tables/](tables/) |
+| Флоу | 31 | [flows/](flows/) |
+| Таблицы | 17 | [tables/](tables/) |
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
@@ -32,7 +32,8 @@ W26 закрыт («готов», независимое ревью, три кр
 | Группа | Флоу |
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
-| Меню-хаб | [menu](flows/menu.md) — голый `/start`, любая незнакомая команда и обычный текст (W73); у организатора кнопка «Как сделать рассылку» (`menu:bcast_help`, W68) |
+| Меню-хаб | [menu](flows/menu.md) — голый `/start`, любая незнакомая команда и обычный текст (W73); у организатора кнопка «Как сделать рассылку» (`menu:bcast_help`, W68); в окне викторины кнопка «Викторина» (`qz:start`, W103) есть у всех ролей |
+| Викторина | [quiz](flows/quiz.md) — вход по кнопке (окно `starts_at`/`ends_at`, одна попытка, первый вопрос); [quiz-answer](flows/quiz-answer.md) — свободный текст-ответ, следующий вопрос или финал (W103, [ADR-0041](../docs/adr/0041-quiz-in-chat-not-a-page.md)) |
 | Регистрация участника | [reg-start](flows/reg-start.md) (вход + гейт профиля: заполнен — один тап, нет — онбординг), [reg-profile](flows/reg-profile.md) (онбординг C, PAR-8), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) (старые сессии `await_pdn`/`await_marketing` — новых касаний туда нет) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) (только заполненный профиль) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
@@ -52,6 +53,10 @@ W26 закрыт («готов», независимое ревью, три кр
 [ADR-0021](../docs/adr/0021-repo-is-source-of-truth-migrations-table.md));
 схема и `externalId` — в [tables/](tables/), рецепт пересборки —
 [tables/README.md](tables/README.md).
+Домен викторины (W103, [ADR-0041](../docs/adr/0041-quiz-in-chat-not-a-page.md)) —
+[`quizzes`](tables/quizzes.md) (окно), [`quiz_questions`](tables/quiz_questions.md),
+[`quiz_attempts`](tables/quiz_attempts.md) (замок «одна попытка»),
+[`quiz_answers`](tables/quiz_answers.md) (свободные ответы с `elapsed`/`late`).
 `staff` — глобальные права организаторов по чаптеру
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
 `feedback` — отзывы участников об событии, оценка 1–5 + комментарий

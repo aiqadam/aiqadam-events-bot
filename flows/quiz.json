@@ -1,0 +1,398 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [
+    "TZTlXaCEO2hEvimUowbSA"
+  ],
+  "displayName": "quiz",
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "read quizzes",
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "resolve active quiz",
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "read questions",
+          "name": "step_3",
+          "nextAction": {
+            "displayName": "read attempts",
+            "name": "step_4",
+            "nextAction": {
+              "displayName": "decide entry",
+              "name": "step_5",
+              "nextAction": {
+                "children": [
+                  {
+                    "displayName": "upsert attempt",
+                    "name": "step_7",
+                    "nextAction": {
+                      "displayName": "upsert session q_await",
+                      "name": "step_8",
+                      "nextAction": {
+                        "displayName": "send question 1",
+                        "name": "step_9",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "None",
+                            "message": "{{step_5['output'].text}}",
+                            "protect_content": false,
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.9.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "actionName": "tables-upsert-records",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "key_columns": [
+                            "N8CdPxcdxLX9vFCINvZbL"
+                          ],
+                          "table_id": "toTKgngMTqDNJWDpQMh4d",
+                          "values": {
+                            "values": [
+                              {
+                                "ESthrMwpn29JLvE2BNIj4": "quiz",
+                                "IdGimBh539UlGSz6L0Pyo": "q_await_answer",
+                                "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
+                                "U9P3zTZHcFdAAtzLVVSYn": "{{step_5['output'].nowIso}}",
+                                "sctBFEsMf10UobeFgzsVt": "{{step_5['output'].draft}}"
+                              }
+                            ]
+                          }
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-tables",
+                        "qadamVersion": "0.4.6"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-upsert-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "key_columns": [
+                          "zbgUjxPT1E7G6lE0u79Py",
+                          "YCln1HsH5h0pN0DQ6VzU5"
+                        ],
+                        "table_id": "JPo7yK4N9lxN8HxBwpmRs",
+                        "values": {
+                          "values": [
+                            {
+                              "Szk76LrXvZMW2ycwCRxi1": "{{step_5['output'].nowIso}}",
+                              "YCln1HsH5h0pN0DQ6VzU5": "{{trigger['output'].data.telegramId}}",
+                              "zbgUjxPT1E7G6lE0u79Py": "{{step_5['output'].quizId}}"
+                            }
+                          ]
+                        }
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.4.6"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  {
+                    "displayName": "send notice",
+                    "name": "step_10",
+                    "settings": {
+                      "actionName": "send_text_message",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "chat_id": "{{trigger['output'].data.chatId}}",
+                        "disable_notification": false,
+                        "format": "None",
+                        "message": "{{step_5['output'].text}}",
+                        "protect_content": false,
+                        "web_page_preview": false
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-telegram-bot",
+                      "qadamVersion": "0.9.0"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  {
+                    "displayName": "unexpected outcome",
+                    "name": "step_11",
+                    "settings": {
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {},
+                      "sourceCode": {
+                        "code": "export const code = async (inputs) => {\n  return { ignored: true };\n};",
+                        "packageJson": "{}"
+                      }
+                    },
+                    "type": "CODE",
+                    "valid": true
+                  }
+                ],
+                "displayName": "entry outcome",
+                "name": "step_6",
+                "settings": {
+                  "branches": [
+                    {
+                      "branchName": "start",
+                      "branchType": "CONDITION",
+                      "conditions": [
+                        [
+                          {
+                            "caseSensitive": true,
+                            "firstValue": "{{step_5['output'].outcome}}",
+                            "operator": "TEXT_EXACTLY_MATCHES",
+                            "secondValue": "start"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "branchName": "reply",
+                      "branchType": "CONDITION",
+                      "conditions": [
+                        [
+                          {
+                            "caseSensitive": true,
+                            "firstValue": "{{step_5['output'].outcome}}",
+                            "operator": "TEXT_EXACTLY_MATCHES",
+                            "secondValue": "reply"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "branchName": "Otherwise",
+                      "branchType": "FALLBACK"
+                    }
+                  ],
+                  "executionType": "EXECUTE_FIRST_MATCH"
+                },
+                "type": "ROUTER",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "active": "{{step_2['output'].active}}",
+                  "attempts": "{{step_4['output']}}",
+                  "questions": "{{step_3['output']}}",
+                  "quizId": "{{step_2['output'].quizId}}",
+                  "texts": {
+                    "quiz.already": "Вы уже прошли викторину. Спасибо!",
+                    "quiz.closed": "Викторина сейчас не идёт. Возвращайтесь в дни события.",
+                    "quiz.intro": "Викторина «{title}». Вопросов: {total}. На каждый — 15 секунд, отвечайте сообщением.",
+                    "quiz.q_header": "Вопрос {n} из {total}:",
+                    "quiz.q_hint": "Ваш ответ — сообщением. 15 секунд."
+                  },
+                  "title": "{{step_2['output'].title}}"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const now = Date.now();\n  const nowIso = new Date(now).toISOString();\n  const quizId = str(inputs.quizId);\n  const active = inputs.active === true || str(inputs.active) === 'true';\n  const title = str(inputs.title);\n  const questions = arr(inputs.questions).map(flat)\n    .filter((q) => str(q.quiz_id) === quizId)\n    .sort((a, b) => Number(a.idx) - Number(b.idx));\n  const attempts = arr(inputs.attempts).map(flat);\n  const attempt = attempts[0] || null;\n  const finished = !!attempt && str(attempt.finished_at) !== '';\n  const count = questions.length;\n  const out = { outcome: 'reply', text: '', quizId: quizId, count: count, nowIso: nowIso, nowMs: now, draft: '' };\n  if (!active || count === 0) {\n    out.text = t('quiz.closed');\n    return out;\n  }\n  if (finished) {\n    out.text = t('quiz.already');\n    return out;\n  }\n  const q1 = str(questions[0].text);\n  out.outcome = 'start';\n  out.text = t('quiz.intro', { title: title, total: count }) + '\\n\\n'\n    + t('quiz.q_header', { n: 1, total: count }) + '\\n\\n'\n    + q1 + '\\n\\n' + t('quiz.q_hint');\n  out.draft = JSON.stringify({ quizId: quizId, idx: 1, count: count, shownAt: now });\n  return out;\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-find-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "filters": {
+                  "filters": [
+                    {
+                      "field": {
+                        "id": "bjA1d84XKABjHkxClN26F",
+                        "name": "quiz_id",
+                        "type": "TEXT"
+                      },
+                      "operator": "eq",
+                      "value": "{{step_2['output'].quizIdOrNone}}"
+                    },
+                    {
+                      "field": {
+                        "id": "nFRfAMn5v2vzftWEGtOv7",
+                        "name": "telegram_id",
+                        "type": "TEXT"
+                      },
+                      "operator": "eq",
+                      "value": "{{trigger['output'].data.telegramId}}"
+                    }
+                  ]
+                },
+                "limit": 1,
+                "record_ids": [],
+                "table_id": "JPo7yK4N9lxN8HxBwpmRs"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.4.6"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "tables-find-records",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "filters": {
+                "filters": [
+                  {
+                    "field": {
+                      "id": "0bP9eErHjkFZuPDAmrJCQ",
+                      "name": "quiz_id",
+                      "type": "TEXT"
+                    },
+                    "operator": "eq",
+                    "value": "{{step_2['output'].quizIdOrNone}}"
+                  }
+                ]
+              },
+              "limit": 100,
+              "record_ids": [],
+              "table_id": "Uow3rhLvdObG1mBdUcxuS"
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-tables",
+            "qadamVersion": "0.4.6"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "records": "{{step_1['output']}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = str(c.value);\n      else out[fid] = str(c);\n    });\n    return out;\n  };\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const now = Date.now();\n  const quizzes = arr(inputs.records).map(flat);\n  const active = quizzes.filter((q) => {\n    const st = parseIso(str(q.starts_at));\n    const en = parseIso(str(q.ends_at));\n    return isFinite(st) && isFinite(en) && now >= st && now <= en;\n  }).sort((a, b) => parseIso(str(b.starts_at)) - parseIso(str(a.starts_at)));\n  const q = active[0] || null;\n  const quizId = q ? str(q.id) : '';\n  return {\n    active: !!q,\n    quizId: quizId,\n    quizIdOrNone: quizId || '__none__',\n    title: q ? str(q.title) : '',\n    nowIso: new Date(now).toISOString(),\n    nowMs: now\n  };\n};",
+            "packageJson": "{}"
+          }
+        },
+        "type": "CODE",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "tables-find-records",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "limit": 10,
+          "record_ids": [],
+          "table_id": "RA6NwbSZw7rGtcYW7dB9x"
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-tables",
+        "qadamVersion": "0.4.6"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "callbackData": "qz:start",
+          "callbackQueryId": "sample-cbq-id",
+          "chatId": "322876545",
+          "firstName": "Тест",
+          "messageId": "0",
+          "telegramId": "322876545"
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.15",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}
