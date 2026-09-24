@@ -6,7 +6,7 @@
   ],
   "displayName": "reg-consent-pdn",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -50,7 +50,7 @@
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "qadamVersion": "0.9.0"
                       },
                       "type": "PIECE",
                       "valid": true
@@ -77,7 +77,7 @@
                     },
                     "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
+                    "qadamVersion": "0.9.0"
                   },
                   "type": "PIECE",
                   "valid": true
@@ -239,7 +239,7 @@
                               },
                               "propertySettings": {},
                               "qadamName": "@aiqadam/qadam-telegram-bot",
-                              "qadamVersion": "0.8.0"
+                              "qadamVersion": "0.9.0"
                             },
                             "type": "PIECE",
                             "valid": true
@@ -267,7 +267,7 @@
                           },
                           "propertySettings": {},
                           "qadamName": "@aiqadam/qadam-telegram-bot",
-                          "qadamVersion": "0.8.0"
+                          "qadamVersion": "0.9.0"
                         },
                         "type": "PIECE",
                         "valid": true
@@ -533,11 +533,12 @@
           }
         },
         "input": {
-          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}"
+          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}",
+          "show_alert": false
         },
         "propertySettings": {},
         "qadamName": "@aiqadam/qadam-telegram-bot",
-        "qadamVersion": "0.8.0"
+        "qadamVersion": "0.9.0"
       },
       "type": "PIECE",
       "valid": true

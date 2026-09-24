@@ -1,10 +1,14 @@
 {
   "agentIds": [],
+  "backupFiles": {
+    "31": "wcqj6dWeHyaRWSD9Hkz5x"
+  },
   "connectionIds": [
     "TZTlXaCEO2hEvimUowbSA"
   ],
   "displayName": "bcast-unsub",
-  "schemaVersion": "31",
+  "notes": [],
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -43,7 +47,7 @@
                   },
                   "propertySettings": {},
                   "qadamName": "@aiqadam/qadam-telegram-bot",
-                  "qadamVersion": "0.8.0"
+                  "qadamVersion": "0.9.0"
                 },
                 "type": "PIECE",
                 "valid": true
@@ -74,7 +78,7 @@
                     },
                     "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
+                    "qadamVersion": "0.9.0"
                   },
                   "type": "PIECE",
                   "valid": true
@@ -133,8 +137,7 @@
                   "branchType": "FALLBACK"
                 }
               ],
-              "executionType": "EXECUTE_FIRST_MATCH",
-              "propertySettings": {}
+              "executionType": "EXECUTE_FIRST_MATCH"
             },
             "type": "ROUTER",
             "valid": true
@@ -206,11 +209,12 @@
           }
         },
         "input": {
-          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}"
+          "callback_query_id": "{{trigger['output'].data.callbackQueryId}}",
+          "show_alert": false
         },
         "propertySettings": {},
         "qadamName": "@aiqadam/qadam-telegram-bot",
-        "qadamVersion": "0.8.0"
+        "qadamVersion": "0.9.0"
       },
       "type": "PIECE",
       "valid": true
