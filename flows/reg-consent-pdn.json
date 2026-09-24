@@ -393,7 +393,7 @@
                             "type": "TEXT"
                           },
                           "operator": "eq",
-                          "value": "{{step_2['output'].eventId}}"
+                          "value": "{{step_2['output'].eventIdOrNone}}"
                         }
                       ]
                     },
@@ -515,7 +515,7 @@
             "telegramId": "{{trigger['output'].data.telegramId}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:pdn:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const telegramId = str(inputs.telegramId);\n  // cardMessageId живёт в draft (ADR-0017); 0 значит «карточки нет,\n  // редактировать нечего» — тогда сразу шлём новое сообщение.\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  // Черновик пересобирается здесь, а не шаблоном в инпуте шага: значения\n  // проходят через JSON.stringify и кавычка в utm не ломает строку.\n  const draftJson = JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId });\n  return {\n    isYes: isYes, eventId: eventId, utm: utm,\n    regId: eventId + '-' + telegramId,\n    cardMessageId: cardId, draftJson: draftJson,\n    now: new Date().toISOString()\n  };\n};",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:pdn:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const telegramId = str(inputs.telegramId);\n  // cardMessageId живёт в draft (ADR-0017); 0 значит «карточки нет,\n  // редактировать нечего» — тогда сразу шлём новое сообщение.\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  // Черновик пересобирается здесь, а не шаблоном в инпуте шага: значения\n  // проходят через JSON.stringify и кавычка в utm не ломает строку.\n  const draftJson = JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId });\n  return {\n    isYes: isYes, eventId: eventId,\n    // W102: непустой sentinel для фильтра step_6 (пустой eq валит шаг).\n    eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    utm: utm,\n    regId: eventId + '-' + telegramId,\n    cardMessageId: cardId, draftJson: draftJson,\n    now: new Date().toISOString()\n  };\n};",
             "packageJson": "{}"
           }
         },

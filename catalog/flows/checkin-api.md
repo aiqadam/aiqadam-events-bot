@@ -26,15 +26,17 @@
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём POST |
 | step_1 | `callFlow fn-hmac-init-data` | HMAC `initData` по `BOT_TOKEN` (STF-2, первая половина) |
+| step_14 | CODE «normalize eventId» | `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтров `step_3`/`step_13` (пустой `eq` валит шаг); тело вебхука не валидируется |
 | step_10 | ROUTER: `valid` / `Otherwise` | `{{step_1['output'].data.valid}} == 'true'` |
 | step_11 (Otherwise) | CODE «invalid init data response» | `texts['checkin.unauthorized']`, `httpStatus: 401` |
 | step_12 (Otherwise) | `return_response` | ответ `401` немедленно, ветка `valid` не выполняется |
 | step_2 (valid) | `callFlow fn-parse-start` | разбор QR-`payload` (`kind` должен быть `c`) |
-| step_3 (valid) | `tables-find-records event_staff` | `(event_id, telegram_id контролёра)` + `revoked_at not_exists` — **вторая половина STF-2**: без фильтра по `event_id` любой участник отметит соседа |
+| step_15 | CODE «normalize userId» | `userIdOrNone = userId \|\| '__none__'` — непустое значение для фильтра `step_6`; невалидный `payload` даёт пустого участника, а не падение |
+| step_3 (valid) | `tables-find-records event_staff` | `(event_id eq eventIdOrNone, telegram_id контролёра)` + `revoked_at not_exists` — **вторая половина STF-2**: без фильтра по `event_id` любой участник отметит соседа |
 | step_4 (valid) | `callFlow fn-verify-qr` | подпись QR по `QR_SIGNING_KEY` |
 | step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса |
-| step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, проекция) |
-| step_13 (valid) | `tables-find-records events` | статус события (`status`, проекция) — чекин отменённого события не проходит (STF-3, Part 1) |
+| step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, фильтр `telegram_id eq userIdOrNone`) |
+| step_13 (valid) | `tables-find-records events` | статус события (`status`, фильтр `id eq eventIdOrNone`) — чекин отменённого события не проходит (STF-3, Part 1) |
 | step_7 (valid) | CODE «decide result» | семь оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
 | step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2. При исходе не-`ok` вместо id записи подставляется сентинел `-`: гарантированный 404, безопасный no-op |
 | step_9 (valid) | `return_response` | JSON-ответ Mini App |
@@ -98,3 +100,8 @@
   `demo`** (событие `id: demo`, регистрация `demo-322876545`, staff-запись
   в `event_staff` на того же контролёра) — нужна, чтобы STF-2 можно было
   проверить вживую без пересборки окружения.
+- **Фильтры по `eventId`/`userId` — через сентинелы (W102).** `step_14`/`step_15`
+  дают `eventIdOrNone`/`userIdOrNone`: `tables-find-records` fail-closed
+  отклоняет пустой `eq`, а тело вебхука и QR-`payload` не валидируются —
+  пустой `eventId` или битый `payload` иначе валили прогон `500` вместо
+  штатного `403 forbidden`/`200 invalid`. Платформенная гоча — `AGENTS.md`.

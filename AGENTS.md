@@ -166,8 +166,9 @@ frontmatter прав и указатель на канон, процедур в 
   тоже отказ, а не «фильтр без ограничения»: `Filter #N: the "eq" operator on
   field "<f>" requires a value`. Фильтр, чьё значение может оказаться пустым
   (например, необязательный `eventId`), обязан получать непустой сентинел из
-  Code-шага (`__none__` — как в `lifecycle`/`bcast-step`/`reg-api`), иначе
-  шаг валит весь прогон.
+  Code-шага (`__none__` — как в `lifecycle`, `bcast-step`, `reg-api`,
+  `checkin-api`, `checkin-counter-api`, `staff-events-api`, `reg-profile`,
+  `reg-consent-*`), иначе шаг валит весь прогон.
   **Очистить DATE-поле нечем** ([Q30](docs/OPEN-QUESTIONS.md#q30)): пустая строка
   отвергается валидатором, «оставить пустым» у `values` значит «не менять».
   **Проверено 2026-09-13 (W26): то же самое верно и для `TEXT`-полей** — пустая

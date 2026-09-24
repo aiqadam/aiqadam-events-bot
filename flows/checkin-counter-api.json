@@ -13,21 +13,55 @@
       "displayName": "verify controller initData",
       "name": "step_1",
       "nextAction": {
-        "children": [
-          {
-            "displayName": "check staff rights",
-            "name": "step_3",
-            "nextAction": {
-              "displayName": "read registrations (counters)",
-              "name": "step_4",
+        "displayName": "normalize eventId",
+        "name": "step_9",
+        "nextAction": {
+          "children": [
+            {
+              "displayName": "check staff rights",
+              "name": "step_3",
               "nextAction": {
-                "displayName": "count checkins",
-                "name": "step_5",
+                "displayName": "read registrations (counters)",
+                "name": "step_4",
                 "nextAction": {
-                  "displayName": "respond (counters)",
-                  "name": "step_6",
+                  "displayName": "count checkins",
+                  "name": "step_5",
+                  "nextAction": {
+                    "displayName": "respond (counters)",
+                    "name": "step_6",
+                    "settings": {
+                      "actionName": "return_response",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "fields": {
+                          "body": {
+                            "checked_in": "{{step_5['output'].checked_in}}",
+                            "ok": "{{step_5['output'].ok}}",
+                            "registered": "{{step_5['output'].registered}}",
+                            "status": "{{step_5['output'].status}}",
+                            "text": "{{step_5['output'].text}}"
+                          },
+                          "headers": {},
+                          "status": "{{step_5['output'].httpStatus}}"
+                        },
+                        "respond": "stop",
+                        "responseType": "json"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-webhook",
+                      "qadamVersion": "0.1.35"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
                   "settings": {
-                    "actionName": "return_response",
                     "errorHandlingOptions": {
                       "continueOnFailure": {
                         "value": false
@@ -37,28 +71,22 @@
                       }
                     },
                     "input": {
-                      "fields": {
-                        "body": {
-                          "checked_in": "{{step_5['output'].checked_in}}",
-                          "ok": "{{step_5['output'].ok}}",
-                          "registered": "{{step_5['output'].registered}}",
-                          "status": "{{step_5['output'].status}}",
-                          "text": "{{step_5['output'].text}}"
-                        },
-                        "headers": {},
-                        "status": "{{step_5['output'].httpStatus}}"
-                      },
-                      "respond": "stop",
-                      "responseType": "json"
+                      "regRows": "{{step_4['output']}}",
+                      "staffRows": "{{step_3['output']}}",
+                      "texts": {
+                        "checkin.forbidden": "Нет прав на чекин этого события"
+                      }
                     },
-                    "propertySettings": {},
-                    "qadamName": "@aiqadam/qadam-webhook",
-                    "qadamVersion": "0.1.35"
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n\n  const staffRows = arr(inputs.staffRows);\n  if (staffRows.length === 0) {\n    return { httpStatus: 403, ok: false, registered: 0, checked_in: 0, status: 'forbidden', text: t('checkin.forbidden') };\n  }\n\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') {\n        out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n      }\n    });\n    return out;\n  };\n\n  const rows = arr(inputs.regRows).map(flat);\n  let registered = 0;\n  let checkedIn = 0;\n  rows.forEach((r) => {\n    if (String(r.status || '') !== 'registered') return;\n    registered += 1;\n    if (String(r.checked_in_at || '') !== '') checkedIn += 1;\n  });\n\n  return { httpStatus: 200, ok: true, registered: registered, checked_in: checkedIn, status: 'ok', text: '' };\n};",
+                      "packageJson": "{}"
+                    }
                   },
-                  "type": "PIECE",
+                  "type": "CODE",
                   "valid": true
                 },
                 "settings": {
+                  "actionName": "tables-find-records",
                   "errorHandlingOptions": {
                     "continueOnFailure": {
                       "value": false
@@ -68,18 +96,32 @@
                     }
                   },
                   "input": {
-                    "regRows": "{{step_4['output']}}",
-                    "staffRows": "{{step_3['output']}}",
-                    "texts": {
-                      "checkin.forbidden": "Нет прав на чекин этого события"
-                    }
+                    "columns": [
+                      "TZyqC63UAWrPbzxuf2q4w",
+                      "uCnpOj11sJLaX4Rqu6TUG"
+                    ],
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": {
+                            "id": "qQPYl9c0ew6n8w2CGYZII",
+                            "name": "event_id",
+                            "type": "TEXT"
+                          },
+                          "operator": "eq",
+                          "value": "{{step_9['output'].eventIdOrNone}}"
+                        }
+                      ]
+                    },
+                    "limit": 500,
+                    "record_ids": [],
+                    "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
                   },
-                  "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n\n  const staffRows = arr(inputs.staffRows);\n  if (staffRows.length === 0) {\n    return { httpStatus: 403, ok: false, registered: 0, checked_in: 0, status: 'forbidden', text: t('checkin.forbidden') };\n  }\n\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') {\n        out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n      }\n    });\n    return out;\n  };\n\n  const rows = arr(inputs.regRows).map(flat);\n  let registered = 0;\n  let checkedIn = 0;\n  rows.forEach((r) => {\n    if (String(r.status || '') !== 'registered') return;\n    registered += 1;\n    if (String(r.checked_in_at || '') !== '') checkedIn += 1;\n  });\n\n  return { httpStatus: 200, ok: true, registered: registered, checked_in: checkedIn, status: 'ok', text: '' };\n};",
-                    "packageJson": "{}"
-                  }
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.5"
                 },
-                "type": "CODE",
+                "type": "PIECE",
                 "valid": true
               },
               "settings": {
@@ -93,26 +135,38 @@
                   }
                 },
                 "input": {
-                  "columns": [
-                    "TZyqC63UAWrPbzxuf2q4w",
-                    "uCnpOj11sJLaX4Rqu6TUG"
-                  ],
                   "filters": {
                     "filters": [
                       {
                         "field": {
-                          "id": "qQPYl9c0ew6n8w2CGYZII",
+                          "id": "r5WohfFLBagrxVrPDgB9s",
                           "name": "event_id",
                           "type": "TEXT"
                         },
                         "operator": "eq",
-                        "value": "{{trigger['output'].body.eventId}}"
+                        "value": "{{step_9['output'].eventIdOrNone}}"
+                      },
+                      {
+                        "field": {
+                          "id": "Rs62LH1YLr1QBsnpIrJzH",
+                          "name": "telegram_id",
+                          "type": "TEXT"
+                        },
+                        "operator": "eq",
+                        "value": "{{step_1['output'].data.telegramId}}"
+                      },
+                      {
+                        "field": {
+                          "id": "zX2FO3bZZJuAZcVyZHiRw",
+                          "name": "revoked_at",
+                          "type": "DATE"
+                        },
+                        "operator": "not_exists"
                       }
                     ]
                   },
-                  "limit": 500,
                   "record_ids": [],
-                  "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                  "table_id": "t1g8Vae3iEoDk93D6Rle7"
                 },
                 "propertySettings": {},
                 "qadamName": "@aiqadam/qadam-tables",
@@ -121,65 +175,43 @@
               "type": "PIECE",
               "valid": true
             },
-            "settings": {
-              "actionName": "tables-find-records",
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "filters": {
-                  "filters": [
-                    {
-                      "field": {
-                        "id": "r5WohfFLBagrxVrPDgB9s",
-                        "name": "event_id",
-                        "type": "TEXT"
-                      },
-                      "operator": "eq",
-                      "value": "{{trigger['output'].body.eventId}}"
+            {
+              "displayName": "invalid init data response",
+              "name": "step_7",
+              "nextAction": {
+                "displayName": "respond (invalid init data)",
+                "name": "step_8",
+                "settings": {
+                  "actionName": "return_response",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
                     },
-                    {
-                      "field": {
-                        "id": "Rs62LH1YLr1QBsnpIrJzH",
-                        "name": "telegram_id",
-                        "type": "TEXT"
-                      },
-                      "operator": "eq",
-                      "value": "{{step_1['output'].data.telegramId}}"
-                    },
-                    {
-                      "field": {
-                        "id": "zX2FO3bZZJuAZcVyZHiRw",
-                        "name": "revoked_at",
-                        "type": "DATE"
-                      },
-                      "operator": "not_exists"
+                    "retryOnFailure": {
+                      "value": false
                     }
-                  ]
+                  },
+                  "input": {
+                    "fields": {
+                      "body": {
+                        "ok": "{{step_7['output'].ok}}",
+                        "status": "{{step_7['output'].status}}",
+                        "text": "{{step_7['output'].text}}"
+                      },
+                      "headers": {},
+                      "status": "{{step_7['output'].httpStatus}}"
+                    },
+                    "respond": "stop",
+                    "responseType": "json"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-webhook",
+                  "qadamVersion": "0.1.35"
                 },
-                "record_ids": [],
-                "table_id": "t1g8Vae3iEoDk93D6Rle7"
+                "type": "PIECE",
+                "valid": true
               },
-              "propertySettings": {},
-              "qadamName": "@aiqadam/qadam-tables",
-              "qadamVersion": "0.4.5"
-            },
-            "type": "PIECE",
-            "valid": true
-          },
-          {
-            "displayName": "invalid init data response",
-            "name": "step_7",
-            "nextAction": {
-              "displayName": "respond (invalid init data)",
-              "name": "step_8",
               "settings": {
-                "actionName": "return_response",
                 "errorHandlingOptions": {
                   "continueOnFailure": {
                     "value": false
@@ -189,73 +221,64 @@
                   }
                 },
                 "input": {
-                  "fields": {
-                    "body": {
-                      "ok": "{{step_7['output'].ok}}",
-                      "status": "{{step_7['output'].status}}",
-                      "text": "{{step_7['output'].text}}"
-                    },
-                    "headers": {},
-                    "status": "{{step_7['output'].httpStatus}}"
-                  },
-                  "respond": "stop",
-                  "responseType": "json"
-                },
-                "propertySettings": {},
-                "qadamName": "@aiqadam/qadam-webhook",
-                "qadamVersion": "0.1.35"
-              },
-              "type": "PIECE",
-              "valid": true
-            },
-            "settings": {
-              "errorHandlingOptions": {
-                "continueOnFailure": {
-                  "value": false
-                },
-                "retryOnFailure": {
-                  "value": false
-                }
-              },
-              "input": {
-                "texts": {
-                  "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
-                }
-              },
-              "sourceCode": {
-                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const text = String(texts['checkin.unauthorized'] || 'checkin.unauthorized');\n  return { httpStatus: 401, ok: false, status: 'invalid_init_data', text: text };\n};",
-                "packageJson": "{}"
-              }
-            },
-            "type": "CODE",
-            "valid": true
-          }
-        ],
-        "displayName": "initData valid?",
-        "name": "step_2",
-        "settings": {
-          "branches": [
-            {
-              "branchName": "valid",
-              "branchType": "CONDITION",
-              "conditions": [
-                [
-                  {
-                    "firstValue": "{{step_1['output'].data.valid}}",
-                    "operator": "TEXT_EXACTLY_MATCHES",
-                    "secondValue": "true"
+                  "texts": {
+                    "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
                   }
-                ]
-              ]
-            },
-            {
-              "branchName": "Otherwise",
-              "branchType": "FALLBACK"
+                },
+                "sourceCode": {
+                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const text = String(texts['checkin.unauthorized'] || 'checkin.unauthorized');\n  return { httpStatus: 401, ok: false, status: 'invalid_init_data', text: text };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
             }
           ],
-          "executionType": "EXECUTE_FIRST_MATCH"
+          "displayName": "initData valid?",
+          "name": "step_2",
+          "settings": {
+            "branches": [
+              {
+                "branchName": "valid",
+                "branchType": "CONDITION",
+                "conditions": [
+                  [
+                    {
+                      "firstValue": "{{step_1['output'].data.valid}}",
+                      "operator": "TEXT_EXACTLY_MATCHES",
+                      "secondValue": "true"
+                    }
+                  ]
+                ]
+              },
+              {
+                "branchName": "Otherwise",
+                "branchType": "FALLBACK"
+              }
+            ],
+            "executionType": "EXECUTE_FIRST_MATCH"
+          },
+          "type": "ROUTER",
+          "valid": true
         },
-        "type": "ROUTER",
+        "settings": {
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "eventId": "{{trigger['output'].body.eventId}}"
+          },
+          "sourceCode": {
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const eventId = str(inputs.eventId).trim();\n  // W102: tables-find-records fail-closed на пустом eq. Тело вебхука не\n  // валидируется — при пустом eventId фильтры step_3/step_4 получают\n  // sentinel и дают пустую выборку (403 от step_5), а не 500.\n  return { eventIdOrNone: eventId !== '' ? eventId : '__none__' };\n};",
+            "packageJson": "{}"
+          }
+        },
+        "type": "CODE",
         "valid": true
       },
       "settings": {

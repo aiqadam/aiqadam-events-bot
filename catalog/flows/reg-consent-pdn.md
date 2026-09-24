@@ -14,14 +14,14 @@
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `telegramId`, `chatId`, `callbackData`, `callbackQueryId`, `sessionDraft` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack |
-| step_2 | CODE «parse draft + decide» | `isYes`, `eventId`, `utm`, `cardMessageId`, готовый `draftJson` |
+| step_2 | CODE «parse draft + decide» | `isYes`, `eventId`, `utm`, `cardMessageId`, готовый `draftJson`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_6` (пустой `eq` валит шаг) |
 | step_3 | ROUTER | `no` / `yes` / `Otherwise` |
 | step_14 (`no`) | CODE «card text: отказ от ПД» | отказ с объяснением причины и следующим шагом |
 | step_12 (`no`) | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
 | step_11 (`no`) | `edit_message_text` (`continueOnFailure`) | карточка → отказ, **кнопки сняты** |
 | step_17 (`no`, On failure) | `send_text_message` | фолбэк: отказ отдельным сообщением |
 | step_4 (`yes`) | `tables-upsert-records users` | `consent_pdn = true` + отметка времени; **без** `continueOnFailure` — намеренно, см. заметку |
-| step_6 (`yes`) | `tables-find-records events` (`continueOnFailure`) | название, дата и адрес для подтверждения |
+| step_6 (`yes`) | `tables-find-records events` (`continueOnFailure`) | название, дата и адрес для подтверждения; фильтр `id eq eventIdOrNone` — при пустом `eventId` пустая выборка, а не падение |
 | step_5 (`yes`) | `tables-upsert-records registrations` (`continueOnFailure`) | создание или реактивация регистрации |
 | step_9 (`yes`) | `tables-upsert-records sessions` (`continueOnFailure`) | `step = await_marketing`, черновик сохраняется |
 | step_7 (`yes`) | CODE «card text: зарегистрирован + вопрос о рассылке» | кульминация с датой и местом + кнопки `reg:mkt:yes` / `reg:mkt:no`; при сбое `step_6`/`step_5`/`step_9` — `common.err.generic` вместо ложного успеха (вход `saveConsentError` от `step_4` тоже читается, но при `continueOnFailure: false` на `step_4` практически недостижим — падение `step_4` останавливает прогон раньше, чем добирается сюда) |
@@ -81,3 +81,7 @@
   в коде нет и не нужно.
 - **Редактирование без `reply_markup` снимает клавиатуру** — в ветке `no`
   на это опираются, чтобы у отказа не осталось живых кнопок.
+- **`step_6` фильтрует по `eventIdOrNone` (W102).** `tables-find-records`
+  fail-closed отклоняет пустой `eq`; `eventId` из черновика может быть пуст
+  (онбординг без события, ADR-0034). Sentinel даёт пустую выборку — `step_7`
+  показывает текст без даты, как и раньше; платформенная гоча — `AGENTS.md`.

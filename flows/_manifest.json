@@ -26,12 +26,13 @@
   {
     "flow": "checkin-api",
     "flowId": "rKoDYtiIVdbzlW59b57uH",
-    "publishedVersionId": "lkYm9AUS4ELkTphQo6FlB"
+    "publishedVersionId": "u3Owwfcc9NltCLlLiCfd9",
+    "source": "mcp"
   },
   {
     "flow": "checkin-counter-api",
     "flowId": "lm9S9cRuSZOpVAgl2h44R",
-    "publishedVersionId": "9X0AEtc4gCwkT2ByAuQo7",
+    "publishedVersionId": "2xKbbF8UFnMG6ajKBTg5M",
     "source": "mcp"
   },
   {
@@ -114,19 +115,19 @@
   {
     "flow": "reg-consent-mkt",
     "flowId": "3gLF6TcbpFObHONATQ64N",
-    "publishedVersionId": "JdfNNy0RVYq8f6vu0WsOU",
+    "publishedVersionId": "uqCr7IxmvvhJrYe8nyYuH",
     "source": "mcp"
   },
   {
     "flow": "reg-consent-pdn",
     "flowId": "vQJDQ8NecB1PleIFrq07O",
-    "publishedVersionId": "gtzmx242yYkNAUR4xjPZA",
+    "publishedVersionId": "M5IVJfolzEGQ5p5QGqvRC",
     "source": "mcp"
   },
   {
     "flow": "reg-profile",
     "flowId": "5U3Kv0cSrnvDTrbictA4L",
-    "publishedVersionId": "2NgfMOhv5Gvushbhoexgi",
+    "publishedVersionId": "HAeSmWAMGEqsf0M1uiVqu",
     "source": "mcp"
   },
   {
@@ -150,7 +151,7 @@
   {
     "flow": "staff-events-api",
     "flowId": "Ok7iXvrnJUUzNcR5OwH8x",
-    "publishedVersionId": "3hfTCqI6nh7aFKBD0QAhM",
+    "publishedVersionId": "B3QZyGQCC9RtlYT3noUtg",
     "source": "mcp"
   },
   {
