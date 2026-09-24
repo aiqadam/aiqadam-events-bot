@@ -219,7 +219,7 @@
                               },
                               "propertySettings": {},
                               "qadamName": "@aiqadam/qadam-crypto",
-                              "qadamVersion": "0.0.21"
+                              "qadamVersion": "0.0.22"
                             },
                             "type": "PIECE",
                             "valid": true
@@ -240,7 +240,7 @@
                             },
                             "propertySettings": {},
                             "qadamName": "@aiqadam/qadam-crypto",
-                            "qadamVersion": "0.0.21"
+                            "qadamVersion": "0.0.22"
                           },
                           "type": "PIECE",
                           "valid": true

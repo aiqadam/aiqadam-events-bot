@@ -20,6 +20,13 @@ W26 закрыт («готов», независимое ревью, три кр
 | Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
+Все PIECE-шаги пинованы на **доступные** версии qadam'ов (перепривязано пакетом
+[W100](../docs/work/W100-telegram-pin-migration.md)): `qadam-telegram-bot`
+`0.9.0`, `qadam-subflows` `0.4.14`/`0.4.15`, `qadam-tables` `0.4.5`,
+`qadam-store` `0.7.0`, `qadam-crypto` `0.0.22`, `qadam-http` `0.12.0`.
+Ушла `qadam-telegram-bot@0.8.0`, которой на инстансе нет: из-за неё шаги
+нельзя было редактировать через MCP.
+
 ## Flows
 
 | Группа | Флоу |

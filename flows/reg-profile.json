@@ -139,7 +139,7 @@
                           },
                           "propertySettings": {},
                           "qadamName": "@aiqadam/qadam-telegram-bot",
-                          "qadamVersion": "0.8.0"
+                          "qadamVersion": "0.9.0"
                         },
                         "type": "PIECE",
                         "valid": true
@@ -167,7 +167,7 @@
                       },
                       "propertySettings": {},
                       "qadamName": "@aiqadam/qadam-telegram-bot",
-                      "qadamVersion": "0.8.0"
+                      "qadamVersion": "0.9.0"
                     },
                     "type": "PIECE",
                     "valid": true
@@ -302,7 +302,7 @@
                             },
                             "propertySettings": {},
                             "qadamName": "@aiqadam/qadam-telegram-bot",
-                            "qadamVersion": "0.8.0"
+                            "qadamVersion": "0.9.0"
                           },
                           "type": "PIECE",
                           "valid": true
@@ -330,7 +330,7 @@
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "qadamVersion": "0.9.0"
                       },
                       "type": "PIECE",
                       "valid": true
@@ -430,7 +430,7 @@
                           },
                           "propertySettings": {},
                           "qadamName": "@aiqadam/qadam-telegram-bot",
-                          "qadamVersion": "0.8.0"
+                          "qadamVersion": "0.9.0"
                         },
                         "type": "PIECE",
                         "valid": true
@@ -458,7 +458,7 @@
                       },
                       "propertySettings": {},
                       "qadamName": "@aiqadam/qadam-telegram-bot",
-                      "qadamVersion": "0.8.0"
+                      "qadamVersion": "0.9.0"
                     },
                     "type": "PIECE",
                     "valid": true
@@ -594,7 +594,7 @@
                               },
                               "propertySettings": {},
                               "qadamName": "@aiqadam/qadam-telegram-bot",
-                              "qadamVersion": "0.8.0"
+                              "qadamVersion": "0.9.0"
                             },
                             "type": "PIECE",
                             "valid": true
@@ -622,7 +622,7 @@
                           },
                           "propertySettings": {},
                           "qadamName": "@aiqadam/qadam-telegram-bot",
-                          "qadamVersion": "0.8.0"
+                          "qadamVersion": "0.9.0"
                         },
                         "type": "PIECE",
                         "valid": true
@@ -767,7 +767,7 @@
                             },
                             "propertySettings": {},
                             "qadamName": "@aiqadam/qadam-telegram-bot",
-                            "qadamVersion": "0.8.0"
+                            "qadamVersion": "0.9.0"
                           },
                           "type": "PIECE",
                           "valid": true
@@ -799,7 +799,7 @@
                           },
                           "propertySettings": {},
                           "qadamName": "@aiqadam/qadam-telegram-bot",
-                          "qadamVersion": "0.8.0"
+                          "qadamVersion": "0.9.0"
                         },
                         "type": "PIECE",
                         "valid": true
@@ -824,7 +824,7 @@
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "qadamVersion": "0.9.0"
                       },
                       "type": "PIECE",
                       "valid": true
@@ -993,7 +993,7 @@
                             },
                             "propertySettings": {},
                             "qadamName": "@aiqadam/qadam-telegram-bot",
-                            "qadamVersion": "0.8.0"
+                            "qadamVersion": "0.9.0"
                           },
                           "type": "PIECE",
                           "valid": true
@@ -1021,7 +1021,7 @@
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "qadamVersion": "0.9.0"
                       },
                       "type": "PIECE",
                       "valid": true
@@ -1372,7 +1372,7 @@
         },
         "propertySettings": {},
         "qadamName": "@aiqadam/qadam-telegram-bot",
-        "qadamVersion": "0.8.0"
+        "qadamVersion": "0.9.0"
       },
       "type": "PIECE",
       "valid": true
@@ -1380,18 +1380,22 @@
     "settings": {
       "input": {
         "exampleData": {
-          "callbackData": "ob:continue",
-          "callbackQueryId": "sample-cbq-id",
-          "chatId": "322876545",
-          "firstName": "Тест",
-          "lastName": "Тестов",
-          "messageId": "0",
-          "sessionDraft": "{\"eventId\":\"demo\",\"step\":\"ob_consent\"}",
-          "telegramId": "322876545"
+          "sampleData": {}
         },
         "mode": "simple"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
       "sampleData": {},

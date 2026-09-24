@@ -48,7 +48,7 @@
                     },
                     "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
+                    "qadamVersion": "0.9.0"
                   },
                   "type": "PIECE",
                   "valid": true
@@ -78,7 +78,7 @@
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "qadamVersion": "0.9.0"
                       },
                       "type": "PIECE",
                       "valid": true
@@ -113,7 +113,7 @@
                             },
                             "propertySettings": {},
                             "qadamName": "@aiqadam/qadam-telegram-bot",
-                            "qadamVersion": "0.8.0"
+                            "qadamVersion": "0.9.0"
                           },
                           "type": "PIECE",
                           "valid": true
@@ -404,7 +404,7 @@
         },
         "propertySettings": {},
         "qadamName": "@aiqadam/qadam-crypto",
-        "qadamVersion": "0.0.21"
+        "qadamVersion": "0.0.22"
       },
       "type": "PIECE",
       "valid": true

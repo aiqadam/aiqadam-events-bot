@@ -6,7 +6,7 @@
   ],
   "displayName": "reg-afterword",
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -41,7 +41,6 @@
                           }
                         },
                         "input": {
-                          "auth": "{{connections['TZTlXaCEO2hEvimUowbSA']}}",
                           "chat_id": "{{trigger['output'].data.chatId}}",
                           "disable_notification": false,
                           "format": "MarkdownV2",
@@ -52,7 +51,7 @@
                         },
                         "propertySettings": {},
                         "qadamName": "@aiqadam/qadam-telegram-bot",
-                        "qadamVersion": "0.8.0"
+                        "qadamVersion": "0.9.0"
                       },
                       "type": "PIECE",
                       "valid": true

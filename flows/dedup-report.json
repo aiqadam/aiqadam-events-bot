@@ -43,12 +43,15 @@
                     },
                     "input": {
                       "chat_id": "{{step_6['output'].item.telegramId}}",
+                      "disable_notification": false,
                       "format": "None",
-                      "message": "{{step_5['output'].text}}"
+                      "message": "{{step_5['output'].text}}",
+                      "protect_content": false,
+                      "web_page_preview": false
                     },
                     "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.8.0"
+                    "qadamVersion": "0.9.0"
                   },
                   "type": "PIECE",
                   "valid": true
