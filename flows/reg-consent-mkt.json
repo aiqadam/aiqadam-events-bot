@@ -27,13 +27,47 @@
               "displayName": "read event для финальной карточки",
               "name": "step_4",
               "nextAction": {
-                "displayName": "тексты: финальная карточка и билет",
-                "name": "step_5",
+                "displayName": "read quizzes (окно викторины)",
+                "name": "step_10",
                 "nextAction": {
-                  "continueOnFailureBranches": {
-                    "onFailure": {
-                      "displayName": "фолбэк: карточку не отредактировать — шлём новую",
-                      "name": "step_8",
+                  "displayName": "тексты: финальная карточка и билет",
+                  "name": "step_5",
+                  "nextAction": {
+                    "continueOnFailureBranches": {
+                      "onFailure": {
+                        "displayName": "фолбэк: карточку не отредактировать — шлём новую",
+                        "name": "step_8",
+                        "settings": {
+                          "actionName": "send_text_message",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "chat_id": "{{trigger['output'].data.chatId}}",
+                            "disable_notification": false,
+                            "format": "MarkdownV2",
+                            "message": "{{step_5['output'].cardText}}",
+                            "protect_content": false,
+                            "web_page_preview": false
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                          "qadamVersion": "0.9.0"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      }
+                    },
+                    "displayName": "edit card → итог диалога",
+                    "name": "step_7",
+                    "nextAction": {
+                      "displayName": "send ticket (отдельным сообщением, ADR-0007)",
+                      "name": "step_9",
                       "settings": {
                         "actionName": "send_text_message",
                         "errorHandlingOptions": {
@@ -48,8 +82,9 @@
                           "chat_id": "{{trigger['output'].data.chatId}}",
                           "disable_notification": false,
                           "format": "MarkdownV2",
-                          "message": "{{step_5['output'].cardText}}",
+                          "message": "{{step_5['output'].ticketText}}",
                           "protect_content": false,
+                          "reply_markup": "{{step_5['output'].ticketReplyMarkup}}",
                           "web_page_preview": false
                         },
                         "propertySettings": {},
@@ -58,18 +93,12 @@
                       },
                       "type": "PIECE",
                       "valid": true
-                    }
-                  },
-                  "displayName": "edit card → итог диалога",
-                  "name": "step_7",
-                  "nextAction": {
-                    "displayName": "send ticket (отдельным сообщением, ADR-0007)",
-                    "name": "step_9",
+                    },
                     "settings": {
-                      "actionName": "send_text_message",
+                      "actionName": "edit_message_text",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
-                          "value": false
+                          "value": true
                         },
                         "retryOnFailure": {
                           "value": false
@@ -77,12 +106,10 @@
                       },
                       "input": {
                         "chat_id": "{{trigger['output'].data.chatId}}",
-                        "disable_notification": false,
+                        "disable_web_page_preview": false,
                         "format": "MarkdownV2",
-                        "message": "{{step_5['output'].ticketText}}",
-                        "protect_content": false,
-                        "reply_markup": "{{step_5['output'].ticketReplyMarkup}}",
-                        "web_page_preview": false
+                        "message_id": "{{step_2['output'].cardMessageId}}",
+                        "text": "{{step_5['output'].cardText}}"
                       },
                       "propertySettings": {},
                       "qadamName": "@aiqadam/qadam-telegram-bot",
@@ -92,30 +119,47 @@
                     "valid": true
                   },
                   "settings": {
-                    "actionName": "edit_message_text",
                     "errorHandlingOptions": {
                       "continueOnFailure": {
-                        "value": true
+                        "value": false
                       },
                       "retryOnFailure": {
                         "value": false
                       }
                     },
                     "input": {
-                      "chat_id": "{{trigger['output'].data.chatId}}",
-                      "disable_web_page_preview": false,
-                      "format": "MarkdownV2",
-                      "message_id": "{{step_2['output'].cardMessageId}}",
-                      "text": "{{step_5['output'].cardText}}"
+                      "clearSessionError": "{{step_6['error']}}",
+                      "eventId": "{{step_2['output'].eventId}}",
+                      "isYes": "{{step_2['output'].isYes}}",
+                      "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                      "quizRecords": "{{step_10['output']}}",
+                      "readEventError": "{{step_4['error']}}",
+                      "records": "{{step_4['output']}}",
+                      "saveConsentError": "{{step_3['error']}}",
+                      "texts": {
+                        "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
+                        "event.card.btn_calendar": "Добавить в календарь",
+                        "events.catalog.hint": "Откройте каталог, чтобы выбрать событие и зарегистрироваться.",
+                        "menu.btn.events": "События",
+                        "menu.btn.quiz": "Викторина",
+                        "profile.saved.header": "✅ Профиль сохранён",
+                        "reg.consent_marketing.saved_no": "Анонсы присылать не будем.",
+                        "reg.consent_marketing.saved_yes": "Договорились, будем присылать анонсы.",
+                        "reg.done.header": "✅ Вы зарегистрированы",
+                        "ticket.header": "🎟 Ваш билет",
+                        "ticket.hint": "Покажите QR на входе. Он откроется по кнопке ниже — сохранять ничего не надо."
+                      }
                     },
-                    "propertySettings": {},
-                    "qadamName": "@aiqadam/qadam-telegram-bot",
-                    "qadamVersion": "0.9.0"
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  // Q32: если сохранение consent_marketing, очистка сессии или чтение события\n  // (continueOnFailure на step_3/step_6/step_4) упали — в карточку и в билет\n  // уходит один и тот же текст сбоя, а не построенный на неполных данных\n  // текст. esc() обязателен — format у step_7/step_8/step_9: MarkdownV2.\n  if (inputs.saveConsentError || inputs.clearSessionError || inputs.readEventError) {\n    const errText = esc(t('common.err.generic'));\n    return { cardText: errText, ticketText: errText, ticketReplyMarkup: {}, now: new Date().toISOString() };\n  }\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const ev = arr(inputs.records).map(flat)[0] || {};\n  const isYes = inputs.isYes === true || inputs.isYes === 'true';\n  const eventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId);\n  // ADR-0034: онбординг без диплинка (голый /start) доходит сюда с пустым\n  // eventId — регистрации нет, билета нет, финал ведёт в каталог Mini App.\n  const hasEvent = eventId !== '';\n  const miniappUrl = String(inputs.miniappUrl === undefined || inputs.miniappUrl === null ? '' : inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  // W76: карта в финальной карточке и ссылка «в календарь» в билете.\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const lat = Number(ev.lat);\n  const lon = Number(ev.lon);\n  // W76/W72: пустые координаты и (0,0) — не гео (Number('') === 0, баг #124);\n  // координаты должны быть в диапазоне.\n  const hasGeo = String(ev.lat) !== '' && String(ev.lon) !== '' && isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && !(lat === 0 && lon === 0);\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  const utcStamp = (iso) => {\n    if (!iso) return '';\n    const ms = parseIso(String(iso));\n    return isFinite(ms) ? new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '') : '';\n  };\n  const calUrl = (() => {\n    const start = utcStamp(ev.starts_at);\n    if (!start) return '';\n    let end = utcStamp(ev.ends_at);\n    if (!end) {\n      const ms = parseIso(String(ev.starts_at));\n      end = isFinite(ms) ? new Date(ms + 3600000).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '') : '';\n    }\n    if (!start || !end) return '';\n    const params = ['action=TEMPLATE', 'text=' + encodeURIComponent(String(ev.title || '')), 'dates=' + start + '/' + end];\n    if (ev.address) params.push('location=' + encodeURIComponent(String(ev.address)));\n    return 'https://calendar.google.com/calendar/render?' + params.join('&');\n  })();\n  // W103 (ADR-0041): кнопка входа в викторину в билете — только пока открыто\n  // окно хотя бы одной викторины. Диапазонные фильтры по DATE не работают\n  // (Q15), окно проверяем сравнением. Вне окна кнопки нет — мёртвых не держим.\n  const nowMs = Date.now();\n  const quizActive = arr(inputs.quizRecords).map(flat).some((q) => {\n    const st = parseIso(String(q.starts_at || ''));\n    const en = parseIso(String(q.ends_at || ''));\n    return isFinite(st) && isFinite(en) && nowMs >= st && nowMs <= en;\n  });\n  const quizRow = quizActive ? [{ text: t('menu.btn.quiz'), callback_data: 'qz:start' }] : [];\n  const header = esc(t(hasEvent ? 'reg.done.header' : 'profile.saved.header'));\n  const saved = esc(t(isYes ? 'reg.consent_marketing.saved_yes' : 'reg.consent_marketing.saved_no'));\n  const cardLines = [header, saved];\n  const card = [];\n  if (ev.title) card.push('*' + esc(ev.title) + '*');\n  if (ev.starts_at) card.push('📅 ' + esc(fmt(ev.starts_at)));\n  if (ev.address) card.push('📍 ' + esc(ev.address));\n  if (mapsUrl) card.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (card.length) cardLines.push(card.join('\\n'));\n\n  let ticketText;\n  let ticketReplyMarkup;\n  if (hasEvent) {\n    ticketText = [esc(t('ticket.header')), esc(t('ticket.hint'))].join('\\n\\n');\n    const rows = [[{ text: 'Открыть билет', web_app: { url: base + '/#/ticket?event_id=' + eventId } }]];\n    if (calUrl) rows.push([{ text: t('event.card.btn_calendar'), url: calUrl }]);\n    if (quizRow.length) rows.push(quizRow);\n    ticketReplyMarkup = { inline_keyboard: rows };\n  } else {\n    ticketText = esc(t('events.catalog.hint'));\n    const rows = [[{ text: t('menu.btn.events'), web_app: { url: base + '/#/events' } }]];\n    if (quizRow.length) rows.push(quizRow);\n    ticketReplyMarkup = { inline_keyboard: rows };\n  }\n  return {\n    cardText: cardLines.join('\\n\\n'),\n    ticketText: ticketText,\n    ticketReplyMarkup: ticketReplyMarkup,\n    now: new Date().toISOString()\n  };\n};",
+                      "packageJson": "{}"
+                    }
                   },
-                  "type": "PIECE",
+                  "type": "CODE",
                   "valid": true
                 },
                 "settings": {
+                  "actionName": "tables-find-records",
                   "errorHandlingOptions": {
                     "continueOnFailure": {
                       "value": false
@@ -125,32 +169,16 @@
                     }
                   },
                   "input": {
-                    "clearSessionError": "{{step_6['error']}}",
-                    "eventId": "{{step_2['output'].eventId}}",
-                    "isYes": "{{step_2['output'].isYes}}",
-                    "miniappUrl": "{{variables['MINIAPP_URL']}}",
-                    "readEventError": "{{step_4['error']}}",
-                    "records": "{{step_4['output']}}",
-                    "saveConsentError": "{{step_3['error']}}",
-                    "texts": {
-                      "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
-                      "event.card.btn_calendar": "Добавить в календарь",
-                      "events.catalog.hint": "Откройте каталог, чтобы выбрать событие и зарегистрироваться.",
-                      "menu.btn.events": "События",
-                      "profile.saved.header": "✅ Профиль сохранён",
-                      "reg.consent_marketing.saved_no": "Анонсы присылать не будем.",
-                      "reg.consent_marketing.saved_yes": "Договорились, будем присылать анонсы.",
-                      "reg.done.header": "✅ Вы зарегистрированы",
-                      "ticket.header": "🎟 Ваш билет",
-                      "ticket.hint": "Покажите QR на входе. Он откроется по кнопке ниже — сохранять ничего не надо."
-                    }
+                    "filters": {},
+                    "limit": 10,
+                    "record_ids": [],
+                    "table_id": "RA6NwbSZw7rGtcYW7dB9x"
                   },
-                  "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n\n  // Q32: если сохранение consent_marketing, очистка сессии или чтение события\n  // (continueOnFailure на step_3/step_6/step_4) упали — в карточку и в билет\n  // уходит один и тот же текст сбоя, а не построенный на неполных данных\n  // текст. esc() обязателен — format у step_7/step_8/step_9: MarkdownV2.\n  if (inputs.saveConsentError || inputs.clearSessionError || inputs.readEventError) {\n    const errText = esc(t('common.err.generic'));\n    return { cardText: errText, ticketText: errText, ticketReplyMarkup: {}, now: new Date().toISOString() };\n  }\n\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const ev = arr(inputs.records).map(flat)[0] || {};\n  const isYes = inputs.isYes === true || inputs.isYes === 'true';\n  const eventId = String(inputs.eventId === undefined || inputs.eventId === null ? '' : inputs.eventId);\n  // ADR-0034: онбординг без диплинка (голый /start) доходит сюда с пустым\n  // eventId — регистрации нет, билета нет, финал ведёт в каталог Mini App.\n  const hasEvent = eventId !== '';\n  const miniappUrl = String(inputs.miniappUrl === undefined || inputs.miniappUrl === null ? '' : inputs.miniappUrl);\n  const base = miniappUrl.endsWith('/') ? miniappUrl.slice(0, -1) : miniappUrl;\n  const TZ = 'Asia/Tashkent';\n  const dateFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    if (!iso) return '';\n    const s = /[Zz]$/.test(iso) || /[+-][0-9]{2}:?[0-9]{2}$/.test(iso) ? iso : iso + 'Z';\n    const d = new Date(s);\n    return isNaN(d.getTime()) ? '' : dateFmt.format(d);\n  };\n  // W76: карта в финальной карточке и ссылка «в календарь» в билете.\n  const parseIso = (s) => Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  const lat = Number(ev.lat);\n  const lon = Number(ev.lon);\n  // W76/W72: пустые координаты и (0,0) — не гео (Number('') === 0, баг #124);\n  // координаты должны быть в диапазоне.\n  const hasGeo = String(ev.lat) !== '' && String(ev.lon) !== '' && isFinite(lat) && isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && !(lat === 0 && lon === 0);\n  const mapsUrl = hasGeo ? ('https://yandex.uz/maps/?ll=' + lon + '%2C' + lat + '&z=17&pt=' + lon + '%2C' + lat) : '';\n  const utcStamp = (iso) => {\n    if (!iso) return '';\n    const ms = parseIso(String(iso));\n    return isFinite(ms) ? new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '') : '';\n  };\n  const calUrl = (() => {\n    const start = utcStamp(ev.starts_at);\n    if (!start) return '';\n    let end = utcStamp(ev.ends_at);\n    if (!end) {\n      const ms = parseIso(String(ev.starts_at));\n      end = isFinite(ms) ? new Date(ms + 3600000).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '') : '';\n    }\n    if (!start || !end) return '';\n    const params = ['action=TEMPLATE', 'text=' + encodeURIComponent(String(ev.title || '')), 'dates=' + start + '/' + end];\n    if (ev.address) params.push('location=' + encodeURIComponent(String(ev.address)));\n    return 'https://calendar.google.com/calendar/render?' + params.join('&');\n  })();\n  const header = esc(t(hasEvent ? 'reg.done.header' : 'profile.saved.header'));\n  const saved = esc(t(isYes ? 'reg.consent_marketing.saved_yes' : 'reg.consent_marketing.saved_no'));\n  const cardLines = [header, saved];\n  const card = [];\n  if (ev.title) card.push('*' + esc(ev.title) + '*');\n  if (ev.starts_at) card.push('📅 ' + esc(fmt(ev.starts_at)));\n  if (ev.address) card.push('📍 ' + esc(ev.address));\n  if (mapsUrl) card.push('🗺 [Открыть на карте](' + mapsUrl + ')');\n  if (card.length) cardLines.push(card.join('\\n'));\n\n  let ticketText;\n  let ticketReplyMarkup;\n  if (hasEvent) {\n    ticketText = [esc(t('ticket.header')), esc(t('ticket.hint'))].join('\\n\\n');\n    const rows = [[{ text: 'Открыть билет', web_app: { url: base + '/#/ticket?event_id=' + eventId } }]];\n    if (calUrl) rows.push([{ text: t('event.card.btn_calendar'), url: calUrl }]);\n    ticketReplyMarkup = { inline_keyboard: rows };\n  } else {\n    ticketText = esc(t('events.catalog.hint'));\n    ticketReplyMarkup = { inline_keyboard: [[{ text: t('menu.btn.events'), web_app: { url: base + '/#/events' } }]] };\n  }\n  return {\n    cardText: cardLines.join('\\n\\n'),\n    ticketText: ticketText,\n    ticketReplyMarkup: ticketReplyMarkup,\n    now: new Date().toISOString()\n  };\n};\n",
-                    "packageJson": "{}"
-                  }
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.4.6"
                 },
-                "type": "CODE",
+                "type": "PIECE",
                 "valid": true
               },
               "settings": {
