@@ -28,17 +28,21 @@
 | Конфиги сред | `miniapp/.env.dev`, `miniapp/.env.prod` |
 | Скрипты сборки | `miniapp/package.json` (`build:dev`, `build:prod`) |
 | dev-деплой | `.github/workflows/pages.yml` (`build:dev`) |
-| prod-деплой (шаблон) | `miniapp/deploy/pages-prod.yml` |
+| prod-деплой | репо `aiqadam/aiqadam-events-bot-prod`, workflow `pages-prod.yml` |
 | Инструкция | `miniapp/deploy/README.md` |
+
+Репозиторий **prod-Pages**: <https://github.com/aiqadam/aiqadam-events-bot-prod> —
+тонкий (только workflow): собирает `aiqadam-events-bot@prod` режимом `build:prod`.
+Pages включён, первый деплой зелёный: <https://aiqadam.github.io/aiqadam-events-bot-prod/>.
 
 ## Чек-лист готовности
 
 - [x] Код параметризован; в бандл попадает конфиг одной среды
 - [x] `npm run build:dev` и `npm run build:prod` проходят; prod-бандл без dev-хоста
 - [x] dev-деплой переведён на `build:dev`
-- [x] Шаблон prod-деплоя и инструкция
-- [ ] Владелец: prod-Pages репозиторий, ветка `prod`, домены, BotFather URL
-- [ ] `MINIAPP_URL` prod → prod-домен
+- [x] prod-Pages репозиторий создан, Pages включён, деплой проверен
+- [x] ветка `prod` в `aiqadam-events-bot` создана (bootstrap из текущей работы)
+- [ ] Владелец: домен prod (CNAME+DNS), BotFather URL, `MINIAPP_URL` prod
 - [ ] `catalog/environments.md` — зафиксировать домены сред
 - [ ] независимое ревью
 

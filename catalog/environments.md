@@ -16,6 +16,18 @@
 | `MINIAPP_URL` | `https://miniapp.events.aiqadam.org/` | скопирован dev-адресом — **должен указывать на prod-сборку** |
 | Статус | очищается и пересобирается из репозитория | копия dev на 2026-09-26, «as is» |
 
+## Mini App
+
+Один код (`miniapp/`), среда — на сборке ([W105](../docs/work/W105-miniapp-two-envs.md)).
+
+| | dev | prod |
+| --- | --- | --- |
+| Источник | `aiqadam-events-bot@main` | `aiqadam-events-bot@prod` |
+| Конфиг | `miniapp/.env.dev` | `miniapp/.env.prod` |
+| Деплой | `pages.yml` (этот репозиторий) | репо `aiqadam/aiqadam-events-bot-prod`, `pages-prod.yml` |
+| Адрес | `miniapp.events.aiqadam.org` (домен ждёт переезда) | пока `aiqadam.github.io/aiqadam-events-bot-prod/`; домен — за владельцем |
+| API-база | `app.flow.aiqadam.org` | `app-prod.flow.aiqadam.org` |
+
 ## Копия инсталляции (2026-09-26)
 
 prod поднят восстановлением дампа dev. Две ловушки копии, обе уже пройдены:
