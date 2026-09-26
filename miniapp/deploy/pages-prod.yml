@@ -52,7 +52,9 @@ jobs:
           mkdir -p _site/i18n
           cp -R src/miniapp/dist/. _site/
           cp -R src/i18n/. _site/i18n/
-          if [ -f src/miniapp/CNAME ]; then cp src/miniapp/CNAME _site/CNAME; fi
+          # CNAME — из ЭТОГО (prod) репозитория, не из источника: в aiqadam-events-bot
+          # лежит dev-домен, и копировать его сюда нельзя.
+          if [ -f CNAME ]; then cp CNAME _site/CNAME; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
