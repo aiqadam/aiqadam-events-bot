@@ -72,6 +72,31 @@ Pages включён, первый деплой зелёный: <https://aiqadam
   `miniapp-prod.events.aiqadam.org` (200, `message_id` 5571) — домен у бота разрешён,
   правки Bot Settings → Domain не нужны.
 
+## Ревью
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-26 · **Вердикт**: **есть замечания** — дефектов кода и деплоя не найдено (код и prod-деплой проверены живьём/извне и чисты); замечания «важно» касаются только каталога, остальное — «на будущее». После правки документации пакет может идти в `готов`.
+
+### Замечания
+
+1. **важно** — **`catalog/environments.md` неполон/устарел** (файл заведён этим пакетом, коммит `a3d64aa`): project id prod — «уточнить» (ADR-0042 п.4 требует его в карте сред); строка `MINIAPP_URL` prod всё ещё «скопирован dev-адресом — должен указывать на prod-сборку», хотя чек-лист пакета и журнал фиксируют, что владелец переставил его на `miniapp-prod.events.aiqadam.org`, и таблица Mini App в том же файле это подтверждает. Противоречие внутри одного файла. — `catalog/environments.md`.
+2. **на будущее** — `catalog/overview.md` §Mini App всё ещё описывает единственный деплой (`pages.yml` → `npm ci && npm run build`) и не упоминает prod-сборку/`build:dev`/`build:prod`. — `catalog/overview.md`.
+3. **на будущее** — `api.ts` `endpoint()` при отсутствии `VITE_API_BASE`/ключа молча возвращает `''` (в лог — только `console.error`): неверная сборка не падает заметно, а шлёт POST на URL текущей страницы. Стоит сделать отказ явным — ровно чтобы «собрали не в ту среду/без env» не было бесшумным (исходный дефект, который пакет чинил, был именно бесшумным). — `miniapp/src/lib/api.ts`.
+4. **на будущее** — карты `flowId` в `.env.dev`/`.env.prod` пока совпадают (prod — копия); после пересборки dev обновить `.env.dev` и карту в `catalog/environments.md` тем же пакетом (ADR-0042 п.7). Журнал это уже отмечает.
+
+### Исправлено владельцем (2026-09-26)
+
+1. **`catalog/environments.md` неполон/устарел** — *исправлено*: prod project id и `MINIAPP_URL` prod заполнены (см. W104 п.5).
+2. **`overview.md` §Mini App** — *исправлено*: описаны `build:dev`/`build:prod`, prod-репозиторий и ветка `prod`.
+3. **`endpoint()` молчаливый `''`** — *исправлено*: теперь бросает `Error` (громкий отказ при сборке без `.env` среды); `build:dev`/`build:prod` проходят.
+4. **карты `flowId` совпадают** — *принято хвостом*: обновить `.env.dev` после пересборки dev.
+
+### Что проверено
+
+- **Код**: `grep` по `miniapp/` — жёстких `app.flow.aiqadam.org` и `flowId` вне `.env.dev`/`.env.prod` не осталось; `index.html` — `%VITE_API_BASE%` (Vite подставил: проверено на живом prod-HTML); `base: './'`; `package.json` — `build:dev`/`build:prod`; `pages.yml` → `build:dev`; `.gitignore` ре-инклюдит `.env.dev`/`.env.prod` (оба в git). Карта `.env.dev` сверена с живым dev — все 9 `flowId` совпадают с `ap_list_flows`.
+- **Деплой (проверен извне, GitHub API + HTTPS)**: репо `aiqadam/aiqadam-events-bot-prod` существует (публичный, `has_pages: true`), в нём `CNAME` = `miniapp-prod.events.aiqadam.org` и `.github/workflows/pages-prod.yml`, идентичный шаблону в репо; ветка-источник `aiqadam-events-bot@prod` существует (`e18c279`, содержит `build:prod` и `.env.prod`). Живой `https://miniapp-prod.events.aiqadam.org/` — 200: `preconnect` и бандл `index-BLy1jhF8.js` содержат только `app-prod.flow.aiqadam.org`, вхождений `app.flow.aiqadam.org` — 0, все 9 `flowId` на месте. CNAME берётся из prod-репозитория; dev-источник (CNAME = `miniapp.events.aiqadam.org`) не подтягивается.
+- **Границы**: UI-экраны и тексты пакет не менял — сверка с прототипом (п.3a), голос и бренд «не относятся». AppSec: страница ключей не хранит и прав не решает (только собирает URL), секретов/`initData` в изменениях нет, в `.env.*` — публичные хост и `flowId`.
+- **Офлайн**: `check-export-secrets.sh` — чисто; `check-texts.py` — 0 расхождений; `check-commands.py` — 0. `check-migrations.py` не прогнан (нет ключа).
+
 ## Хвосты и блокеры
 
 - Домены и prod-репозиторий — решение/шаги владельца.

@@ -57,8 +57,8 @@ const FLOW_IDS = readFlowIds();
 function endpoint(key: string): string {
   const id = FLOW_IDS[key];
   if (!API_BASE || !id) {
-    console.error(`Mini App: не задан конфиг вебхука "${key}" (VITE_API_BASE/VITE_FLOW_IDS)`);
-    return '';
+    // Отказ громкий: сборка без конфига среды не должна «тихо» ходить не туда.
+    throw new Error(`Mini App: не задан конфиг вебхука "${key}" (VITE_API_BASE/VITE_FLOW_IDS) — сборка без .env среды`);
   }
   return `${API_BASE}/api/v1/webhooks/${id}/sync`;
 }

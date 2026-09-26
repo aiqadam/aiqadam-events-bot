@@ -31,7 +31,7 @@
 - **Флоу**: вызывается из `tg-router` (ветка `bcast_draft`); продолжает
   `bcast-step` (колбэк `bcast:ev:` читает сессию `await_event`)
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

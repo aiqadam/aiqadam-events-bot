@@ -34,7 +34,7 @@
   (`t1g8Vae3iEoDk93D6Rle7`, create)
 - **Флоу**: вызывается из `tg-router`
 - **Переменные**: `MINIAPP_URL` (кнопка сканера)
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — отправка
+- **Connections**: connection среды ([environments.md](../environments.md)) — отправка
 
 ## Заметки
 

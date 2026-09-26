@@ -43,7 +43,7 @@
 - **Флоу**: вызывается из `tg-router` (`queue`, `flowProps.payload`);
   продолжение (`ob:*`) уходит в `reg-profile`
 - **Переменные**: `MINIAPP_URL` (URL для кнопок `web_app`)
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

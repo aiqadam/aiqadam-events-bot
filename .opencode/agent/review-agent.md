@@ -71,6 +71,23 @@ permission:
   app-flow-events-dev_ap_get_piece_props: allow
   app-flow-events-dev_ap_resolve_property_options: allow
   app-flow-events-dev_ap_resolve_property_chain: allow
+  app-flow-events-prod_ap_flow_structure: allow
+  app-flow-events-prod_ap_read_step_code: allow
+  app-flow-events-prod_ap_list_flows: allow
+  app-flow-events-prod_ap_list_runs: allow
+  app-flow-events-prod_ap_get_run: allow
+  app-flow-events-prod_ap_list_tables: allow
+  app-flow-events-prod_ap_find_records: allow
+  app-flow-events-prod_ap_list_connections: allow
+  app-flow-events-prod_ap_list_variables: allow
+  app-flow-events-prod_ap_export_flow: allow
+  app-flow-events-prod_ap_export_table: allow
+  app-flow-events-prod_ap_validate_flow: allow
+  app-flow-events-prod_ap_validate_step_config: allow
+  app-flow-events-prod_ap_research_pieces: allow
+  app-flow-events-prod_ap_get_piece_props: allow
+  app-flow-events-prod_ap_resolve_property_options: allow
+  app-flow-events-prod_ap_resolve_property_chain: allow
 ---
 Источник правды о роли — `docs/agents/review-agent.md`. Прочитай его целиком первым действием.
 Твой протокол — `docs/work/REVIEW-CHECKLIST.md`; вход — номер пакета в задаче.

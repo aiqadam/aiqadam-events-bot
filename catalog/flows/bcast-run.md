@@ -61,7 +61,7 @@
   `users` (`xHhYjhwqKdONkrYJGcBsz`), `events` (`R4aSQpLZvw7d3u6DVOSjH`)
 - **Флоу**: зовётся из `bcast-step`; самовызов очередью (`executionMode: queue`)
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

@@ -94,7 +94,35 @@ Prod остаётся «as is» — замороженной копией; ст�
 
 ## Ревью
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-26 · **Вердикт**: **есть замечания** — блокеров нет, но есть «важно» (dev не починен и не обслуживает вход бота; prod-часть не подтверждена живой проверкой; каталог разошёлся с живым dev) и хвосты «на будущее». Пакет не готов: пункты чек-листа про dev и синхрон каталога не отмечены.
+
+### Замечания
+
+1. **важно** — **dev не починен: `/start` в dev падает прямо сейчас.** Живой прогон `Tclc2Iruss98i2C1W1xYH` (26.09 11:47:04 UTC, апдейт владельца `/start`) падает на `step_15` `ConnectionNotFound: TZTlXaCEO2hEvimUowbSA` — сигнатура ровно та, что чинилась в prod. `ap_flow_structure includeInput` живого dev держит мёртвый `auth` в `menu` (`step_5`, `step_12`) и `tg-router` (`step_15`, `step_22`, `step_26`), а `ap_list_connections` dev отдаёт **только** `Oct3laLPiavfizCJagLcM` (`Events-QA-Bot`): старого connection на dev нет. Это противоречит хвосту самого журнала («до cutover dev может ещё обслуживать живую ссылку»): обслуживать он уже не может. Пункты чек-листа «dev: очистка + пересборка…» и «`catalog/` совпадает с живым (dev)» не отмечены. — dev `menu`, `tg-router`; переводить пакет в `на проверке`/`готов` до пересборки нельзя.
+2. **важно** — **prod-часть W104 живой проверкой не подтверждена.** В этой сессии доступен только MCP `app-flow-events-dev`; сервер `app-flow-events-prod` не подключён, `QADAM_API_KEY`/`QADAM_PROD_API_KEY` отсутствуют — ни MCP-, ни REST-чтения prod нет. Заявления «72 шага → `KIbx…`, 17 флоу опубликованы, `/start`→`menu` зелёный (`YIZlB9OuL3wgIQzVo3mlk`), переменные перезаданы и резолвятся» остаются на слово владельца. Пункты 1–2 задания (нет ссылок на `TZTl…`, шаги на `KIbx…`, `ap_validate_flow`, `{{variables[...]}}` без `ERR_OSSL_BAD_DECRYPT`) **не проверены**. Нужен повторный круг ревью с доступом к prod; косвенно (вне инстанса) проверен только prod-Pages/бандл — см. W105.
+3. **важно** — **каталог разошёлся с живым dev.** 15 карточек `catalog/flows/*.md` (`tg-router`, `menu`, `bcast-*`, `reg-*`, `quiz*`, `manage-api`, `staff-accept`) в разделе «Connections» называют `AI Qadam Events (dev)` / `TZTlXaCEO2hEvimUowbSA`, тогда как `catalog/connections.md` и `catalog/environments.md` — `Events-QA-Bot` / `Oct3laLPiavfizCJagLcM`. По ADR-0042 п.4 id и имена connection живут в `environments.md`; карточки не должны нести устаревший id. — `catalog/flows/*.md` (15 файлов).
+4. **важно** — **`catalog/variables.md` противоречит `catalog/environments.md`.** Variables: `BOT_USERNAME` = `aiqadam_events_dev_bot`, `BOT_TOKEN` «тот же токен, что в connection `AI Qadam Events (dev)`»; environments: dev-бот `@aiqadam_events_qa_bot`, prod-бот `@aiqadam_events_dev_bot`. Один из двух документов неверен; хвост самого журнала допускает, что dev-переменные остались от исторического бота. — `catalog/variables.md`, строки `BOT_USERNAME`/`BOT_TOKEN`.
+5. **важно** — **`catalog/environments.md` не закончен как точка правды (ADR-0042 п.4):** project id prod — «уточнить»; строка `MINIAPP_URL` prod всё ещё «скопирован dev-адресом — **должен указывать на prod-сборку**», хотя W105 закрыл это, и таблица Mini App в том же файле называет `miniapp-prod.events.aiqadam.org`. Противоречие внутри файла. — `catalog/environments.md`.
+6. **на будущее** — **`flows/*.json` не пересняты:** `connectionIds: ["TZTl…"]` в 17 файлах, манифест — 31 флоу. После пересборки dev экспорт обязан обновиться тем же пакетом (ADR-0042 п.7, ADR-0018 п.5); до тех пор снимок описывает состояние до перестройки.
+7. **на будущее** — **счётчики `catalog/overview.md`:** 31 флоу / 17 таблиц против живого dev 36 / 18 (`QA-546 stub-429`, `ChatBot` — пред-существующее, `QA-546 1.1 http-404-error`, `zz-access-check-delete-me`, `zz-diag-skip-primitive` и таблица `QA-546 call log`). W104 их не автор, но «каталог — только реально существующее» их не отражает.
+8. **на будущее** — ADR-0042 п.5 обещает, что «`check-migrations.py` получает параметр среды»; реализовано env-переменными (`QADAM_BASE_URL`/`QADAM_PROJECT_ID`). Свести формулировку ADR к факту или добавить явный ключ.
+
+### Исправлено владельцем (2026-09-26)
+
+1. **dev не починен** — *принято*: пересборка dev (вариант «а») — следующий шаг пакета, в этот PR не входит; статус остаётся `в работе`, не `на проверке`.
+2. **prod не подтверждён живой проверкой** — *снято иначе*: ревьюеру выдан доступ к prod-MCP (`.opencode/agent/review-agent.md` — добавлены read-only инструменты `app-flow-events-prod_*`); повторный круг проверяет prod живьём. Собственные прогоны prod (для протокола): `/start`→`menu` `YIZlB9OuL3wgIQzVo3mlk` (`step_15` success), прогон `menu` `hgxR6BpCF6VfibChFHlkz` (`isOwner:true`, кнопки на `miniapp-prod…`), пробник переменных (все 5 непусты, удалён).
+3. **17 карточек `catalog/flows/*.md`** — *исправлено*: `AI Qadam Events (dev)`/`TZTl…` → `connection среды ([environments.md](../environments.md))`.
+4. **`catalog/variables.md`** — *исправлено*: `BOT_USERNAME` dev → `aiqadam_events_qa_bot`; `BOT_TOKEN` — «токен своей среды», добавлена отсылка к `environments.md`.
+5. **`catalog/environments.md`** — *исправлено*: prod project id = `vZXlkfz60dx6kX97yICx7`; `MINIAPP_URL` prod = `https://miniapp-prod.events.aiqadam.org/`.
+6. **`flows/*.json` не пересняты** — *принято хвостом*: переснять тем же пакетом после пересборки dev.
+7. **счётчики `catalog/overview.md`** — *исправлено*: 33 флоу / 18 таблиц (по числу карточек).
+8. **ADR-0042 п.5** — *исправлено*: среда задаётся `QADAM_BASE_URL`/`QADAM_PROJECT_ID`; явный `--env` — возможное уточнение.
+
+### Что проверено
+
+- **dev (MCP `app-flow-events-dev`)**: `ap_list_connections` — одна ACTIVE `Oct3…`; `ap_list_variables` — 5 переменных; `ap_list_flows` — 36 флоу, `ap_list_tables` — 18; `ap_flow_structure includeInput` по `menu` (`1DORFhP9F3W00KpKz5wDw`) и `tg-router` (`nyaBzgKGG8TTTsryjc9tW`); `ap_validate_flow tg-router` — 27/27 (мёртвую ссылку на connection валидатор не ловит — подтверждено); `ap_get_run Tclc2Iruss98i2C1W1xYH` — `ConnectionNotFound: TZTlXaCEO2hEvimUowbSA` на `step_15`.
+- **Офлайн**: `check-export-secrets.sh` — чисто; `check-texts.py i18n/ru.json flows/*.json` — 31 флоу, 265 пар, 0 расхождений; `check-commands.py` — 0 нарушений. `check-migrations.py` прогнать не удалось: ключа платформы на машине нет.
+- **Живой prod — не проверялся** (см. замечание 2).
 
 ## Хвосты и блокеры
 

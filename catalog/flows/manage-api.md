@@ -309,7 +309,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   Геокодер; заводится в UI, ADR-0008 — в репозиторий не попадает)
 - **Qadam'ы**: `@aiqadam/qadam-http : send_request` (`step_35` — единственный
   HTTP-шаг флоу, `failureMode: continue_all`)
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`) — `step_15`, `step_17`, `step_27`
+- **Connections**: connection среды ([environments.md](../environments.md)) — `step_15`, `step_17`, `step_27`
 
 ## Заметки
 

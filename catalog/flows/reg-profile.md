@@ -36,7 +36,7 @@
 - **Таблицы**: `events` (чтение), `users` (запись профиля), `registrations` (запись), `sessions` (запись)
 - **Флоу**: вызывается из `tg-router` (`queue`); хвост `await_marketing` забирает `reg-consent-mkt`
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

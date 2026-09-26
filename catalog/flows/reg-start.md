@@ -39,7 +39,7 @@
 - **Таблицы**: `events`, `registrations`, `users` (чтение), `sessions` (запись)
 - **Флоу**: вызывается из `tg-router`; продолжает `reg-profile` (ветки `onboard`/`register`)
 - **Переменные**: `MINIAPP_URL` (кнопка QR в ветке `existing`)
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 
