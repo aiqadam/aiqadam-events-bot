@@ -52,7 +52,7 @@ jobs:
         working-directory: miniapp
         run: |
           npm ci
-          npm run build
+          npm run build:dev
       - name: Assemble site (dist + i18n + prototypes)
         run: |
           mkdir -p _site/i18n

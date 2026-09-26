@@ -1,5 +1,15 @@
 /// <reference types="vite/client" />
 
+// W105: конфиг среды приходит на сборке (miniapp/.env.dev / .env.prod).
+interface ImportMetaEnv {
+  readonly VITE_API_BASE?: string;
+  readonly VITE_FLOW_IDS?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 // W47: нативная кнопка «Назад» в шапке Telegram (Bot API 6.1+). Не элемент
 // страницы — замещает системный жест там, где hash не меняется.
 interface TelegramBackButton {

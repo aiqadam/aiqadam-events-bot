@@ -39,20 +39,43 @@ export async function postJson(url: string, body: unknown): Promise<ApiResult> {
   }
 }
 
-// Специфичные для трёх роутов URL — захардкожены как в ванили (Q14: events-dev)
-export const MY_QR_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync';
-export const CHECKIN_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/rKoDYtiIVdbzlW59b57uH/sync';
-export const MANAGE_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync';
+// Среды различаются хостом и картой webhook-flowId (ADR-0042, W105): значения
+// подставляются на сборке из miniapp/.env.dev / .env.prod (Vite mode). В бандл
+// попадает конфиг ровно одной среды — чужой адрес туда не протекает.
+const API_BASE = String(import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '');
+
+function readFlowIds(): Record<string, string> {
+  try {
+    const parsed = JSON.parse(String(import.meta.env.VITE_FLOW_IDS ?? '{}'));
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+const FLOW_IDS = readFlowIds();
+
+function endpoint(key: string): string {
+  const id = FLOW_IDS[key];
+  if (!API_BASE || !id) {
+    console.error(`Mini App: не задан конфиг вебхука "${key}" (VITE_API_BASE/VITE_FLOW_IDS)`);
+    return '';
+  }
+  return `${API_BASE}/api/v1/webhooks/${id}/sync`;
+}
+
+export const MY_QR_API = endpoint('myQr');
+export const CHECKIN_API = endpoint('checkin');
+export const MANAGE_API = endpoint('manage');
 // W38: публичный каталог — без initData, читает events-api.
-export const EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/wEdKdE4RBGKIzWkl4MJHG/sync';
+export const EVENTS_API = endpoint('events');
 // W43: регистрация и «Мои билеты» — initData обязателен.
-export const REG_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync';
+export const REG_API = endpoint('reg');
 // W45 (Q53): форма отзыва #/feedback — initData обязателен, доступ по факту участия.
-export const FEEDBACK_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/DgmYgxiEXBz0roebYRBUj/sync';
+export const FEEDBACK_API = endpoint('feedback');
 // W50 (вердикт W49): чьи кнопки сканера в каталоге — решает сервер по event_staff.
-export const STAFF_EVENTS_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/Ok7iXvrnJUUzNcR5OwH8x/sync';
+export const STAFF_EVENTS_API = endpoint('staffEvents');
 // W62: счётчики «Отмечено X из Y» для сканера — читает сервер по event_staff
 // конкретного события один раз при открытии экрана (в checkin-api не трогаем).
-export const CHECKIN_COUNTER_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/lm9S9cRuSZOpVAgl2h44R/sync';
+export const CHECKIN_COUNTER_API = endpoint('checkinCounter');
 // W10 (OWN-14): создание одноразовой ссылки-инвайта контролёра (24 ч, один раз).
-export const STAFF_INVITE_API = 'https://app.flow.aiqadam.org/api/v1/webhooks/nFIO7cJiEXlQMCdr6lLjc/sync';
+export const STAFF_INVITE_API = endpoint('staffInvite');
