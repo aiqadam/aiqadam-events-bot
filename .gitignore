@@ -18,6 +18,9 @@ dist/
 .env
 .env.*
 !.env.example
+# Mini App: конфиг сред (W105) — не секреты (хост + flowId), коммитится.
+!miniapp/.env.dev
+!miniapp/.env.prod
 *.log
 .venv/
 __pycache__/

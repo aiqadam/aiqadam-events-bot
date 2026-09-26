@@ -31,7 +31,7 @@
 - **Таблицы**: `registrations` (чтение)
 - **Переменные**: `MINIAPP_URL` (кнопка отзыва)
 - **Store**: `afterword:<eventId>-<telegramId>`, `COLLECTION`, **без TTL**
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

@@ -26,7 +26,7 @@
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`, чтение+запись)
 - **Флоу**: вызывается из `tg-router` (ветка `bcast_unsub`)
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

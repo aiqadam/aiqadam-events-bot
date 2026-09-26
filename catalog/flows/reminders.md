@@ -26,7 +26,7 @@
 - **Таблицы**: `events`, `registrations` (чтение)
 - **Переменные**: `MINIAPP_URL` (кнопка «Открыть билет» в напоминании)
 - **Store**: `rm:<event_id>:<kind>:<telegram_id>`, `COLLECTION`, TTL 48 ч
-- **Connections**: `AI Qadam Events (dev)` (отправка)
+- **Connections**: connection среды (отправка)
 
 ## Заметки
 

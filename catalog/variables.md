@@ -12,9 +12,12 @@
 |------|-----------|--------------|----------|
 | `QR_SIGNING_KEY` | ключ HMAC для подписи QR участника (PAR-6); **не** токен бота | UI: Settings → Variables | 64 символа, алфавит `A-Za-z0-9_-` |
 | `MINIAPP_URL` | адрес Mini App-статики на GitHub Pages | UI: Settings → Variables | `https://miniapp.events.aiqadam.org/` |
-| `BOT_USERNAME` | username бота **без `@`** — для сборки deep link'ов | UI: Settings → Variables | `aiqadam_events_dev_bot` |
-| `BOT_TOKEN` | тот же токен бота, что и в connection `AI Qadam Events (dev)` — **дубликат специально для HMAC** ([ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) | UI: Settings → Variables | — |
+| `BOT_USERNAME` | username бота **без `@`** — для сборки deep link'ов | UI: Settings → Variables | `aiqadam_events_qa_bot` (dev) |
+| `BOT_TOKEN` | токен бота **своей среды** — **дубликат специально для HMAC** ([ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) | UI: Settings → Variables | — |
 | `YANDEX_GEOCODER_API_KEY` | ключ Геокодера Яндекс.Карт — разбор орг-ссылок в визарде (Q55) | UI: Settings → Variables | — |
+
+> Значения переменных — **на среду** (у dev и prod свои боты/ключи/адреса). Карта
+> сред и требования — [environments.md](environments.md). В таблице выше — dev.
 
 Ротация `QR_SIGNING_KEY` инвалидирует все выданные QR разом — только вместе
 с перевыпуском кодов, см. [SECURITY.md](../docs/SECURITY.md#секреты).

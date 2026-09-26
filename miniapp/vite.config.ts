@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Относительные ассеты: сайт работает и на корне домена, и на github.io-подпути (W105).
+  base: './',
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 600,

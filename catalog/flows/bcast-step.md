@@ -75,7 +75,7 @@
   запись: `broadcasts`, `sessions`
 - **Флоу**: вызывается из `tg-router` (ветка `bcast_step`); зовёт `bcast-run`
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

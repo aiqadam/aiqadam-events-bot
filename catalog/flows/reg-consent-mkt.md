@@ -31,7 +31,7 @@
 
 - **Таблицы**: `users`, `sessions` (запись), `events`, `quizzes` (чтение)
 - **Переменные**: `MINIAPP_URL`
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

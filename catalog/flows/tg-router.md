@@ -2,7 +2,7 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-telegram-bot / new_telegram_message` (`update_types: message, callback_query`),
-  connection `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+  connection среды ([environments.md](../environments.md))
 - **Назначение**: единственная точка входа бота — дедуп по `update_id` (IDM-4),
   апсерт `users`, классификация апдейта, делегирование одному из касаний
   регистрации (ADR-0015), спискам/отмене или входу на страницу `manage`.
@@ -100,7 +100,7 @@
   делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —
 - **Store**: `upd:<update_id>`, `COLLECTION`, `ttl_seconds: 86400`
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

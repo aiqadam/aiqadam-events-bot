@@ -32,7 +32,7 @@
 
 - **Таблицы**: `users`, `registrations`, `sessions` (запись), `events` (чтение)
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

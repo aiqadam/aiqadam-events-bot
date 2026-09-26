@@ -15,9 +15,9 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 31 | [flows/](flows/) |
+| Флоу | 32 | [flows/](flows/) |
 | Таблицы | 17 | [tables/](tables/) |
-| Connections | 1 — `AI Qadam Events (dev)` | [connections.md](connections.md) |
+| Connections | 1 на среду — dev `Events-QA-Bot`, prod `Events-Prod` | [connections.md](connections.md) · [environments.md](environments.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
 Все PIECE-шаги пинованы на **доступные** версии qadam'ов (перепривязано пакетом
@@ -75,7 +75,10 @@ W26 закрыт («готов», независимое ревью, три кр
 ([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
 (`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`,
 `#/events?tab=mine|upcoming|past`, `#/feedback?event_id=`), сборка
-`miniapp/dist/` (`pages.yml` → `npm ci && npm run build`, `dist/` → Pages).
+`miniapp/dist/`. Среда задаётся **на сборке** (W105, [ADR-0042](../docs/adr/0042-two-environments-one-repo.md)):
+dev — `npm run build:dev` (`pages.yml`, из `main`), prod — `npm run build:prod`
+(репозиторий `aiqadam/aiqadam-events-bot-prod`, из ветки `prod`); адреса и API-базы
+сред — [environments.md](environments.md).
 Построены пять роутов — `ticket`/`scan`/`manage`/`events`/`feedback`
 ([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
 Шестой — только новым ADR.

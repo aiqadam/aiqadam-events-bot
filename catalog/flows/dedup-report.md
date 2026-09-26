@@ -25,7 +25,7 @@
 - **Таблицы**: `registrations`, `event_staff`, `broadcast_targets`, `staff` (только чтение)
 - **Переменные**: —
 - **Store**: —
-- **Connections**: `AI Qadam Events (dev)` (отправка)
+- **Connections**: connection среды (отправка)
 
 ## Заметки
 

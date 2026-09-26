@@ -46,7 +46,7 @@
 - **Флоу**: вызывается из `tg-router` (ветка `quiz_answer`, `inline`,
   `waitForResponse:false`); пара — `quiz`
 - **Переменные**: —
-- **Connections**: `AI Qadam Events (dev)` (`TZTlXaCEO2hEvimUowbSA`)
+- **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
 

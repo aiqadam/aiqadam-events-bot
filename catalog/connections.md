@@ -7,15 +7,18 @@ AI-провайдеры платформенные (общие на всю пл�
 
 | Connection | Qadam | Тип auth | Назначение |
 |------------|-------|----------|-----------|
-| `AI Qadam Events (dev)` | `@aiqadam/qadam-telegram-bot` | Bot Token | **отдельный бот-аккаунт** только под события (Q4); `externalId` `TZTlXaCEO2hEvimUowbSA` |
+| `Events-QA-Bot` (dev) | `@aiqadam/qadam-telegram-bot` | Bot Token | **отдельный бот-аккаунт** только под события (Q4); `externalId` `Oct3laLPiavfizCJagLcM` |
+
+У prod — свой connection (`Events-Prod`), боты сред разные; карта сред —
+[environments.md](environments.md).
 
 Один вебхук на бот-токен: описание триггера `new_telegram_message` говорит прямо —
 «One trigger per bot token». Поэтому токен существующего `aiqadam-telegram-bot`
 сюда не подходит.
 
-Заведён 2026-09-08. Фактическое имя connection в UI — `AI Qadam Events (dev)`,
-а не `events-bot`, как планировалось: привязка к шагам идёт по `externalId`,
-поэтому имя ни на что не влияет, но здесь оно записано так, как в инстансе.
+Заведён 2026-09-08. Текущее имя в UI — `Events-QA-Bot`; привязка к шагам идёт
+по `externalId`, поэтому имя ни на что не влияет, но здесь оно записано так, как
+в инстансе.
 
 ## Токен бота как значение шага (W2, устарело — см. ниже)
 
