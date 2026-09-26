@@ -358,12 +358,14 @@
                 "input": {
                   "firstName": "{{trigger['output'].data.firstName}}",
                   "texts": {
-                    "onb.btn.continue": "Дальше",
+                    "onb.btn.agree": "Согласен",
+                    "onb.btn.details": "Подробнее",
+                    "onb.consent": "Согласны на обработку данных: имя, фамилия, должность, компания, город и telegram_id. Храним у себя, третьим не отдаём. Без согласия оформить не сможем.",
                     "onb.why": "Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем."
                   }
                 },
                 "sourceCode": {
-                  "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг без диплинка — та же why-карточка, что у reg-start\n  // при входе по ссылке события, но без фактов события (их тут нет).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const replyMarkup = { inline_keyboard: [[{ text: t('onb.btn.continue'), callback_data: 'ob:continue' }]] };\n  return { text: esc(t('onb.why')), replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                  "code": "export const code = async (inputs) => {\n  // ADR-0034 / ADR-0043: онбординг без диплинка — та же входная карточка, что\n  // у reg-start при входе по ссылке события, но без фактов события (их тут\n  // нет). ADR-0043: «зачем данные» и текст согласия — одной карточкой, кнопка\n  // называет согласие («Согласен», ob:agree); «Подробнее» (ob:details)\n  // остаётся второй кнопкой — там полный текст и путь отказа.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const text = esc(t('onb.why')) + '\\n\\n' + esc(t('onb.consent'));\n  const replyMarkup = { inline_keyboard: [[\n    { text: t('onb.btn.agree'), callback_data: 'ob:agree' },\n    { text: t('onb.btn.details'), callback_data: 'ob:details' }\n  ]] };\n  return { text: text, replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
                   "packageJson": "{}"
                 }
               },

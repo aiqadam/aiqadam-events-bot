@@ -52,31 +52,21 @@ PROTO.buildScenarios = function (opts) {
     { label: T('menu.btn.new_event'), webApp: '#/manage/new', resume: 'menu' },
   ];
 
-  // Первое касание общее для всех ролей (ADR-0032): зачем → согласие →
-  // имя (эвристика) → работа → город → «Всё верно?». `after` — шаг после
-  // проверки (гость — регистрация, овнер — «профиль сохранён», контролёр —
-  // accept); `declinedGo` — куда уйти при отказе от согласия.
+  // Первое касание общее для всех ролей (ADR-0032, ADR-0043): входная
+  // карточка несёт «зачем» + текст согласия, кнопка «Согласен» (ob:agree)
+  // ведёт прямо к вопросу о работе; чистое имя Telegram не подтверждается
+  // отдельным шагом, экрана «Всё верно?» нет — город ведёт в `after`.
+  // `after` — шаг после диалога (гость — регистрация, овнер — «профиль
+  // сохранён», контролёр — accept); `declinedGo` — куда уйти при отказе.
   const obCore = (after, declinedGo) => ([
-    { id: 'consent', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.consent')), trace: ['PAR-1', 'ADR-0017'],
-      buttons: [
-        { label: T('reg.consent_pdn.btn_yes'), go: 'name-ok' },
-        { label: T('onb.btn.details'), go: 'details' },
-      ] },
-
     { id: 'details', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.details')), trace: ['PAR-1', 'ADR-0017'],
       buttons: [
-        { label: T('onb.btn.understood'), go: 'name-ok' },
+        { label: T('onb.btn.understood'), go: 'work' },
         { label: T('reg.consent_pdn.btn_no'), go: 'declined' },
       ] },
 
     { id: 'declined', kind: 'card', edit: true, markup: true, card: { title: ev.title, lines: [], body: T('reg.consent_pdn.declined') }, trace: ['PAR-1'],
       buttons: [{ label: T('common.btn.menu'), go: declinedGo }] },
-
-    { id: 'name-ok', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.name_ok', { name: 'Дилшод Азимов' })), trace: ['PAR-1', 'DAT-1', 'ADR-0017'],
-      buttons: [
-        { label: T('onb.btn.itsme'), go: 'work' },
-        { label: T('onb.btn.fix_name'), go: 'ask-name' },
-      ] },
 
     { id: 'ask-name', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_name')), trace: ['PAR-1', 'ADR-0017'] },
     { id: 'user-name', kind: 'user', text: 'Дилшод Азимов', trace: ['PAR-1'] },
@@ -86,28 +76,22 @@ PROTO.buildScenarios = function (opts) {
 
     { id: 'city', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_city')), trace: ['PAR-1', 'ADR-0017'],
       buttons: [
-        { label: 'Ташкент', go: 'review' },
-        { label: 'Алматы', go: 'review' },
+        { label: 'Ташкент', go: after },
+        { label: 'Алматы', go: after },
         { label: T('onb.btn.write'), go: 'user-city' },
       ] },
     { id: 'user-city', kind: 'user', text: 'Бишкек', trace: ['PAR-1'] },
-
-    { id: 'review', kind: 'card', edit: true, markup: true, card: { title: T('onb.btn.all_good'), lines: [], body: T('onb.review', { profile: 'Дилшод Азимов · ML-инженер, Payme · Ташкент' }) }, trace: ['PAR-1', 'ADR-0017'],
-      buttons: [
-        { label: T('onb.btn.all_good'), go: after, primary: true },
-        { label: T('onb.btn.fix'), go: 'ask-name' },
-      ] },
   ]);
 
   const guest = {
     id: 'guest',
     title: 'Гость',
-    hint: 'Первое касание — онбординг C (зачем → согласие → профиль → «Всё верно?»), дальше регистрация, билет, напоминания, послесловие.',
+    hint: 'Первое касание — онбординг C (карточка «зачем + согласие» → профиль), дальше регистрация, билет, напоминания, послесловие.',
     steps: [
       { id: 'start', kind: 'user', text: '/start e' + ev.id, note: P['proto.deep_link_note'], trace: ['OWN-6', 'ADR-0025'] },
 
-      { id: 'event', kind: 'card', markup: true, card: eventCard(T('onb.why')), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
-        buttons: [{ label: T('onb.btn.continue'), go: 'consent' }] },
+      { id: 'event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
+        buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
 
       ...obCore('done', 'menu-guest'),
 
@@ -180,8 +164,8 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Первое касание — тот же онбординг, дальше меню → создание события в Mini App → ссылка-приглашение → правка → участники и экспорт → рассылка пересылкой → контролёры.',
     steps: [
       { id: 'start', kind: 'user', text: '/start', trace: ['ADR-0025'] },
-      { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
-        buttons: [{ label: T('onb.btn.continue'), go: 'consent' }] },
+      { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
+        buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
 
       ...obCore('profile-saved', 'menu'),
 
@@ -256,8 +240,8 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Первое касание — тот же онбординг, дальше инвайт-ссылка → права на событие → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
-      { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
-        buttons: [{ label: T('onb.btn.continue'), go: 'consent' }] },
+      { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
+        buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
 
       ...obCore('accept-ok', 'menu'),
       // Кнопка сканера — сразу в сообщении: контролёр здесь конкретный,
