@@ -3,6 +3,7 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "events-api",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -120,10 +121,14 @@
         "authFields": {},
         "authType": "none"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "authFields": {
+          "schema": {},
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-webhook",
       "qadamVersion": "0.1.35",
-      "sampleData": {},
       "triggerName": "catch_webhook"
     },
     "type": "PIECE_TRIGGER",

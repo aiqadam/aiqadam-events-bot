@@ -10,7 +10,7 @@
   онбординг C, что и по диплинку события, только без карточки события;
   профиль заполнен — меню-хаб с набором кнопок по ролям (гость /
   организатор / контролёр).
-- **Flow ID (MCP)**: `1DORFhP9F3W00KpKz5wDw` · **externalId**: `BOLkFV1GreF8r7opvDCVo`
+- **Flow ID (MCP)**: `rV2ymkl6ET11uMjbywU4D` · **externalId**: `qn6AT1kov72lFzAuuUA36`
 
 ## Шаги
 

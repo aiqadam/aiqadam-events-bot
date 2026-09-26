@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "quiz",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -376,19 +377,24 @@
     "settings": {
       "input": {
         "exampleData": {
-          "callbackData": "qz:start",
-          "callbackQueryId": "sample-cbq-id",
-          "chatId": "322876545",
-          "firstName": "Тест",
-          "messageId": "0",
-          "telegramId": "322876545"
+          "sampleData": {}
         },
         "mode": "simple"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.15",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

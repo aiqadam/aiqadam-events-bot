@@ -9,7 +9,7 @@
   нет — **вход в онбординг** (`onboard`, why-карточка + `Дальше`). Карточка-экран
   дальше редактируется на месте ([ADR-0017](../../docs/adr/0017-screen-not-message.md)).
   Старый путь `new` (согласие ПД на каждое касание) снят W50.
-- **Flow ID (MCP)**: `FkxtgayOK5QubyqqMd9q4` · **externalId**: `HGX7KPhFsyFrapBRvlIAT`
+- **Flow ID (MCP)**: `furNEp5R3KFZ2jdSni2Eu` · **externalId**: `b02Kd4VQnITWSgcP7puqu`
 
 ## Шаги
 

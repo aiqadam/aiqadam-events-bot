@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "tg-router",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -56,13 +57,9 @@
                                   "executionMode": "inline",
                                   "flow": {
                                     "exampleData": {
-                                      "chatId": "322876545",
-                                      "eventId": "demo",
-                                      "firstName": "Тест",
-                                      "lastName": "Тестов",
-                                      "telegramId": "322876545"
+                                      "sampleData": {}
                                     },
-                                    "externalId": "HGX7KPhFsyFrapBRvlIAT"
+                                    "externalId": "b02Kd4VQnITWSgcP7puqu"
                                   },
                                   "flowProps": {
                                     "chatId": "{{step_1['output'].chatId}}",
@@ -113,7 +110,7 @@
                                       "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\"}",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "PUf09unvIwSpobPr1u3kh"
+                                    "externalId": "sQkwXETrInr5lns3jHQG2"
                                   },
                                   "flowProps": {
                                     "callbackData": "{{step_1['output'].callbackData}}",
@@ -162,7 +159,7 @@
                                       "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0}",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "JH42q9BkKDYUti7leKJrC"
+                                    "externalId": "PWmFAu3Ia71OyANEgzwxN"
                                   },
                                   "flowProps": {
                                     "callbackData": "{{step_1['output'].callbackData}}",
@@ -204,13 +201,9 @@
                                   "executionMode": "inline",
                                   "flow": {
                                     "exampleData": {
-                                      "badPayload": "false",
-                                      "chatId": "322876545",
-                                      "fallback": "false",
-                                      "firstName": "Тест",
-                                      "telegramId": "322876545"
+                                      "sampleData": {}
                                     },
-                                    "externalId": "BOLkFV1GreF8r7opvDCVo"
+                                    "externalId": "qn6AT1kov72lFzAuuUA36"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -256,7 +249,7 @@
                                       "messageId": "0",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "uvBaBR9JmEUQV2qKEngnX"
+                                    "externalId": "9L9aABPZWV3BJbO4Jgrv0"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -299,7 +292,7 @@
                                       "chatId": "322876545",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "aoPOkCesQhbnxSP2Yv7ul"
+                                    "externalId": "foniEVZaks6lvhPQAgBcS"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -341,7 +334,7 @@
                                       "chatId": "322876545",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "4MEoT3F9xRVwSIftttnan"
+                                    "externalId": "HbpXmNGNgALXmuTVLaoAk"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -378,16 +371,9 @@
                                   "executionMode": "inline",
                                   "flow": {
                                     "exampleData": {
-                                      "callbackData": "ob:continue",
-                                      "callbackQueryId": "sample-cbq-id",
-                                      "chatId": "322876545",
-                                      "firstName": "Тест",
-                                      "lastName": "Тестов",
-                                      "messageId": "0",
-                                      "sessionDraft": "{\"eventId\":\"demo\",\"step\":\"ob_consent\"}",
-                                      "telegramId": "322876545"
+                                      "sampleData": {}
                                     },
-                                    "externalId": "bEd0cScLAymIT44Dmtnxu"
+                                    "externalId": "sXX6wPP7eX2WPJBlWwR0g"
                                   },
                                   "flowProps": {
                                     "callbackData": "{{step_1['output'].callbackData}}",
@@ -445,7 +431,7 @@
                                         "token": "aaaaaaaaaaaaaaaaaaaaaa"
                                       }
                                     },
-                                    "externalId": "dvKFrQsi45NHHz1vAyjlc"
+                                    "externalId": "l9pGrBAQzL8UFT96FZ2og"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -485,15 +471,9 @@
                                     "executionMode": "inline",
                                     "flow": {
                                       "exampleData": {
-                                        "badPayload": "false",
-                                        "callbackData": "menu:bcast_help",
-                                        "callbackQueryId": "sample-cbq-id",
-                                        "chatId": "322876545",
-                                        "fallback": "false",
-                                        "firstName": "Тест",
-                                        "telegramId": "322876545"
+                                        "sampleData": {}
                                       },
-                                      "externalId": "BOLkFV1GreF8r7opvDCVo"
+                                      "externalId": "qn6AT1kov72lFzAuuUA36"
                                     },
                                     "flowProps": {
                                       "payload": {
@@ -557,14 +537,9 @@
                                     "executionMode": "inline",
                                     "flow": {
                                       "exampleData": {
-                                        "callbackData": "qz:start",
-                                        "callbackQueryId": "sample-cbq-id",
-                                        "chatId": "322876545",
-                                        "firstName": "Тест",
-                                        "messageId": "0",
-                                        "telegramId": "322876545"
+                                        "sampleData": {}
                                       },
-                                      "externalId": "WE8CzyJMuEnEXm1iBufk7"
+                                      "externalId": "V2bcZK03ccTn10wV2AOuO"
                                     },
                                     "flowProps": {
                                       "payload": {
@@ -632,7 +607,7 @@
                                       "messageText": "Мой ответ",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "dCl7H1XhNWfqDx5BMR4UA"
+                                    "externalId": "nG5QtHcwf1L7Nh1FjCHgq"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -901,7 +876,7 @@
                             "exampleData": {
                               "sampleData": {}
                             },
-                            "externalId": "kn8WWJTyEm7S51Blwg0Eg"
+                            "externalId": "KRZz0Kr4aqldSdRbu6bA5"
                           },
                           "flowProps": {
                             "payload": {
@@ -1147,7 +1122,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-telegram-bot",
       "qadamVersion": "0.9.0",
-      "sampleData": {},
       "triggerName": "new_telegram_message"
     },
     "type": "PIECE_TRIGGER",

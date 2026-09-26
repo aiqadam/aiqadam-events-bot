@@ -3,8 +3,9 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "fn-hmac-init-data",
+  "localeSource": null,
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -144,7 +145,6 @@
       },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

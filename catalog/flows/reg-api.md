@@ -2,14 +2,14 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
-  `POST /api/v1/webhooks/SiYL8m6k4oy4YunAdZ1W7/sync`; тело:
+  `POST /api/v1/webhooks/SmutybV5qJQjQASJGY9vi/sync`; тело:
   `{ action, eventId?, initData, consentPdn?, consentMarketing?, confirm?, telegramId? }`
   (`authType: none`, авторизация — `initData`; `confirm`/`telegramId` — только
   для `delete_account`, чужой `telegramId` не доверяется)
 - **Назначение**: «Мои билеты» и регистрация в каталоге `#/events`
   (PAR-3/PAR-4 в целевой форме): одно касание — три действия, все строго
   по владельцу `initData` (W43, Q57)
-- **Flow ID (MCP)**: `SiYL8m6k4oy4YunAdZ1W7`
+- **Flow ID (MCP)**: `SmutybV5qJQjQASJGY9vi`
 
 ## Действия (`body.action`)
 

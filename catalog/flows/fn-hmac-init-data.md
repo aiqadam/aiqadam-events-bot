@@ -5,7 +5,7 @@
   (обработчиками `checkin-api`, `my-qr-api`, `manage-api`; ADR-0015 п. 5, `fn-*` не зовёт `fn-*`)
 - **Назначение**: проверка Telegram `initData` (HMAC-цепочка, STF-2) — единственное,
   что стоит между посторонним и правом отмечать участников.
-- **Flow ID (MCP)**: `3iQO67hpGHq1HNGt1T84X` · **externalId (для `callFlow`)**: `VzXoy80RWnX7pM4dm8eor`
+- **Flow ID (MCP)**: `mawpUb9tmADug7oASMiL3` · **externalId (для `callFlow`)**: `TIZvQYTCBVJMsMWNC5EbK`
 
 ## Шаги
 

@@ -6,8 +6,8 @@
 - **Назначение**: принять одноразовую ссылку-инвайт контролёра (OWN-14):
   проверить токен, выдать права на конкретное событие и прислать карточку
   с кнопкой сканера
-- **Flow ID (MCP)**: `8seS0t3EfBZbmMSxuuYwC` · **externalId (для `callFlow`)**:
-  `dvKFrQsi45NHHz1vAyjlc`
+- **Flow ID (MCP)**: `AaeNjEGoYC7vQOL57OLx0` · **externalId (для `callFlow`)**:
+  `l9pGrBAQzL8UFT96FZ2og`
 
 ## Шаги
 

@@ -3,7 +3,7 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: cron `*/15 * * * *`, `Asia/Tashkent` (`@aiqadam/qadam-schedule : cron_expression`)
 - **Назначение**: автопереход `published → finished` по `ends_at` (OWN-4) и вызов `reg-afterword` для пришедших.
-- **Flow ID (MCP)**: `4qjk9PsPgcliBvrdt8vbr`
+- **Flow ID (MCP)**: `EJMVNrNdyM6b46uKXHOaS`
 
 ## Шаги
 

@@ -2,7 +2,7 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
-  `POST /api/v1/webhooks/CcGPwuW4ws5hkcaOPerEG/sync`
+  `POST /api/v1/webhooks/pFtbgOP3U8sNFvP86Szli/sync`
 - **Назначение**: сервер формы события роут `#/manage` SPA (`miniapp/src/routes/Manage.tsx`)
   ([ADR-0017](../../docs/adr/0017-screen-not-message.md) п. 3): список событий
   чаптера (W37 — вход в правку без команд, [ADR-0025](../../docs/adr/0025-start-only-commands-ban.md)),
@@ -14,7 +14,7 @@
   в `list` только у своих событий) и разбор орг-ссылки Яндекс.Карт через
   Геокодер (W42, [Q55](../../docs/OPEN-QUESTIONS.md#q55) — `resolve_geo`).
   Права решаются здесь, страница их не решает.
-- **Flow ID (MCP)**: `CcGPwuW4ws5hkcaOPerEG`
+- **Flow ID (MCP)**: `pFtbgOP3U8sNFvP86Szli`
 
 ## Вход
 

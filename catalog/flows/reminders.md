@@ -3,7 +3,7 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: cron `*/15 * * * *`, `Asia/Tashkent` (`@aiqadam/qadam-schedule : cron_expression`)
 - **Назначение**: напоминания `24h` / `2h` до `starts_at` (OWN-16, IDM-3).
-- **Flow ID (MCP)**: `HJvh8nEh4BveIw2i27gcv`
+- **Flow ID (MCP)**: `5JiN4gJgdh8ItkzUqVnTf`
 
 ## Шаги
 

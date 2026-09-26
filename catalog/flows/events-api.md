@@ -2,12 +2,12 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
-  `POST /api/v1/webhooks/wEdKdE4RBGKIzWkl4MJHG/sync`; тело запроса не читается
+  `POST /api/v1/webhooks/7MSsiJX1OJM9jcvZoU7g5/sync`; тело запроса не читается
   (`authType: none`)
 - **Назначение**: публичный каталог событий для экрана `#/events` — будущие
   и прошедшие раздельно (PAR-3, [ADR-0023](../../docs/adr/0023-fourth-miniapp-page-event-catalog.md));
   без `initData`, без персональных данных, только опубликованные и завершённые
-- **Flow ID (MCP)**: `wEdKdE4RBGKIzWkl4MJHG`
+- **Flow ID (MCP)**: `7MSsiJX1OJM9jcvZoU7g5`
 
 ## Шаги
 

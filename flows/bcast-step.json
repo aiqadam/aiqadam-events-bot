@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "bcast-step",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -1156,7 +1157,7 @@
                                         "phase": "start",
                                         "telegramId": "322876545"
                                       },
-                                      "externalId": "uRUDWnYt303De2TuziKm4"
+                                      "externalId": "0yVrF1tXfvdPTqSnCNFL4"
                                     },
                                     "flowProps": {
                                       "payload": {
@@ -1223,7 +1224,7 @@
                                       "phase": "start",
                                       "telegramId": "322876545"
                                     },
-                                    "externalId": "uRUDWnYt303De2TuziKm4"
+                                    "externalId": "0yVrF1tXfvdPTqSnCNFL4"
                                   },
                                   "flowProps": {
                                     "payload": {
@@ -1878,7 +1879,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

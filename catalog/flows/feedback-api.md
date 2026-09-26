@@ -2,7 +2,7 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
-  `POST /api/v1/webhooks/DgmYgxiEXBz0roebYRBUj/sync`
+  `POST /api/v1/webhooks/2Ixa3uGUnKgYO4Lrg317n/sync`
 - **Назначение**: сервер формы отзыва роут `#/feedback` SPA
   (`miniapp/src/routes/Feedback.tsx`), [ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md),
   [Q53](../../docs/OPEN-QUESTIONS.md#q53): проверяет `initData` и факт
@@ -11,7 +11,7 @@
   повторном открытии. Основной риск — IDOR: чужой `eventId`, на котором
   вызывающий не был, отвечает тем же отказом, что и полное отсутствие
   регистрации.
-- **Flow ID (MCP)**: `DgmYgxiEXBz0roebYRBUj`
+- **Flow ID (MCP)**: `2Ixa3uGUnKgYO4Lrg317n`
 
 ## Вход
 

@@ -2,12 +2,12 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
-  `POST /api/v1/webhooks/rKoDYtiIVdbzlW59b57uH/sync`
+  `POST /api/v1/webhooks/fcz4H9JeR2rdLm797nBH8/sync`
 - **Назначение**: основной путь чекина через Mini App-сканер. Проверяет
   `initData` контролёра (STF-2), права на конкретное событие, подпись QR,
   статус события (STF-3), состояние регистрации; пишет `checked_in_at`
   атомарно (IDM-2).
-- **Flow ID (MCP)**: `rKoDYtiIVdbzlW59b57uH`
+- **Flow ID (MCP)**: `fcz4H9JeR2rdLm797nBH8`
 
 ## Вход
 

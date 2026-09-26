@@ -3,8 +3,9 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "feedback-api",
+  "localeSource": null,
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "catch_webhook",
@@ -440,7 +441,7 @@
                   "exampleData": {
                     "sampleData": {}
                   },
-                  "externalId": "Q3iGnxOcpjzeUVvXQc48L"
+                  "externalId": "TUAYfa0xFF7DpPM0zxONb"
                 },
                 "flowProps": {
                   "payload": {
@@ -474,7 +475,6 @@
               "input": {
                 "fields": {
                   "body": {
-                    "comment": "",
                     "error": "invalid_init_data",
                     "given": false,
                     "ok": false,
@@ -551,7 +551,7 @@
             "exampleData": {
               "sampleData": {}
             },
-            "externalId": "VzXoy80RWnX7pM4dm8eor"
+            "externalId": "TIZvQYTCBVJMsMWNC5EbK"
           },
           "flowProps": {
             "payload": {
@@ -578,7 +578,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-webhook",
       "qadamVersion": "0.1.35",
-      "sampleData": {},
       "triggerName": "catch_webhook"
     },
     "type": "PIECE_TRIGGER",

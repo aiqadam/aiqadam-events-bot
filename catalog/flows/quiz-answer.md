@@ -8,7 +8,7 @@
   викторину к следующему вопросу или к финалу
   ([ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md),
   [W103](../../docs/BACKLOG.md#w103-викторина-в-боте-свободный-ответ-окно-одна-попытка)).
-- **Flow ID (MCP)**: `g2CN4zwC3cJXj59bCYOMR` · **externalId**: `dCl7H1XhNWfqDx5BMR4UA`
+- **Flow ID (MCP)**: `b0nkyupS5h93Kgq8ApYkV` · **externalId**: `nG5QtHcwf1L7Nh1FjCHgq`
 
 ## Контракт
 
