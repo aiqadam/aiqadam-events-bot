@@ -210,10 +210,16 @@
 Единственный способ «почистить» — обнулить значение и **описать в каталоге**,
 что вход мёртвый.
 
-**2. Конфигурацию PIECE-шага через MCP прочитать нельзя.** `ap_flow_structure`
-отдаёт тип и `configStatus`, `ap_read_step_code` — только CODE-шаги (зато вместе
-с `input`). URL, `failureMode`, cron-выражение, таймзона, `table_id` PIECE-шага
-не читаются ничем. Следствия:
+**2. Конфигурацию PIECE-шага через MCP читать можно с 2026-09-16, но REST
+остаётся полезен.** До PR
+[#452](https://github.com/aiqadam/qadam-flow/pull/452) `ap_flow_structure`
+отдавал только тип и `configStatus`, `ap_read_step_code` — только CODE-шаги
+(зато вместе с `input`); URL, `failureMode`, cron-выражение, таймзона,
+`table_id` PIECE-шага не читались ничем. Теперь
+**`ap_flow_structure(includeInput=true)` отдаёт полный input каждого шага**
+([ADR-0044](adr/0044-platform-novelties-sep-2026.md) п. 4). REST-GET при
+этом неотменён и по-прежнему даёт то, чего MCP не даёт: полную выгрузку
+шаблона и независимую сверку без доверия к тому, что показал MCP. Следствия:
 
 - **конфигурацию читает REST, и он разрешён всем**
   ([ADR-0018](adr/0018-rest-read-for-everyone.md), отменяет ADR-0006).

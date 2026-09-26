@@ -1891,6 +1891,16 @@ e2e-прогон «отмена → повторная регистрация» 
 `status` — единственный источник истины, односторонние переходы статуса
 осознанны.
 
+**Обновлено 2026-09-27 (ревизия [W108](work/W108-platform-novelties.md),
+[ADR-0044](adr/0044-platform-novelties-sep-2026.md) п. 3.1):** апстрим-фикс
+приземлился — **PR [#543](https://github.com/aiqadam/qadam-flow/pull/543)**
+дал в `@aiqadam/qadam-tables` 0.4.6 проп **`clear_columns`** (и per-row
+`__clear`); живой dev подтверждает (`ap_get_piece_props`). Значит, принятый
+риск можно снять: пакет **W109** вернёт очистку `cancelled_at` при
+реактивации и снимет оговорку «потребители смотрят на `status`, а не на
+`cancelled_at`» из DATA-MODEL и `catalog/tables/registrations.md`. Сам вопрос
+остаётся закрытым; это пометка о снятии обходного пути, а не переоткрытие.
+
 **Очистить DATE-поле через `tables-update-record` больше нечем.**
 
 Заведено 2026-09-12 (W21), найдено прогоном `nk7ET4kibX4N2YWUqJqtX`.
