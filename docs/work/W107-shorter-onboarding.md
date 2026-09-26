@@ -1,10 +1,10 @@
 # W107. Короткий онбординг: одна карточка согласия, имя без подтверждения, без экрана «Всё верно?»
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн
 - **Зависит от**: W59, W60 (онбординг C), W50
-- **Начат**: 2026-09-26 · **Закрыт**: —
+- **Начат**: 2026-09-26 · **Закрыт**: 2026-09-27
 
 ## Цель
 
@@ -51,7 +51,7 @@
 - [x] повторное касание (`ob:register` → `finish_lite`) не сломано
 - [x] `i18n/ru.json` и `tools/check-texts.py` — 0 расхождений; `check-commands.py` — 0
 - [x] `catalog/` совпадает с живым проектом
-- [ ] независимое ревью: вердикт «замечаний нет»
+- [x] независимое ревью: вердикт «замечаний нет» (круг 3)
 
 ## Как проверено
 
@@ -343,6 +343,56 @@ MarkdownV2 только через `esc(...)` — в `reg-profile/step_4` чер
 `flows/_manifest.json`, а код живого шага совпадает с экспортом. Самостоятельных
 прогонов не заводил: ветвление доказано кодом, `replyMarkup` и прочитанными
 прогонами владельца; за собой удалять нечего.
+
+### Круг 3
+
+- **Ревьюер**: агент (независимый, чистый контекст) · **Дата**: 2026-09-27 · **Вердикт**: замечаний нет
+
+**Единственное замечание круга 2 («на будущее» — устаревшие версии в `docs/STATUS.md`)
+закрыто и проверено живьём; новых проблем нет.**
+
+- *STATUS.* Строка W107 (`docs/STATUS.md:174`) перечисляет `reg-profile` `EEvBjDZ…`,
+  `reg-start` `YxV0Bnad…`, `menu` `9IbZNd9s…` — все три совпадают с живым
+  `ap_export_flow`, `flows/_manifest.json` (`publishedVersionId`) и `migrations`
+  `2026-09-26-w107-01/02/03` (`version_id`). Прежние `XZlvZyy…`/`E1imPZq…` из строки ушли.
+- *Перепубликация `reg-profile` (гоча №14).* Живой `ap_export_flow`
+  (`bEz2bKyL82zlIwckxqvxc`) теперь отдаёт `EEvBjDZGB51k4ay0vaZd8` со `state: LOCKED`,
+  `status: PUBLISHED` — то есть draft == published; прежний DRAFT-слепок тестовых
+  прогонов совпал с опубликованной версией. `migrations` `2026-09-26-w107-01`
+  (`action publish`, `version_id EEvBjDZGB51k4ay0vaZd8`, commit `bac425b`) и манифест —
+  те же. `reg-start`/`menu` — `YxV0BnadDEOHpN0AMSmqk`/`9IbZNd9s13DcIgadgBRcd`,
+  `state: LOCKED`, `status: PUBLISHED`, совпадают во всех трёх источниках.
+- *Код шагов.* `ap_read_step_code`: `reg-start/step_9` и `menu/step_4` собирают
+  `replyMarkup.inline_keyboard` из **двух** кнопок `[Согласен ob:agree][Подробнее ob:details]`;
+  в их входах `texts` есть `onb.btn.details: "Подробнее"`. `reg-profile/step_3`
+  маршрутизирует `ob:details` (при `draft.step=ob_consent`) → `show_details`,
+  `ob:understood` (при `ob_details`) → `consent_namecheck`, `ob:decline` — на
+  `ob_consent`/`ob_details`; `step_4` на `show_details` отдаёт карточку `onb.details`
+  с `[Понятно, согласен ob:understood][Не сейчас ob:decline]`. Маркеры совпали с
+  `flows/{reg-start,menu,reg-profile}.json`. Путь `ob:details` достижим сквозь
+  `tg-router`: колбэк с префиксом `ob:` при активной сессии `registration` (в т.ч.
+  без `eventId`, из `menu`) уходит в `reg_profile` (`flows/tg-router.json`, код
+  маршрутизации).
+- *Каталог.* `catalog/flows/{reg-start,reg-profile,menu}.md` называют обе кнопки;
+  `ob:continue`/«Дальше» упомянуты только как снятые (`reg-start.md:50`,
+  `reg-profile.md:25`) или как архивные ключи `i18n/ru.json`/входы `texts` — живыми
+  не описаны.
+- *Таблицы.* Диагностических строк нет: `users`/`sessions`/`registrations` по
+  `telegram_id` 888888888–896 — пусто, события `w107tmp*` в `events` нет.
+- *Структуры.* `ap_flow_structure` по трём флоу — все шаги `configured`, `invalid`
+  и заглушек нет (перепубликация `reg-profile` структуру не меняла).
+- *Офлайн.* `check-texts.py` — 31 флоу / 269 пар / 0; `check-commands.py` — 0;
+  `check-export-secrets.sh` — чисто (значений секретов в экспорте нет);
+  `check-agents.py` — 0.
+
+**Ограничения.** Живого Telegram-чата и `initData` у ревьюера нет (хвост на
+владельце, как и в кругах 1–2). `check-migrations.py` без ключа платформы не
+запускался — манифест ↔ инстанс ↔ `migrations` сверены точечно по трём флоу.
+Наблюдение, не влияющее на вердикт: в строке `docs/STATUS.md` сохранился оборот
+«осталось одно „на будущее“ (эта строка)» от круга 2 — сам пункт закрыт (версии
+актуальны), оборот снимается при переводе пакета в `готов`. Самостоятельных
+прогонов не заводил: дефект структурный, доказывается кодом и `replyMarkup`;
+за собой удалять нечего.
 
 ## Хвосты и блокеры
 
