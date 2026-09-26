@@ -261,6 +261,89 @@
 есть в проекте, нет в `flows/_manifest.json`) — унаследованный хвост,
 задокументирован в W70/W72/W103/W106, к W107 не относится.
 
+### Круг 2
+
+- **Ревьюер**: агент (независимый, чистый контекст) · **Дата**: 2026-09-27 · **Вердикт**: есть замечания (блокеров и «важно» нет; одно «на будущее»)
+
+**Оба замечания круга 1 закрыты и проверены живьём, а не по записи владельца.**
+
+- *Блокер (кнопка «Подробнее»)*. Живой `ap_read_step_code`: `reg-start/step_9` и
+  `menu/step_4` собирают `replyMarkup.inline_keyboard` из **двух** кнопок —
+  `[onb.btn.agree → ob:agree][onb.btn.details → ob:details]`; ключ
+  `onb.btn.details: "Подробнее"` есть во входах `texts` обеих карточек.
+  `reg-profile/step_3` маршрутизирует `ob:details` (при `draft.step=ob_consent`)
+  → `show_details`, `ob:understood` (при `ob_details`) → `consent_namecheck`,
+  `ob:decline` — на `ob_consent`/`ob_details`; `reg-profile/step_4` на
+  `show_details` отдаёт карточку `onb.details` с кнопками
+  `[Понятно, согласен ob:understood][Не сейчас ob:decline]`. Прогон владельца
+  `uc7UKY9xX7a5GjfW3VmSM` (`ob:details`) это подтверждает текстом и обеими
+  кнопками; `YIvC7dHvGYkWyKRRxkdWK` (`ob:understood`) даёт `writeKind:'consent'`,
+  `saveConsent:true`, ROUTER → `consent`, `step_13` пишет `users.consent_pdn=true`
+  (PAR-1). Путь `ob:details` достижим и сквозь `tg-router`: колбэк с префиксом
+  `ob:` при активной сессии `registration` маршрутизируется в `reg_profile`
+  (`flows/tg-router.json`, код маршрутизации). Опубликовано: живой
+  `ap_export_flow` отдаёт `reg-start` `YxV0BnadDEOHpN0AMSmqk` и `menu`
+  `9IbZNd9s13DcIgadgBRcd` — те же, что `publishedVersionId` в
+  `flows/_manifest.json` и `version_id` в `migrations` `2026-09-26-w107-02/03`
+  (commit `77225fd`), оба `state: LOCKED`.
+- *«Важно» (каталог `reg-start.md` «Дальше»)*. `catalog/flows/reg-start.md`
+  (§Назначение, §Шаги, §Заметки) и `catalog/flows/menu.md` называют обе кнопки;
+  `ob:continue`/«Дальше» нигде не описаны как живые — только «снят» либо
+  архивные ключи `i18n/ru.json` / мёртвые ключи во входах `texts`.
+
+#### Замечания
+
+1. **на будущее** — `docs/STATUS.md`, строка W107, перечисляет **устаревшие**
+   опубликованные версии: `reg-start` `XZlvZyy…` и `menu` `E1imPZq…`. После
+   правки круга 1 оба флоу опубликованы заново — `YxV0BnadDEOHpN0AMSmqk` и
+   `9IbZNd9s13DcIgadgBRcd` (совпадают в живом `ap_export_flow`,
+   `flows/_manifest.json` и `migrations`); `reg-profile` `VobO7Zf…` верен.
+   Где: `docs/STATUS.md:174`. Почему: STATUS — «состояние работ», не каталог,
+   на логику не влияет, но строка врёт о том, что сейчас опубликовано. Правка —
+   два id при закрытии пакета.
+   - *Исправлено*: `docs/STATUS.md` (строка W107) обновлена на актуальные
+     версии. Попутно закрыт хвост, который ревьюер отметил в «Ограничениях»:
+     после тестовых прогонов черновик `reg-profile` разошёлся с публикацией
+     (гоча №14), живой `ap_export_flow` отдавал DRAFT `EEvBjDZ…`. `reg-profile`
+     опубликован заново — `EEvBjDZGB51k4ay0vaZd8` (код тот же, `exampleData`
+     пуст), `flows/_manifest.json` и `migrations` обновлены; теперь draft ==
+     published у всех трёх флоу (2026-09-27).
+
+#### Чем проверено и чем ограничено
+
+**Живой проект (MCP, `app-flow-events-dev`).** `ap_read_step_code` по
+`reg-start/step_9`, `menu/step_4`, `reg-profile/step_3`/`step_4` — код
+побайтово совпал с `flows/*.json`; `ap_export_flow` по трём флоу — `state:
+LOCKED`, `status: PUBLISHED`, `flows[0].id = publishedVersionId` для `reg-start`
+и `menu`; `ap_list_flows` — три флоу ENABLED/published; `ap_validate_flow` —
+21/15/40 шагов, все valid, заглушек/invalid нет; `ap_get_run` — прочитаны
+различающие прогоны (`xF5m8sCwBSrgHGDyeMIFI` — `ob:agree`, чистое имя →
+`writeKind:'consent'` **до** вопроса о работе, PAR-1; `uc7…` — `ob:details` →
+карточка `onb.details` + `[ob:understood][ob:decline]`; `YIv…` — `ob:understood`
+→ согласие записано). Таблицы после прогонов чисты: `users`/`sessions`/
+`registrations` по `telegram_id` 888888888–896 пусты (включая 895/896 из
+прогонов круга 1), события `w107tmp` нет. Офлайн: `check-texts.py` — 31 флоу /
+269 пар / 0; `check-commands.py` — 0; `check-export-secrets.sh` — чисто,
+значений секретов в экспорте нет; `check-agents.py` — 0.
+
+**AppSec.** Пользовательские данные (имя из Telegram, текст/город) уходят в
+MarkdownV2 только через `esc(...)` — в `reg-profile/step_4` через
+`eventCard(extra)` и `esc` на каждом поле, в `reg-start/step_9`/`menu/step_4`
+тексты статические; согласие пишется веткой `consent` до первого поля ПД
+(PAR-1, подтверждено прогонами); нового самописного HMAC/секретов нет, `auth` —
+ссылки `{{connections[...]}}`; IDOR/PAR и `sig`-парсинг пакет не трогает.
+
+**Ограничения.** Живого Telegram-чата и `initData` у ревьюера нет (хвост на
+владельце). `check-migrations.py` без ключа платформы не запускался — манифест
+↔ инстанс ↔ `migrations` сверены точечно по трём флоу. Живой `ap_export_flow`
+по `reg-profile` возвращает `flows[0].id = EEvBjDZGB51k4ay0vaZd8` — это
+пост-публикационный слепок тестовых прогонов `uc7…`/`YIv…` (создан
+19:22:53–19:23:04, гоча №14), а не опубликованная `VobO7ZfoaJGEoNEbUCyvN`;
+последняя подтверждается `migrations` `2026-09-26-w107-01` (commit `3f89b2e`) и
+`flows/_manifest.json`, а код живого шага совпадает с экспортом. Самостоятельных
+прогонов не заводил: ветвление доказано кодом, `replyMarkup` и прочитанными
+прогонами владельца; за собой удалять нечего.
+
 ## Хвосты и блокеры
 
 - Живой прогон в Telegram (реальный чат) — на владельца: у агента нет живого
