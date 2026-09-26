@@ -136,6 +136,16 @@
 - **2026-09-27** — Владелец проверил живой флоу в Telegram: **работает**.
   Хвост «живой прогон на владельца» снят; пакет закрыт `готов` (ревью 3 круга,
   вердикт «замечаний нет»).
+- **2026-09-27** — По прямому указанию владельца перенесено на **prod**
+  (хотфикс по [ADR-0042](../adr/0042-two-environments-one-repo.md): сначала dev,
+  затем перенос). На `app-flow-events-prod` (MCP) применены те же правки:
+  `reg-profile` `5U3Kv0c…`, `reg-start` `Fkxtgay…`, `menu` `1DORFhP9…` — код
+  prod совпадал с dev до W107, перенос чистый (правки только CODE-шагов и
+  текстов, `auth`/`flow` не трогались). `ap_validate_flow` 40/21/15,
+  опубликованы: `reg-profile` `Q9hndRD5xD5sEvOfQtF34`, `reg-start`
+  `syhdtC8qqRPshnhKb02OK`, `menu` `434hAxH7c3Y7XnCfvJNWS` (все `state: LOCKED`).
+  В `migrations` prod — `2026-09-27-w107-01..03`. Репозиторные `flows/*.json`
+  описывают dev и не меняются; карта сред — `catalog/environments.md`.
 
 ## Ревью
 
