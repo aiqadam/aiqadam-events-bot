@@ -3,6 +3,7 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "staff-invite",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -435,7 +436,7 @@
               "exampleData": {
                 "sampleData": {}
               },
-              "externalId": "VzXoy80RWnX7pM4dm8eor"
+              "externalId": "TIZvQYTCBVJMsMWNC5EbK"
             },
             "flowProps": {
               "payload": {

@@ -3,8 +3,9 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "fn-find-registration",
+  "localeSource": null,
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",

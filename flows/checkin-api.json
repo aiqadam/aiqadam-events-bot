@@ -3,6 +3,7 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "checkin-api",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -240,7 +241,7 @@
                             "exampleData": {
                               "sampleData": {}
                             },
-                            "externalId": "Q3iGnxOcpjzeUVvXQc48L"
+                            "externalId": "TUAYfa0xFF7DpPM0zxONb"
                           },
                           "flowProps": {
                             "payload": {
@@ -277,7 +278,7 @@
                             "sig": "aIxmwbnzb_",
                             "userId": "322876545"
                           },
-                          "externalId": "m5ZG7GqWIQCIluusyNX4c"
+                          "externalId": "kTF1sUzhgHDfBDc8KIYaC"
                         },
                         "flowProps": {
                           "payload": {
@@ -384,7 +385,7 @@
                     "exampleData": {
                       "sampleData": {}
                     },
-                    "externalId": "kn8WWJTyEm7S51Blwg0Eg"
+                    "externalId": "KRZz0Kr4aqldSdRbu6bA5"
                   },
                   "flowProps": {
                     "payload": {
@@ -522,7 +523,7 @@
             "exampleData": {
               "sampleData": {}
             },
-            "externalId": "VzXoy80RWnX7pM4dm8eor"
+            "externalId": "TIZvQYTCBVJMsMWNC5EbK"
           },
           "flowProps": {
             "payload": {
@@ -548,7 +549,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-webhook",
       "qadamVersion": "0.1.34",
-      "sampleData": {},
       "triggerName": "catch_webhook"
     },
     "type": "PIECE_TRIGGER",

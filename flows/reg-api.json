@@ -3,6 +3,7 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "reg-api",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -1528,7 +1529,7 @@
             "exampleData": {
               "sampleData": {}
             },
-            "externalId": "VzXoy80RWnX7pM4dm8eor"
+            "externalId": "TIZvQYTCBVJMsMWNC5EbK"
           },
           "flowProps": {
             "payload": {
@@ -1555,7 +1556,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-webhook",
       "qadamVersion": "0.1.35",
-      "sampleData": {},
       "triggerName": "catch_webhook"
     },
     "type": "PIECE_TRIGGER",
