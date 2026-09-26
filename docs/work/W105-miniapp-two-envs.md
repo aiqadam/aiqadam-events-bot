@@ -42,7 +42,8 @@ Pages включён, первый деплой зелёный: <https://aiqadam
 - [x] dev-деплой переведён на `build:dev`
 - [x] prod-Pages репозиторий создан, Pages включён, деплой проверен
 - [x] ветка `prod` в `aiqadam-events-bot` создана (bootstrap из текущей работы)
-- [ ] Владелец: домен prod (CNAME+DNS), BotFather URL, `MINIAPP_URL` prod
+- [x] prod-домен `miniapp-prod.events.aiqadam.org` (CNAME → `aiqadam.github.io`, DNS-only) + привязан к prod Pages, HTTPS работает
+- [ ] Владелец: BotFather URL у prod-бота, `MINIAPP_URL` prod → prod-домен
 - [ ] `catalog/environments.md` — зафиксировать домены сред
 - [ ] независимое ревью
 
@@ -59,6 +60,11 @@ Pages включён, первый деплой зелёный: <https://aiqadam
   лежит вне `.github/workflows/` и не активируется.
 - **2026-09-26** — карты `flowId` в `.env.dev`/`.env.prod` пока совпадают (prod — копия
   dev); развести после пересборки dev.
+- **2026-09-26** — prod-Pages репозиторий `aiqadam/aiqadam-events-bot-prod` создан,
+  Pages включён, деплой зелёный. Домен `miniapp-prod.events.aiqadam.org` заведён в
+  Cloudflare (CNAME → `aiqadam.github.io`, DNS-only) и привязан к prod Pages;
+  HTTPS отдаёт 200, ассеты и `i18n/ru.json` — 200, в бандле только `app-prod`.
+  Прод-домен не трогал dev: `miniapp.events.aiqadam.org` остаётся за dev.
 
 ## Хвосты и блокеры
 

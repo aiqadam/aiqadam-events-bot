@@ -25,7 +25,7 @@
 | Источник | `aiqadam-events-bot@main` | `aiqadam-events-bot@prod` |
 | Конфиг | `miniapp/.env.dev` | `miniapp/.env.prod` |
 | Деплой | `pages.yml` (этот репозиторий) | репо `aiqadam/aiqadam-events-bot-prod`, `pages-prod.yml` |
-| Адрес | `miniapp.events.aiqadam.org` (домен ждёт переезда) | пока `aiqadam.github.io/aiqadam-events-bot-prod/`; домен — за владельцем |
+| Адрес | `miniapp.events.aiqadam.org` | `miniapp-prod.events.aiqadam.org` |
 | API-база | `app.flow.aiqadam.org` | `app-prod.flow.aiqadam.org` |
 
 ## Копия инсталляции (2026-09-26)
