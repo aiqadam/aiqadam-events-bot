@@ -43,8 +43,9 @@ Pages включён, первый деплой зелёный: <https://aiqadam
 - [x] prod-Pages репозиторий создан, Pages включён, деплой проверен
 - [x] ветка `prod` в `aiqadam-events-bot` создана (bootstrap из текущей работы)
 - [x] prod-домен `miniapp-prod.events.aiqadam.org` (CNAME → `aiqadam.github.io`, DNS-only) + привязан к prod Pages, HTTPS работает
-- [ ] Владелец: BotFather URL у prod-бота, `MINIAPP_URL` prod → prod-домен
-- [ ] `catalog/environments.md` — зафиксировать домены сред
+- [x] `MINIAPP_URL` prod → prod-домен (владелец)
+- [x] BotFather не требуется (боковая кнопка не нужна); `web_app`-кнопка на prod-домен принята Telegram (`sendMessage` 200)
+- [x] `catalog/environments.md` — домены сред
 - [ ] независимое ревью
 
 ## Как проверено
@@ -65,6 +66,11 @@ Pages включён, первый деплой зелёный: <https://aiqadam
   Cloudflare (CNAME → `aiqadam.github.io`, DNS-only) и привязан к prod Pages;
   HTTPS отдаёт 200, ассеты и `i18n/ru.json` — 200, в бандле только `app-prod`.
   Прод-домен не трогал dev: `miniapp.events.aiqadam.org` остаётся за dev.
+- **2026-09-26** — владелец: BotFather-Mini-App-URL у prod-бота **не нужен** (боковая
+  кнопка не заводится), `MINIAPP_URL` prod переставлен на prod-домен. Проверено живым
+  `send_text_message` через prod-connection: Telegram принял `web_app`-кнопку на
+  `miniapp-prod.events.aiqadam.org` (200, `message_id` 5571) — домен у бота разрешён,
+  правки Bot Settings → Domain не нужны.
 
 ## Хвосты и блокеры
 
