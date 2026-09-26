@@ -21,7 +21,7 @@
 | step_2 | CODE «gate» | `needsOnboard` (пусто → true) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
 | step_8→12 (`has_profile`) | `tables-find-records staff` → `event_staff` → `events` → CODE «render menu» → `send_text_message` | прежнее меню-хаб без изменений (см. ниже) |
-| step_4→7 (`needs_onboard`) | CODE «build onboarding entry card (no event)» → `send_text_message` → CODE «draft JSON» → `tables-upsert-records sessions` | входная карточка онбординга без события: `onb.why` + `onb.consent` **одним экраном**, кнопка «Согласен» (`ob:agree`, ADR-0043), сессия `ob_consent` с `eventId: ''`; дальше колбэки `ob:*` подхватывает `reg-profile` (маршрутизация `tg-router` не знает о `menu` — работает по префиксу и активной сессии) |
+| step_4→7 (`needs_onboard`) | CODE «build onboarding entry card (no event)» → `send_text_message` → CODE «draft JSON» → `tables-upsert-records sessions` | входная карточка онбординга без события: `onb.why` + `onb.consent` **одним экраном**, кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`, ADR-0043), сессия `ob_consent` с `eventId: ''`; дальше колбэки `ob:*` подхватывает `reg-profile` (маршрутизация `tg-router` не знает о `menu` — работает по префиксу и активной сессии) |
 | step_13 (`Otherwise`) | CODE noop | недостижимая ветка, нужна платформе как непустой fallback |
 
 ### `has_profile` — прежнее меню (без изменений)
