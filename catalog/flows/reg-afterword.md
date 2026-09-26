@@ -9,7 +9,7 @@
   ([ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
   Предложение зарегистрироваться на следующее событие убрано вердиктом
   владельца (PAR-7) — единственное исходящее касание после события.
-- **Flow ID (MCP)**: `oMIjSHxUO7m9P7iaeMZ8y` · **externalId**: `1lrH7mXwLldQhc8p1Y2sC`
+- **Flow ID (MCP)**: `X0C3WuHIYoH21ID3EUZbS` · **externalId**: `a0UbvHYry2gUxTPlhO9Ec`
 
 ## Шаги
 

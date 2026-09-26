@@ -8,7 +8,7 @@
   [W103](../../docs/BACKLOG.md#w103-викторина-в-боте-свободный-ответ-окно-одна-попытка)):
   проверить окно, отсечь завершённую попытку, начать (или начать заново) и
   отправить первый вопрос. Ответы ведёт `quiz-answer`.
-- **Flow ID (MCP)**: `6wceNeNPjDvHW7zXOOBi2` · **externalId**: `WE8CzyJMuEnEXm1iBufk7`
+- **Flow ID (MCP)**: `xVU5q7M4lrSNCvBgv8qRC` · **externalId**: `V2bcZK03ccTn10wV2AOuO`
 
 ## Контракт
 

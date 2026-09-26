@@ -2,12 +2,12 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
-  `POST /api/v1/webhooks/Ok7iXvrnJUUzNcR5OwH8x/sync`; тело запроса — только
+  `POST /api/v1/webhooks/MprrZ1vNdeLhoMKZg5kTA/sync`; тело запроса — только
   `initData` (`authType: none`)
 - **Назначение**: чьи кнопки сканера рисовать в каталоге `#/events` и списке
   `#/manage` — решает сервер по `event_staff`, страница только показывает
   (вердикт W49, W50)
-- **Flow ID (MCP)**: `Ok7iXvrnJUUzNcR5OwH8x` · **externalId**: `yoK5mLb4UHTiHHYsmSM8O`
+- **Flow ID (MCP)**: `MprrZ1vNdeLhoMKZg5kTA` · **externalId**: `yoK5mLb4UHTiHHYsmSM8O`
 
 ## Шаги
 

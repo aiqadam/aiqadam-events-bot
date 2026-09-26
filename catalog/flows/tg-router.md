@@ -6,7 +6,7 @@
 - **Назначение**: единственная точка входа бота — дедуп по `update_id` (IDM-4),
   апсерт `users`, классификация апдейта, делегирование одному из касаний
   регистрации (ADR-0015), спискам/отмене или входу на страницу `manage`.
-- **Flow ID (MCP)**: `nyaBzgKGG8TTTsryjc9tW` · **externalId**: — (не subflow)
+- **Flow ID (MCP)**: `5rpOArwaUifCX6IYF4IEQ` · **externalId**: — (не subflow)
 
 ## Контракт
 

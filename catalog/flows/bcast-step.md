@@ -7,7 +7,7 @@
 - **Назначение**: один флоу на последовательность структурно одинаковых
   вопросов рассылки (ADR-0016): выбор события → сегмент → превью → тест →
   отправка/отмена (OWN-9, OWN-10).
-- **Flow ID (MCP)**: `Sr1e3imXkI8sN0lXyROtA` · **externalId**: `aoPOkCesQhbnxSP2Yv7ul`
+- **Flow ID (MCP)**: `uQDds2PUMYH8Kc1mLhN15` · **externalId**: `foniEVZaks6lvhPQAgBcS`
 
 ## Контракт
 

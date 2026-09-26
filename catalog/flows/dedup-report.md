@@ -5,7 +5,7 @@
 - **Назначение**: диагностика дублей строк — раз в сутки считает дубли по
   ключевой паре в `registrations`, `event_staff`, `broadcast_targets` и одним
   сообщением отдаёт счётчики организаторам; **ничего не удаляет** (Q42, W12b).
-- **Flow ID (MCP)**: `PNjhVFpxwOyR8fVkJAR4p` · **externalId**: `2WPDkudf495YfCyJWS6ti`
+- **Flow ID (MCP)**: `zOjCtJKlvYqmvthgITW4L` · **externalId**: `2WPDkudf495YfCyJWS6ti`
 
 ## Шаги
 

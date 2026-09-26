@@ -5,7 +5,7 @@
   и `checkin-api` (ADR-0015 п. 5)
 - **Назначение**: разобрать `/start`-payload (`e...` регистрация, `c...` чекин,
   `s...` инвайт staff).
-- **Flow ID (MCP)**: `9iKpekYS4tRUOsmYZaXZg` · **externalId (для `callFlow`)**: `kn8WWJTyEm7S51Blwg0Eg`
+- **Flow ID (MCP)**: `zD4fmNoj9GHvuzz6Sd2sB` · **externalId (для `callFlow`)**: `KRZz0Kr4aqldSdRbu6bA5`
 
 ## Шаги
 

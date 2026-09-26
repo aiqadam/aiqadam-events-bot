@@ -11,7 +11,7 @@
   запись создаёт регистрацию) и для голого `/start` (`eventId` пуст — пишется
   только профиль, регистрировать не на что). Повторное касание (`ob:register`)
   — только создание регистрации, всегда с событием.
-- **Flow ID (MCP)**: `5U3Kv0cSrnvDTrbictA4L` · **externalId**: `bEd0cScLAymIT44Dmtnxu`
+- **Flow ID (MCP)**: `bEz2bKyL82zlIwckxqvxc` · **externalId**: `sXX6wPP7eX2WPJBlWwR0g`
 
 ## Шаги
 

@@ -2,10 +2,10 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
-  `POST /api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync`
+  `POST /api/v1/webhooks/wRV7Iho1yaxJ7VnsS49P4/sync`
 - **Назначение**: отдаёт подписанный QR-`payload` участнику для клиентского
   рендеринга в роут `#/ticket` SPA (`miniapp/src/routes/Ticket.tsx`) (ADR-0007 — QR не шлётся файлом).
-- **Flow ID (MCP)**: `WYmnxVM4xPAWZA1IvNZok`
+- **Flow ID (MCP)**: `wRV7Iho1yaxJ7VnsS49P4`
 
 ## Вход
 

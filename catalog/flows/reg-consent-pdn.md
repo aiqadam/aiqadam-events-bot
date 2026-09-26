@@ -6,7 +6,7 @@
 - **Назначение**: согласие на обработку ПД (PAR-1). При `yes` создаёт регистрацию
   и **редактирует карточку** в подтверждение + вопрос о рассылке; при `no` —
   редактирует её же в отказ и закрывает сессию.
-- **Flow ID (MCP)**: `vQJDQ8NecB1PleIFrq07O` · **externalId**: `PUf09unvIwSpobPr1u3kh`
+- **Flow ID (MCP)**: `UgAeyhpI29ndjM4EM3gxf` · **externalId**: `sQkwXETrInr5lns3jHQG2`
 
 ## Шаги
 

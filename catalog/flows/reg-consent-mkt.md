@@ -9,7 +9,7 @@
   спрашивается с 2026-09-14). Если `eventId` пуст (ADR-0034: онбординг без
   диплинка) — регистрации не было, вторым сообщением уходит кнопка каталога
   Mini App вместо билета.
-- **Flow ID (MCP)**: `3gLF6TcbpFObHONATQ64N` · **externalId**: `JH42q9BkKDYUti7leKJrC`
+- **Flow ID (MCP)**: `uOKODGfZjyhNbED320cjz` · **externalId**: `PWmFAu3Ia71OyANEgzwxN`
 
 ## Шаги
 
