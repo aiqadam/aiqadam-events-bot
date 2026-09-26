@@ -39,7 +39,7 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `telegram_id` | text, **PK** | единственный ключ (DAT-1) |
 | `first_name` | text | из апдейта, обновляется при каждом контакте |
 | `last_name` | text | может отсутствовать |
-| `profile_first_name` | text | имя из онбординга (PAR-8), руками или кнопкой «Это я» |
+| `profile_first_name` | text | имя из онбординга (PAR-8): из Telegram (эвристика) или ручным вводом, если имя подозрительное ([ADR-0043](../docs/adr/0043-shorter-onboarding.md)) |
 | `profile_last_name` | text | фамилия из онбординга |
 | `username` | text | справочно, может отсутствовать и меняться |
 | `phone` | text | только из `request_contact` (DAT-2), иначе пусто; **с 2026-09-14 в регистрации не спрашивается** — остаётся в схеме на будущее |

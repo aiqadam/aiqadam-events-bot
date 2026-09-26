@@ -23,7 +23,7 @@
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
-| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `Дальше` (`ob:continue`); согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72) |
+| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопка «Согласен» (`ob:agree`) — нажатие и есть согласие; согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72) |
 | step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
 | step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии (шаг — в `step_11`) |
 | step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_consent` |
@@ -43,6 +43,12 @@
 
 ## Заметки
 
+- **Вход в онбординг — одна карточка «зачем + согласие» (ADR-0043).**
+  `step_9` несёт `onb.why` и `onb.consent` вместе, кнопка — «Согласен»
+  (`onb.btn.agree`, `ob:agree`); `ob:continue` снят. Дальше диалог ведёт
+  `reg-profile`: `ob:agree` пишет согласие и сразу спрашивает работу (чистое
+  имя из Telegram) либо просит имя руками (подозрительное). Экранов
+  «согласие отдельно» и «Всё верно?» больше нет.
 - **Экранирование MarkdownV2 в `step_9`/`step_14` — эталон
   [`catalog/snippets/markdown-v2.md`](../snippets/markdown-v2.md), побайтово.**
   Отклонение (лишний `\` в классе символов — `\\-=` вместо `\-=`) валит
