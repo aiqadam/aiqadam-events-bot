@@ -15,8 +15,8 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 33 | [flows/](flows/) |
-| Таблицы | 18 | [tables/](tables/) |
+| Флоу | 32 | [flows/](flows/) |
+| Таблицы | 17 | [tables/](tables/) |
 | Connections | 1 на среду — dev `Events-QA-Bot`, prod `Events-Prod` | [connections.md](connections.md) · [environments.md](environments.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 

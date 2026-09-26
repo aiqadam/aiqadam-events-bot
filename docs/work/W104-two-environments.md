@@ -115,7 +115,7 @@ Prod остаётся «as is» — замороженной копией; ст�
 4. **`catalog/variables.md`** — *исправлено*: `BOT_USERNAME` dev → `aiqadam_events_qa_bot`; `BOT_TOKEN` — «токен своей среды», добавлена отсылка к `environments.md`.
 5. **`catalog/environments.md`** — *исправлено*: prod project id = `vZXlkfz60dx6kX97yICx7`; `MINIAPP_URL` prod = `https://miniapp-prod.events.aiqadam.org/`.
 6. **`flows/*.json` не пересняты** — *принято хвостом*: переснять тем же пакетом после пересборки dev.
-7. **счётчики `catalog/overview.md`** — *исправлено*: 33 флоу / 18 таблиц (по числу карточек).
+7. **счётчики `catalog/overview.md`** — *исправлено*: 32 флоу / 17 таблиц (по числу карточек без `README`/`_TEMPLATE`; первая правка на 33/18 была неверной — учла `_TEMPLATE.md`, поймано кругом 2).
 8. **ADR-0042 п.5** — *исправлено*: среда задаётся `QADAM_BASE_URL`/`QADAM_PROJECT_ID`; явный `--env` — возможное уточнение.
 
 ### Что проверено
@@ -123,6 +123,35 @@ Prod остаётся «as is» — замороженной копией; ст�
 - **dev (MCP `app-flow-events-dev`)**: `ap_list_connections` — одна ACTIVE `Oct3…`; `ap_list_variables` — 5 переменных; `ap_list_flows` — 36 флоу, `ap_list_tables` — 18; `ap_flow_structure includeInput` по `menu` (`1DORFhP9F3W00KpKz5wDw`) и `tg-router` (`nyaBzgKGG8TTTsryjc9tW`); `ap_validate_flow tg-router` — 27/27 (мёртвую ссылку на connection валидатор не ловит — подтверждено); `ap_get_run Tclc2Iruss98i2C1W1xYH` — `ConnectionNotFound: TZTlXaCEO2hEvimUowbSA` на `step_15`.
 - **Офлайн**: `check-export-secrets.sh` — чисто; `check-texts.py i18n/ru.json flows/*.json` — 31 флоу, 265 пар, 0 расхождений; `check-commands.py` — 0 нарушений. `check-migrations.py` прогнать не удалось: ключа платформы на машине нет.
 - **Живой prod — не проверялся** (см. замечание 2).
+
+### Круг 2 (2026-09-26)
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-26 · **Вердикт**: **есть замечания** — блокеров нет; «важно»: prod живьём снова не проверен (ограничение сессии), счётчики `overview.md` исправлены неверно. Dev по-прежнему сломан — это не дефект правок, а принятый владельцем следующий шаг пакета.
+
+#### Что закрыто из круга 1
+
+- **п.3 (17 карточек)** — закрыто. `grep` по `catalog/` не находит `AI Qadam Events (dev)`; `TZTl…` остался только в осмысленных исторических местах (`connections.md` — разбор старой ловушки, `environments.md` — раздел «Мёртвая ссылка»). В 17 карточках — «connection среды ([environments.md])», включая триггер `tg-router`; карточка `tg-router` прочитана — правка не рассыпалась.
+- **п.5 (`catalog/environments.md`)** — внутреннее противоречие снято: prod project id заполнен (`vZXlkfz60dx6kX97yICx7`, «совпадает с dev — копия»), `MINIAPP_URL` prod — `https://miniapp-prod.events.aiqadam.org/`. Оба prod-факта — на слово владельца (см. замечание 1).
+- **п.8 (ADR-0042 п.5)** — закрыто: формулировка совпадает с кодом (`tools/check-migrations.py` читает `QADAM_BASE_URL`/`QADAM_PROJECT_ID`, дефолт project id = `vZXlkfz60dx6kX97yICx7`).
+- **п.6 (`flows/*.json` не пересняты)** — остаётся хвостом, как и договорено: 17 файлов несут `connectionIds: ["TZTlXaCEO2hEvimUowbSA"]`, все — `state: LOCKED` (dev-снимок до пересборки). Живьём `ap_export_flow menu` отдаёт уже другой (черновой) id, то есть снимок протух — переснять после пересборки dev.
+
+#### Замечания круга 2
+
+1. **важно** — **prod снова не проверен живьём: prod-MCP недоступен.** В сессии доступны только `app-flow-events-dev_*`. Сервер `app-flow-events-prod` прописан и `enabled: true` в `~/.config/opencode/opencode.jsonc`, права выданы адаптером (`.opencode/agent/review-agent.md`), но инструментов prod в сессии нет — вероятная причина: не пройден OAuth prod-сервера (у каждого remote-MCP он свой). Правка адаптера необходима, но доступа не даёт. Все prod-пункты задания (нет `TZTl` в 17 флоу, шаги telegram на `KIbxO5kYo3RsU5PNGPz9l`, `ap_validate_flow`, `{{variables[...]}}` без `ERR_OSSL_BAD_DECRYPT`, разные боты) **не проверены**; вердикт по prod не выдаётся. Устранить инфраструктурно (пройти OAuth prod-MCP) и повторить круг.
+2. **важно** — **счётчики `catalog/overview.md` не равны каталогу; правка их ухудшила.** Стоит 33 флоу / 18 таблиц, а каталог содержит 32 flow-файла и 17 табличных (без `README.md`/`_TEMPLATE.md`) — то есть в счёт включён `_TEMPLATE.md` (`32+1=33`, `17+1=18`). Прежние 31/17 (круг 1) были ближе к факту. Для строки «Карточки [flows/]» верное число — 32 (все карточки) либо 31, если не считать непостроенный `i18n-sync`; таблиц — 17. — `catalog/overview.md`.
+3. **на будущее** — **значение `BOT_USERNAME` dev (`aiqadam_events_qa_bot`) живьём не подтверждено.** Значения переменных MCP не отдаёт; журнал сам допускает (раздел «Хвосты»), что dev-переменные могли остаться от исторического бота (`@aiqadam_events_dev_bot`, который теперь prod). Правка сняла противоречие между документами, но не доказала факт: при пересборке dev прочитать `BOT_USERNAME`/`BOT_TOKEN` пробником (как на шаге 0.5) и сверить. — `catalog/variables.md`.
+
+#### Что проверено в круге 2
+
+- **dev (MCP)**: `ap_list_connections` — одна ACTIVE `Oct3…` (`Events-QA-Bot`); `ap_list_variables` — 5; `ap_list_flows` — 36; `ap_list_tables` — 18 (включая `QA-546 call log`); `ap_flow_structure menu includeInput` — `auth = TZTl…` в `step_5`/`step_12` (dev не починен); `ap_validate_flow tg-router` — 27/27 ready (битую ссылку не ловит, подтверждено); `ap_list_runs tg-router` — последний прогон `Tclc2Iruss98i2C1W1xYH` (26.09 11:47) FAILED на `call menu`; `ap_export_flow menu` — `state: DRAFT`, `connectionIds: ["TZTl…"]`.
+- **Офлайн**: `check-export-secrets.sh` — код 0; `check-texts.py i18n/ru.json flows/*.json` — 31 флоу, 265 пар, 0 расхождений; `check-commands.py i18n/*.json flows/*.json` — 0 нарушений; `check-agents.py` — 4 адаптера, 0 нарушений. `check-migrations.py` не прогнан (ключа платформы нет — ни `QADAM_API_KEY`, ни `QADAM_PROD_API_KEY`).
+- **prod — не проверялся** (см. замечание 1). Внешне (не инстанс) подтверждён только prod-Pages — см. W105, круг 2.
+
+#### Исправлено владельцем (круг 2)
+
+1. **prod не проверен живьём** — *ограничение харнесса, не кода*: у субагента-ревьюера нет OAuth prod-MCP (в основной сессии `app-flow-events-prod_*` работает). Права адаптеру выданы, но доступ требует OAuth на стороне сессии субагента. Прод проверен владельцем (для протокола): `tg-router` `/start`→`menu` `YIZlB9OuL3wgIQzVo3mlk` (`step_15` success); `menu` `hgxR6BpCF6VfibChFHlkz` (`isOwner:true`, кнопки на `miniapp-prod…`); пробник 5 переменных — непусты, `ERR_OSSL_BAD_DECRYPT` нет; `ap_list_connections` prod — `KIbx…` (`Events-Prod`); `getMe` — `@aiqadam_events_dev_bot`. **Вопрос владельцу:** обеспечить OAuth prod-MCP для субагента-ревьюера, иначе независимая проверка prod недостижима.
+2. **счётчики `catalog/overview.md`** — *исправлено*: 32 флоу / 17 таблиц.
+3. **`BOT_USERNAME` dev** — *принято хвостом*: проверить пробником при пересборке dev.
 
 ## Хвосты и блокеры
 

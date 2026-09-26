@@ -97,6 +97,27 @@ Pages включён, первый деплой зелёный: <https://aiqadam
 - **Границы**: UI-экраны и тексты пакет не менял — сверка с прототипом (п.3a), голос и бренд «не относятся». AppSec: страница ключей не хранит и прав не решает (только собирает URL), секретов/`initData` в изменениях нет, в `.env.*` — публичные хост и `flowId`.
 - **Офлайн**: `check-export-secrets.sh` — чисто; `check-texts.py` — 0 расхождений; `check-commands.py` — 0. `check-migrations.py` не прогнан (нет ключа).
 
+### Круг 2 (2026-09-26)
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-26 · **Вердикт**: **замечаний нет** по коду, деплою и каталогу в объёме пакета. Отдельно: prod-инстансная часть (значение `MINIAPP_URL` в проекте prod, приём `web_app`-кнопки Telegram) живьём не проверена — prod-MCP недоступен (см. W104, круг 2, замечание 1); вердикт по ней не выдаётся.
+
+#### Что закрыто из круга 1
+
+- **п.1 (`catalog/environments.md`)** — закрыто (см. W104, п.5): prod project id и `MINIAPP_URL` prod заполнены, внутреннее противоречие снято.
+- **п.2 (`overview.md` §Mini App)** — закрыто: описаны `build:dev`/`build:prod`, prod-репозиторий и ветка `prod`.
+- **п.3 (`endpoint()` молчаливый `''`)** — закрыто: `endpoint()` теперь бросает `Error`; строка «сборка без .env среды» присутствует в локальном бандле; `npm run build:dev` и `npm run build:prod` проходят (EXIT=0).
+- **п.4 (карты flowId совпадают)** — остаётся хвостом, как и договорено: развести после пересборки dev.
+
+#### Новых замечаний нет
+
+#### Что проверено в круге 2
+
+- **Сборки**: `npm run build:dev` → EXIT=0; `npm run build:prod` → EXIT=0. В prod-бандле (`dist/assets/index-CEp6hLuy.js`) только `app-prod.flow.aiqadam.org`, dev-хоста нет; guard-строка на месте. Обе карты `VITE_FLOW_IDS` содержат все 9 ключей, которые использует `api.ts` (`myQr`, `checkin`, `manage`, `events`, `reg`, `feedback`, `staffEvents`, `checkinCounter`, `staffInvite`), — import-time бросок на валидной сборке не срабатывает. `VITE_API_BASE` — dev/prod правильно; все 9 `flowId` в обоих `.env` совпадают с живым dev (ожидаемо: prod — копия).
+- **Исходники**: вне `.env.dev`/`.env.prod` жёстких `app.flow.aiqadam.org`/`app-prod.flow.aiqadam.org` и `flowId` нет (`grep` по `miniapp/`); `index.html` — `%VITE_API_BASE%`; `pages.yml` → `build:dev`; `miniapp/deploy/pages-prod.yml` собирает `build:prod` из ветки `prod` и берёт `CNAME` из prod-репозитория.
+- **Внешне (prod-Pages, не инстанс)**: репо `aiqadam/aiqadam-events-bot-prod` публичный, `has_pages: true`, `CNAME` = `miniapp-prod.events.aiqadam.org`, workflow `pages-prod.yml`; ветка `prod` = `e18c279`, `.env.prod` на ней. Живой `https://miniapp-prod.events.aiqadam.org/` → 200 (у GitHub Pages `<домен>/CNAME` отдаёт 404 — это не показатель, CNAME сверен через API), бандл `index-BLy1jhF8.js` содержит только `app-prod…` и все 9 `flowId`. Опубликованный prod-бандл собран из ветки `prod` (`e18c279`) и **ещё не содержит** правку `endpoint()` из `d217de7` — ожидаемо (прод обновится при promote ветки), на пакет не влияет.
+- **Границы**: UI/экраны/тексты/бренд пакет не менял — п.3a «не относится»; AppSec — новых поверхностей нет (страница ключей не хранит, решений о правах не принимает; в `.env.*` только публичные хост и `flowId`).
+- **Офлайн**: `check-export-secrets.sh` — 0; `check-texts.py i18n/ru.json flows/*.json` — 31 флоу, 265 пар, 0 расхождений; `check-commands.py i18n/*.json flows/*.json` — 0; `check-agents.py` — 0.
+
 ## Хвосты и блокеры
 
 - Домены и prod-репозиторий — решение/шаги владельца.
