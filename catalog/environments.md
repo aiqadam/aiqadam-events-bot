@@ -12,7 +12,7 @@
 | MCP-сервер | `app-flow-events-dev` | `app-flow-events-prod` |
 | project id | `vZXlkfz60dx6kX97yICx7` | уточнить |
 | Telegram connection | `Oct3laLPiavfizCJagLcM` (`Events-QA-Bot`) | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) |
-| Бот | Events-QA-Bot | Events-Prod |
+| Бот | `@aiqadam_events_qa_bot` (id `8106260912`) | `@aiqadam_events_dev_bot` (id `8762958531`) — исторический dev-бот, оставшийся prod |
 | `MINIAPP_URL` | `https://miniapp.events.aiqadam.org/` | скопирован dev-адресом — **должен указывать на prod-сборку** |
 | Статус | очищается и пересобирается из репозитория | копия dev на 2026-09-26, «as is» |
 
