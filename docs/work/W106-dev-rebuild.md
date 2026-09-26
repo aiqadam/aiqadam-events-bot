@@ -1,7 +1,7 @@
 # W106. Пересборка `events-dev` после cutover
 
-- **Статус**: на проверке — граф dev пересобран, опубликован и проверен;
-  `flows/*.json` + `_manifest.json` пересняты; ждёт независимого ревью
+- **Статус**: готов — независимое ревью 2026-09-26: блокеров и «важно» нет,
+  только «на будущее» (три из пяти — известные хвосты W15); см. раздел «Ревью»
 - **Владелец**: агент
 - **Волна**: вне волн (завершение W104)
 - **Зависит от**: W104 (модель сред, prod-хотфикс) — сделан; **cutover** — подтверждён владельцем 2026-09-26 (dev можно пересобирать)
@@ -122,8 +122,8 @@ dev сломан: в 17 флоу остался мёртвый `auth` на уд�
    чужой `ChatBot` (Q34) не тронут;
 2. 31 доменный флоу дублирован (`ap_duplicate_flow`), оригиналы удалены,
    дубли переименованы в канонические имена — **новые flowId**;
-3. перепривязаны `auth` на `Oct3laLPiavfizCJagLcM` — **72 шага** (инвентарь W104)
-   + пропущенный при первом проходе `tg-router/step_26` (нашёл скан);
+3. перепривязаны `auth` на `Oct3laLPiavfizCJagLcM` — **72 шага** (инвентарь W104);
+   при первом проходе пропустил `tg-router/step_26` — нашёл сканом и добил;
 4. перепривязаны `flow.externalId` в **32 `callFlow`-шагах** на новые externalId
    (+ новый `exampleData` из справочника) — иначе вызовы указывали бы на удалённые
    флоу;
@@ -131,8 +131,8 @@ dev сломан: в 17 флоу остался мёртвый `auth` на уд�
    (`reg-api`: 45 valid + 1 пропущенный намеренно, W60);
 6. каталог обновлён тем же коммитом: `catalog/flows/*.md` (31 карточка — новые
    flowId/externalId), `catalog/environments.md` (id сред разошлись),
-   `miniapp/.env.dev` (9 flowId); `miniapp/.env.prod` не менялся — старые id
-   теперь принадлежат prod.
+   `miniapp/.env.dev` (9 flowId); `miniapp/.env.prod` — id не менялись (правлен
+   только комментарий), старые id теперь принадлежат prod.
 
 **Как проверено (без ключа платформы):**
 
@@ -164,3 +164,28 @@ dev сломан: в 17 флоу остался мёртвый `auth` на уд�
 - `catalog/variables.md` — dev `BOT_TOKEN`/`BOT_USERNAME` могли остаться от
   исторического бота (W104, круг 2): значения MCP не читает; проверить пробником
   при следующем касании dev.
+
+## Ревью
+
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash, чистый контекст) · **Дата**: 2026-09-26
+- **Вердикт**: **блокеров и «важно» нет** — замечаний, требующих исправления в пакете, нет; ниже пять наблюдений «на будущее» (три из них — уже известные хвосты). Пакет можно принимать.
+
+### Что проверено (живой dev, MCP)
+
+- `ap_list_flows` — 32 флоу: 31 доменный ENABLED/published с новыми `flowId` + чужой `ChatBot` (`Ap06RmygApT4oFAylYfpu`, не тронут). Ни `zz2-`, ни `QA-546*`, ни оригиналов: состав совпал с `flows/_manifest.json` (31 запись, все `source: mcp`) и с `miniapp/.env.dev` (9/9 id); старые dev-`flowId` в живом проекте не встречаются.
+- `ap_list_tables` — 17 таблиц, `QA-546 call log` отсутствует. `ap_list_connections` — одна ACTIVE `Oct3laLPiavfizCJagLcM` (`Events-QA-Bot`).
+- **auth**: `ap_flow_structure` по всем 17 флоу, где был мёртвый `TZTl…` (`tg-router`, `menu`, `bcast-*`, `dedup-report`, `manage-api`, `quiz`/`quiz-answer`, `reg-*`, `reminders`, `staff-accept`), — все telegram-шаги и стрей-`auth` на `callFlow` (`tg-router/step_15`) несут `Oct3la…`; триггер `tg-router` тоже. Живого `TZTlXaCEO2hEvimUowbSA` в dev нет; `connectionIds` остальных флоу пуст — они шлют через `BOT_TOKEN`/http, connection им не нужен.
+- **callFlow**: 32 шага, все `flow.externalId` входят в набор из 18 валидных значений `ap_resolve_property_options` (property `flow`, `@aiqadam/qadam-subflows`, auth `Oct3la…`): tg-router 13, bcast-run 2, bcast-step 2, checkin-api 4, checkin-counter-api 1, feedback-api 2, lifecycle 1, manage-api 1, my-qr-api 3, reg-api 1, staff-events-api 1, staff-invite 1 — совпало с инвентарём.
+- `ap_validate_flow` — `tg-router` 27/27, `reg-api` 45 valid + 1 намеренно пропущенный (W60), `manage-api` 61/61, `menu` 15/15; ложных срабатываний на `{{variables[...]}}` нет (все ссылки — длинная форма).
+- `ap_export_flow` (spot-check `dedup-report`, `menu`): `state: LOCKED`, `flows[0].id` = `publishedVersionId` манифеста.
+- `migrations` (package=W106) — 31 строка, `object_id` = живые `flowId`, `commit 54a7175`, `action create`.
+- Офлайн: `check-export-secrets.sh` — код 0 (0 `auth`-полей, 8×`BOT_TOKEN`, 2×`QR_SIGNING_KEY`); `check-texts.py` 31/265/0; `check-commands.py` 0; `check-agents.py` 0. Токенов/ключей в трекаемых файлах нет; в `catalog/` `TZTl…` остался только в исторических пояснениях `environments.md`/`connections.md`.
+- `menu` TEST-прогон `lpj1w0xZT3YUTLE8jOw78` — падение на `step_5` Telegram `400 chat not found` (не `ConnectionNotFound`): `auth` разрешается.
+
+### Замечания
+
+1. **на будущее** — `check-migrations.py` не прогнан (нет ключа платформы), `version_id` 31 строки W106 = `-`. Детерминированная сверка манифест↔инстанс↔`migrations` вручную пройдена (31/31), но машинная остаётся хвостом W15. — `docs/work/W106-dev-rebuild.md`, `catalog/tables/migrations.md`.
+2. **на будущее** — живой e2e dev не выполнен: владелец ещё не открывал QA-бота (`@aiqadam_events_qa_bot`), `menu` падает `chat not found`. После открытия бота прогнать `/start`→`menu` и один вебхук. — dev `menu`/`tg-router`.
+3. **на будущее** — значения dev `BOT_TOKEN`/`BOT_USERNAME` MCP не читает; `ap_list_variables` показывает `updated` 2026-09-26 13:44/13:45 UTC (что-то перезаписывалось), но не значение. Проверить пробником при следующем касании dev. — `catalog/variables.md`.
+4. **на будущее** — `catalog/overview.md`: счётчик «Флоу 32» = 31 построенная карточка + непостроенный `i18n-sync`, тогда как живой dev = 31 доменный + чужой `ChatBot` (Q34, карточки нет). Число совпало, состав — нет; уточнить формулировку счётчика. — `catalog/overview.md`.
+5. **на будущее** — расхождения формулировок, не поведения: `miniapp/.env.prod` в W106 всё же менялся (только комментарий, `flowId` не тронуты), а журнал/STATUS говорят «не менялся»; фраза журнала «72 `auth` + пропущенный `tg-router/step_26`» двойная — `step_26` входит в 72 по инвентарю W104. — `docs/work/W106-dev-rebuild.md`, `docs/STATUS.md`, `miniapp/.env.prod`.
