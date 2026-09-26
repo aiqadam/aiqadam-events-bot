@@ -1,18 +1,18 @@
-# ШАБЛОН prod-деплоя Mini App (W105, [ADR-0042](../../docs/adr/0042-two-environments-one-repo.md)).
+# Prod-деплой Mini App (W105, ADR-0042).
 #
-# Почему отдельный репозиторий: GitHub Pages выдаёт TLS-сертификат на ОДИН
-# кастомный домен на репозиторий, поэтому два домена (dev и prod) — это два
-# репозитория. Здесь, в dev-репозитории, файл НЕ активен (лежит вне
-# .github/workflows/): его место — репозиторий prod-Pages, ветка `prod`.
+# Этот файл лежит в ОТДЕЛЬНОМ репозитории prod-Pages, а не в aiqadam-events-bot:
+# GitHub Pages даёт один кастомный домен на репозиторий, поэтому dev и prod — два
+# репозитория. Исходник здесь не дублируется: шаг checkout берёт ветку `prod`
+# репозитория aiqadam/aiqadam-events-bot (он публичный — токен не нужен).
 #
-# Релиз prod = push/merge в ветку `prod` этого репозитория. Сборка — `build:prod`
-# (miniapp/.env.prod: prod-хост + карта flowId prod).
+# Релиз prod = продвинуть `prod`-ветку aiqadam-events-bot и запустить этот workflow
+# (Actions → Run workflow, либо repository_dispatch `release-prod`).
 name: pages-prod
 
 on:
-  push:
-    branches: [prod]
   workflow_dispatch:
+  repository_dispatch:
+    types: [release-prod]
 
 permissions:
   contents: read
@@ -30,24 +30,29 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source (aiqadam-events-bot@prod)
+        uses: actions/checkout@v4
+        with:
+          repository: aiqadam/aiqadam-events-bot
+          ref: prod
+          path: src
       - uses: actions/configure-pages@v5
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'miniapp/package-lock.json'
+          cache-dependency-path: 'src/miniapp/package-lock.json'
       - name: Build SPA (prod)
-        working-directory: miniapp
+        working-directory: src/miniapp
         run: |
           npm ci
           npm run build:prod
       - name: Assemble site (dist + i18n)
         run: |
           mkdir -p _site/i18n
-          cp -R miniapp/dist/. _site/
-          cp -R i18n/. _site/i18n/
-          if [ -f miniapp/CNAME ]; then cp miniapp/CNAME _site/CNAME; fi
+          cp -R src/miniapp/dist/. _site/
+          cp -R src/i18n/. _site/i18n/
+          if [ -f src/miniapp/CNAME ]; then cp src/miniapp/CNAME _site/CNAME; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
