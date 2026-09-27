@@ -361,6 +361,9 @@
                             "RZYFhQBQbSfNzIVEvmYgd": "{{step_2['output'].now}}",
                             "TZyqC63UAWrPbzxuf2q4w": "registered",
                             "WFWifafyD6UNNCxLQyML1": "{{step_2['output'].utm}}",
+                            "__clear": [
+                              "OlFAWgVQmrqhqxlraOPOZ"
+                            ],
                             "mVfpZFCwAZskWXNT7iCuI": "{{trigger['output'].data.telegramId}}",
                             "qQPYl9c0ew6n8w2CGYZII": "{{step_2['output'].eventId}}"
                           }
@@ -369,7 +372,7 @@
                     },
                     "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-tables",
-                    "qadamVersion": "0.4.5"
+                    "qadamVersion": "0.4.6"
                   },
                   "type": "PIECE",
                   "valid": true
@@ -558,6 +561,7 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
+      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",
