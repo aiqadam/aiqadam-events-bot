@@ -3304,8 +3304,8 @@ LDAP/AD, Chat с AI, HTTP binary/raw, email/SCIM, инфраструктура i
       независимо от результата записи; сбой записи — тост `lang.sync_failed`,
       не молчание и не блокировка переключателя;
 - [ ] `miniapp` собирается (`build:dev`); офлайн-проверки (тексты/команды/секреты) — 0;
-- [ ] экспорт `flows/reg-api.json` обновлён (MCP, после `ap_lock_and_publish`);
-      запись в `migrations`;
+- [x] экспорт `flows/reg-api.json` обновлён (MCP, после `ap_lock_and_publish`);
+      запись в `migrations` (строка `2026-09-27-w116-01`);
 - [ ] каталог (`catalog/flows/reg-api.md`) синхронизирован;
 - [ ] независимое ревью, вердикт «замечаний нет».
 
