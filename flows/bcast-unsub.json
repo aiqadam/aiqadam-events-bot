@@ -17,6 +17,7 @@
       "name": "step_1",
       "nextAction": {
         "displayName": "read user",
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "displayName": "decide unsub",
@@ -53,6 +54,7 @@
               },
               {
                 "displayName": "clear consent_marketing",
+                "logOutput": false,
                 "name": "step_6",
                 "nextAction": {
                   "displayName": "send done",

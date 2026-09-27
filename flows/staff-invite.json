@@ -113,6 +113,7 @@
                               "name": "step_13",
                               "nextAction": {
                                 "displayName": "write invite",
+                                "logOutput": false,
                                 "name": "step_14",
                                 "nextAction": {
                                   "displayName": "respond invite",

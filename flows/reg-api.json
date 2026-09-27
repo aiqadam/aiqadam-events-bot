@@ -37,9 +37,11 @@
                         "children": [
                           {
                             "displayName": "create or reactivate registration",
+                            "logOutput": false,
                             "name": "step_11",
                             "nextAction": {
                               "displayName": "save consents (skipped, W60 — profileDone уже несёт согласия)",
+                              "logOutput": false,
                               "name": "step_12",
                               "nextAction": {
                                 "displayName": "respond (registered)",
@@ -153,6 +155,7 @@
                           },
                           {
                             "displayName": "cancel registration",
+                            "logOutput": false,
                             "name": "step_14",
                             "nextAction": {
                               "displayName": "respond (cancelled)",
@@ -227,9 +230,11 @@
                           },
                           {
                             "displayName": "create registration (with profile)",
+                            "logOutput": false,
                             "name": "step_18",
                             "nextAction": {
                               "displayName": "save consents + profile",
+                              "logOutput": false,
                               "name": "step_19",
                               "nextAction": {
                                 "displayName": "respond (registered with profile)",
@@ -392,6 +397,7 @@
                           },
                           {
                             "displayName": "save profile (tab)",
+                            "logOutput": false,
                             "name": "step_22",
                             "nextAction": {
                               "displayName": "respond (profile saved)",

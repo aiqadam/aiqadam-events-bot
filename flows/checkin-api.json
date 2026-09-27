@@ -44,6 +44,7 @@
                             "name": "step_7",
                             "nextAction": {
                               "displayName": "write checkin (only if not yet checked in)",
+                              "logOutput": false,
                               "name": "step_8",
                               "nextAction": {
                                 "displayName": "respond",

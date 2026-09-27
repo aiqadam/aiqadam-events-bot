@@ -8,7 +8,7 @@
   {
     "flow": "bcast-run",
     "flowId": "By03Fpx1pPqJTdaQlhYsQ",
-    "publishedVersionId": "8FUW7l1Tkt2Jm5LIjKFzN",
+    "publishedVersionId": "2qiNdi0hNs1nw7n5s7hzx",
     "source": "mcp"
   },
   {
@@ -20,13 +20,13 @@
   {
     "flow": "bcast-unsub",
     "flowId": "WVEZojRTZfntv22NA5geM",
-    "publishedVersionId": "yHTUHkj53Zjpw2eUJV9JY",
+    "publishedVersionId": "xoaYeJSuKP2OLkTNsOFUq",
     "source": "mcp"
   },
   {
     "flow": "checkin-api",
     "flowId": "fcz4H9JeR2rdLm797nBH8",
-    "publishedVersionId": "ORzRcASLvvs1tL4WhSK0Y",
+    "publishedVersionId": "zaHiFiib2rzpDeo1UpGrQ",
     "source": "mcp"
   },
   {
@@ -56,7 +56,7 @@
   {
     "flow": "fn-find-registration",
     "flowId": "2tUdR4D92NJB4f0kVgtAf",
-    "publishedVersionId": "5oNfxZaJKviRNNlbMmgvG",
+    "publishedVersionId": "rBmcGBaVOtaY6lKQIHJcj",
     "source": "mcp"
   },
   {
@@ -128,25 +128,25 @@
   {
     "flow": "reg-api",
     "flowId": "SmutybV5qJQjQASJGY9vi",
-    "publishedVersionId": "cQptzSeyWzIIv5FzD0bPa",
+    "publishedVersionId": "8ydEKODwMHH2Rn29zzLuf",
     "source": "mcp"
   },
   {
     "flow": "reg-consent-mkt",
     "flowId": "uOKODGfZjyhNbED320cjz",
-    "publishedVersionId": "65wL8NbzzZpxHRaANJk7d",
+    "publishedVersionId": "AiJWdzO8OxNaX3Q3mNBFO",
     "source": "mcp"
   },
   {
     "flow": "reg-consent-pdn",
     "flowId": "UgAeyhpI29ndjM4EM3gxf",
-    "publishedVersionId": "gxJ6ww1P3up0cbFpe57f2",
+    "publishedVersionId": "f7ES0peGvw5YrGpdZc1vO",
     "source": "mcp"
   },
   {
     "flow": "reg-profile",
     "flowId": "bEz2bKyL82zlIwckxqvxc",
-    "publishedVersionId": "gy6jtF1CCj8r0UBWxIXm5",
+    "publishedVersionId": "KhRekFhgPu8q2vaf0O9ty",
     "source": "mcp"
   },
   {
@@ -164,7 +164,7 @@
   {
     "flow": "staff-accept",
     "flowId": "AaeNjEGoYC7vQOL57OLx0",
-    "publishedVersionId": "wrBmLKGgrNDsCpaPQOlWO",
+    "publishedVersionId": "3Kqi7HXowz48KtND5jidN",
     "source": "mcp"
   },
   {
@@ -176,13 +176,13 @@
   {
     "flow": "staff-invite",
     "flowId": "S1DNFpjCsKyFTWN0T3u31",
-    "publishedVersionId": "jCq5qOMTb0EiQ3U9sytXr",
+    "publishedVersionId": "Ub9tNFuquAVVisA7M7AYh",
     "source": "mcp"
   },
   {
     "flow": "tg-router",
     "flowId": "5rpOArwaUifCX6IYF4IEQ",
-    "publishedVersionId": "zJ69nZIp6XaAbStweTDkg",
+    "publishedVersionId": "Aog4SraB4O37wELDUtSHj",
     "source": "mcp"
   }
 ]
