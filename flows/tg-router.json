@@ -5,7 +5,7 @@
     "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "tg-router",
-  "localeSource": "{{step_1['output'].languageCode}}",
+  "localeSource": "{{step_27['output'].lang}}",
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -33,430 +33,163 @@
                     "displayName": "pick session",
                     "name": "step_8",
                     "nextAction": {
-                      "displayName": "parse start payload",
-                      "name": "step_9",
+                      "displayName": "effective lang",
+                      "name": "step_27",
                       "nextAction": {
-                        "displayName": "routing decision",
-                        "name": "step_10",
+                        "displayName": "parse start payload",
+                        "name": "step_9",
                         "nextAction": {
-                          "children": [
-                            {
-                              "displayName": "call reg-start",
-                              "name": "step_12",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "sampleData": {}
+                          "displayName": "routing decision",
+                          "name": "step_10",
+                          "nextAction": {
+                            "children": [
+                              {
+                                "displayName": "call reg-start",
+                                "name": "step_12",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
                                     },
-                                    "externalId": "b02Kd4VQnITWSgcP7puqu"
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
                                   },
-                                  "flowProps": {
-                                    "chatId": "{{step_1['output'].chatId}}",
-                                    "eventId": "{{step_10['output'].eventId}}",
-                                    "firstName": "{{step_1['output'].firstName}}",
-                                    "lastName": "{{step_1['output'].lastName}}",
-                                    "payload": {
+                                  "input": {
+                                    "executionMode": "inline",
+                                    "flow": {
+                                      "exampleData": {
+                                        "sampleData": {}
+                                      },
+                                      "externalId": "b02Kd4VQnITWSgcP7puqu"
+                                    },
+                                    "flowProps": {
                                       "chatId": "{{step_1['output'].chatId}}",
                                       "eventId": "{{step_10['output'].eventId}}",
                                       "firstName": "{{step_1['output'].firstName}}",
                                       "lastName": "{{step_1['output'].lastName}}",
+                                      "payload": {
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "eventId": "{{step_10['output'].eventId}}",
+                                        "firstName": "{{step_1['output'].firstName}}",
+                                        "lastName": "{{step_1['output'].lastName}}",
+                                        "telegramId": "{{step_1['output'].tgId}}",
+                                        "utm": "{{step_10['output'].utm}}"
+                                      },
                                       "telegramId": "{{step_1['output'].tgId}}",
                                       "utm": "{{step_10['output'].utm}}"
                                     },
-                                    "telegramId": "{{step_1['output'].tgId}}",
-                                    "utm": "{{step_10['output'].utm}}"
+                                    "mode": "simple",
+                                    "waitForResponse": false
                                   },
-                                  "mode": "simple",
-                                  "waitForResponse": false
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
                                 },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
+                                "type": "PIECE",
+                                "valid": true
                               },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call reg-consent-pdn",
-                              "name": "step_13",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "callbackData": "reg:pdn:yes",
-                                      "callbackQueryId": "sample-cbq-id",
-                                      "chatId": "322876545",
-                                      "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\"}",
-                                      "telegramId": "322876545"
+                              {
+                                "displayName": "call reg-consent-pdn",
+                                "name": "step_13",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
                                     },
-                                    "externalId": "sQkwXETrInr5lns3jHQG2"
-                                  },
-                                  "flowProps": {
-                                    "callbackData": "{{step_1['output'].callbackData}}",
-                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                    "chatId": "{{step_1['output'].chatId}}",
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    },
-                                    "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                    "telegramId": "{{step_1['output'].tgId}}"
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call reg-consent-mkt",
-                              "name": "step_14",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "callbackData": "reg:mkt:yes",
-                                      "callbackQueryId": "sample-cbq-id",
-                                      "chatId": "322876545",
-                                      "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0}",
-                                      "telegramId": "322876545"
-                                    },
-                                    "externalId": "PWmFAu3Ia71OyANEgzwxN"
-                                  },
-                                  "flowProps": {
-                                    "callbackData": "{{step_1['output'].callbackData}}",
-                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                    "chatId": "{{step_1['output'].chatId}}",
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    },
-                                    "telegramId": "{{step_1['output'].tgId}}"
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call menu",
-                              "name": "step_15",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "sampleData": {}
-                                    },
-                                    "externalId": "qn6AT1kov72lFzAuuUA36"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
-                                      "badPayload": "{{step_10['output'].badPayload}}",
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "fallback": "{{step_10['output'].fallback}}",
-                                      "firstName": "{{step_1['output'].firstName}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    "retryOnFailure": {
+                                      "value": false
                                     }
                                   },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call bcast-draft",
-                              "name": "step_17",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "queue",
-                                  "flow": {
-                                    "exampleData": {
-                                      "chatId": "322876545",
-                                      "firstName": "Тест",
-                                      "fwdText": "Текст анонса",
-                                      "messageId": "0",
-                                      "telegramId": "322876545"
-                                    },
-                                    "externalId": "9L9aABPZWV3BJbO4Jgrv0"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "firstName": "{{step_1['output'].firstName}}",
-                                      "fwdText": "{{step_1['output'].fwdText}}",
-                                      "messageId": "{{step_1['output'].messageId}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    }
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call bcast-step",
-                              "name": "step_18",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "queue",
-                                  "flow": {
-                                    "exampleData": {
-                                      "callbackData": "bcast:seg:abc:registered",
-                                      "callbackQueryId": "sample-cbq-id",
-                                      "chatId": "322876545",
-                                      "telegramId": "322876545"
-                                    },
-                                    "externalId": "foniEVZaks6lvhPQAgBcS"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    }
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call bcast-unsub",
-                              "name": "step_19",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "queue",
-                                  "flow": {
-                                    "exampleData": {
-                                      "callbackData": "bcast:unsub:abc",
-                                      "callbackQueryId": "sample-cbq-id",
-                                      "chatId": "322876545",
-                                      "telegramId": "322876545"
-                                    },
-                                    "externalId": "HbpXmNGNgALXmuTVLaoAk"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    }
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call reg-profile",
-                              "name": "step_20",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "sampleData": {}
-                                    },
-                                    "externalId": "sXX6wPP7eX2WPJBlWwR0g"
-                                  },
-                                  "flowProps": {
-                                    "callbackData": "{{step_1['output'].callbackData}}",
-                                    "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                    "chatId": "{{step_1['output'].chatId}}",
-                                    "firstName": "{{step_1['output'].firstName}}",
-                                    "lastName": "{{step_1['output'].lastName}}",
-                                    "messageId": "{{step_1['output'].messageId}}",
-                                    "messageText": "{{step_1['output'].text}}",
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "firstName": "{{step_1['output'].firstName}}",
-                                      "lastName": "{{step_1['output'].lastName}}",
-                                      "messageId": "{{step_1['output'].messageId}}",
-                                      "messageText": "{{step_1['output'].text}}",
-                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
-                                    },
-                                    "sessionDraft": "{{step_10['output'].sessionDraft}}",
-                                    "telegramId": "{{step_1['output'].tgId}}"
-                                  },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call staff-accept",
-                              "name": "step_21",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "sampleData": {
+                                  "input": {
+                                    "executionMode": "inline",
+                                    "flow": {
+                                      "exampleData": {
+                                        "callbackData": "reg:pdn:yes",
+                                        "callbackQueryId": "sample-cbq-id",
                                         "chatId": "322876545",
-                                        "eventId": "demo",
-                                        "telegramId": "322876545",
-                                        "token": "aaaaaaaaaaaaaaaaaaaaaa"
-                                      }
+                                        "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\"}",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "sQkwXETrInr5lns3jHQG2"
                                     },
-                                    "externalId": "l9pGrBAQzL8UFT96FZ2og"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
+                                    "flowProps": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
                                       "chatId": "{{step_1['output'].chatId}}",
-                                      "eventId": "{{step_10['output'].eventId}}",
-                                      "telegramId": "{{step_1['output'].tgId}}",
-                                      "token": "{{step_10['output'].token}}"
+                                      "payload": {
+                                        "callbackData": "{{step_1['output'].callbackData}}",
+                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      },
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "call reg-consent-mkt",
+                                "name": "step_14",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
                                     }
                                   },
-                                  "mode": "simple",
-                                  "waitForResponse": false
+                                  "input": {
+                                    "executionMode": "inline",
+                                    "flow": {
+                                      "exampleData": {
+                                        "callbackData": "reg:mkt:yes",
+                                        "callbackQueryId": "sample-cbq-id",
+                                        "chatId": "322876545",
+                                        "sessionDraft": "{\"eventId\":\"demo\",\"utm\":\"\",\"cardMessageId\":0}",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "PWmFAu3Ia71OyANEgzwxN"
+                                    },
+                                    "flowProps": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "payload": {
+                                        "callbackData": "{{step_1['output'].callbackData}}",
+                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      },
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
                                 },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.14"
+                                "type": "PIECE",
+                                "valid": true
                               },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "ack menu callback",
-                              "name": "step_22",
-                              "nextAction": {
-                                "displayName": "call menu (callback)",
-                                "name": "step_23",
+                              {
+                                "displayName": "call menu",
+                                "name": "step_15",
                                 "settings": {
                                   "actionName": "callFlow",
                                   "errorHandlingOptions": {
@@ -491,38 +224,142 @@
                                   },
                                   "propertySettings": {},
                                   "qadamName": "@aiqadam/qadam-subflows",
-                                  "qadamVersion": "0.4.15"
+                                  "qadamVersion": "0.4.14"
                                 },
                                 "type": "PIECE",
                                 "valid": true
                               },
-                              "settings": {
-                                "actionName": "answer_callback_query",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": true
+                              {
+                                "displayName": "call bcast-draft",
+                                "name": "step_17",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
                                   },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
+                                  "input": {
+                                    "executionMode": "queue",
+                                    "flow": {
+                                      "exampleData": {
+                                        "chatId": "322876545",
+                                        "firstName": "Тест",
+                                        "fwdText": "Текст анонса",
+                                        "messageId": "0",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "9L9aABPZWV3BJbO4Jgrv0"
+                                    },
+                                    "flowProps": {
+                                      "payload": {
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "firstName": "{{step_1['output'].firstName}}",
+                                        "fwdText": "{{step_1['output'].fwdText}}",
+                                        "messageId": "{{step_1['output'].messageId}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      }
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
                                 },
-                                "input": {
-                                  "callback_query_id": "{{step_1['output'].callbackQueryId}}",
-                                  "show_alert": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-telegram-bot",
-                                "qadamVersion": "0.9.0"
+                                "type": "PIECE",
+                                "valid": true
                               },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "ack quiz callback",
-                              "name": "step_26",
-                              "nextAction": {
-                                "displayName": "call quiz (entry)",
-                                "name": "step_24",
+                              {
+                                "displayName": "call bcast-step",
+                                "name": "step_18",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "executionMode": "queue",
+                                    "flow": {
+                                      "exampleData": {
+                                        "callbackData": "bcast:seg:abc:registered",
+                                        "callbackQueryId": "sample-cbq-id",
+                                        "chatId": "322876545",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "foniEVZaks6lvhPQAgBcS"
+                                    },
+                                    "flowProps": {
+                                      "payload": {
+                                        "callbackData": "{{step_1['output'].callbackData}}",
+                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      }
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "call bcast-unsub",
+                                "name": "step_19",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "executionMode": "queue",
+                                    "flow": {
+                                      "exampleData": {
+                                        "callbackData": "bcast:unsub:abc",
+                                        "callbackQueryId": "sample-cbq-id",
+                                        "chatId": "322876545",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "HbpXmNGNgALXmuTVLaoAk"
+                                    },
+                                    "flowProps": {
+                                      "payload": {
+                                        "callbackData": "{{step_1['output'].callbackData}}",
+                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      }
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "call reg-profile",
+                                "name": "step_20",
                                 "settings": {
                                   "actionName": "callFlow",
                                   "errorHandlingOptions": {
@@ -539,7 +376,241 @@
                                       "exampleData": {
                                         "sampleData": {}
                                       },
-                                      "externalId": "V2bcZK03ccTn10wV2AOuO"
+                                      "externalId": "sXX6wPP7eX2WPJBlWwR0g"
+                                    },
+                                    "flowProps": {
+                                      "callbackData": "{{step_1['output'].callbackData}}",
+                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                      "chatId": "{{step_1['output'].chatId}}",
+                                      "firstName": "{{step_1['output'].firstName}}",
+                                      "lastName": "{{step_1['output'].lastName}}",
+                                      "messageId": "{{step_1['output'].messageId}}",
+                                      "messageText": "{{step_1['output'].text}}",
+                                      "payload": {
+                                        "callbackData": "{{step_1['output'].callbackData}}",
+                                        "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "firstName": "{{step_1['output'].firstName}}",
+                                        "lastName": "{{step_1['output'].lastName}}",
+                                        "messageId": "{{step_1['output'].messageId}}",
+                                        "messageText": "{{step_1['output'].text}}",
+                                        "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                        "telegramId": "{{step_1['output'].tgId}}"
+                                      },
+                                      "sessionDraft": "{{step_10['output'].sessionDraft}}",
+                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "call staff-accept",
+                                "name": "step_21",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "executionMode": "inline",
+                                    "flow": {
+                                      "exampleData": {
+                                        "sampleData": {
+                                          "chatId": "322876545",
+                                          "eventId": "demo",
+                                          "telegramId": "322876545",
+                                          "token": "aaaaaaaaaaaaaaaaaaaaaa"
+                                        }
+                                      },
+                                      "externalId": "l9pGrBAQzL8UFT96FZ2og"
+                                    },
+                                    "flowProps": {
+                                      "payload": {
+                                        "chatId": "{{step_1['output'].chatId}}",
+                                        "eventId": "{{step_10['output'].eventId}}",
+                                        "telegramId": "{{step_1['output'].tgId}}",
+                                        "token": "{{step_10['output'].token}}"
+                                      }
+                                    },
+                                    "mode": "simple",
+                                    "waitForResponse": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-subflows",
+                                  "qadamVersion": "0.4.14"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "ack menu callback",
+                                "name": "step_22",
+                                "nextAction": {
+                                  "displayName": "call menu (callback)",
+                                  "name": "step_23",
+                                  "settings": {
+                                    "actionName": "callFlow",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "executionMode": "inline",
+                                      "flow": {
+                                        "exampleData": {
+                                          "sampleData": {}
+                                        },
+                                        "externalId": "qn6AT1kov72lFzAuuUA36"
+                                      },
+                                      "flowProps": {
+                                        "payload": {
+                                          "badPayload": "{{step_10['output'].badPayload}}",
+                                          "callbackData": "{{step_1['output'].callbackData}}",
+                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                          "chatId": "{{step_1['output'].chatId}}",
+                                          "fallback": "{{step_10['output'].fallback}}",
+                                          "firstName": "{{step_1['output'].firstName}}",
+                                          "telegramId": "{{step_1['output'].tgId}}"
+                                        }
+                                      },
+                                      "mode": "simple",
+                                      "waitForResponse": false
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-subflows",
+                                    "qadamVersion": "0.4.15"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "actionName": "answer_callback_query",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": true
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "callback_query_id": "{{step_1['output'].callbackQueryId}}",
+                                    "show_alert": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                                  "qadamVersion": "0.9.0"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "ack quiz callback",
+                                "name": "step_26",
+                                "nextAction": {
+                                  "displayName": "call quiz (entry)",
+                                  "name": "step_24",
+                                  "settings": {
+                                    "actionName": "callFlow",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "executionMode": "inline",
+                                      "flow": {
+                                        "exampleData": {
+                                          "sampleData": {}
+                                        },
+                                        "externalId": "V2bcZK03ccTn10wV2AOuO"
+                                      },
+                                      "flowProps": {
+                                        "payload": {
+                                          "callbackData": "{{step_1['output'].callbackData}}",
+                                          "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
+                                          "chatId": "{{step_1['output'].chatId}}",
+                                          "firstName": "{{step_1['output'].firstName}}",
+                                          "messageId": "{{step_1['output'].messageId}}",
+                                          "messageText": "{{step_1['output'].text}}",
+                                          "telegramId": "{{step_1['output'].tgId}}"
+                                        }
+                                      },
+                                      "mode": "simple",
+                                      "waitForResponse": false
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-subflows",
+                                    "qadamVersion": "0.4.15"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "actionName": "answer_callback_query",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": true
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "callback_query_id": "{{step_1['output'].callbackQueryId}}",
+                                    "show_alert": false
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-telegram-bot",
+                                  "qadamVersion": "0.9.0"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              {
+                                "displayName": "call quiz-answer",
+                                "name": "step_25",
+                                "settings": {
+                                  "actionName": "callFlow",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "executionMode": "inline",
+                                    "flow": {
+                                      "exampleData": {
+                                        "chatId": "322876545",
+                                        "firstName": "Тест",
+                                        "lastName": "Тестов",
+                                        "messageId": "0",
+                                        "messageText": "Мой ответ",
+                                        "telegramId": "322876545"
+                                      },
+                                      "externalId": "nG5QtHcwf1L7Nh1FjCHgq"
                                     },
                                     "flowProps": {
                                       "payload": {
@@ -547,6 +618,7 @@
                                         "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
                                         "chatId": "{{step_1['output'].chatId}}",
                                         "firstName": "{{step_1['output'].firstName}}",
+                                        "lastName": "{{step_1['output'].lastName}}",
                                         "messageId": "{{step_1['output'].messageId}}",
                                         "messageText": "{{step_1['output'].text}}",
                                         "telegramId": "{{step_1['output'].tgId}}"
@@ -562,270 +634,237 @@
                                 "type": "PIECE",
                                 "valid": true
                               },
-                              "settings": {
-                                "actionName": "answer_callback_query",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": true
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "callback_query_id": "{{step_1['output'].callbackQueryId}}",
-                                  "show_alert": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-telegram-bot",
-                                "qadamVersion": "0.9.0"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "call quiz-answer",
-                              "name": "step_25",
-                              "settings": {
-                                "actionName": "callFlow",
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
-                                  }
-                                },
-                                "input": {
-                                  "executionMode": "inline",
-                                  "flow": {
-                                    "exampleData": {
-                                      "chatId": "322876545",
-                                      "firstName": "Тест",
-                                      "lastName": "Тестов",
-                                      "messageId": "0",
-                                      "messageText": "Мой ответ",
-                                      "telegramId": "322876545"
+                              {
+                                "displayName": "намерение без обработчика",
+                                "name": "step_16",
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
                                     },
-                                    "externalId": "nG5QtHcwf1L7Nh1FjCHgq"
-                                  },
-                                  "flowProps": {
-                                    "payload": {
-                                      "callbackData": "{{step_1['output'].callbackData}}",
-                                      "callbackQueryId": "{{step_1['output'].callbackQueryId}}",
-                                      "chatId": "{{step_1['output'].chatId}}",
-                                      "firstName": "{{step_1['output'].firstName}}",
-                                      "lastName": "{{step_1['output'].lastName}}",
-                                      "messageId": "{{step_1['output'].messageId}}",
-                                      "messageText": "{{step_1['output'].text}}",
-                                      "telegramId": "{{step_1['output'].tgId}}"
+                                    "retryOnFailure": {
+                                      "value": false
                                     }
                                   },
-                                  "mode": "simple",
-                                  "waitForResponse": false
-                                },
-                                "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-subflows",
-                                "qadamVersion": "0.4.15"
-                              },
-                              "type": "PIECE",
-                              "valid": true
-                            },
-                            {
-                              "displayName": "намерение без обработчика",
-                              "name": "step_16",
-                              "settings": {
-                                "errorHandlingOptions": {
-                                  "continueOnFailure": {
-                                    "value": false
-                                  },
-                                  "retryOnFailure": {
-                                    "value": false
+                                  "input": {},
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  return { unhandled: true };\n};",
+                                    "packageJson": "{}"
                                   }
                                 },
-                                "input": {},
-                                "sourceCode": {
-                                  "code": "export const code = async (inputs) => {\n  return { unhandled: true };\n};",
-                                  "packageJson": "{}"
-                                }
-                              },
-                              "type": "CODE",
-                              "valid": true
-                            }
-                          ],
-                          "displayName": "делегирование обработчику",
-                          "name": "step_11",
-                          "settings": {
-                            "branches": [
-                              {
-                                "branchName": "reg_start",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "reg_start"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "reg_pdn",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "reg_pdn"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "reg_mkt",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "reg_mkt"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "menu",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "menu"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "bcast_draft",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "bcast_draft"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "bcast_step",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "bcast_step"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "bcast_unsub",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "bcast_unsub"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "reg_profile",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "reg_profile"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "staff_accept",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "staff_accept"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "menu_cb",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "menu_cb"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "quiz",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "caseSensitive": true,
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "quiz"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "quiz_answer",
-                                "branchType": "CONDITION",
-                                "conditions": [
-                                  [
-                                    {
-                                      "caseSensitive": true,
-                                      "firstValue": "{{step_10['output'].route}}",
-                                      "operator": "TEXT_EXACTLY_MATCHES",
-                                      "secondValue": "quiz_answer"
-                                    }
-                                  ]
-                                ]
-                              },
-                              {
-                                "branchName": "Otherwise",
-                                "branchType": "FALLBACK"
+                                "type": "CODE",
+                                "valid": true
                               }
                             ],
-                            "executionType": "EXECUTE_FIRST_MATCH"
+                            "displayName": "делегирование обработчику",
+                            "name": "step_11",
+                            "settings": {
+                              "branches": [
+                                {
+                                  "branchName": "reg_start",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "reg_start"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "reg_pdn",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "reg_pdn"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "reg_mkt",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "reg_mkt"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "menu",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "menu"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "bcast_draft",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "bcast_draft"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "bcast_step",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "bcast_step"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "bcast_unsub",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "bcast_unsub"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "reg_profile",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "reg_profile"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "staff_accept",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "staff_accept"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "menu_cb",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "menu_cb"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "quiz",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "caseSensitive": true,
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "quiz"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "quiz_answer",
+                                  "branchType": "CONDITION",
+                                  "conditions": [
+                                    [
+                                      {
+                                        "caseSensitive": true,
+                                        "firstValue": "{{step_10['output'].route}}",
+                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                        "secondValue": "quiz_answer"
+                                      }
+                                    ]
+                                  ]
+                                },
+                                {
+                                  "branchName": "Otherwise",
+                                  "branchType": "FALLBACK"
+                                }
+                              ],
+                              "executionType": "EXECUTE_FIRST_MATCH"
+                            },
+                            "type": "ROUTER",
+                            "valid": true
                           },
-                          "type": "ROUTER",
+                          "settings": {
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "callbackData": "{{step_1['output'].callbackData}}",
+                              "command": "{{step_1['output'].command}}",
+                              "commandArgs": "{{step_1['output'].commandArgs}}",
+                              "draftEventId": "{{step_8['output'].draftEventId}}",
+                              "forwarded": "{{step_1['output'].forwarded}}",
+                              "fwdText": "{{step_1['output'].fwdText}}",
+                              "hasContact": "{{step_1['output'].hasContact}}",
+                              "hasPhoto": "{{step_1['output'].hasPhoto}}",
+                              "mediaGroupId": "{{step_1['output'].mediaGroupId}}",
+                              "messageText": "{{step_1['output'].text}}",
+                              "parsed": "{{step_9['output'].data}}",
+                              "sessionActive": "{{step_8['output'].active}}",
+                              "sessionDraft": "{{step_8['output'].draft}}",
+                              "sessionScenario": "{{step_8['output'].scenario}}",
+                              "sessionStep": "{{step_8['output'].step}}",
+                              "startPayload": "{{step_1['output'].startPayload}}"
+                            },
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const messageText = String(inputs.messageText === undefined || inputs.messageText === null ? '' : inputs.messageText);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n  const parsedToken = String(parsed.token === undefined || parsed.token === null ? '' : parsed.token);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const mediaGroupId = String(inputs.mediaGroupId === undefined || inputs.mediaGroupId === null ? '' : inputs.mediaGroupId);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // W59 / ADR-0034 п.4: голый /start во время незавершённого онбординга,\n  // начатого по диплинку события, не должен уходить в menu — там ветка\n  // needs_onboard перетирает сессию черновиком без eventId, и финал\n  // становится finish_no_event (без регистрации), хотя человек пришёл по\n  // ссылке события. Возвращаем его в reg-start с сохранённым eventId.\n  // Только шаги ob_* (не await_marketing): завершивший профиль и ждущий\n  // ответа о рассылке голым /start в регистрацию не возвращается.\n  let draftObj = {};\n  try { draftObj = JSON.parse(sessionDraft || '{}'); } catch (e) { draftObj = {}; }\n  const draftUtm = String(draftObj.utm === undefined || draftObj.utm === null ? '' : draftObj.utm);\n  const continueEventOnboard = command === 'start' && parsedKind === '' && sessionActive\n    && sessionScenario === 'registration' && draftEventId !== '' && starts(sessionStep, 'ob_');\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). W79 (#131): черновик заводится и на фото без подписи\n  // (hasPhoto) — анонс спикера часто без текста; альбомные апдейты\n  // (mediaGroupId) без подписи не берём — это Part 2. Проверки стоят до\n  // командной цепочки, чтобы не сравнивать вычисленный маршрут ни с чем,\n  // кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s уходят в свои обработчики.\n  let badPayload = false;\n  // W73 (#125): обычный текст вне формы отвечает меню-карточкой, как /start,\n  // но с другой преамбулой (menu.fallback_text). Форма — шаг ob_await_*:\n  // там текст это ответ на вопрос, а не запрос меню.\n  let fallback = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (starts(callbackData, 'menu:')) {\n    // W68 (#120): кнопка «Как сделать рассылку» в меню-карточке staff'а —\n    // колбэк menu:bcast_help. Отвечает то же меню (инструкция bcast.howto.*).\n    // W99: ack колбэка делается отдельным шагом ветки menu_cb здесь, до входа\n    // в menu, — сам menu больше не зовёт answer_callback_query ни на /start,\n    // ни на тексте (пустой id давал холостой 400-вызов Bot API). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'menu_cb';\n  } else if (starts(callbackData, 'qz:')) {\n    // W103 / ADR-0041: кнопка «Викторина» в меню — колбэк qz:start. Вход в\n    // викторину ведёт `quiz` (окно, одна попытка, первый вопрос). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'quiz';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedValid && parsedKind === 's') {\n    // W10 / OWN-14: инвайт-ссылка контролёра s<eventId>-<token>.\n    route = 'staff_accept';\n  } else if (continueEventOnboard) {\n    // голый /start, но идёт онбординг по диплинку — продолжаем с событием\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true\n             && (fwdText !== '' || (hasPhoto === true && mediaGroupId === ''))) {\n    route = 'bcast_draft';\n  } else if (sessionActive && sessionScenario === 'quiz' && callbackData === ''\n             && messageText.trim() !== '' && starts(sessionStep, 'q_await_')) {\n    // W103 / ADR-0041: свободный ответ викторины (шаг q_await_answer) —\n    // до ветки W73, иначе текст ушёл бы в меню-фолбэк.\n    route = 'quiz_answer';\n  } else if (command === '' && callbackData === '' && forwarded !== true && messageText.trim() !== ''\n             && !(sessionActive && sessionScenario === 'registration' && starts(sessionStep, 'ob_await_'))) {\n    // W73 (#125): «привет»/«передумал» вне активной формы — короткий ответ\n    // меню-карточкой. Фото/стикеры без текста, старые колбэки, пересылки и\n    // свободный ввод в онбординге сюда не попадают — остаются как были.\n    route = 'menu';\n    fallback = true;\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    } else if (starts(callbackData, 'ob:')) {\n      // W50 / PAR-8: онбординг C — колбэки ob:* ведёт reg-profile.\n      route = 'reg_profile';\n    } else if (callbackData === '' && messageText.trim() !== '' && starts(sessionStep, 'ob_await_')) {\n      // W50 / PAR-8: свободный ввод в онбординге (имя/работа/город) —\n      // тоже reg-profile; чужие тексты вне шагов — в Otherwise молча.\n      route = 'reg_profile';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload, fallback: fallback,\n    eventId: continueEventOnboard ? draftEventId : parsedEventId,\n    token: parsedToken,\n    utm: continueEventOnboard ? draftUtm : parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
+                              "packageJson": "{}"
+                            }
+                          },
+                          "type": "CODE",
                           "valid": true
                         },
                         "settings": {
+                          "actionName": "callFlow",
                           "errorHandlingOptions": {
                             "continueOnFailure": {
                               "value": false
@@ -835,33 +874,41 @@
                             }
                           },
                           "input": {
-                            "callbackData": "{{step_1['output'].callbackData}}",
-                            "command": "{{step_1['output'].command}}",
-                            "commandArgs": "{{step_1['output'].commandArgs}}",
-                            "draftEventId": "{{step_8['output'].draftEventId}}",
-                            "forwarded": "{{step_1['output'].forwarded}}",
-                            "fwdText": "{{step_1['output'].fwdText}}",
-                            "hasContact": "{{step_1['output'].hasContact}}",
-                            "hasPhoto": "{{step_1['output'].hasPhoto}}",
-                            "mediaGroupId": "{{step_1['output'].mediaGroupId}}",
-                            "messageText": "{{step_1['output'].text}}",
-                            "parsed": "{{step_9['output'].data}}",
-                            "sessionActive": "{{step_8['output'].active}}",
-                            "sessionDraft": "{{step_8['output'].draft}}",
-                            "sessionScenario": "{{step_8['output'].scenario}}",
-                            "sessionStep": "{{step_8['output'].step}}",
-                            "startPayload": "{{step_1['output'].startPayload}}"
+                            "executionMode": "inline",
+                            "flow": {
+                              "exampleData": {
+                                "sampleData": {}
+                              },
+                              "externalId": "KRZz0Kr4aqldSdRbu6bA5"
+                            },
+                            "flowProps": {
+                              "payload": {
+                                "start": "{{step_1['output'].startPayload}}"
+                              }
+                            },
+                            "mode": "simple",
+                            "waitForResponse": true
                           },
-                          "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  const command = String(inputs.command === undefined || inputs.command === null ? '' : inputs.command);\n  const startPayload = String(inputs.startPayload === undefined || inputs.startPayload === null ? '' : inputs.startPayload);\n  const callbackData = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  const messageText = String(inputs.messageText === undefined || inputs.messageText === null ? '' : inputs.messageText);\n  const parsed = (inputs.parsed && typeof inputs.parsed === 'object') ? inputs.parsed : {};\n  const parsedValid = parsed.valid === true || parsed.valid === 'true';\n  const parsedKind = String(parsed.kind === undefined || parsed.kind === null ? '' : parsed.kind);\n  const parsedEventId = String(parsed.eventId === undefined || parsed.eventId === null ? '' : parsed.eventId);\n  const parsedUtm = String(parsed.utm === undefined || parsed.utm === null ? '' : parsed.utm);\n  const parsedToken = String(parsed.token === undefined || parsed.token === null ? '' : parsed.token);\n\n  const sessionActive = inputs.sessionActive === true || inputs.sessionActive === 'true';\n  const sessionScenario = String(inputs.sessionScenario === undefined || inputs.sessionScenario === null ? '' : inputs.sessionScenario);\n  const sessionDraft = String(inputs.sessionDraft === undefined || inputs.sessionDraft === null ? '{}' : inputs.sessionDraft);\n  const draftEventId = String(inputs.draftEventId === undefined || inputs.draftEventId === null ? '' : inputs.draftEventId);\n  const sessionStep = String(inputs.sessionStep === undefined || inputs.sessionStep === null ? '' : inputs.sessionStep);\n\n  const forwarded = inputs.forwarded === true || inputs.forwarded === 'true';\n  const fwdText = String(inputs.fwdText === undefined || inputs.fwdText === null ? '' : inputs.fwdText);\n  const hasPhoto = inputs.hasPhoto === true || inputs.hasPhoto === 'true';\n  const mediaGroupId = String(inputs.mediaGroupId === undefined || inputs.mediaGroupId === null ? '' : inputs.mediaGroupId);\n\n  const starts = (s, p) => s.indexOf(p) === 0;\n\n  // W59 / ADR-0034 п.4: голый /start во время незавершённого онбординга,\n  // начатого по диплинку события, не должен уходить в menu — там ветка\n  // needs_onboard перетирает сессию черновиком без eventId, и финал\n  // становится finish_no_event (без регистрации), хотя человек пришёл по\n  // ссылке события. Возвращаем его в reg-start с сохранённым eventId.\n  // Только шаги ob_* (не await_marketing): завершивший профиль и ждущий\n  // ответа о рассылке голым /start в регистрацию не возвращается.\n  let draftObj = {};\n  try { draftObj = JSON.parse(sessionDraft || '{}'); } catch (e) { draftObj = {}; }\n  const draftUtm = String(draftObj.utm === undefined || draftObj.utm === null ? '' : draftObj.utm);\n  const continueEventOnboard = command === 'start' && parsedKind === '' && sessionActive\n    && sessionScenario === 'registration' && draftEventId !== '' && starts(sessionStep, 'ob_');\n\n  // Рассылки (W14) — первыми: колбэки bcast:* идут по префиксу, как reg:pdn:;\n  // отписка — отдельным флоу без staff-гейта (получатель — гость).\n  // Пересланное сообщение без команды — черновик рассылки; staff-гейт внутри\n  // bcast-draft, не-staff пересылка уходит в тишину (форварды от гостей —\n  // обычное дело). W79 (#131): черновик заводится и на фото без подписи\n  // (hasPhoto) — анонс спикера часто без текста; альбомные апдейты\n  // (mediaGroupId) без подписи не берём — это Part 2. Проверки стоят до\n  // командной цепочки, чтобы не сравнивать вычисленный маршрут ни с чем,\n  // кроме 'start' (ADR-0025, check-commands.py).\n  let route = 'none';\n  // badPayload — «/start с мусором»: payload есть, но fn-parse-start его не разобрал\n  // (kind пуст). Валидные c/s уходят в свои обработчики.\n  let badPayload = false;\n  // W73 (#125): обычный текст вне формы отвечает меню-карточкой, как /start,\n  // но с другой преамбулой (menu.fallback_text). Форма — шаг ob_await_*:\n  // там текст это ответ на вопрос, а не запрос меню.\n  let fallback = false;\n  if (starts(callbackData, 'bcast:unsub:')) {\n    route = 'bcast_unsub';\n  } else if (starts(callbackData, 'bcast:')) {\n    route = 'bcast_step';\n  } else if (starts(callbackData, 'menu:')) {\n    // W68 (#120): кнопка «Как сделать рассылку» в меню-карточке staff'а —\n    // колбэк menu:bcast_help. Отвечает то же меню (инструкция bcast.howto.*).\n    // W99: ack колбэка делается отдельным шагом ветки menu_cb здесь, до входа\n    // в menu, — сам menu больше не зовёт answer_callback_query ни на /start,\n    // ни на тексте (пустой id давал холостой 400-вызов Bot API). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'menu_cb';\n  } else if (starts(callbackData, 'qz:')) {\n    // W103 / ADR-0041: кнопка «Викторина» в меню — колбэк qz:start. Вход в\n    // викторину ведёт `quiz` (окно, одна попытка, первый вопрос). Префикс\n    // колбэка, не команда — ADR-0025 не затронут.\n    route = 'quiz';\n  } else if (command === 'start' && parsedValid && parsedKind === 'e') {\n    route = 'reg_start';\n  } else if (command === 'start' && parsedValid && parsedKind === 's') {\n    // W10 / OWN-14: инвайт-ссылка контролёра s<eventId>-<token>.\n    route = 'staff_accept';\n  } else if (continueEventOnboard) {\n    // голый /start, но идёт онбординг по диплинку — продолжаем с событием\n    route = 'reg_start';\n  } else if (command === 'start' && parsedKind === '') {\n    route = 'menu';\n    badPayload = startPayload !== '';\n  } else if (command === 'start') {\n    route = 'none';\n  } else if (command !== '') {\n    // ADR-0025: /start — единственная команда. Любая другая команда\n    // не исполняется, а отвечает карточкой меню.\n    route = 'menu';\n  } else if (command === '' && forwarded === true\n             && (fwdText !== '' || (hasPhoto === true && mediaGroupId === ''))) {\n    route = 'bcast_draft';\n  } else if (sessionActive && sessionScenario === 'quiz' && callbackData === ''\n             && messageText.trim() !== '' && starts(sessionStep, 'q_await_')) {\n    // W103 / ADR-0041: свободный ответ викторины (шаг q_await_answer) —\n    // до ветки W73, иначе текст ушёл бы в меню-фолбэк.\n    route = 'quiz_answer';\n  } else if (command === '' && callbackData === '' && forwarded !== true && messageText.trim() !== ''\n             && !(sessionActive && sessionScenario === 'registration' && starts(sessionStep, 'ob_await_'))) {\n    // W73 (#125): «привет»/«передумал» вне активной формы — короткий ответ\n    // меню-карточкой. Фото/стикеры без текста, старые колбэки, пересылки и\n    // свободный ввод в онбординге сюда не попадают — остаются как были.\n    route = 'menu';\n    fallback = true;\n  } else if (sessionActive && sessionScenario === 'registration') {\n    if (starts(callbackData, 'reg:pdn:')) {\n      route = 'reg_pdn';\n    } else if (starts(callbackData, 'reg:mkt:')) {\n      route = 'reg_mkt';\n    } else if (starts(callbackData, 'reg:')) {\n      route = 'none';\n    } else if (starts(callbackData, 'ob:')) {\n      // W50 / PAR-8: онбординг C — колбэки ob:* ведёт reg-profile.\n      route = 'reg_profile';\n    } else if (callbackData === '' && messageText.trim() !== '' && starts(sessionStep, 'ob_await_')) {\n      // W50 / PAR-8: свободный ввод в онбординге (имя/работа/город) —\n      // тоже reg-profile; чужие тексты вне шагов — в Otherwise молча.\n      route = 'reg_profile';\n    }\n  }\n  // Колбэки myreg:* сняты (W43): «Мои билеты» — экран `#/events?tab=mine`,\n  // отмена — на экране билета; старые кнопки уходят в Otherwise молча.\n\n  return {\n    route: route, badPayload: badPayload, fallback: fallback,\n    eventId: continueEventOnboard ? draftEventId : parsedEventId,\n    token: parsedToken,\n    utm: continueEventOnboard ? draftUtm : parsedUtm,\n    sessionDraft: sessionDraft, draftEventId: draftEventId,\n    sessionStep: sessionStep\n  };\n};",
-                            "packageJson": "{}"
-                          }
+                          "propertySettings": {
+                            "flowProps": {
+                              "schema": {
+                                "payload": {
+                                  "defaultValue": {},
+                                  "displayName": "Payload",
+                                  "required": true,
+                                  "type": "OBJECT"
+                                }
+                              },
+                              "type": "MANUAL"
+                            }
+                          },
+                          "qadamName": "@aiqadam/qadam-subflows",
+                          "qadamVersion": "0.4.14"
                         },
-                        "type": "CODE",
+                        "type": "PIECE",
                         "valid": true
                       },
                       "settings": {
-                        "actionName": "callFlow",
                         "errorHandlingOptions": {
                           "continueOnFailure": {
                             "value": false
@@ -871,38 +918,17 @@
                           }
                         },
                         "input": {
-                          "executionMode": "inline",
-                          "flow": {
-                            "exampleData": {
-                              "sampleData": {}
-                            },
-                            "externalId": "KRZz0Kr4aqldSdRbu6bA5"
-                          },
-                          "flowProps": {
-                            "payload": {
-                              "start": "{{step_1['output'].startPayload}}"
-                            }
-                          },
-                          "mode": "simple",
-                          "waitForResponse": true
+                          "callbackData": "{{step_1['output'].callbackData}}",
+                          "draft": "{{step_8['output'].draft}}",
+                          "tgLang": "{{step_1['output'].languageCode}}",
+                          "upsert": "{{step_6['output']}}"
                         },
-                        "propertySettings": {
-                          "flowProps": {
-                            "schema": {
-                              "payload": {
-                                "defaultValue": {},
-                                "displayName": "Payload",
-                                "required": true,
-                                "type": "OBJECT"
-                              }
-                            },
-                            "type": "MANUAL"
-                          }
-                        },
-                        "qadamName": "@aiqadam/qadam-subflows",
-                        "qadamVersion": "0.4.14"
+                        "sourceCode": {
+                          "code": "export const code = async (inputs) => {\n  // W114: язык прогона = сохранённый выбор (users.lang) → выбранный в этом же\n  // онбординге язык из черновика сессии → язык клиента Telegram.\n  // `upsert` — вывод tables-upsert-records шага step_6; после того как `lang`\n  // убрали из записи (W114), вернувшаяся запись несёт сохранённое значение:\n  // upsert отдаёт все ячейки строки, а не только записанные (проверено живым\n  // прогоном). Отдельного чтения users не надо.\n  // `draft` — сессия из step_8: пока онбординг не доведён, users.lang пуст, и\n  // выбранный язык живёт в draft.profile.lang (reg-profile кладёт его туда на\n  // шаге выбора). Без этого промежуточные прогоны шли бы на старом языке.\n  // Колбэк выбора языка (ob:lang:<xx>) задаёт локаль этого же прогона — иначе\n  // карточка согласия пришла бы на прежнем языке.\n  // Whitelist ru|uz|en: чужое значение локали валит шаг ($t без перевода),\n  // поэтому сохранённое, клиентское, черновиковое и колбэчное значение сужаем.\n  const LANGS = ['ru', 'uz', 'en'];\n  const norm = (v) => String(v === undefined || v === null ? '' : v).trim().toLowerCase().split('-')[0];\n  const pick = (v) => (LANGS.indexOf(v) >= 0 ? v : '');\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const cellsOf = (rec) => (rec && rec.record && rec.record.cells) || (rec && rec.cells) || {};\n  const flat = (rec) => {\n    const out = {};\n    const cells = cellsOf(rec);\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const rec = arr(inputs.upsert)[0] || {};\n  const stored = norm(flat(rec).lang);\n  const tg = norm(inputs.tgLang);\n  const cb = String(inputs.callbackData === undefined || inputs.callbackData === null ? '' : inputs.callbackData);\n  let pending = '';\n  if (cb.indexOf('ob:lang:') === 0) pending = pick(norm(cb.slice('ob:lang:'.length)));\n  let draftLang = '';\n  try {\n    const d = JSON.parse(String(inputs.draft === undefined || inputs.draft === null ? '{}' : inputs.draft) || '{}');\n    const pr = (d && typeof d.profile === 'object' && d.profile) ? d.profile : {};\n    draftLang = pick(norm(pr.lang));\n  } catch (e) { draftLang = ''; }\n  const storedOk = pick(stored);\n  const tgOk = pick(tg);\n  const lang = pending !== '' ? pending : (storedOk !== '' ? storedOk : (draftLang !== '' ? draftLang : tgOk));\n  return { lang: lang, stored: stored, tg: tg, pending: pending, draftLang: draftLang };\n};\n",
+                          "packageJson": "{}"
+                        }
                       },
-                      "type": "PIECE",
+                      "type": "CODE",
                       "valid": true
                     },
                     "settings": {
@@ -976,6 +1002,10 @@
                     ],
                     "table_id": "xHhYjhwqKdONkrYJGcBsz",
                     "values": {
+                      "key_columns": [
+                        "JtylZU291K7TuMn9c9F2t"
+                      ],
+                      "table_id": "xHhYjhwqKdONkrYJGcBsz",
                       "values": [
                         {
                           "JtylZU291K7TuMn9c9F2t": "{{step_1['output'].tgId}}",
@@ -983,7 +1013,6 @@
                           "TS1eYS5hUJOWx8CBlNMDx": "{{step_1['output'].now}}",
                           "ja2S7DwVun5AKs3Jk7jK6": "false",
                           "nWPJjEcVpqMUaMwdEpPX5": "{{step_1['output'].firstName}}",
-                          "wW12TT5X2kFgLryWbnnm5": "{{step_1['output'].languageCode}}",
                           "yd5CbkPctz2GXmBabZeVV": "{{step_1['output'].lastName}}"
                         }
                       ]
@@ -1122,6 +1151,7 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-telegram-bot",
       "qadamVersion": "0.9.0",
+      "sampleData": {},
       "triggerName": "new_telegram_message"
     },
     "type": "PIECE_TRIGGER",

@@ -282,10 +282,14 @@
                         ],
                         "table_id": "toTKgngMTqDNJWDpQMh4d",
                         "values": {
+                          "key_columns": [
+                            "N8CdPxcdxLX9vFCINvZbL"
+                          ],
+                          "table_id": "toTKgngMTqDNJWDpQMh4d",
                           "values": [
                             {
                               "ESthrMwpn29JLvE2BNIj4": "registration",
-                              "IdGimBh539UlGSz6L0Pyo": "ob_consent",
+                              "IdGimBh539UlGSz6L0Pyo": "{{step_4['output'].sessionStep}}",
                               "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
                               "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
                               "sctBFEsMf10UobeFgzsVt": "{{step_6['output'].draft}}"
@@ -310,10 +314,11 @@
                       }
                     },
                     "input": {
-                      "cardMessageId": "{{step_5['output'].body.result.message_id}}"
+                      "cardMessageId": "{{step_5['output'].body.result.message_id}}",
+                      "sessionStep": "{{step_4['output'].sessionStep}}"
                     },
                     "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: '',\n    utm: '',\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: 'ob_consent'\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                      "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // W114: шаг сессии приходит из step_4 — ob_lang (язык ещё не выбран) или\n  // ob_consent (прежняя карточка согласия).\n  const cardMessageId = Number(inputs.cardMessageId);\n  const step = str(inputs.sessionStep) === 'ob_lang' ? 'ob_lang' : 'ob_consent';\n  const draft = {\n    eventId: '',\n    utm: '',\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: step\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};\n",
                       "packageJson": "{}"
                     }
                   },
@@ -357,7 +362,12 @@
                 },
                 "input": {
                   "firstName": "{{trigger['output'].data.firstName}}",
+                  "needsLang": "{{step_2['output'].needsLang}}",
                   "texts": {
+                    "lang.ask": "{{$t['lang.ask']}}",
+                    "lang.btn.en": "{{$t['lang.btn.en']}}",
+                    "lang.btn.ru": "{{$t['lang.btn.ru']}}",
+                    "lang.btn.uz": "{{$t['lang.btn.uz']}}",
                     "onb.btn.agree": "{{$t['onb.btn.agree']}}",
                     "onb.btn.details": "{{$t['onb.btn.details']}}",
                     "onb.consent": "{{$t['onb.consent']}}",
@@ -365,7 +375,7 @@
                   }
                 },
                 "sourceCode": {
-                  "code": "export const code = async (inputs) => {\n  // ADR-0034 / ADR-0043: онбординг без диплинка — та же входная карточка, что\n  // у reg-start при входе по ссылке события, но без фактов события (их тут\n  // нет). ADR-0043: «зачем данные» и текст согласия — одной карточкой, кнопка\n  // называет согласие («Согласен», ob:agree); «Подробнее» (ob:details)\n  // остаётся второй кнопкой — там полный текст и путь отказа.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const text = esc(t('onb.why')) + '\\n\\n' + esc(t('onb.consent'));\n  const replyMarkup = { inline_keyboard: [[\n    { text: t('onb.btn.agree'), callback_data: 'ob:agree' },\n    { text: t('onb.btn.details'), callback_data: 'ob:details' }\n  ]] };\n  return { text: text, replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                  "code": "export const code = async (inputs) => {\n  // ADR-0034 / ADR-0043: онбординг без диплинка — та же входная карточка, что\n  // у reg-start при входе по ссылке события, но без фактов события (их тут\n  // нет). ADR-0043: «зачем данные» и текст согласия — одной карточкой, кнопка\n  // называет согласие («Согласен», ob:agree); «Подробнее» (ob:details)\n  // остаётся второй кнопкой — там полный текст и путь отказа.\n  // W114: пока язык не выбран (needsLang), первой карточкой идёт вопрос о\n  // языке с тремя кнопками ob:lang:*; шаг сессии ob_lang, карточку согласия\n  // отдаст reg-profile.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const needsLang = inputs.needsLang === true || String(inputs.needsLang) === 'true';\n  let text;\n  let replyMarkup;\n  let sessionStep;\n  if (needsLang) {\n    text = esc(t('lang.ask'));\n    replyMarkup = { inline_keyboard: [[\n      { text: t('lang.btn.ru'), callback_data: 'ob:lang:ru' },\n      { text: t('lang.btn.uz'), callback_data: 'ob:lang:uz' },\n      { text: t('lang.btn.en'), callback_data: 'ob:lang:en' }\n    ]] };\n    sessionStep = 'ob_lang';\n  } else {\n    text = esc(t('onb.why')) + '\\n\\n' + esc(t('onb.consent'));\n    replyMarkup = { inline_keyboard: [[\n      { text: t('onb.btn.agree'), callback_data: 'ob:agree' },\n      { text: t('onb.btn.details'), callback_data: 'ob:details' }\n    ]] };\n    sessionStep = 'ob_consent';\n  }\n  return { text: text, replyMarkup: replyMarkup, now: new Date().toISOString(), sessionStep: sessionStep };\n};\n",
                   "packageJson": "{}"
                 }
               },
@@ -445,7 +455,7 @@
             "records": "{{step_1['output']}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг — на первое /start вообще, не только на диплинк\n  // события. Гейт один на все роли: пока профиль не заполнен, ни staff,\n  // ни owner не видят своего меню — сначала тот же онбординг, что и гость.\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const row = arr(inputs.records).map(flat)[0] || {};\n  const profileCompletedAt = String(row.profile_completed_at || '');\n  return { needsOnboard: profileCompletedAt === '', profileCompletedAt: profileCompletedAt };\n};",
+            "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг — на первое /start вообще, не только на диплинк\n  // события. Гейт один на все роли: пока профиль не заполнен, ни staff,\n  // ни owner не видят своего меню — сначала тот же онбординг, что и гость.\n  // W114: needsLang — язык ещё не выбран (users.lang пуст): первой карточкой\n  // онбординга идёт вопрос о языке, а не согласие (см. step_4).\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const row = arr(inputs.records).map(flat)[0] || {};\n  const profileCompletedAt = String(row.profile_completed_at || '');\n  const lang = String(row.lang || '').trim();\n  return { needsOnboard: profileCompletedAt === '', profileCompletedAt: profileCompletedAt, needsLang: lang === '' };\n};\n",
             "packageJson": "{}"
           }
         },
@@ -465,7 +475,8 @@
         "input": {
           "columns": [
             "JtylZU291K7TuMn9c9F2t",
-            "EAlXy4XsXGAeM7UrS0TIQ"
+            "EAlXy4XsXGAeM7UrS0TIQ",
+            "wW12TT5X2kFgLryWbnnm5"
           ],
           "filters": {
             "filters": [

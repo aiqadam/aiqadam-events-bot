@@ -3,9 +3,10 @@
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
   `POST /api/v1/webhooks/SmutybV5qJQjQASJGY9vi/sync`; тело:
-  `{ action, eventId?, initData, consentPdn?, consentMarketing?, confirm?, telegramId? }`
+  `{ action, eventId?, initData, consentPdn?, consentMarketing?, confirm?, telegramId?, lang? }`
   (`authType: none`, авторизация — `initData`; `confirm`/`telegramId` — только
-  для `delete_account`, чужой `telegramId` не доверяется)
+  для `delete_account`, чужой `telegramId` не доверяется; `lang` — только для
+  `set_lang`, W114)
 - **Назначение**: «Мои билеты» и регистрация в каталоге `#/events`
   (PAR-3/PAR-4 в целевой форме): одно касание — три действия, все строго
   по владельцу `initData` (W43, Q57)
@@ -18,6 +19,7 @@
 | `mine` | регистрации вызывающего — живые (`registered`/`checked_in`), отменённые не возвращаются | `200 {ok, outcome:'mine', mine:[{eventId, status, registeredAt, checkedInAt}]}` |
 | `register` | создать регистрацию идемпотентно (IDM-1) с двумя согласиями | `200 {ok, outcome:'registered', text}` / `200 {ok, outcome:'existing', text}` (повтор — та же строка) / отказы (см. ниже) |
 | `cancel` | отменить до `starts_at` (PAR-5) | `200 {ok, outcome:'cancelled', text}` / `404 not_registered` / `409 too_late` |
+| `set_lang` | выбор языка в табе «Профиль» (W114): пишет `users.lang` (`ru`/`uz`/`en`). Идёт существующей веткой `profile_saved` (перезапись того же профиля и согласия + `lang`); требует заполненный профиль | `200 {ok, outcome:'profile_saved', profile, lang}` / `400 profile_required` (профиль не заполнен) / `400 bad_request` (язык вне `ru\|uz\|en`) |
 | `delete_account` | самоудаление аккаунта (GDPR, W73, ADR-0039): строки вызывающего из `users`, `registrations`, `feedback`, `broadcast_targets`, `sessions`, `quiz_answers`, `quiz_attempts` (W103). Требует `confirm: true` | `200 {ok, outcome:'delete_account', text}` / `403 forbidden` (чужой `telegramId` в теле) / `400 bad_request` (нет подтверждения) |
 
 Отказы `register`: `400 pdn_required` (PAR-1 не отмечен — сервер требует,
@@ -32,22 +34,22 @@
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём sync-запроса SPA |
 | step_1 | `callFlow fn-hmac-init-data` (`inline`, `waitForResponse`) | проверка `initData` по токену бота, окно 1 ч (`maxAgeSeconds: 3600`) |
-| step_2 | CODE «normalize request» | нормализация входа: `action` lowercase, `consentPdn/Marketing` в boolean, `now`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтров `step_7`/`step_8` (платформенная гоча: пустой `eq` валит шаг) |
+| step_2 | CODE «normalize request» | нормализация входа: `action` lowercase, `consentPdn/Marketing` в boolean, `now`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтров `step_7`/`step_8` (платформенная гоча: пустой `eq` валит шаг); `lang` lowercase (W114) |
 | step_3 | ROUTER `valid` / `Otherwise` | `step_2.valid` → ветка действий, иначе `401` |
 | step_4 | CODE «invalid initData response» | `401 {ok:false, error:'invalid_init_data'}` |
 | step_5 | `return_response` (`stop`) | ответ неавторизованному |
 | step_6 | `tables-find-records registrations` | свои строки: `telegram_id eq <владелец initData>`, `limit 50`, проекция `telegram_id`+`status`+`registered_at`+`checked_in_at`+`event_id` |
 | step_7 | `tables-find-records registrations` | происхождение события: `event_id eq eventIdOrNone`, `limit 200` (подсчёт занятости — OWN-15), проекция `event_id`+`telegram_id`+`status` |
 | step_8 | `tables-find-records events` | событие по `id eq eventIdOrNone`, `limit 1` |
-| step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`) + `consent_pdn`/`consent_marketing`: гейт PAR-8 (W50) и текущее значение для таба «Профиль» |
-| step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); все тексты — во входе `texts` |
+| step_17 | `tables-find-records users` | профиль вызывающего (`profile_completed_at`) + `consent_pdn`/`consent_marketing`: гейт PAR-8 (W50) и текущее значение для таба «Профиль»; `lang` (W114) |
+| step_9 | CODE «decide» | решение: `mine` / `registered` (+`registered_profile` — с записью профиля из шита) / `existing` / `cancelled` / `profile` / `profile_saved` / `set_lang` / отказы; `register` без заполненного профиля и без валидных полей → `400 profile_required`; `profile_save` требует `consent_pdn=true` (PAR-1, ревью W50); повтор проверяется раньше профильного гейта (IDM-1 с QR); **`set_lang` (W114): язык только `ru\|uz\|en`, требует заполненный профиль, отдаёт `outcome: 'profile_saved'` с текущими профилем/согласием и `lang`**; все тексты — во входе `texts` |
 | step_10 | ROUTER по `outcome` | `register` / `cancel` / `registered_profile` / `profile` / `profile_saved` / `delete_account` / `Otherwise` (`mine` и отказы без записей) |
 | step_11 | `tables-upsert-records registrations` | создать/реактивировать: `id = <eventId>-<telegramId>`, `status = registered`, `registered_at = now`, ключ `(event_id, telegram_id)` |
 | step_12 | `tables-upsert-records users` (**пропущен, W60**) | было — `consent_pdn = true` + время, `consent_marketing = true/false` + время; отключён: повторная регистрация (эта ветка достижима только при `profileDone`) больше не трогает `users` — согласия уже записаны раньше, перезапись из шита каталога по умолчанию-снятому чекбоксу молча откатывала `consent_marketing` на `false` |
 | step_13 | `return_response` (`stop`) | `200 {ok, outcome:'registered', text}` |
 | step_18→20 (`registered_profile`) | upsert `registrations` → upsert `users` (согласия + профиль + `profile_completed_at`) → respond | регистрация из каталога с одновременным заполнением профиля (W50) |
-| step_21 (`profile`) | `return_response` (`stop`) | таб «Профиль»: `{ok, outcome:'profile', profile, pdnDone, consentMarketing}` без записей |
-| step_22→23 (`profile_saved`) | upsert `users` (профиль + `consent_marketing`/`consent_marketing_at`) → respond | правка профиля табом (W60: и переключатель рассылки); валидация профиля та же, что в шите |
+| step_21 (`profile`) | `return_response` (`stop`) | таб «Профиль»: `{ok, outcome:'profile', profile, pdnDone, consentMarketing, lang}` без записей (W114: `lang` для переключателя) |
+| step_22→23 (`profile_saved`) | upsert `users` (профиль + `consent_marketing`/`consent_marketing_at` + `lang`) → respond | правка профиля табом (W60: и переключатель рассылки); **`lang` из `step_9` (W114: `set_lang`); у `profile_save` — пустой, не перезаписывает**; валидация профиля та же, что в шите |
 | step_14 | `tables-upsert-records registrations` | отменить: `status = cancelled`, `cancelled_at = now`, ключ `(event_id, telegram_id)` |
 | step_15 | `return_response` (`stop`) | `200 {ok, outcome:'cancelled', text}` |
 | step_16 | `return_response` (`stop`) | `mine`, повторы, отказы — ответ из `step_9` без записей |
@@ -150,7 +152,20 @@
   `tables-find-records` fail-closed отклоняет пустое значение `eq`
   (`Filter #1: the "eq" operator on field "<f>" requires a value`) — см.
   платформенную гочу в `AGENTS.md`. Оба чтения идут линейно до роутера и
-  выполняются для всех действий, но `eventId` непустой только у
+  выполняются для всех действий, но   `eventId` непустой только у
   `register`/`cancel`; для `mine`/`profile_get`/`profile_save`/
   `delete_account` sentinel `__none__` даёт пустую выборку. `step_9` по-прежнему
   получает сырой `eventId` и решает как раньше.
+- **Выбор языка из таба «Профиль» (`set_lang`, W114).** Отдельного табличного
+  шага нет — так выбрано (переиспользование ветки `profile_saved`), а не из-за
+  ограничения платформы: отдельный `tables-upsert-records users` под запись
+  языка возможен (верхнеуровневые `table_id`/`key_columns`).
+  Поэтому `set_lang` переиспользует ветку `profile_saved`: `step_9` отдаёт
+  `outcome: 'profile_saved'` с текущими профилем и согласием (из строки
+  пользователя) и `lang`; `step_22` перезаписывает те же значения и добавляет
+  `users.lang`. Язык сужается до `ru|uz|en` (`LANG_OK` в `step_9`); требует
+  заполненный профиль — иначе `400 profile_required`. `profile_get` отдаёт
+  текущий `lang`, чтобы переключатель Mini App показывал выбор. Метки
+  `profile_completed_at`/`consent_marketing_at` берутся **сохранённые**
+  (`step_9` отдаёт их из `step_17`, `step_22` пишет) — смена языка их не
+  двигает (PAR-2); `profile_save` по-прежнему ставит текущее время.

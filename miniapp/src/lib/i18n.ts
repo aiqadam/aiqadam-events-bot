@@ -7,6 +7,8 @@
 
 import { getLang } from './telegram';
 
+const SUPPORTED_LANGS = ['ru', 'uz', 'en'];
+
 let LANG = 'ru';
 let dict: Record<string, string> = {};
 let loaded = false;
@@ -14,6 +16,33 @@ let loading: Promise<Record<string, string>> | null = null;
 
 export function getLangCode(): string {
   return LANG;
+}
+
+export function isSupportedLang(code: string): boolean {
+  return SUPPORTED_LANGS.includes(String(code || '').toLowerCase());
+}
+
+// W114: смена языка из таба «Профиль». Меняет словарь немедленно (компонент
+// перерисовывается по своему state), пишет выбор в localStorage (его читает
+// getLang() — для словаря и заголовка ap-parent-run-locale) и в <html lang>.
+// Запись на сервер (users.lang) делает вызывающий через reg-api set_lang.
+export async function setLang(code: string): Promise<void> {
+  const next = String(code || '').toLowerCase();
+  if (!SUPPORTED_LANGS.includes(next)) return;
+  LANG = next;
+  try {
+    localStorage.setItem('aiqadam.lang', next);
+  } catch {
+    /* localStorage недоступен — выбор всё равно применится в этой сессии */
+  }
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = next;
+  }
+  const base = await load('ru');
+  const over = next === 'ru' ? ({} as Record<string, string>) : await load(next);
+  dict = Object.assign({}, base, over);
+  loaded = true;
+  loading = null;
 }
 
 function load(lang: string): Promise<Record<string, string>> {

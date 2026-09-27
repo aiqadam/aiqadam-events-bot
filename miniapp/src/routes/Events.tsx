@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
-import { t, loadI18n } from '../lib/i18n';
+import { t, loadI18n, getLangCode, setLang, isSupportedLang } from '../lib/i18n';
 import { getTelegram, hapticImpact, hapticNotification } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
@@ -62,6 +62,8 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [profileState, setProfileState] = useState<MineState>(inTelegram ? 'loading' : 'off');
   const [profileMsg, setProfileMsg] = useState('');
   const [pdnDone, setPdnDone] = useState('');
+  // W114: язык интерфейса таба «Профиль» — переключатель (ru/uz/en).
+  const [uiLang, setUiLang] = useState(getLangCode());
   // W73 (#125, ADR-0039): самоудаление аккаунта — только свой, по initData.
   const [deleteSheet, setDeleteSheet] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -169,6 +171,12 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setProfile({ first: s(p['first']), last: s(p['last']), position: s(p['position']), company: s(p['company']), city: s(p['city']) });
     setProfileMkt(Boolean(res.data['consentMarketing']));
     setPdnDone(s(res.data['pdnDone']));
+    // W114: выбранный язык хранится на сервере (users.lang) — источник правды
+    // для бота. Подтягиваем его в клиент, если он ещё не применён локально.
+    const serverLang = s(res.data['lang']);
+    if (isSupportedLang(serverLang) && serverLang !== getLangCode()) {
+      void setLang(serverLang).then(() => setUiLang(serverLang));
+    }
     setProfileState('ready');
   }, [inTelegram, initData]);
 
@@ -196,6 +204,25 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setProfileMkt(Boolean(res.data['consentMarketing']));
     setProfileMsg(t('manage.saved.updated'));
   }, [initData, profile, profileMkt]);
+
+  // W114: переключатель языка. Сначала пишем users.lang на сервере (set_lang),
+  // затем сразу меняем словарь Mini App и запоминаем выбор в localStorage
+  // (его читает getLang() — для словаря и заголовка ap-parent-run-locale).
+  const changeLang = useCallback(async (code: string) => {
+    if (!isSupportedLang(code) || code === getLangCode()) return;
+    hapticImpact('light');
+    const res = await postJson(REG_API, { action: 'set_lang', initData, lang: code });
+    if (res.kind !== 'json' || !res.data['ok']) {
+      const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
+      hapticNotification('error');
+      showToast(d && typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
+      return;
+    }
+    await setLang(code);
+    setUiLang(code);
+    hapticNotification('success');
+    showToast(t('lang.changed'));
+  }, [initData, showToast]);
 
   // W73 (#125, ADR-0039): удаление своего аккаунта — сервер берёт telegram_id
   // из initData, тело чужой id не удаляет. Подтверждение обязательно (confirm).
@@ -484,6 +511,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
           mkt={profileMkt}
           pdnDone={pdnDone}
           msg={profileMsg}
+          lang={uiLang}
           onChange={(k, v) => {
             setProfile((p) => ({ ...p, [k]: v }));
             setProfileMsg('');
@@ -492,6 +520,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
             setProfileMkt((v) => !v);
             setProfileMsg('');
           }}
+          onLangChange={(code) => void changeLang(code)}
           onSave={() => void saveProfile()}
           onDelete={() => {
             setDeleteError('');
@@ -873,8 +902,10 @@ function ProfileTab({
   mkt,
   pdnDone,
   msg,
+  lang,
   onChange,
   onMktChange,
+  onLangChange,
   onSave,
   onDelete,
 }: {
@@ -885,8 +916,10 @@ function ProfileTab({
   mkt: boolean;
   pdnDone: string;
   msg: string;
+  lang: string;
   onChange: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
   onMktChange: () => void;
+  onLangChange: (code: string) => void;
   onSave: () => void;
   onDelete: () => void;
 }) {
@@ -934,6 +967,23 @@ function ProfileTab({
   );
   return (
     <div className="form-section">
+      <div className="field">
+        <label className="label">{t('menu.btn.language')}</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {['ru', 'uz', 'en'].map((code) => (
+            <button
+              key={code}
+              type="button"
+              id={'pf-lang-' + code}
+              className={'btn ' + (lang === code ? 'btn-primary' : 'btn-secondary')}
+              aria-pressed={lang === code}
+              onClick={() => onLangChange(code)}
+            >
+              {t('lang.btn.' + code)}
+            </button>
+          ))}
+        </div>
+      </div>
       <p className="app-muted">{t('profile.head_note')}</p>
       {field('pf-first', t('profile.first'), 'first')}
       {field('pf-last', t('profile.last'), 'last')}
