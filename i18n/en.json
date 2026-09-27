@@ -149,6 +149,7 @@
   "lang.btn.ru": "Russian",
   "lang.btn.uz": "Uzbek",
   "lang.changed": "Language changed.",
+  "lang.sync_failed": "Language changed. Sync with the bot failed.",
   "manage.badge.reg_closed": "Registration closed",
   "manage.btn.back": "Back to list",
   "manage.btn.copied": "Copied",
