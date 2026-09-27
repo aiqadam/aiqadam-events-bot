@@ -266,7 +266,14 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
         tg.expand();
       } catch {}
     }
-    void loadI18n().then(() => setDictLoaded(true));
+    // W115: uiLang инициализируется из getLangCode() в useState — до того, как
+    // loadI18n() выставит LANG из getLang()/localStorage, там ещё дефолт `ru`.
+    // Синхронизируем после загрузки словаря, иначе подсвечен не тот язык, а
+    // нажатие на фактический язык игнорируется (code === getLangCode()).
+    void loadI18n().then(() => {
+      setDictLoaded(true);
+      setUiLang(getLangCode());
+    });
     void loadEvents();
     void loadMine();
     void loadStaffEvents();
