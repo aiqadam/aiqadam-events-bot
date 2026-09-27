@@ -5,7 +5,7 @@
     "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "tg-router",
-  "localeSource": null,
+  "localeSource": "{{step_1['output'].languageCode}}",
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",

@@ -2198,7 +2198,19 @@
           "mode": "simple",
           "waitForResponse": true
         },
-        "propertySettings": {},
+        "propertySettings": {
+          "flowProps": {
+            "schema": {
+              "payload": {
+                "defaultValue": {},
+                "displayName": "Payload",
+                "required": true,
+                "type": "OBJECT"
+              }
+            },
+            "type": "MANUAL"
+          }
+        },
         "qadamName": "@aiqadam/qadam-subflows",
         "qadamVersion": "0.4.14"
       },
