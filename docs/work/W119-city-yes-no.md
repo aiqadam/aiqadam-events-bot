@@ -322,6 +322,107 @@ ap_list_flows ↔ migrations` сверены точечно по `reg-profile` (
 Telegram-чата и `initData` у ревьюера нет. Значения `uz`/`en` живьём не сверены
 (хвост W27).
 
+### Круг 3
+
+- **Ревьюер**: агент (независимый, чистый контекст) · **Дата**: 2026-09-27 ·
+  **Вердикт**: есть замечания (блокеров нет; одно «важно»)
+
+**Замечание круга 2 (версия в `DRAFT` после тест-прогона, гоча №14) закрыто —
+проверено живьём, а не по записи владельца.**
+
+Живой `ap_export_flow` по `reg-profile` (`bEz2bKyL82zlIwckxqvxc`) отдаёт
+`flows[0].id = Phk4zWtWT0iJpVhBom34q`, `state: LOCKED`,
+`created 2026-09-27T17:09:37Z`, `updated 2026-09-27T17:16:22Z`,
+`flowId = bEz2bKyL82zlIwckxqvxc`. Это совпадает с `publishedVersionId` в
+`flows/_manifest.json` (`Phk4zWtWT0iJpVhBom34q`) и с `version_id` строки
+`migrations` `2026-09-27-w119-01` (`Phk4zWtWT0iJpVhBom34q`). `ap_list_flows` —
+`reg-profile` ENABLED/published. Черновик равен опубликованной версии,
+отдельного `DRAFT` нет — гоча №14 закрыта.
+
+#### Замечания
+
+1. **важно** — строка `migrations` `2026-09-27-w119-01` провенансом
+   противоречит собственному `version_id`: `version_id = Phk4zWtWT0iJpVhBom34q`
+   (версия, опубликованная перепубликацией в коммите `11f3b88`), а
+   `commit = 775522b` — коммит **первой** публикации, в чьём
+   `flows/_manifest.json` стоит прежняя `2VZri7RTv01XC0yZLB0so`
+   (`git show 775522b:flows/_manifest.json`; `git show
+   11f3b88:flows/_manifest.json` — уже `Phk…`). По
+   `catalog/tables/migrations.md` («`commit` — хэш коммита репозитория,
+   описывающего это состояние») и по тому, как та же гоча №14 закрыта в W107
+   (`2026-09-26-w107-01`: `version_id EEvBjDZGB51k4ay0vaZd8`,
+   `commit bac425b` — и манифест `bac425b` несёт именно `EEvBjDZ…`), здесь
+   ожидается `commit = 11f3b88`. `applied_at = 2026-09-27T16:54:09Z` (время
+   первой публикации) **не** дефект: в W107 `applied_at` строки `-01` тоже
+   оставлено временем первой публикации — обратное датирование `migrations.md`
+   допускает. Где: живая таблица `migrations` (`app-flow-events-dev`), запись
+   `wxoykib6bbGFofXFi9P44`. Почему важно: `check-migrations.py` сверяет лишь
+   `version_id`/`object_id` и существование хэша, поэтому расхождение пройдёт
+   мимо него; но таблица — заявленный мост «репозиторий ↔ инстанс», и её строка
+   сейчас ссылается на коммит, чей манифест описывает **другую** опубликованную
+   версию. Правка — обновить `commit` на `11f3b88` (одно поле); либо, по букве
+   «одна публикация — одна строка» `migrations.md`, завести отдельную строку
+   `publish` (напр. `2026-09-27-w119-02`) с `version_id Phk…` и
+   `commit 11f3b88`, вернув `-01` первую публикацию.
+   - *Исправлено*: `migrations` `2026-09-27-w119-01` — `commit` обновлён на
+     `11f3b88` (коммит, чей `flows/_manifest.json` несёт `Phk4zWt…`);
+     `version_id` и `object_id` уже совпадали. `applied_at` оставлен временем
+     первой публикации (как в W107, `migrations.md` это допускает) (2026-09-27).
+
+#### Чем проверено и чем ограничено
+
+**Живой проект (MCP, `app-flow-events-dev`).**
+- `ap_export_flow` `reg-profile`: `flows[0].id/state` (см. выше); `flowId`,
+  `qadams` — как в каталоге. Полный нормализованный дифф живого экспорта с
+  `flows/reg-profile.json` **пуст** (все 40 шагов: `type`/`valid`/`settings.input`/
+  `sourceCode`, без учёта sample-данных и `lastUpdatedDate`) — снимок репозитория
+  равен живому опубликованному флоу целиком, не только `step_3`/`step_4`.
+- `ap_read_step_code` `step_3`/`step_4` — SHA-256
+  `80fc5440e2bf735e7046114ff972d580fad36a2db9f2c8b02b23b5bc0769dfd3` /
+  `9e0814abe8e95544421fcfcc1c199430fd54f15f8df2627a1b97fc8538888616` — совпали
+  с `flows/reg-profile.json` (те же, что в круге 1). `ap_validate_flow` —
+  `40/40 valid`, без `translation_key`/`translation_default_locale`.
+- `ap_flow_structure` — 40 шагов, все `configured`, без `invalid`/заглушек;
+  состав и вложенность (ветки `step_5`, цепочки `step_8→12`, `13→18`, `19→21`,
+  `22→28`, `29→33`, `35→40`) совпадают с `catalog/flows/reg-profile.md`.
+- `ap_list_runs` (TESTING, 25 прогонов) — все семь W119-прогонов на месте.
+  `ap_get_run toWNgbSpF3KcQ06OMbcjw`: `step_4`
+  `cardText:'Вы из Ташкента?'`, `replyMarkup` =
+  `[[{"text":"Да","callback_data":"ob:city:yes"},{"text":"Нет","callback_data":"ob:city:no"}]]`,
+  `nextStep:'ob_city'` (замечание 3 круга 1). Дополнительно прочитан
+  `RgDb3WiVlmFOL6nFNul74` (`ob:city:no`): `step_4`
+  `cardText:'Напишите ваш город\\.'` (`onb.ask_city_input`), сессия
+  `step:'ob_await_city'` (`step_8`). Оба прогона помечены `FAILED`/`step_1 ❌`,
+  но падают на фолбэк-отправке в синтетический чат (`400 chat not found` и
+  `query is too old` под `continueOnFailure`) — **после** нужных `step_4`/`step_8`.
+- Таблицы чисты: `in` по `telegram_id` 888888901–907 и `co 888888` в `users`,
+  `sessions`, `registrations` — пусто (записи от прогонов `toWNgb`/`RgDb3`,
+  видимые в их `step_8`, удалены).
+- Документы согласованы: журнал `Статус: на проверке`; `docs/STATUS.md` (W119) —
+  `на проверке` с `Phk4zWt…`; SPEC PAR-8 (да/нет + ссылка на ADR-0046);
+  `docs/adr/README.md` (0046); `catalog/flows/reg-profile.md`;
+  `prototypes/scenarios.js` (`common.btn.yes/no`, `onb.ask_city_input`,
+  `ask-city-text`); `i18n/{ru,uz,en}.json` — `onb.ask_city` переписан,
+  `onb.ask_city_input`/`common.btn.yes`/`common.btn.no` есть, `onb.btn.write` —
+  архив. [W120](../BACKLOG.md#w120-снять-алиасы-obcitytashkentalmatywrite) в
+  BACKLOG на месте.
+- `flows/_manifest.json`: 31 запись, имена совпадают с 31 «своим» флоу
+  `ap_list_flows` (плюс чужой `ChatBot`, известный Q34).
+
+**Офлайн (запущено мной).** `check-texts.py` — 31 флоу / 286 ссылок `$t` / 0;
+`check-commands.py` — 0; `check-export-secrets.sh` — чисто (8× `BOT_TOKEN`,
+2× `QR_SIGNING_KEY`, 0 значений `auth`); `check-agents.py` — 0;
+`node prototypes/check.mjs` — OK (те же 6 прежних предупреждений
+`ask-name`/`user-name`, не от W119).
+
+**Ограничение.** Ключа платформы нет — `tools/check-migrations.py` не
+запускался; `flows/_manifest.json ↔ ap_list_flows ↔ migrations` сверены точечно
+(по `reg-profile` совпало, по составу флоу — 31/31). Значения `uz`/`en` живьём
+не сверены (общий хвост W27; `ru` доказан рендером карточки). Живого
+Telegram-чата и `initData` у ревьюера нет. Путь «Да» при непустом `eventId`
+(создание регистрации) отдельно не перепрогонялся: ветку `finish` W119 не
+меняет, а код `step_3`/`step_4` побайтово тот же, что прочитан в кругах 1–2.
+
 ## Хвосты и блокеры
 
 - Перенос на prod — отдельным хотфиксом (ADR-0042).
