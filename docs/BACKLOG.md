@@ -3398,10 +3398,10 @@ LDAP/AD, Chat с AI, HTTP binary/raw, email/SCIM, инфраструктура i
 
 **Готово, когда:**
 
-- [ ] в `reg-profile/step_3` остались только `ob:city:yes`/`ob:city:no`;
-- [ ] `catalog/flows/reg-profile.md` и `docs/adr/0046-...` больше не называют
+- [x] в `reg-profile/step_3` остались только `ob:city:yes`/`ob:city:no`;
+- [x] `catalog/flows/reg-profile.md` и `docs/adr/0046-...` больше не называют
       алиасы живыми;
-- [ ] различающий прогон: `ob:city:Tashkent` → `ignore` (алиаса нет);
+- [x] различающий прогон: `ob:city:Tashkent` → `ignore` (алиаса нет);
 - [ ] независимое ревью, вердикт «замечаний нет».
 
 **Зависит от:** W119 (готов). **Не входит:** изменения в других флоу.

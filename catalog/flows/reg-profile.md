@@ -23,7 +23,7 @@
 |------|----------------|-----------|
 | trigger | `callableFlow` | `callbackData`, `messageText`, `messageId`, `sessionDraft`, `callbackQueryId`, `firstName`, `lastName`, `chatId`, `telegramId` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack колбэка; текстовый путь (пустой id) — мимо, без останова |
-| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0043: кнопка входной карточки — `ob:agree` (`ob:continue` снят), выбор города ведёт сразу в `finish`, а не в снятый review**; **ADR-0046: город — да/нет: `ob:city:yes` → `finish` с `Ташкент`, `ob:city:no` → `show_ask_city` (ввод текстом), текст на шаге `ob_await_city` → `finish`; старые `ob:city:Tashkent/Almaty/write` — алиасы на один релиз**; **W114: `ob:lang:<xx>` на шаге `ob_lang` → `action: 'set_lang'`, `lang` — только `ru\|uz\|en`**; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
+| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0043: кнопка входной карточки — `ob:agree` (`ob:continue` снят), выбор города ведёт сразу в `finish`, а не в снятый review**; **ADR-0046: город — да/нет: `ob:city:yes` → `finish` с `Ташкент`, `ob:city:no` → `show_ask_city` (ввод текстом), текст на шаге `ob_await_city` → `finish`; W120: алиасы `ob:city:Tashkent/Almaty/write` сняты — такое значение даёт `ignore`**; **W114: `ob:lang:<xx>` на шаге `ob_lang` → `action: 'set_lang'`, `lang` — только `ru\|uz\|en`**; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
 | step_2 | `tables-find-records events` | событие по `id eq eventIdOrNone` (после парсинга — ссылка вперёд невозможна); при онбординге без события (голый `/start`) пустая выборка, а не падение |
 | step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); **ADR-0043: при `ob:agree` пишет согласие (`writeKind consent`) и сразу отдаёт вопрос о работе при чистом имени из Telegram; подозрительное имя — прежний ручной ввод (`onb.suspect`); экранов согласия и «Всё верно?» нет**; **W114: `set_lang` кладёт язык в `draft.profile.lang` и идёт веткой `card` (рисует карточку согласия, `nextStep: 'ob_consent'`)**; тексты — вход `texts` (ADR-0045, `$t`) |
 | step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `finish_no_event` / `Otherwise` |
@@ -122,9 +122,8 @@
   «Да» (`ob:city:yes`) — сразу `finish` с городом `Ташкент`; «Нет» (`ob:city:no`)
   — карточка свободного ввода (`onb.ask_city_input`) и шаг `ob_await_city`, текст
   становится городом и ведёт в `finish`. Списка городов и кнопки «Написать»
-  больше нет; старые `ob:city:Tashkent`/`Almaty`/`write` оставлены алиасами на
-  один релиз для карточек, отправленных до правки (необработанный колбэк дал бы
-  молчание). Ключ `onb.btn.write` — архив.
+  больше нет; колбэки `ob:city:Tashkent`/`Almaty`/`write` сняты (W120) — прочее
+  значение уходит в `ignore`. Ключ `onb.btn.write` — архив.
 - **`finish_lite` не переспрашивает согласие на рассылку (W60).** Ветка
   достижима только когда `users.profile_completed_at` уже заполнен
   (`reg-start/step_3`, гейт «профиль заполнен → register»), а заполнение
