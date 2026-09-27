@@ -1351,12 +1351,20 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     // W117: язык интерфейса — тихая строка настроек вместо трёх крупных
     // кнопок (решение владельца: кнопки отвлекали от полей формы).
     const langRow = E('div', 'lang-row');
-    langRow.appendChild(E('span', 'label', T('menu.btn.language')));
+    const langLabel = E('span', 'label', T('menu.btn.language'));
+    langLabel.id = 'profile-lang-label';
+    langRow.appendChild(langLabel);
     const langSwitch = E('div', 'lang-switch');
+    langSwitch.setAttribute('role', 'group');
+    langSwitch.setAttribute('aria-labelledby', 'profile-lang-label');
+    // Полные имена — для доступности (как в продукте); ключи — картой, чтобы
+    // check.mjs не принял динамически собранный ключ за литерал.
+    const langLabel = { ru: 'lang.btn.ru', uz: 'lang.btn.uz', en: 'lang.btn.en' };
     ['ru', 'uz', 'en'].forEach((code) => {
       const b = E('button', 'lang-switch-btn' + (profileLang === code ? ' active' : ''), code.toUpperCase());
       b.type = 'button';
       b.setAttribute('aria-pressed', String(profileLang === code));
+      b.setAttribute('aria-label', T(langLabel[code]));
       b.addEventListener('click', () => {
         if (profileLang === code) return;
         profileLang = code;

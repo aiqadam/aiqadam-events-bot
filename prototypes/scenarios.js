@@ -30,11 +30,14 @@ PROTO.buildScenarios = function (opts) {
   });
 
   // W114/W117: выбор языка — первая карточка первого касания (до согласия):
-  // три кнопки ru/uz/en, выбранный язык бот запоминает (users.lang). В моке
-  // словарь один (ru), поэтому карточка показывает сам шаг, а не смену текста.
-  const langCard = (goNext) => ({
+  // три кнопки ru/uz/en, выбранный язык бот запоминает. Гость входит по
+  // диплинку на событие — карточка языка несёт те же факты события, что и
+  // карточка согласия (`reg-start/step_9`, ветка `needsLang`); у овнера
+  // события нет — вопрос без фактов (`menu/step_4`). В моке словарь один
+  // (ru), поэтому карточка показывает сам шаг, а не смену текста.
+  const langCard = (goNext, card) => ({
     id: 'ob-lang', kind: 'card', edit: true, markup: true,
-    card: { title: '', lines: [], body: T('lang.ask') }, trace: ['I18N-1'],
+    card: card || { title: '', lines: [], body: T('lang.ask') }, trace: ['I18N-1'],
     buttons: [
       { label: T('lang.btn.ru'), go: goNext },
       { label: T('lang.btn.uz'), go: goNext },
@@ -103,7 +106,7 @@ PROTO.buildScenarios = function (opts) {
     steps: [
       { id: 'start', kind: 'user', text: '/start e' + ev.id, note: P['proto.deep_link_note'], trace: ['OWN-6', 'ADR-0025'] },
 
-      langCard('event'),
+      langCard('event', eventCard(T('lang.ask'))),
 
       { id: 'event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
         buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
@@ -259,8 +262,10 @@ PROTO.buildScenarios = function (opts) {
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
 
-      langCard('ob-event'),
-
+      // Контролёру язык не задаётся: вход по инвайт-ссылке идёт сразу в
+      // `staff-accept` (карточка «инвайт принят» + сканер), карточки языка у
+      // него нет. Онбординг-согласие в сценарии — давнее to-be прототипа
+      // (ADR-0027) и W117 не трогается.
       { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
         buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
 

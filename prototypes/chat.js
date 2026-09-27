@@ -158,7 +158,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   const quickIndex = {
     guest: [['ob-lang', 'Выбор языка'], ['event', 'Карточка события'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['review', 'Всё верно?'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
     owner: [['ob-lang', 'Выбор языка'], ['ob-event', 'Онбординг'], ['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка события'], ['broadcast', 'Рассылка']],
-    controller: [['ob-lang', 'Выбор языка'], ['ob-event', 'Онбординг'], ['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
+    controller: [['ob-event', 'Онбординг'], ['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
   };
 
   function renderDemo() {

@@ -467,6 +467,7 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
   transition: color 150ms var(--ease-out);
 }
 .lang-switch-btn + .lang-switch-btn { border-left: 1px solid var(--border); }
+.lang-switch-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .lang-switch-btn:hover { color: var(--foreground); }
 .lang-switch-btn.active { color: var(--primary); font-weight: 600; }
 .form-section { margin-bottom: 22px; }

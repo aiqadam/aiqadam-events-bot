@@ -114,6 +114,7 @@ html, body { touch-action: pan-x pan-y; }
   transition: color 150ms var(--ease-out);
 }
 .lang-switch button + button { border-left: 1px solid var(--border); }
+.lang-switch button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .lang-switch button:hover { color: var(--foreground); }
 .lang-switch button[aria-pressed='true'] { color: var(--primary); font-weight: 600; }
 /* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
