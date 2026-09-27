@@ -128,7 +128,7 @@
   {
     "flow": "reg-api",
     "flowId": "SmutybV5qJQjQASJGY9vi",
-    "publishedVersionId": "LH7KvkmlPW0ouHKnp4tgv",
+    "publishedVersionId": "cQptzSeyWzIIv5FzD0bPa",
     "source": "mcp"
   },
   {
@@ -140,13 +140,13 @@
   {
     "flow": "reg-consent-pdn",
     "flowId": "UgAeyhpI29ndjM4EM3gxf",
-    "publishedVersionId": "IYXDxnFzxCbdZg5YZkO2h",
+    "publishedVersionId": "gxJ6ww1P3up0cbFpe57f2",
     "source": "mcp"
   },
   {
     "flow": "reg-profile",
     "flowId": "bEz2bKyL82zlIwckxqvxc",
-    "publishedVersionId": "9T98glHpVp81w44xff36q",
+    "publishedVersionId": "gy6jtF1CCj8r0UBWxIXm5",
     "source": "mcp"
   },
   {
