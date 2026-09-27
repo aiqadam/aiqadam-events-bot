@@ -4,7 +4,14 @@
 // переводит manage-api. Сюда, наоборот, UTC из таблицы раскладывается
 // на ташкентские компоненты через Intl, а не через локальную зону телефона.
 
+import { getLang } from './telegram';
+
 const TZ = 'Asia/Tashkent';
+
+// W25: месяц и день недели — на языке пользователя (ru/uz/en), время и числа
+// остаются числовыми. Форматы дат не хардкодятся в строках (I18N-3).
+const INTL: Record<string, string> = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-GB' };
+const LOCALE = INTL[getLang()] || 'ru-RU';
 
 const partsFmt = new Intl.DateTimeFormat('en-GB', {
   timeZone: TZ,
@@ -33,7 +40,7 @@ export function utcMs(iso: string): number {
   return Date.parse(/[Zz]$/.test(iso) || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z');
 }
 
-const plateFmt = new Intl.DateTimeFormat('ru-RU', {
+const plateFmt = new Intl.DateTimeFormat(LOCALE, {
   timeZone: TZ,
   day: '2-digit',
   month: 'short',
@@ -52,7 +59,7 @@ export function utcToPlate(iso: string): { month: string; day: string; weekday: 
   return { month: clean(p['month'] || ''), day: p['day'] || '', weekday: clean(p['weekday'] || '') };
 }
 
-const timeFmt = new Intl.DateTimeFormat('ru-RU', {
+const timeFmt = new Intl.DateTimeFormat(LOCALE, {
   timeZone: TZ,
   hour: '2-digit',
   minute: '2-digit',
@@ -65,7 +72,7 @@ export function utcToTime(iso: string): string {
 }
 
 // Строка «сб, 26 сентября · 18:30» для меты карточки каталога (форма прототипа W41).
-const whenFmt = new Intl.DateTimeFormat('ru-RU', {
+const whenFmt = new Intl.DateTimeFormat(LOCALE, {
   timeZone: TZ,
   weekday: 'short',
   day: 'numeric',

@@ -121,11 +121,11 @@
                                   "decision": "{{step_7['output']}}",
                                   "records": "{{step_13['output']}}",
                                   "texts": {
-                                    "manage.chat.cancelled": "Событие «{title}» отменено. Уведомление ушло зарегистрированным: {count}.",
-                                    "manage.chat.draft_saved": "Черновик «{title}» сохранён. Участникам он пока не виден.",
-                                    "manage.chat.published": "Событие «{title}» опубликовано.",
-                                    "manage.chat.updated": "Событие «{title}» обновлено.",
-                                    "manage.chat.updated_notified": "Событие «{title}» обновлено. Уведомление ушло зарегистрированным: {count}."
+                                    "manage.chat.cancelled": "{{$t['manage.chat.cancelled']}}",
+                                    "manage.chat.draft_saved": "{{$t['manage.chat.draft_saved']}}",
+                                    "manage.chat.published": "{{$t['manage.chat.published']}}",
+                                    "manage.chat.updated": "{{$t['manage.chat.updated']}}",
+                                    "manage.chat.updated_notified": "{{$t['manage.chat.updated_notified']}}"
                                   }
                                 },
                                 "sourceCode": {
@@ -365,8 +365,8 @@
                                             "miniappUrl": "{{variables['MINIAPP_URL']}}",
                                             "staffTelegramId": "{{step_20['output'].newStaffId}}",
                                             "texts": {
-                                              "manage.staff.notify": "Вы контролёр события «{title}». Сканер — по кнопке ниже.",
-                                              "staff.accept.btn.scanner": "Открыть сканер"
+                                              "manage.staff.notify": "{{$t['manage.staff.notify']}}",
+                                              "staff.accept.btn.scanner": "{{$t['staff.accept.btn.scanner']}}"
                                             },
                                             "title": "{{step_20['output'].title}}",
                                             "userRows": "{{step_24['output']}}"
@@ -640,16 +640,16 @@
                                 "staff": "{{step_18['output']}}",
                                 "staffRecords": "{{step_19['output']}}",
                                 "texts": {
-                                  "manage.err.bad_telegram_id": "ID — только цифры, от 8 до 16 знаков.",
-                                  "manage.err.forbidden": "Нет прав на правку этого события",
-                                  "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже.",
-                                  "manage.err.validation": "Проверьте отмеченные поля.",
-                                  "manage.staff.added": "Контролёр добавлен.",
-                                  "manage.staff.already": "Этот ID уже контролёр этого события.",
-                                  "manage.staff.gone": "Активных прав у этого ID нет.",
-                                  "manage.staff.item": "ID {id} — контролёр с {when}",
-                                  "manage.staff.revoked": "Права контролёра отозваны.",
-                                  "manage.staff.since": "контролёр с {when}"
+                                  "manage.err.bad_telegram_id": "{{$t['manage.err.bad_telegram_id']}}",
+                                  "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                                  "manage.err.server": "{{$t['manage.err.server']}}",
+                                  "manage.err.validation": "{{$t['manage.err.validation']}}",
+                                  "manage.staff.added": "{{$t['manage.staff.added']}}",
+                                  "manage.staff.already": "{{$t['manage.staff.already']}}",
+                                  "manage.staff.gone": "{{$t['manage.staff.gone']}}",
+                                  "manage.staff.item": "{{$t['manage.staff.item']}}",
+                                  "manage.staff.revoked": "{{$t['manage.staff.revoked']}}",
+                                  "manage.staff.since": "{{$t['manage.staff.since']}}"
                                 },
                                 "userRows": "{{step_52['output']}}"
                               },
@@ -888,7 +888,7 @@
                               "input": {
                                 "resp": "{{step_35['output']}}",
                                 "texts": {
-                                  "manage.geo.org_fail": "Не получили координаты этой организации. Скопируйте их в Яндекс.Картах и вставьте сюда."
+                                  "manage.geo.org_fail": "{{$t['manage.geo.org_fail']}}"
                                 }
                               },
                               "sourceCode": {
@@ -1028,8 +1028,8 @@
                                     "staff": "{{step_18['output']}}",
                                     "staffRows": "{{step_39['output']}}",
                                     "texts": {
-                                      "manage.err.forbidden": "Нет прав на правку этого события",
-                                      "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже."
+                                      "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                                      "manage.err.server": "{{$t['manage.err.server']}}"
                                     },
                                     "userRows": "{{step_40['output']}}"
                                   },
@@ -1246,14 +1246,14 @@
                                   "req": "{{step_5['output']}}",
                                   "staff": "{{step_18['output']}}",
                                   "texts": {
-                                    "manage.err.forbidden": "Нет прав на правку этого события",
-                                    "manage.parts.col_checked_in": "Время чекина",
-                                    "manage.parts.col_name": "Имя",
-                                    "manage.parts.col_status": "Статус",
-                                    "manage.parts.col_telegram_id": "telegram_id",
-                                    "myreg.status.cancelled": "отменена",
-                                    "myreg.status.checked_in": "был на событии",
-                                    "myreg.status.registered": "зарегистрирован"
+                                    "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                                    "manage.parts.col_checked_in": "{{$t['manage.parts.col_checked_in']}}",
+                                    "manage.parts.col_name": "{{$t['manage.parts.col_name']}}",
+                                    "manage.parts.col_status": "{{$t['manage.parts.col_status']}}",
+                                    "manage.parts.col_telegram_id": "{{$t['manage.parts.col_telegram_id']}}",
+                                    "myreg.status.cancelled": "{{$t['myreg.status.cancelled']}}",
+                                    "myreg.status.checked_in": "{{$t['myreg.status.checked_in']}}",
+                                    "myreg.status.registered": "{{$t['myreg.status.registered']}}"
                                   },
                                   "userRows": "{{step_45['output']}}"
                                 },
@@ -1435,7 +1435,7 @@
                                 "req": "{{step_5['output']}}",
                                 "staff": "{{step_18['output']}}",
                                 "texts": {
-                                  "manage.err.forbidden": "Нет прав на правку этого события"
+                                  "manage.err.forbidden": "{{$t['manage.err.forbidden']}}"
                                 },
                                 "userRows": "{{step_49['output']}}"
                               },
@@ -1666,11 +1666,11 @@
                                 "regs": "{{step_53['output']}}",
                                 "staff": "{{step_54['output']}}",
                                 "texts": {
-                                  "manage.delete.done": "Событие удалено.",
-                                  "manage.delete.has_registrations": "У события есть регистрации — удалить нельзя, только отменить.",
-                                  "manage.delete.has_staff": "У события есть контролёры — снимите их, потом удаляйте.",
-                                  "manage.delete.not_draft": "Удалить можно только черновик. Опубликованное событие отменяют.",
-                                  "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже."
+                                  "manage.delete.done": "{{$t['manage.delete.done']}}",
+                                  "manage.delete.has_registrations": "{{$t['manage.delete.has_registrations']}}",
+                                  "manage.delete.has_staff": "{{$t['manage.delete.has_staff']}}",
+                                  "manage.delete.not_draft": "{{$t['manage.delete.not_draft']}}",
+                                  "manage.err.server": "{{$t['manage.err.server']}}"
                                 }
                               },
                               "sourceCode": {
@@ -1941,42 +1941,42 @@
                       "req": "{{step_5['output']}}",
                       "staff": "{{step_18['output']}}",
                       "texts": {
-                        "field.address": "Адрес",
-                        "field.ends_at": "Окончание",
-                        "field.geo": "Точка на карте",
-                        "field.reg_deadline_at": "Дедлайн регистрации",
-                        "field.starts_at": "Начало",
-                        "field.status": "Статус",
-                        "field.title": "Название",
-                        "manage.err.address_length": "Адрес — от 2 до 300 символов.",
-                        "manage.err.capacity": "Целое число от 1 или пусто.",
-                        "manage.err.datetime": "Укажите дату и время.",
-                        "manage.err.deadline_after_starts": "Дедлайн позже начала события.",
-                        "manage.err.deadline_past": "Дедлайн уже прошёл.",
-                        "manage.err.description_length": "Описание — до 4000 символов.",
-                        "manage.err.ends_before_starts": "Окончание раньше начала.",
-                        "manage.err.forbidden": "Нет прав на правку этого события",
-                        "manage.err.geo_pair": "Укажите обе координаты или ни одной.",
-                        "manage.err.geo_range": "Координаты вне диапазона: широта ±90, долгота ±180.",
-                        "manage.err.overbook": "Целое число от 0 до 100 или пусто.",
-                        "manage.err.required": "Заполните поле.",
-                        "manage.err.server": "Сервер ответил неожиданно. Повторите чуть позже.",
-                        "manage.err.starts_past": "Начало уже прошло.",
-                        "manage.err.status": "Такого статуса нет.",
-                        "manage.err.title_length": "Название — от 2 до 200 символов.",
-                        "manage.err.validation": "Проверьте отмеченные поля.",
-                        "manage.saved.cancelled": "Событие отменено. Зарегистрированным ушло уведомление.",
-                        "manage.saved.created": "Событие опубликовано. Ссылка регистрации — ниже.",
-                        "manage.saved.draft": "Черновик сохранён. Участникам он пока не виден.",
-                        "manage.saved.updated": "Изменения сохранены.",
-                        "manage.saved.updated_notified": "Изменения сохранены. Зарегистрированным ушло уведомление.",
-                        "notify.changed.header": "В событии «{title}» изменения:",
-                        "notify.changed.line": "{field}: {old} → {new}",
-                        "notify.event_cancelled": "Событие «{title}» отменено. Извините за неудобство.",
-                        "status.cancelled": "отменён",
-                        "status.draft": "черновик",
-                        "status.finished": "завершён",
-                        "status.published": "опубликован"
+                        "field.address": "{{$t['field.address']}}",
+                        "field.ends_at": "{{$t['field.ends_at']}}",
+                        "field.geo": "{{$t['field.geo']}}",
+                        "field.reg_deadline_at": "{{$t['field.reg_deadline_at']}}",
+                        "field.starts_at": "{{$t['field.starts_at']}}",
+                        "field.status": "{{$t['field.status']}}",
+                        "field.title": "{{$t['field.title']}}",
+                        "manage.err.address_length": "{{$t['manage.err.address_length']}}",
+                        "manage.err.capacity": "{{$t['manage.err.capacity']}}",
+                        "manage.err.datetime": "{{$t['manage.err.datetime']}}",
+                        "manage.err.deadline_after_starts": "{{$t['manage.err.deadline_after_starts']}}",
+                        "manage.err.deadline_past": "{{$t['manage.err.deadline_past']}}",
+                        "manage.err.description_length": "{{$t['manage.err.description_length']}}",
+                        "manage.err.ends_before_starts": "{{$t['manage.err.ends_before_starts']}}",
+                        "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                        "manage.err.geo_pair": "{{$t['manage.err.geo_pair']}}",
+                        "manage.err.geo_range": "{{$t['manage.err.geo_range']}}",
+                        "manage.err.overbook": "{{$t['manage.err.overbook']}}",
+                        "manage.err.required": "{{$t['manage.err.required']}}",
+                        "manage.err.server": "{{$t['manage.err.server']}}",
+                        "manage.err.starts_past": "{{$t['manage.err.starts_past']}}",
+                        "manage.err.status": "{{$t['manage.err.status']}}",
+                        "manage.err.title_length": "{{$t['manage.err.title_length']}}",
+                        "manage.err.validation": "{{$t['manage.err.validation']}}",
+                        "manage.saved.cancelled": "{{$t['manage.saved.cancelled']}}",
+                        "manage.saved.created": "{{$t['manage.saved.created']}}",
+                        "manage.saved.draft": "{{$t['manage.saved.draft']}}",
+                        "manage.saved.updated": "{{$t['manage.saved.updated']}}",
+                        "manage.saved.updated_notified": "{{$t['manage.saved.updated_notified']}}",
+                        "notify.changed.header": "{{$t['notify.changed.header']}}",
+                        "notify.changed.line": "{{$t['notify.changed.line']}}",
+                        "notify.event_cancelled": "{{$t['notify.event_cancelled']}}",
+                        "status.cancelled": "{{$t['status.cancelled']}}",
+                        "status.draft": "{{$t['status.draft']}}",
+                        "status.finished": "{{$t['status.finished']}}",
+                        "status.published": "{{$t['status.published']}}"
                       }
                     },
                     "sourceCode": {
@@ -2131,7 +2131,7 @@
               },
               "input": {
                 "texts": {
-                  "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
+                  "checkin.unauthorized": "{{$t['checkin.unauthorized']}}"
                 }
               },
               "sourceCode": {
@@ -2198,7 +2198,19 @@
           "mode": "simple",
           "waitForResponse": true
         },
-        "propertySettings": {},
+        "propertySettings": {
+          "flowProps": {
+            "schema": {
+              "payload": {
+                "defaultValue": {},
+                "displayName": "Payload",
+                "required": true,
+                "type": "OBJECT"
+              }
+            },
+            "type": "MANUAL"
+          }
+        },
         "qadamName": "@aiqadam/qadam-subflows",
         "qadamVersion": "0.4.14"
       },

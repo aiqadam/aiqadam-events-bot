@@ -97,7 +97,7 @@
                     "reg": "{{step_3['output'].data}}",
                     "sign": "{{step_4['output'].data}}",
                     "texts": {
-                      "checkin.not_registered": "Нет регистрации"
+                      "checkin.not_registered": "{{$t['checkin.not_registered']}}"
                     }
                   },
                   "sourceCode": {
@@ -227,7 +227,7 @@
               },
               "input": {
                 "texts": {
-                  "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
+                  "checkin.unauthorized": "{{$t['checkin.unauthorized']}}"
                 }
               },
               "sourceCode": {

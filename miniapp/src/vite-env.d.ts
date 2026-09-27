@@ -29,7 +29,11 @@ interface TelegramHapticFeedback {
 
 interface TelegramWebApp {
   initData: string;
-  initDataUnsafe: unknown;
+  // W25: язык интерфейса берётся из профиля Telegram; вне Telegram — ru.
+  initDataUnsafe: {
+    user?: { language_code?: string };
+    [key: string]: unknown;
+  };
   colorScheme: 'light' | 'dark';
   ready: () => void;
   expand: () => void;

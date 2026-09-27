@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Сверяет тексты во входах шагов флоу с i18n/ru.json.
+"""Проверяет, что тексты во входах шагов ссылаются на ключи i18n/ru.json.
 
-Зачем. ADR-0014 назвал ценой то, что у текста стало два источника правды:
-`i18n/ru.json` и вход `texts` CODE-шага. В журнале W24 было написано, что
-расхождение «не ловится ничем» — ревью показало, что ловится, и вот чем.
+Зачем. С W25 (платформенный i18n, `$t`) текст больше не копируется во вход
+CODE-шага — там лежит ссылка `{{$t['ключ']}}`, а само значение живёт в
+платформенных переводах, импортируемых из `i18n/*.json`. Источник правды —
+репозиторий; этот скрипт держит вторую половину инварианта: во входе `texts`
+нет ни одной пользовательской строки литералом, каждая ссылка указывает на
+существующий ключ `i18n/ru.json` и совпадает с ним по имени.
+
+Почему по имени, а не по значению. Значение в шаге больше не дублируется —
+сравнивать нечего; расхождение возможно только в форме ссылки (опечатка,
+литерал, `$t` с чужим ключом). Именно это и ловим.
 
 Как пользоваться. Скрипт НЕ ходит в сеть: он читает закоммиченный экспорт
 флоу, который снимает `tools/export-flows.sh` (ADR-0018 разрешает GET всем).
@@ -18,21 +25,52 @@
 `trigger` в корне. Форма, которой не узнал, — это ошибка, а не «0
 расхождений»: скрипт, молча не нашедший шагов, хуже отсутствующего.
 
+Обход дерева включает тело цикла (`firstLoopAction`): шаг напоминания живёт
+внутри `LOOP_ON_ITEMS`, и без этого его вход не проверялся (найдено в W25).
+
 Выход: строка на каждое расхождение, код возврата 1 если они есть.
 """
 import json
 import sys
 
 
+def _walk_branch(branch, out):
+    """Ветка ROUTER или continueOnFailure: список детей либо один шаг."""
+    if isinstance(branch, dict):
+        if isinstance(branch.get("children"), list):
+            for child in branch["children"]:
+                walk(child, out)
+        else:
+            walk(branch, out)
+
+
 def walk(node, out):
-    """Собирает все шаги из дерева экспорта флоу."""
+    """Собирает все шаги из дерева экспорта флоу.
+
+    Покрывает три места, где шаг терялся: тело цикла (`firstLoopAction`),
+    ветки ROUTER (`branches`) и ветки continueOnFailure
+    (`continueOnFailureBranches` — объект `onSuccess`/`onFailure`).
+    """
     while node:
         out.append(node)
         for branch in (node.get("children") or []):
             walk(branch, out)
         for branch in (node.get("branches") or []):
-            walk(branch, out)
+            _walk_branch(branch, out)
+        cfb = node.get("continueOnFailureBranches")
+        if isinstance(cfb, dict):
+            for branch in cfb.values():
+                _walk_branch(branch, out)
+        elif isinstance(cfb, list):
+            for branch in cfb:
+                _walk_branch(branch, out)
+        if node.get("firstLoopAction"):
+            walk(node["firstLoopAction"], out)
         node = node.get("nextAction")
+
+
+def expected_ref(key):
+    return "{{$t['%s']}}" % key
 
 
 def check_texts(ru, flows):
@@ -47,14 +85,16 @@ def check_texts(ru, flows):
                 continue
             for key, value in texts.items():
                 checked += 1
+                want = expected_ref(key)
+                if value != want:
+                    problems.append(
+                        "%s/%s: значение для %r не ссылка на $t\n"
+                        "    во флоу: %r\n    ожидалось: %r"
+                        % (name, st.get("name"), key, value, want)
+                    )
                 if key not in ru:
                     problems.append(
                         "%s/%s: ключа %r нет в ru.json" % (name, st.get("name"), key)
-                    )
-                elif ru[key] != value:
-                    problems.append(
-                        "%s/%s: %r\n    во флоу:   %r\n    в ru.json: %r"
-                        % (name, st.get("name"), key, value, ru[key])
                     )
     return checked, problems
 
@@ -113,13 +153,13 @@ def main(argv):
     for p in problems:
         print(p)
     print(
-        "флоу: %d, сверено пар ключ-значение: %d, расхождений: %d"
+        "флоу: %d, сверено ссылок $t: %d, расхождений: %d"
         % (len(flows), checked, len(problems))
     )
     if skipped:
         print("пропущено (не флоу): %s" % ", ".join(skipped))
     if checked == 0:
-        print("ВНИМАНИЕ: не сверено ни одной пары — во входах шагов нет `texts`.")
+        print("ВНИМАНИЕ: не сверено ни одной ссылки — во входах шагов нет `texts`.")
         return 2
     return 1 if problems else 0
 

@@ -17,7 +17,7 @@
 | step_5 | LOOP_ON_ITEMS | по `targets` |
 | step_6 (в цикле) | `store : put_if_absent` | захват `rm:<event_id>:<kind>:<telegram_id>`, `COLLECTION`, TTL 48 ч |
 | step_7 (в цикле) | ROUTER «первый раз?» | `stored` / `Otherwise` |
-| step_8 (`first`) | CODE «reminder text» | текст из `texts` (`remind.24h` / `remind.2h`) + `reply_markup`: «Открыть билет» (`web_app`), «Как добраться» (`url`, при `mapsUrl`) |
+| step_8 (`first`) | CODE «reminder text» | текст из `texts` (`$t`-ссылка) (`remind.24h` / `remind.2h`) + `reply_markup`: «Открыть билет» (`web_app`), «Как добраться» (`url`, при `mapsUrl`) |
 | step_9 (`first`) | `send_text_message` | `format: None`, `reply_markup`, `continueOnFailure` |
 | step_10 (`Otherwise`) | CODE «already reminded» | лог с причиной `already_sent` |
 

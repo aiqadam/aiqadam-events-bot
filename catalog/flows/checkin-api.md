@@ -37,7 +37,7 @@
 | step_5 (valid) | `callFlow fn-find-registration` | регистрация участника **по данным из QR**, не из запроса |
 | step_6 (valid) | `tables-find-records users` | имя участника для ответа контролёру (`first_name`, фильтр `telegram_id eq userIdOrNone`) |
 | step_13 (valid) | `tables-find-records events` | статус события (`status`, фильтр `id eq eventIdOrNone`) — чекин отменённого события не проходит (STF-3, Part 1) |
-| step_7 (valid) | CODE «decide result» | семь оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0014) |
+| step_7 (valid) | CODE «decide result» | семь оставшихся исходов STF-4 (см. ниже, `invalid_init_data` теперь решает `step_10`), время `already` — Asia/Tashkent, тексты — `inputs.texts` (ADR-0045, `$t`) |
 | step_8 (valid) | `tables-update-record` (`continueOnFailure`) | `checked_in_at`/`checked_in_by`, **`only_if: checked_in_at not_exists`** — атомарная гарантия IDM-2. При исходе не-`ok` вместо id записи подставляется сентинел `-`: гарантированный 404, безопасный no-op |
 | step_9 (valid) | `return_response` | JSON-ответ Mini App |
 
@@ -80,7 +80,7 @@
   бы в `invalid_init_data`. `MAX_AGE_CAP` у `fn-hmac-init-data` тоже 43200 —
   это верхняя граница, свойство «завысить окно вызовом нельзя» сохраняется.
 - **Тексты (`step_7`, `step_11`) — через `inputs.texts`**, не литералом в коде
-  (ADR-0014); значения сверены с `i18n/ru.json`.
+  (ADR-0045, `$t`); ссылки `$t` сверены с `i18n/ru.json`.
 - **Статус события читается в `step_13` только после всех гейтов, но до
   проверки регистрации** (STF-3, Part 1): отменённое событие даёт
   `event_cancelled` независимо от того, был ли человек записан. Пишет

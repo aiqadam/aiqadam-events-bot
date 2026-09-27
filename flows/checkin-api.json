@@ -133,14 +133,14 @@
                                 "requestedEventId": "{{trigger['output'].body.eventId}}",
                                 "staffRows": "{{step_3['output']}}",
                                 "texts": {
-                                  "checkin.already": "Уже отмечен в {time}",
-                                  "checkin.event_cancelled": "Событие отменено",
-                                  "checkin.forbidden": "Нет прав на чекин этого события",
-                                  "checkin.invalid": "Код не распознан",
-                                  "checkin.name_unknown": "участник без имени",
-                                  "checkin.not_registered": "Нет регистрации",
-                                  "checkin.ok": "{name} — отмечен",
-                                  "checkin.wrong_event": "Другое событие"
+                                  "checkin.already": "{{$t['checkin.already']}}",
+                                  "checkin.event_cancelled": "{{$t['checkin.event_cancelled']}}",
+                                  "checkin.forbidden": "{{$t['checkin.forbidden']}}",
+                                  "checkin.invalid": "{{$t['checkin.invalid']}}",
+                                  "checkin.name_unknown": "{{$t['checkin.name_unknown']}}",
+                                  "checkin.not_registered": "{{$t['checkin.not_registered']}}",
+                                  "checkin.ok": "{{$t['checkin.ok']}}",
+                                  "checkin.wrong_event": "{{$t['checkin.wrong_event']}}"
                                 }
                               },
                               "sourceCode": {
@@ -448,7 +448,7 @@
                 },
                 "input": {
                   "texts": {
-                    "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
+                    "checkin.unauthorized": "{{$t['checkin.unauthorized']}}"
                   }
                 },
                 "sourceCode": {

@@ -132,7 +132,7 @@
                             "eventId": "{{step_4['output'].eventId}}",
                             "miniappUrl": "{{variables['MINIAPP_URL']}}",
                             "texts": {
-                              "staff.accept.btn.scanner": "Открыть сканер"
+                              "staff.accept.btn.scanner": "{{$t['staff.accept.btn.scanner']}}"
                             }
                           },
                           "sourceCode": {
@@ -304,10 +304,10 @@
                 "inviteRows": "{{step_2['output']}}",
                 "telegramId": "{{trigger['output'].data.telegramId}}",
                 "texts": {
-                  "staff.accept.expired": "Срок действия ссылки истёк.",
-                  "staff.accept.invalid": "Ссылка не найдена.",
-                  "staff.accept.ok": "Вы контролёр события «{title}».",
-                  "staff.accept.used": "Ссылка уже использована."
+                  "staff.accept.expired": "{{$t['staff.accept.expired']}}",
+                  "staff.accept.invalid": "{{$t['staff.accept.invalid']}}",
+                  "staff.accept.ok": "{{$t['staff.accept.ok']}}",
+                  "staff.accept.used": "{{$t['staff.accept.used']}}"
                 },
                 "tokenHash": "{{step_1['output']}}"
               },

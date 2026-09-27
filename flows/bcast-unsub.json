@@ -153,8 +153,8 @@
             "input": {
               "telegramId": "{{trigger['output'].data.telegramId}}",
               "texts": {
-                "unsub.already": "Вы и так не подписаны на анонсы.",
-                "unsub.done": "Анонсы больше присылать не будем. Регистрации это не затронуло."
+                "unsub.already": "{{$t['unsub.already']}}",
+                "unsub.done": "{{$t['unsub.done']}}"
               },
               "userRecords": "{{step_2['output']}}"
             },

@@ -192,7 +192,7 @@
                                   "botUsername": "{{variables['BOT_USERNAME']}}",
                                   "eventId": "{{step_8['output'].eventId}}",
                                   "texts": {
-                                    "staff.invite.created": "Ссылка для контролёра, действует 24 часа и только один раз:\n{url}"
+                                    "staff.invite.created": "{{$t['staff.invite.created']}}"
                                   },
                                   "token": "{{step_11['output']}}"
                                 },
@@ -289,7 +289,7 @@
                         "staff": "{{step_6['output']}}",
                         "telegramId": "{{step_3['output'].telegramId}}",
                         "texts": {
-                          "manage.err.forbidden": "Нет прав на правку этого события"
+                          "manage.err.forbidden": "{{$t['manage.err.forbidden']}}"
                         }
                       },
                       "sourceCode": {
@@ -409,7 +409,7 @@
             "input": {
               "hmac": "{{step_2['output'].data}}",
               "texts": {
-                "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
+                "checkin.unauthorized": "{{$t['checkin.unauthorized']}}"
               }
             },
             "sourceCode": {
