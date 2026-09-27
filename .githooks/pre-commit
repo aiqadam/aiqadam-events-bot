@@ -20,8 +20,9 @@ staged="$(git diff --cached --name-only --diff-filter=ACMR)"
 flows_changed="$(grep -c '^flows/.*\.json$' <<<"$staged")" || flows_changed=0
 i18n_changed="$(grep -c '^i18n/ru\.json$' <<<"$staged")" || i18n_changed=0
 agents_changed="$(grep -cE '^(AGENTS\.md|CLAUDE\.md|opencode\.json|\.mcp\.json|docs/agents/|\.opencode/agent/|\.claude/agents/|tools/check-agents\.py)' <<<"$staged")" || agents_changed=0
+prototypes_changed="$(grep -cE '^prototypes/.*\.js$' <<<"$staged")" || prototypes_changed=0
 
-if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 && "$agents_changed" -eq 0 ]]; then
+if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 && "$agents_changed" -eq 0 && "$prototypes_changed" -eq 0 ]]; then
   exit 0
 fi
 
@@ -39,9 +40,18 @@ if [[ "$agents_changed" -ne 0 ]]; then
   python3 tools/check-agents.py || status=1
 fi
 
+if [[ "$prototypes_changed" -ne 0 ]]; then
+  echo "pre-commit: изменились prototypes/*.js — синтаксис и сценарии (W118)"
+  if command -v node >/dev/null 2>&1; then
+    node prototypes/check.mjs || status=1
+  else
+    echo "  node не найден — проверка пропущена (выполнит CI)"
+  fi
+fi
+
 if [[ "$status" -ne 0 ]]; then
   echo "pre-commit: КОММИТ ЗАБЛОКИРОВАН (обходить --no-verify нельзя:"
-  echo "секрет, расхождение текстов, чужая команда или разъехавшиеся роли"
+  echo "секрет, расхождение текстов, чужая команда, битый прототип или разъехавшиеся роли"
   echo "уедут в историю git навсегда)"
 fi
 exit "$status"

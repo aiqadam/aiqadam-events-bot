@@ -21,6 +21,22 @@ const errors = [];
 const warnings = [];
 const fail = (m) => errors.push(m);
 
+// ---------- 0. синтаксис всех prototypes/*.js ----------
+// app.js/chat.js в песочницу не грузятся (нужен DOM), поэтому их синтаксис
+// иначе не проверяется: двойной `const` в W117 прошёл мимо check.mjs и сломал
+// app.html. Парсим каждый файл отдельно — ошибка называет файл и сообщение.
+let syntaxOk = 0;
+let syntaxTotal = 0;
+for (const f of fs.readdirSync(here).filter((n) => n.endsWith('.js'))) {
+  syntaxTotal++;
+  try {
+    new vm.Script(read(path.join(here, f)), { filename: f });
+    syntaxOk++;
+  } catch (e) {
+    fail(`синтаксис ${f}: ${e.message}`);
+  }
+}
+
 // ---------- 1. словари ----------
 const ru = JSON.parse(read(path.join(root, 'i18n', 'ru.json')));
 
@@ -169,6 +185,7 @@ for (const [k, v] of Object.entries(protoDict)) {
 }
 
 // ---------- вывод ----------
+console.log(`синтаксис: ${syntaxOk === syntaxTotal ? `${syntaxOk} файлов ok` : `${syntaxOk} из ${syntaxTotal} файлов ok`}`);
 console.log(`Сценарии: ${Object.keys(scenarios).join(', ')}`);
 console.log(`Ключей из JS: ${usedKeys.size}, словарь прототипа: ${Object.keys(protoDict).length}, trace-идов Mini App: ${traceTotal}`);
 if (warnings.length) {

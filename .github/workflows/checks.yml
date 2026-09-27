@@ -30,3 +30,5 @@ jobs:
         run: python3 tools/check-agents.py
       - name: Синтаксис python-инструментов
         run: python3 -m py_compile tools/*.py
+      - name: Прототипы — синтаксис всех prototypes/*.js и сценарии (W118)
+        run: node prototypes/check.mjs
