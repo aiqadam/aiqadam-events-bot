@@ -1186,6 +1186,7 @@
                           "eventId": "{{step_2['output'].eventId}}",
                           "eventRecords": "{{step_8['output']}}",
                           "eventRegs": "{{step_7['output']}}",
+                          "lang": "{{step_2['output'].lang}}",
                           "myRegs": "{{step_6['output']}}",
                           "now": "{{step_2['output'].now}}",
                           "profileCity": "{{step_2['output'].profileCity}}",

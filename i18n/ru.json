@@ -149,6 +149,7 @@
   "lang.btn.ru": "Русский",
   "lang.btn.uz": "Oʻzbekcha",
   "lang.changed": "Язык переключён.",
+  "lang.sync_failed": "Язык переключён. Синхронизация с ботом не удалась.",
   "manage.badge.reg_closed": "Регистрация закрыта",
   "manage.btn.back": "К списку",
   "manage.btn.copied": "Скопировано",

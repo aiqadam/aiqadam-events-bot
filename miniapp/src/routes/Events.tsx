@@ -211,15 +211,18 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const changeLang = useCallback(async (code: string) => {
     if (!isSupportedLang(code) || code === getLangCode()) return;
     hapticImpact('light');
-    const res = await postJson(REG_API, { action: 'set_lang', initData, lang: code });
-    if (res.kind !== 'json' || !res.data['ok']) {
-      const d = res.kind === 'json' ? (res.data as Record<string, unknown>) : null;
-      hapticNotification('error');
-      showToast(d && typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
-      return;
-    }
+    // W116: язык переключаем локально сразу — словарь, подсветка и localStorage
+    // не зависят от того, удалось ли записать users.lang на сервере. Запись —
+    // best-effort: она нужна только чтобы бот отвечал на выбранном языке; её
+    // сбой не должен оставлять экран на прежнем языке (как было в W114/W115).
     await setLang(code);
     setUiLang(code);
+    const res = await postJson(REG_API, { action: 'set_lang', initData, lang: code });
+    if (res.kind !== 'json' || !res.data['ok']) {
+      hapticNotification('error');
+      showToast(t('lang.sync_failed'));
+      return;
+    }
     hapticNotification('success');
     showToast(t('lang.changed'));
   }, [initData, showToast]);
