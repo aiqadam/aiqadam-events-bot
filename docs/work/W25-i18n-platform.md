@@ -44,7 +44,33 @@
 
 ## Как проверено
 
-> Заполняется по ходу.
+Временные флоу `zz-i18n-probe-child` (callable), `zz-i18n-probe-parent`
+(вебхук, `localeSource = {{step_1['output'].lc}}`) и `zz-i18n-probe-header`
+(вебхук, без `localeSource`); ключи `probe.hello` (ru/uz/en) и `probe.onlyru`
+(только ru). Ответы `curl` на `/sync` (до удаления пробников):
+
+| Прогон | Вход | Ответ |
+|---|---|---|
+| `6EgNqSglbftYGTc4LzTlS` | A, `lc=uz` | `{"lc":"uz","child":{"hello":"Salom"}}` — `$t` в CODE-входе + наследование inline-вызовом |
+| A, `lc=en` | | `{"lc":"en","child":{"hello":"Hello"}}` |
+| A, `lc=ru` | | `{"lc":"ru","child":{"hello":"Привет"}}` |
+| `v8qHq23uUbYms15bI9FFc` | A, без `lc` | шаг `step_2` ❌ `TranslationKeyNotFound` — цепочка пуста без `defaultLocale` |
+| B, заголовок `ap-parent-run-locale: uz`, тело `{}` | | `{"lc":"","child":{"hello":"Salom"}}` — вебхук наследует локаль из заголовка |
+| B, заголовок `en` | | `{"lc":"","child":{"hello":"Hello"}}` |
+| B, без заголовка | | шаг ❌ `TranslationKeyNotFound` |
+
+Отдельно: на `uz`-прогоне ключ `probe.onlyru` (без uz) валит шаг
+(`TranslationKeyNotFound`) — падение на отсутствующем ключе, а не ключ-заглушка;
+проверено тем же прогоном `6EgNqSglbftYGTc4LzTlS` (Promise.all index 1).
+`ap_validate_flow` по `menu` после миграции — 0 invalid, только warnings
+(нет `defaultLocale`/`localeSource`, нет части `uz`/`en`); после импорта
+переводов и `defaultLocale` предупреждение о локали уходит.
+Офлайн: `tools/check-texts.py` — 273 ссылки, 0 расхождений (включая тело цикла);
+`check-commands.py`, `check-export-secrets.sh`, `check-agents.py` — чисто;
+`miniapp` `npm run build:dev` — зелёный.
+
+**Пробники удалены, доказательства скопированы выше** (правило
+[work/README](README.md#доказательство-переживает-то-что-его-породило)).
 
 ## Журнал
 
