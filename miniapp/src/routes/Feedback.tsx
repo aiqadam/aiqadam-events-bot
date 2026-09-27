@@ -128,7 +128,7 @@ export default function Feedback({ eventId, fromApp = false }: { eventId: string
     return (
       <main style={{ maxWidth: 480, margin: '0 auto', padding: 16, textAlign: 'center' }}>
         <BackButton show={fromApp} onBack={() => window.history.back()} />
-        <p className="empty-desc">{t('feedback.loading')}</p>
+        <p className="empty-desc">{dictLoaded ? t('feedback.loading') : ''}</p>
       </main>
     );
   }
