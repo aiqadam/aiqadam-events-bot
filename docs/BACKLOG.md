@@ -3495,12 +3495,16 @@ trigger-output) не ретраится.
 
 **Цель:** заменить cursor+`callFlow`-queue на один durable rate-limited
 `LOOP_ON_ITEMS` (25/s, `WAIT_AND_RETRY`) с collector и structured errors
-(403/429), сохранив сегмент, `test_sent_at`, кнопку «отписаться» и
-`broadcast_targets`.
+(403/429), сохранив сегмент, `test_sent_at`, кнопку «отписаться»,
+`broadcast_targets` и **`copyMessage` с `reply_markup`** (W79 — пересланный
+пост/фото, не `send_message`). Режим цикла (`SEQUENTIAL`/`CONCURRENT` +
+`maxConcurrency`) выбрать замером реальной отправки; `keepBodies` — против
+`LOG_SIZE_EXCEEDED`.
 
 **Готово, когда:**
 
 - [ ] `bcast-run` переведён на durable rate-limited цикл; `cursor`/самовызов убраны;
+- [ ] замер реальной отправки: режим/`maxConcurrency` обоснованы; `durable` и `CONCURRENT` совместимость проверена (по #546 `CONCURRENT` не паузится);
 - [ ] различающие прогоны: 403 `blocked_bot`, 429 `retry_afterSeconds` (WAIT_AND_RETRY), `collected`/`failures`;
 - [ ] `durable` проверен прогоном дольше 600 с (или обоснованно снят);
 - [ ] обязательный тест себе до боевой отправки (OWN-10);
