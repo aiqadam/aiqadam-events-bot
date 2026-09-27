@@ -538,7 +538,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
       {!loadfail && (tab === 'upcoming' || tab === 'past') && !eventsLoaded && (
         <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-          {dictLoaded ? t('events.loading') : ''}
+          {t('events.loading')}
         </p>
       )}
 
@@ -547,7 +547,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
           <div className="empty-icon">
             <Icon name="calendar" size={22} />
           </div>
-          <div className="empty-heading">{dictLoaded ? t(tab === 'past' ? 'events.list.empty_past' : 'events.list.empty_upcoming') : ''}</div>
+          <div className="empty-heading">{t(tab === 'past' ? 'events.list.empty_past' : 'events.list.empty_upcoming')}</div>
         </div>
       )}
 
@@ -660,7 +660,7 @@ function MineTab({
   if (state === 'loading' && rows.length === 0) {
     return (
       <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-        {dictLoaded ? t('events.loading') : ''}
+        {t('events.loading')}
       </p>
     );
   }
@@ -670,7 +670,7 @@ function MineTab({
         <div className="empty-icon">
           <Icon name="ticket" size={22} />
         </div>
-        <div className="empty-heading">{dictLoaded ? t('myreg.empty') : ''}</div>
+        <div className="empty-heading">{t('myreg.empty')}</div>
       </div>
     );
   }
@@ -940,7 +940,7 @@ function ProfileTab({
   if (state === 'loading' || !dictLoaded) {
     return (
       <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-        {dictLoaded ? t('events.loading') : ''}
+        {t('events.loading')}
       </p>
     );
   }
