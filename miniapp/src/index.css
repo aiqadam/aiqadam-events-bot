@@ -100,6 +100,23 @@ html, body { touch-action: pan-x pan-y; }
 .chip-row .btn { max-width: 100%; min-width: 0; }
 /* W77: выбранный чип/формат — подсветка primary (эталон `.segmented .btn.active`). */
 .chip-row .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
+/* W117: переключатель языка — тихая строка настроек, а не три крупные кнопки
+   (решение владельца: кнопки отвлекали от полей формы). Вид — паттерн шапки
+   бренда: коды mono с активным тоном primary, без плашек. Только токены. */
+.lang-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.lang-row .label { margin-bottom: 0; }
+.lang-switch { display: inline-flex; align-items: stretch; font-family: var(--font-mono); }
+.lang-switch button {
+  appearance: none; border: 0; background: transparent;
+  color: var(--muted-foreground); font: inherit;
+  font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; cursor: pointer;
+  transition: color 150ms var(--ease-out);
+}
+.lang-switch button + button { border-left: 1px solid var(--border); }
+.lang-switch button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.lang-switch button:hover { color: var(--foreground); }
+.lang-switch button[aria-pressed='true'] { color: var(--primary); font-weight: 600; }
 /* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
 .chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */

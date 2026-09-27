@@ -29,6 +29,22 @@ PROTO.buildScenarios = function (opts) {
     link: { text: T('event.card.map_link', { url: ev.mapUrl }), url: ev.mapUrl },
   });
 
+  // W114/W117: выбор языка — первая карточка первого касания (до согласия):
+  // три кнопки ru/uz/en, выбранный язык бот запоминает. Гость входит по
+  // диплинку на событие — карточка языка несёт те же факты события, что и
+  // карточка согласия (`reg-start/step_9`, ветка `needsLang`); у овнера
+  // события нет — вопрос без фактов (`menu/step_4`). В моке словарь один
+  // (ru), поэтому карточка показывает сам шаг, а не смену текста.
+  const langCard = (goNext, card) => ({
+    id: 'ob-lang', kind: 'card', edit: true, markup: true,
+    card: card || { title: '', lines: [], body: T('lang.ask') }, trace: ['I18N-1'],
+    buttons: [
+      { label: T('lang.btn.ru'), go: goNext },
+      { label: T('lang.btn.uz'), go: goNext },
+      { label: T('lang.btn.en'), go: goNext },
+    ],
+  });
+
   // Мои регистрации живут экраном (PAR-4 → таб «Мои билеты»), а не карточкой
   // в чате: чат-карточка myreg из прототипа убрана вердиктом владельца.
   // «Мои билеты» — одно имя экрана и в табе, и в меню (вердикт владельца);
@@ -89,6 +105,8 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Первое касание — онбординг C (карточка «зачем + согласие» → профиль), дальше регистрация, билет, напоминания, послесловие.',
     steps: [
       { id: 'start', kind: 'user', text: '/start e' + ev.id, note: P['proto.deep_link_note'], trace: ['OWN-6', 'ADR-0025'] },
+
+      langCard('event', eventCard(T('lang.ask'))),
 
       { id: 'event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'OWN-4', 'OWN-15', 'ADR-0017'],
         buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
@@ -164,6 +182,9 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Первое касание — тот же онбординг, дальше меню → создание события в Mini App → ссылка-приглашение → правка → участники и экспорт → рассылка пересылкой → контролёры.',
     steps: [
       { id: 'start', kind: 'user', text: '/start', trace: ['ADR-0025'] },
+
+      langCard('ob-event'),
+
       { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
         buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
 
@@ -240,6 +261,11 @@ PROTO.buildScenarios = function (opts) {
     hint: 'Первое касание — тот же онбординг, дальше инвайт-ссылка → права на событие → сканер Mini App: четыре исхода, луп без закрытия.',
     steps: [
       { id: 'invite', kind: 'user', text: '/start s' + ev.id + '-9f2c1a', note: P['proto.staff_invite_note'], trace: ['OWN-14'] },
+
+      // Контролёру язык не задаётся: вход по инвайт-ссылке идёт сразу в
+      // `staff-accept` (карточка «инвайт принят» + сканер), карточки языка у
+      // него нет. Онбординг-согласие в сценарии — давнее to-be прототипа
+      // (ADR-0027) и W117 не трогается.
       { id: 'ob-event', kind: 'card', markup: true, card: eventCard(T('onb.why') + '\n\n' + T('onb.consent')), trace: ['OWN-2', 'OWN-3', 'ADR-0017'],
         buttons: [{ label: T('onb.btn.agree'), go: 'work' }, { label: T('onb.btn.details'), go: 'details' }] },
 
