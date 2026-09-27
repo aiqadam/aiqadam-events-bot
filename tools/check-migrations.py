@@ -55,11 +55,12 @@ KEYCHAIN_SERVICE = "aiqadam-events-bot:qadam-flow-api"
 
 ACTIONS = {"create", "update", "publish", "disable", "delete"}
 # Флоу, живущие на инстансе, но не наши: платформенный `ChatBot`
-# (`@aiqadam/qadam-forms`) унаследован вместе с проектом (Q34, AGENTS.md
-# «Лимиты платформы»). В каталог и `_manifest.json` его не заводим — чужую
-# работу от своего имени не описываем, — но и проверку A он валить не должен,
-# иначе приёмка W15 не пройдёт из-за чужого флоу.
-FOREIGN_FLOWS = {"ChatBot"}
+# (`@aiqadam/qadam-forms`, flowId ниже) унаследован вместе с проектом (Q34,
+# AGENTS.md «Лимиты платформы»). Матчим по flowId, не по имени: имя флоу
+# может смениться, id — нет. В каталог и `_manifest.json` его не заводим —
+# чужую работу от своего имени не описываем, — но и проверку A он валить не
+# должен, иначе приёмка W15 не пройдёт из-за чужого флоу.
+FOREIGN_FLOW_IDS = {"Ap06RmygApT4oFAylYfpu"}
 ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-[A-Za-z0-9]+-\d{2}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 PII_PATTERNS = (
@@ -221,8 +222,13 @@ def main():
         name = (f.get("version") or {}).get("displayName") or ""
         live_by_name[name] = f
 
+    foreign_names = {
+        name for name, f in live_by_name.items()
+        if f.get("id") in FOREIGN_FLOW_IDS
+    } | {name for name, f in manifest_by_name.items() if f.get("flowId") in FOREIGN_FLOW_IDS}
+
     for name in sorted(set(manifest_by_name) | set(live_by_name)):
-        if name in FOREIGN_FLOWS:
+        if name in foreign_names:
             continue  # чужой флоу: ни в каталоге, ни в манифесте, A не валит
         if name not in live_by_name:
             fail("A: флоу %r есть в манифесте, на инстансе его нет" % name)
