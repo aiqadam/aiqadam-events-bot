@@ -96,18 +96,18 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     const res = await postJson(EVENTS_API, {});
     if (res.kind === 'network') {
       hapticNotification('error');
-      setLoadfail(t('events.err.network'));
+      setLoadfail('events.err.network');
       return;
     }
     if (res.kind === 'server') {
       hapticNotification('error');
-      setLoadfail(t('events.err.server'));
+      setLoadfail('events.err.server');
       return;
     }
     const d = res.data as Record<string, unknown>;
     if (!d['ok'] || !Array.isArray(d['upcoming']) || !Array.isArray(d['past'])) {
       hapticNotification('error');
-      setLoadfail(t('events.err.server'));
+      setLoadfail('events.err.server');
       return;
     }
     setUpcoming(d['upcoming'] as CatalogEvent[]);
@@ -123,13 +123,13 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     if (res.kind === 'network') {
       hapticNotification('error');
       setMineState('error');
-      setMineError(t('events.err.network'));
+      setMineError('events.err.network');
       return;
     }
     if (res.kind === 'server') {
       hapticNotification('error');
       setMineState('error');
-      setMineError(t('events.err.server'));
+      setMineError('events.err.server');
       return;
     }
     const d = res.data as Record<string, unknown>;
@@ -140,7 +140,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     }
     setMineState('error');
     hapticNotification('error');
-    setMineError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
+    setMineError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : 'events.err.server');
   }, [inTelegram, initData]);
 
   const loadStaffEvents = useCallback(async () => {
@@ -266,7 +266,14 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
         tg.expand();
       } catch {}
     }
-    void loadI18n().then(() => setDictLoaded(true));
+    // W115: uiLang инициализируется из getLangCode() в useState — до того, как
+    // loadI18n() выставит LANG из getLang()/localStorage, там ещё дефолт `ru`.
+    // Синхронизируем после загрузки словаря, иначе подсвечен не тот язык, а
+    // нажатие на фактический язык игнорируется (code === getLangCode()).
+    void loadI18n().then(() => {
+      setDictLoaded(true);
+      setUiLang(getLangCode());
+    });
     void loadEvents();
     void loadMine();
     void loadStaffEvents();
@@ -481,7 +488,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       {loadfail && (
         <div className="card result bad" id="loadfail">
           <p className="empty-heading" id="loadfailText">
-            {loadfail}
+            {t(loadfail)}
           </p>
           <button type="button" className="btn btn-secondary" id="retry" onClick={() => void loadEvents()}>
             {t('manage.btn.retry')}
@@ -531,7 +538,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
       {!loadfail && (tab === 'upcoming' || tab === 'past') && !eventsLoaded && (
         <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-          {dictLoaded ? t('events.loading') : ''}
+          {t('events.loading')}
         </p>
       )}
 
@@ -643,7 +650,7 @@ function MineTab({
   if (state === 'error') {
     return (
       <div className="card result bad" id="mine-fail">
-        <p className="empty-heading">{error}</p>
+        <p className="empty-heading">{error.startsWith('events.err.') ? t(error) : error}</p>
         <button type="button" className="btn btn-secondary" id="mine-retry" onClick={onRetry}>
           {t('manage.btn.retry')}
         </button>
@@ -653,7 +660,7 @@ function MineTab({
   if (state === 'loading' && rows.length === 0) {
     return (
       <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-        {dictLoaded ? t('events.loading') : ''}
+        {t('events.loading')}
       </p>
     );
   }

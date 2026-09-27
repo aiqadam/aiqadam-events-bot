@@ -55,7 +55,11 @@ function load(lang: string): Promise<Record<string, string>> {
 // W42: подстановка {vars} — «Шаг {n} из {m}», «Координаты: {lat}, {lon}» и т. п.
 // Форма та же, что у t() во входах CODE-шагов (catalog/snippets/ru-texts.md).
 export function t(key: string, vars?: Record<string, string | number>): string {
-  let s = dict[key] || key;
+  // W115: пока словарь не загружен, отдаём пустую строку, а не сам ключ —
+  // иначе до ответа fetch на экране мелькают сырые ключи (в любом месте, а не
+  // только в заглушках). Сырой ключ остаётся сигналом отсутствующего ключа
+  // только после загрузки словаря.
+  let s = dict[key] || (loaded ? key : '');
   if (vars) {
     Object.keys(vars).forEach((k) => {
       s = s.split('{' + k + '}').join(String(vars[k]));
