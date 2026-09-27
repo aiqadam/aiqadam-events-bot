@@ -1,10 +1,10 @@
 # W114. Выбор языка: шаг онбординга и переключатель в Mini App
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: v0.1
 - **Зависит от**: W25 (готов)
-- **Начат**: 2026-09-27 · **Закрыт**: —
+- **Начат**: 2026-09-27 · **Закрыт**: 2026-09-27 (круг 3 ревью — «замечаний нет»)
 
 ## Цель
 
@@ -37,7 +37,10 @@ Telegram: выбор сохраняется в `users.lang`, бот его ув�
       `lang.changed`, `menu.btn.language` — корпус W3) и импортированы в
       платформенные переводы (`ap_upsert_translations`, 4 ключа × 3 локали);
 - [x] каталог и `flows/*.json` совпадают; строки `migrations` (5 publish);
-- [ ] независимое ревью, вердикт «замечаний нет».
+- [x] независимое ревью, вердикт «замечаний нет» (3 круга: круг 1 — два
+      `важно` — `migrations` порядок и метки `set_lang`, исправлены; круг 2 —
+      одно `важно` — `tg-router` в DRAFT после тестов, исправлено; круг 3 —
+      «замечаний нет»).
 
 ## Что сделано
 
@@ -360,3 +363,66 @@ skipped); `check-texts.py` 283 ссылки/0; `check-commands.py` 0; `check-exp
    Telegram.
 
 После исправлений — повторное ревью (круг 3).
+
+### Ревью, круг 3 (2026-09-27)
+
+- **Ревьюер**: независимый агент (чистый контекст), **дата**: 2026-09-27
+- **Вердикт**: замечаний нет
+
+#### Замечания
+
+Нет.
+
+#### Что проверено (круг 3)
+
+- **Круг 2, п. 1 (`tg-router` в DRAFT) — закрыт.** Живой
+  `ap_export_flow(5rpOArwaUifCX6IYF4IEQ)` отдаёт `flows[0].id =
+  zJ69nZIp6XaAbStweTDkg`, `state: LOCKED`; `flows/_manifest.json` — тот же
+  `publishedVersionId`; строка `w114-01` в `migrations` совпадает по
+  `object_id`/`version_id` (`zJ69…`) и имеет
+  `applied_at = 2026-09-27T14:00:00Z`, позже перевыпуска W25
+  (`12:00/13:00Z`). `ap_list_runs` по `tg-router`: последние TESTING-прогоны —
+  11:43:27Z/11:43:41Z, после переопубликации (11:54Z) тестов не было.
+  Снимок `flows/tg-router.json` (`state: LOCKED`) по `trigger`-поддереву равен
+  живому (без sample/timestamp), `localeSource = {{step_27['output'].lang}}`.
+- **Круг 2, п. 2 (оговорка в карточках) — закрыт.** В
+  `catalog/flows/reg-start.md` (стр. 125–128) и `menu.md` (стр. 133–134)
+  добавлено: у пользователей с заполненным профилем и пустым `users.lang`
+  карточки языка нет, меняют переключателем в табе «Профиль» Mini App, бот до
+  этого — на языке Telegram (диффом подтверждено, `10a8f15`).
+- **Регресс.**
+  - `ap_validate_flow`: `tg-router` 28/28, `reg-start` 21/21, `menu` 15/15,
+    `reg-profile` 40/40, `reg-api` 45/46 + 1 skipped.
+  - Живые `ap_export_flow` по всем пяти: `flows[0].id` = `publishedVersionId`
+    манифеста и `state: LOCKED` (`zJ69…`/`l5dllJ…`/`mivExl…`/`Ftnxj7…`/`BUBPy3…`).
+    `trigger`-поддеревья снимков `flows/tg-router.json`/`reg-profile.json`/
+    `reg-api.json` равны живым; `reg-start`/`menu` — живой `id`/`state` и
+    наличие `needsLang`/`ob:lang` в снимке.
+  - `migrations`: для каждого из пяти `object_id` максимум `applied_at` —
+    строка W114 (14:00Z); более поздних публикаций этих флоу нет
+    (W25 12:00/13:00Z, W106/W107 26.09).
+  - Круг 1, п. 2 (метки `set_lang`) держится: живой `reg-api/step_9` для
+    `set_lang` отдаёт `profileCompletedAt`/`consentMarketingAt` из строки
+    (`step_17`), `step_22` пишет их; запрос `users` — все 99 строк с
+    заполненным профилем имеют непустой `consent_marketing_at`, то есть фолбэк
+    `|| now` на dev не срабатывает.
+  - Каталог: `needsLang`, `ob:lang:*`, `set_lang`, `localeSource`, оговорка
+    про профиль до W114 — совпадают с живой структурой.
+  - Офлайн: `check-texts.py` — 31 флоу, 283 ссылки, 0 расхождений;
+    `check-commands.py` — 0 нарушений (самопроверка ok);
+    `check-export-secrets.sh` — чисто (0 значений, `{{variables[...]}}` на месте).
+  - Mini App: `npm run build:dev` зелёный; `grep` по `miniapp/*.html` на
+    цвет/шрифт — 0 совпадений; переключатель (`getLang`/`setLang`/
+    `lang.changed`/`set_lang`) на месте.
+  - AppSec: `set_lang` — `telegram_id` из проверенного `initData`, язык
+    `ru|uz|en` (`LANG_OK`), пишет только свою строку; IDOR/PAR-1/PAR-2 не
+    найдено.
+
+#### Оговорки проверки
+
+- `tools/check-migrations.py` и `tools/export-flows.sh` на машине не
+  запускаются: ключа платформы нет ни в `QADAM_API_KEY`, ни в Keychain (как и
+  в кругах 1–2). Версия/состояние сверены живым MCP (`ap_export_flow` +
+  `ap_list_flows` + чтение `migrations`) — это сильнее снимка.
+- Живой e2e в Telegram и на устройстве Mini App — за владельцем (нет
+  телефона), как и записано в хвостах пакета.
