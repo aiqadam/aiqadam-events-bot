@@ -13,9 +13,18 @@ export function getInitData(): string {
 // W25: язык Mini App и язык, на котором отвечает сервер. Источник — профиль
 // Telegram (`user.language_code`), поддерживаются ru/uz/en, всё остальное —
 // ru (дефолт проекта). Вне Telegram (браузер, стенд) — тоже ru.
+// W114: явный выбор языка в табе «Профиль» хранится в localStorage и
+// перебивает язык Telegram — и для словаря, и для заголовка `ap-parent-run-locale`
+// (lib/api.ts), на котором сервер отвечает.
 const SUPPORTED_LANGS = ['ru', 'uz', 'en'];
 
 export function getLang(): string {
+  try {
+    const stored = String(localStorage.getItem('aiqadam.lang') || '').toLowerCase();
+    if (SUPPORTED_LANGS.includes(stored)) return stored;
+  } catch {
+    /* localStorage недоступен — не критично */
+  }
   const raw = String(getTelegram()?.initDataUnsafe?.user?.language_code ?? '').toLowerCase();
   const base = raw.split('-')[0];
   return SUPPORTED_LANGS.includes(base) ? base : 'ru';

@@ -19,15 +19,15 @@
 | trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId`, `firstName`, `lastName` (имена — для эвристики онбординга, W50) |
 | step_1 | `tables-find-records events` | событие по `id` |
 | step_2 | `tables-find-records registrations` | регистрации события — кормят и подсчёт занятости, и поиск своей строки |
-| step_12 | `tables-find-records users` | строка пользователя: `profile_completed_at`, `consent_pdn`, имя/должность (W50) |
-| step_3 | CODE «decide outcome» | `existing` / `onboard` / `register` / `declined` (семь причин, включая `internal_error`); гейт профиля: заполнен → `register` со строкой профиля, иначе `onboard` |
+| step_12 | `tables-find-records users` | строка пользователя: `profile_completed_at`, `consent_pdn`, имя/должность (W50), `lang` (W114) |
+| step_3 | CODE «decide outcome» | `existing` / `onboard` / `register` / `declined` (семь причин, включая `internal_error`); гейт профиля: заполнен → `register` со строкой профиля, иначе `onboard`; **`needsLang` — `users.lang` пуст (W114)** |
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
-| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`) — нажатие «Согласен» и есть согласие; согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72) |
+| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`) — нажатие «Согласен» и есть согласие; согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72). **При `needsLang` — вместо согласия вопрос `lang.ask` с тремя кнопками `ob:lang:ru\|uz\|en` (W114)**; выводит `sessionStep` (`ob_lang`/`ob_consent`) |
 | step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
-| step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии (шаг — в `step_11`) |
-| step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_consent` |
+| step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии; `step` — из `step_9.sessionStep` (`ob_lang`/`ob_consent`, W114) |
+| step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step` — из `step_9.sessionStep` |
 | step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`); ссылка на карту — та же проверка, что в `step_9` (W72) |
 | step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
 | step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
@@ -105,7 +105,7 @@
   зарегистрированного участника отменённое или завершённое событие всё равно
   даёт `existing` с кнопкой QR, а не отказ.
 - **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)).
-  `step_1`/`step_2` — `continueOnFailure`; `step_3` читает их `error` и, если
+  `step_1`/`step_2` — `continueOnFailure`;   `step_3` читает их `error` и, если
   чтение упало, декларирует `reason: 'internal_error'` — уходит в уже
   существующую ветку `declined`, где `keyByReason` не находит ключ и берёт
   `common.err.generic`. Один разговорный текст вместо полной тишины **и**
@@ -115,3 +115,11 @@
   того как карточка уже отправлена) — `continueOnFailure` с собственной
   веткой отказа: карточка при этом уже показана, второе сообщение
   «попробуйте ещё раз» — не дубль, а честная реакция на реальный сбой записи.
+- **Выбор языка — первая карточка онбординга при пустом `users.lang` (W114).**
+  `step_12` читает `lang`; `step_3` отдаёт `needsLang`; `step_9` при нём
+  строит вместо согласия вопрос `lang.ask` с кнопками `ob:lang:ru|uz|en` и
+  `sessionStep: 'ob_lang'`. `step_15`/`step_11` пишут этот шаг в черновик и
+  колонку сессии. Выбравшие язык (в Telegram или в Mini App) `users.lang`
+  имеют — видят прежнюю карточку согласия. Новых табличных шагов нет:
+  выбранный язык живёт в `draft.profile.lang`, а `users.lang` пишется в
+  `finish`/`finish_no_event` (`reg-profile/step_22`/`step_35`).
