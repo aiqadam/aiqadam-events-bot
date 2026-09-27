@@ -122,4 +122,7 @@
   колонку сессии. Выбравшие язык (в Telegram или в Mini App) `users.lang`
   имеют — видят прежнюю карточку согласия. Новых табличных шагов нет:
   выбранный язык живёт в `draft.profile.lang`, а `users.lang` пишется в
-  `finish`/`finish_no_event` (`reg-profile/step_22`/`step_35`).
+  `finish`/`finish_no_event` (`reg-profile/step_22`/`step_35`). У пользователей
+  с уже заполненным профилем (и пустым `users.lang`) карточки языка нет —
+  язык они меняют переключателем в табе «Профиль» Mini App; бот до этого
+  остаётся на языке Telegram.
