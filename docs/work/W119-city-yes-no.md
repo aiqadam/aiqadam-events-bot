@@ -81,9 +81,13 @@
 не от этой правки).
 
 **Публикация и экспорт:** `ap_validate_flow` — 40/40 valid; `ap_lock_and_publish`
-→ версия `2VZri7RTv01XC0yZLB0so` (LOCKED); экспорт MCP
+→ версия `Phk4zWtWT0iJpVhBom34q` (LOCKED); экспорт MCP
 (`tools/export-flow-mcp.py`) обновил `flows/reg-profile.json` и
-`flows/_manifest.json`; строка `migrations` `2026-09-27-w119-01`.
+`flows/_manifest.json`; строка `migrations` `2026-09-27-w119-01` (`version_id`
+= `Phk4zWtWT0iJpVhBom34q`). Уточняющий прогон карточки города
+(`toWNgbSpF3KcQ06OMbcjw`) прошёл **после** первой публикации и перевёл версию в
+`DRAFT` (гоча №14) — флоу опубликован заново и экспорт снят сразу после
+публикации, поэтому `flows/reg-profile.json` и `LOCKED`-версия совпадают.
 
 ## Журнал
 
@@ -236,6 +240,87 @@ ap_list_flows ↔ migrations` сверены точечно по `reg-profile` (
 в журнале. (4) Путь «Да» при непустом `eventId` (создание регистрации)
 отдельно не перепрогонялся: ветка `finish` W119 не меняет (диф — только
 источник города), в W107 она покрыта прогоном `ob:city:Almaty` с событием.
+
+### Круг 2
+
+- **Ревьюер**: агент (независимый, чистый контекст) · **Дата**: 2026-09-27 ·
+  **Вердикт**: есть замечания (блокеров нет; одно «важно»)
+
+**Все три замечания круга 1 закрыты — проверено по живым артефактам, а не по
+записи владельца.**
+
+- *Замечание 1 (статус журнала)*. `docs/work/W119-city-yes-no.md:3` —
+  `на проверке`; строка W119 в [STATUS.md](../STATUS.md) — `на проверке`.
+  Совпадают.
+- *Замечание 2 (алиасы)*. В [BACKLOG.md](../BACKLOG.md#w120-снять-алиасы-obcitytashkentalmatywrite)
+  есть раздел W120 («снять алиасы `ob:city:Tashkent/Almaty/write`») с целью и
+  чек-листом: остаться только `ob:city:yes`/`ob:city:no`; каталог и ADR-0046
+  больше не называют алиасы живыми; различающий прогон `ob:city:Tashkent` →
+  `ignore`; независимое ревью. Раздел «Хвосты» W119 ссылается на W120. Пункт
+  круга 1 закрыт.
+- *Замечание 3 (значение перевода, не только наличие ключа)*. Прогон
+  `toWNgbSpF3KcQ06OMbcjw` прочитан через `ap_get_run`: `step_4` отдаёт
+  `cardText: 'Вы из Ташкента?'` и `replyMarkup.inline_keyboard` =
+  `[[{"text":"Да","callback_data":"ob:city:yes"},{"text":"Нет","callback_data":"ob:city:no"}]]`,
+  `nextStep: 'ob_city'`. Это рендер значения `onb.ask_city` (ru) и подписей
+  `common.btn.yes`/`common.btn.no`, а не голое наличие ключа. Прогон помечен
+  `FAILED`, но падает на `step_10` (фолбэк-отправка, `400 chat not found` на
+  синтетическом чате) — **после** нужного `step_4` и после записи сессии
+  `step_8`; для костыля карточки это ожидаемо.
+
+#### Замечания
+
+1. **важно** — живой `ap_export_flow` по `reg-profile` отдаёт **черновик, а не
+   опубликованную версию**: `flows[0].id = Phk4zWtWT0iJpVhBom34q`,
+   `state: DRAFT`, `created 2026-09-27T17:09:37Z`. Ожидалось
+   `2VZri7RTv01XC0yZLB0so` / `state: LOCKED` — так записано в `flows/reg-profile.json`,
+   `publishedVersionId` в `flows/_manifest.json` и `version_id` строки
+   `migrations` `2026-09-27-w119-01`. Причина — гоча №14: уточняющий прогон
+   `toWNgbSpF3KcQ06OMbcjw`, добавленный владельцем под замечание 3, прошёл
+   **после** публикации (прогон 17:09 против публикации 16:54 UTC) и перевёл
+   последнюю версию флоу в `DRAFT`. Код черновика при этом **побайтово равен**
+   опубликованному: SHA-256 `step_3` `80fc5440…` и `step_4` `9e0814ab…` — те же,
+   что в `flows/reg-profile.json`. Где: живой `reg-profile` (`app-flow-events-dev`).
+   Почему важно: конвенция «черновик = опубликованное» (Q44/[ADR-0021](../adr/0021-repo-is-source-of-truth-migrations-table.md))
+   сейчас не выполняется, а раздел «Как проверено» и «Публикация и экспорт»
+   этого журнала утверждают `LOCKED` — утверждение стало неверным, как и в W107
+   круг 2. Правка — `ap_lock_and_publish` заново и экспорт сразу после неё
+   (goto №14), с новой строкой `migrations`; на логику прогонов и опубликованный
+   рантайм не влияет (там по-прежнему `2VZri7RTv01XC0yZLB0so`).
+   - *Исправлено*: `ap_lock_and_publish` заново → `Phk4zWtWT0iJpVhBom34q`
+     (`state: LOCKED`), экспорт снят сразу после публикации
+     (`tools/export-flow-mcp.py`), `flows/_manifest.json` и
+     `migrations` `2026-09-27-w119-01` (`version_id`) обновлены; журнал
+     «Публикация и экспорт» приведён к `Phk4zWtWT0iJpVhBom34q` (2026-09-27).
+
+#### Чем проверено и чем ограничено
+
+**Живой проект (MCP, `app-flow-events-dev`).** `ap_list_flows` — `reg-profile`
+(`bEz2bKyL82zlIwckxqvxc`) ENABLED/published; `ap_flow_structure` — 40 шагов,
+все `configured`, без `invalid` и заглушек, ветки `step_5` и состав шагов
+совпадают с `catalog/flows/reg-profile.md`. `ap_read_step_code` по `step_3` и
+`step_4` — SHA-256 совпали с исходниками `flows/reg-profile.json`
+(`80fc5440…`/`9e0814ab…`); `ap_validate_flow` — 40/40 valid, без
+`translation_key`/`translation_default_locale`. `ap_get_run` по
+`toWNgbSpF3KcQ06OMbcjw` — карточка города и обе кнопки (см. замечание 3 выше).
+Таблицы чисты: по `telegram_id` 888888901–907 в `users`, `sessions`,
+`registrations` — пусто (проверено `in` по семи id и `co 888888`). Офлайн,
+запущено мной: `check-texts.py` — 31 флоу / 286 ссылок `$t` / 0;
+`check-commands.py` — 0; `check-export-secrets.sh` — чисто (8× `BOT_TOKEN`,
+2× `QR_SIGNING_KEY`, 0 значений `auth`); `check-agents.py` — 0;
+`node prototypes/check.mjs` — OK (те же 6 прежних предупреждений
+`ask-name`/`user-name`, не от W119). Документы согласованы: SPEC PAR-8 (да/нет +
+ссылка на ADR-0046), ADR-0046 в `docs/adr/README.md`, `catalog/flows/reg-profile.md`,
+`prototypes/scenarios.js` (город `common.btn.yes/no`, карточка `onb.ask_city_input`,
+`ask-city-text`), `i18n/{ru,uz,en}.json` (`onb.ask_city` переписан,
+`onb.ask_city_input` и `common.btn.yes/no` есть; `onb.btn.write`/`onb.review` —
+архив).
+
+**Ограничение.** Ключа платформы нет — `tools/check-migrations.py` не запускался;
+сверка `flows/_manifest.json ↔ ap_list_flows ↔ migrations` сделана точечно по
+`reg-profile` (совпала по опубликованному id) и неполна без ключа. Живого
+Telegram-чата и `initData` у ревьюера нет. Значения `uz`/`en` живьём не сверены
+(хвост W27).
 
 ## Хвосты и блокеры
 
