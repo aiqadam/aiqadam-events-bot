@@ -36,6 +36,15 @@ for (const f of fs.readdirSync(here).filter((n) => n.endsWith('.js'))) {
     fail(`синтаксис ${f}: ${e.message}`);
   }
 }
+// Битый синтаксис делает бессмысленной загрузку песочницы: `vm.runInContext`
+// упадёт на том же файле, но без имени файла в отчёте. Печатаем и выходим
+// здесь, чтобы диагностика была по каждому из всех prototypes/*.js.
+if (errors.length) {
+  console.error(`синтаксис: ${syntaxOk} из ${syntaxTotal} файлов ok`);
+  console.error(`\nОШИБКИ (${errors.length}):`);
+  errors.forEach((e) => console.error('  ✗ ' + e));
+  process.exit(1);
+}
 
 // ---------- 1. словари ----------
 const ru = JSON.parse(read(path.join(root, 'i18n', 'ru.json')));

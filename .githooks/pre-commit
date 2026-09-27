@@ -20,7 +20,7 @@ staged="$(git diff --cached --name-only --diff-filter=ACMR)"
 flows_changed="$(grep -c '^flows/.*\.json$' <<<"$staged")" || flows_changed=0
 i18n_changed="$(grep -c '^i18n/ru\.json$' <<<"$staged")" || i18n_changed=0
 agents_changed="$(grep -cE '^(AGENTS\.md|CLAUDE\.md|opencode\.json|\.mcp\.json|docs/agents/|\.opencode/agent/|\.claude/agents/|tools/check-agents\.py)' <<<"$staged")" || agents_changed=0
-prototypes_changed="$(grep -cE '^prototypes/.*\.js$' <<<"$staged")" || prototypes_changed=0
+prototypes_changed="$(grep -cE '^prototypes/.*\.(js|mjs)$' <<<"$staged")" || prototypes_changed=0
 
 if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 && "$agents_changed" -eq 0 && "$prototypes_changed" -eq 0 ]]; then
   exit 0
