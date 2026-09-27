@@ -206,7 +206,7 @@
                               },
                               "input": {
                                 "texts": {
-                                  "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                                  "common.err.generic": "{{$t['common.err.generic']}}"
                                 }
                               },
                               "sourceCode": {

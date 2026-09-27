@@ -267,6 +267,7 @@
   "reg.venue.hint": "Xaritadagi nuqta — yuqoridagi xabarda.",
   "remind.24h": "Eslatma: «{title}» ertaga, {when}. Manzil: {address}",
   "remind.2h": "«{title}» ikki soatdan keyin, {when}. Manzil: {address}",
+  "remind.btn.directions": "Qanday borish",
   "scan.checking": "Tekshirilmoqda…",
   "scan.error_server": "Server kutilmagan javob berdi. Qayta urinib koʻring.",
   "scan.hint": "Qatnashchi QR-kodiga kamera qarating.",

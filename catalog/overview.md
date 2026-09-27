@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 32 | [flows/](flows/) |
+| Флоу | 32 (31 наш + чужой платформенный `ChatBot`, см. ниже) | [flows/](flows/) |
 | Таблицы | 17 | [tables/](tables/) |
 | Connections | 1 на среду — dev `Events-QA-Bot`, prod `Events-Prod` | [connections.md](connections.md) · [environments.md](environments.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -28,6 +28,10 @@ W26 закрыт («готов», независимое ревью, три кр
 нельзя было редактировать через MCP.
 
 ## Flows
+
+> 32-й флоу инстанса — чужой `ChatBot` (`@aiqadam/qadam-forms`) — унаследован
+> вместе с проектом (Q34, AGENTS.md): в каталог и `flows/_manifest.json` его не
+> заводим, чужую работу от своего имени не описываем.
 
 | Группа | Флоу |
 |---|---|

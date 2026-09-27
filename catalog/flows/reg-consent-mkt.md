@@ -40,7 +40,7 @@
 - **`consent_pdn` этот флоу не трогает** (PAR-1/PAR-2).
 - **Билет уходит новым сообщением, а не редактированием карточки.** Правило ADR-0017: состояние диалога редактируется, факт, к которому вернутся, отправляется. Билет оказывается внизу ленты, а не наверху, где висит карточка начала диалога.
 - **У финального редактирования есть фолбэк** (`step_8`): `cardMessageId = 0` или удалённая карточка дают `400 «message to edit not found»`, шлём новую карточку. Это единственный фолбэк в этом флоу.
-- **Тексты — во входе `texts`** (ADR-0045, `$t`); ссылки `$t` ссылки `$t` сверены с `i18n/ru.json`: `reg.done.header`/`profile.saved.header` (заголовок карточки — по `hasEvent`), `reg.consent_marketing.saved_yes/no`, `ticket.header`, `ticket.hint`, `events.catalog.hint`, `menu.btn.events`.
+- **Тексты — во входе `texts`** (ADR-0045, `$t`); ссылки `$t` сверены с `i18n/ru.json`: `reg.done.header`/`profile.saved.header` (заголовок карточки — по `hasEvent`), `reg.consent_marketing.saved_yes/no`, `ticket.header`, `ticket.hint`, `events.catalog.hint`, `menu.btn.events`.
 - **Без диплинка (ADR-0034) заголовок — «Профиль сохранён», не «Вы
   зарегистрированы»**: `eventId` в черновике сессии пуст, регистрации не
   было (её создавать было не на что — см. `catalog/flows/reg-profile.md`,

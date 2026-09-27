@@ -34,15 +34,36 @@ import json
 import sys
 
 
+def _walk_branch(branch, out):
+    """Ветка ROUTER или continueOnFailure: список детей либо один шаг."""
+    if isinstance(branch, dict):
+        if isinstance(branch.get("children"), list):
+            for child in branch["children"]:
+                walk(child, out)
+        else:
+            walk(branch, out)
+
+
 def walk(node, out):
-    """Собирает все шаги из дерева экспорта флоу, включая тело цикла."""
+    """Собирает все шаги из дерева экспорта флоу.
+
+    Покрывает три места, где шаг терялся: тело цикла (`firstLoopAction`),
+    ветки ROUTER (`branches`) и ветки continueOnFailure
+    (`continueOnFailureBranches` — объект `onSuccess`/`onFailure`).
+    """
     while node:
         out.append(node)
         for branch in (node.get("children") or []):
             walk(branch, out)
         for branch in (node.get("branches") or []):
-            for child in (branch.get("children") or []):
-                walk(child, out)
+            _walk_branch(branch, out)
+        cfb = node.get("continueOnFailureBranches")
+        if isinstance(cfb, dict):
+            for branch in cfb.values():
+                _walk_branch(branch, out)
+        elif isinstance(cfb, list):
+            for branch in cfb:
+                _walk_branch(branch, out)
         if node.get("firstLoopAction"):
             walk(node["firstLoopAction"], out)
         node = node.get("nextAction")

@@ -132,7 +132,7 @@
                             "eventId": "{{step_4['output'].eventId}}",
                             "miniappUrl": "{{variables['MINIAPP_URL']}}",
                             "texts": {
-                              "staff.accept.btn.scanner": "Открыть сканер"
+                              "staff.accept.btn.scanner": "{{$t['staff.accept.btn.scanner']}}"
                             }
                           },
                           "sourceCode": {

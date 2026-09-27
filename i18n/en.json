@@ -267,6 +267,7 @@
   "reg.venue.hint": "The map pin is in the message above.",
   "remind.24h": "Reminder: “{title}” is tomorrow, {when}. Address: {address}",
   "remind.2h": "“{title}” starts in two hours, {when}. Address: {address}",
+  "remind.btn.directions": "Directions",
   "scan.checking": "Checking…",
   "scan.error_server": "Unexpected server response. Please try again.",
   "scan.hint": "Point the camera at the participant's QR code.",
