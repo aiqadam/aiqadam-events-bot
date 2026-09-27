@@ -1359,12 +1359,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     langSwitch.setAttribute('aria-labelledby', 'profile-lang-label');
     // Полные имена — для доступности (как в продукте); ключи — картой, чтобы
     // check.mjs не принял динамически собранный ключ за литерал.
-    const langLabel = { ru: 'lang.btn.ru', uz: 'lang.btn.uz', en: 'lang.btn.en' };
+    const langNames = { ru: 'lang.btn.ru', uz: 'lang.btn.uz', en: 'lang.btn.en' };
     ['ru', 'uz', 'en'].forEach((code) => {
       const b = E('button', 'lang-switch-btn' + (profileLang === code ? ' active' : ''), code.toUpperCase());
       b.type = 'button';
       b.setAttribute('aria-pressed', String(profileLang === code));
-      b.setAttribute('aria-label', T(langLabel[code]));
+      b.setAttribute('aria-label', T(langNames[code]));
       b.addEventListener('click', () => {
         if (profileLang === code) return;
         profileLang = code;
