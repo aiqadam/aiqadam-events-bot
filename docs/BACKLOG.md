@@ -3466,3 +3466,49 @@ trigger-output) не ретраится.
 
 **Зависит от:** —. **Не входит:** объявление ключей и миграция типов (решение
 владельца, отдельный пакет), перенос на prod.
+
+## W111. `bcast-run` на rate-limited/durable цикле и `callFlowForEach` — замер и решение
+
+> **Заведён 2026-09-27 ревизией [W108](work/W108-platform-novelties.md)**
+> ([ADR-0044](adr/0044-platform-novelties-sep-2026.md) п. 3.3), взят
+> 2026-09-28. Решение «делать» не принималось заранее — сначала замер.
+
+**Цель:** замер новых примитивов циклов (#546) на временной таблице и решение
+по `bcast-run`. Реализация — [W111b](#w111b-перевод-bcast-run-на-rate-limited-durable-цикл).
+
+**Готово, когда:**
+
+- [x] замер rate-limited `LOOP_ON_ITEMS` + collector (100 элементов → 4,0 с при 25/s);
+- [x] различающая проверка значений `collected` и находка про путь `cells.<fieldId>.value`;
+- [x] [ADR-0048](adr/0048-bcast-run-rate-limited-durable-loop.md) — предложение и план миграции;
+- [x] временные артефакты удалены, живые флоу/таблицы не тронуты;
+- [x] независимое ревью: круг 3 — «замечаний нет».
+
+**Зависит от:** —. **Не входит:** переписывание `bcast-run` (W111b), проверка
+`durable` и structured errors (W111b), перенос на prod.
+
+## W111b. Перевод `bcast-run` на rate-limited durable цикл
+
+> **Заведён 2026-09-28 пакетом [W111](work/W111-bcast-loop-eval.md)**
+> ([ADR-0048](adr/0048-bcast-run-rate-limited-durable-loop.md), предложение).
+> Взят — только после решения владельца по ADR-0048.
+
+**Цель:** заменить cursor+`callFlow`-queue на один durable rate-limited
+`LOOP_ON_ITEMS` (25/s, `WAIT_AND_RETRY`) с collector и structured errors
+(403/429), сохранив сегмент, `test_sent_at`, кнопку «отписаться»,
+`broadcast_targets` и **`copyMessage` с `reply_markup`** (W79 — пересланный
+пост/фото, не `send_message`). Режим цикла (`SEQUENTIAL`/`CONCURRENT` +
+`maxConcurrency`) выбрать замером реальной отправки; `keepBodies` — против
+`LOG_SIZE_EXCEEDED`.
+
+**Готово, когда:**
+
+- [ ] `bcast-run` переведён на durable rate-limited цикл; `cursor`/самовызов убраны;
+- [ ] замер реальной отправки: режим/`maxConcurrency` обоснованы; `durable` и `CONCURRENT` совместимость проверена (по #546 `CONCURRENT` не паузится);
+- [ ] различающие прогоны: 403 `blocked_bot`, 429 `retry_afterSeconds` (WAIT_AND_RETRY), `collected`/`failures`;
+- [ ] `durable` проверен прогоном дольше 600 с (или обоснованно снят);
+- [ ] обязательный тест себе до боевой отправки (OWN-10);
+- [ ] `catalog/flows/bcast-run.md`, экспорт, `migrations` синхронизированы;
+- [ ] независимое ревью, вердикт «замечаний нет».
+
+**Зависит от:** ADR-0048 (решение владельца). **Не входит:** другие флоу.
