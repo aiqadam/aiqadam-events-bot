@@ -15,16 +15,16 @@ upsert через `ON CONFLICT`) и на типы `BOOLEAN`/`JSON` (#472) — с
 дублей и осознанная ревизия ADR-0003/0011. W113 собрал факты (живой
 `events-dev`):
 
-- **Дублей нет нигде** по бизнес-ключам всех 15 таблиц (`users.telegram_id`,
+- **Дублей нет нигде** по бизнес-ключам всех 17 таблиц (`users.telegram_id`,
   `registrations(event_id,telegram_id)`, `sessions.telegram_id`,
   `staff.telegram_id`, `event_staff(event_id,telegram_id)`,
   `feedback(event_id,telegram_id)`, `staff_invites.token_hash`,
   `broadcast_targets(broadcast_id,telegram_id)`, `events.id`, `chapters.id`,
   `quizzes.id`, `quiz_questions(quiz_id,idx)`,
   `quiz_attempts(quiz_id,telegram_id)`,
-  `quiz_answers(quiz_id,telegram_id,question_idx)`, `migrations.id`) — 0
-  дублей-групп; `quiz_answers` (903 строки) проверена разбивкой по
-  `question_idx`.
+  `quiz_answers(quiz_id,telegram_id,question_idx)`, `broadcasts.id`,
+  `strings(key,lang)`, `migrations.id`) — 0 дублей-групп; `quiz_answers`
+  (903 строки) проверена разбивкой по `question_idx`.
 - **Write-time валидация (#472) работает** и применяется к нашим записям
   независимо от пина qadam'а: `STATIC_DROPDOWN` сверяется с объявленными
   опциями (`valueNotInOptions`), `JSON` парсится (`Invalid JSON`), `BOOLEAN`
@@ -48,6 +48,15 @@ upsert через `ON CONFLICT`) и на типы `BOOLEAN`/`JSON` (#472) — с
    верным для этих таблиц, но остаётся для остальных.
    **Отдельный пакет** (схема таблиц — не в W113; «без переноса живых таблиц,
    пока не решено»).
+   Почему перечислены именно эти таблицы: у них ключ — инвариант домена и
+   **несколько писателей** (чат-путь и Mini App, отмена/реактивация, повторный
+   онбординг), поэтому объявленный ключ закрывает реальный класс гонок.
+   Остальные проверенные ключи не предлагаются сейчас: `staff_invites.token_hash`
+   — одноразовый токен без конкурирующих писателей; `broadcast_targets` —
+   эфемерная цель одного цикла рассылки; `quiz_questions` — статический
+   контент; `events.id`/`chapters.id`/`quizzes.id`/`broadcasts.id` — уже
+   уникальные генерируемые id; `migrations`/`strings` — append-only/служебные.
+   Ключ на них объявить можно позже, без смены поведения.
 2. **Типы `BOOLEAN`/`JSON` не мигрировать сейчас.** Флаги
    (`consent_pdn`, `consent_marketing`, `blocked_bot`, `late`) и статусы
    хранятся `STATIC_DROPDOWN` и сравниваются строками у потребителей; миграция
@@ -55,8 +64,9 @@ upsert через `ON CONFLICT`) и на типы `BOOLEAN`/`JSON` (#472) — с
    заводить сразу в `BOOLEAN`/`JSON` (валидация уже работает).
 3. **Пустая строка `DATE` — не «очистить».** Очистка — только
    `clear_columns`/`__clear` ([ADR-0044](0044-platform-novelties-sep-2026.md)
-   п. 3.1, [W109](../work/W109-clear-columns.md)); пустая строка на create
-   даёт `null`, на update — «не менять».
+   п. 3.1, [W109](../work/W109-clear-columns.md)). На **create** пустая строка
+   даёт `null` (proof W113), на **update** — «не менять» (W26/W109); то есть
+   пустая строка ни там, ни там не очищает существующее значение.
 
 ## Следствия
 
