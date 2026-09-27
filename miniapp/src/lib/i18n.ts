@@ -1,12 +1,27 @@
-// Русский-онли до платформенного i18n — ADR-0014, issue 420
-// Раньше здесь выбирался язык по user.language_code и подгружался i18n/<lang>.json.
-// С 2026-09-13 бот отвечает только по-русски, и выбор языка тут означал бы расхождение.
-// Файлы uz/en в репозитории остаются — здесь они просто не загружаются.
+// W25: язык выбирается по `user.language_code` Telegram (ru/uz/en), дефолт — ru.
+// Русский словарь грузится всегда как основа; словарь выбранного языка ложится
+// поверх. Это даёт честный фолбэк по каждому ключу: пока словарь языка неполон
+// (догон переводов — W27), пользователь видит русскую строку, а не сырой ключ.
+// Платформенные переводы флоу и этот словарь — два слоя: сервер отвечает на
+// языке из заголовка `ap-parent-run-locale` (см. lib/api.ts), клиент — отсюда.
 
-const LANG = 'ru';
+import { getLang } from './telegram';
+
+let LANG = 'ru';
 let dict: Record<string, string> = {};
 let loaded = false;
 let loading: Promise<Record<string, string>> | null = null;
+
+export function getLangCode(): string {
+  return LANG;
+}
+
+function load(lang: string): Promise<Record<string, string>> {
+  return fetch('i18n/' + lang + '.json')
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((d: Record<string, string>) => (d && typeof d === 'object' ? d : {}))
+    .catch(() => ({}));
+}
 
 // W42: подстановка {vars} — «Шаг {n} из {m}», «Координаты: {lat}, {lon}» и т. п.
 // Форма та же, что у t() во входах CODE-шагов (catalog/snippets/ru-texts.md).
@@ -27,18 +42,17 @@ export function getDict(): Record<string, string> {
 export function loadI18n(): Promise<Record<string, string>> {
   if (loaded) return Promise.resolve(dict);
   if (loading) return loading;
-  loading = fetch('i18n/' + LANG + '.json')
-    .then((r) => r.json())
-    .then((d: Record<string, string>) => {
-      dict = d || {};
-      loaded = true;
-      return dict;
-    })
-    .catch(() => {
-      dict = {};
-      loaded = true;
-      return dict;
-    });
+  LANG = getLang();
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = LANG;
+  }
+  const base = load('ru');
+  const over = LANG === 'ru' ? Promise.resolve({} as Record<string, string>) : load(LANG);
+  loading = Promise.all([base, over]).then(([ru, lang]) => {
+    dict = Object.assign({}, ru, lang);
+    loaded = true;
+    return dict;
+  });
   return loading;
 }
 

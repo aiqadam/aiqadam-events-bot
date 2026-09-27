@@ -237,11 +237,11 @@
                   "questions": "{{step_3['output']}}",
                   "quizId": "{{step_2['output'].quizId}}",
                   "texts": {
-                    "quiz.already": "Вы уже прошли викторину. Спасибо!",
-                    "quiz.closed": "Викторина сейчас не идёт. Возвращайтесь в дни события.",
-                    "quiz.intro": "Викторина «{title}». Вопросов: {total}. На каждый — 15 секунд, отвечайте сообщением.",
-                    "quiz.q_header": "Вопрос {n} из {total}:",
-                    "quiz.q_hint": "Ваш ответ — сообщением. 15 секунд."
+                    "quiz.already": "{{$t['quiz.already']}}",
+                    "quiz.closed": "{{$t['quiz.closed']}}",
+                    "quiz.intro": "{{$t['quiz.intro']}}",
+                    "quiz.q_header": "{{$t['quiz.q_header']}}",
+                    "quiz.q_hint": "{{$t['quiz.q_hint']}}"
                   },
                   "title": "{{step_2['output'].title}}"
                 },

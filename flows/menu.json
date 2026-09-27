@@ -85,22 +85,22 @@
                           "staffRoleRecords": "{{step_8['output']}}",
                           "telegramId": "{{trigger['output'].data.telegramId}}",
                           "texts": {
-                            "bcast.howto.step1": "1. Напишите пост в «Избранном»",
-                            "bcast.howto.step2": "2. Зажмите его → «Переслать» → этот бот",
-                            "bcast.howto.step3": "3. Выберите событие и аудиторию",
-                            "bcast.howto.title": "Как сделать рассылку",
-                            "menu.btn.bcast_help": "Как сделать рассылку",
-                            "menu.btn.events": "События",
-                            "menu.btn.manage": "Панель администратора",
-                            "menu.btn.new_event": "Новое событие",
-                            "menu.btn.quiz": "Викторина",
-                            "menu.fallback_text": "Не понял сообщение. Вот что можно сделать:",
-                            "menu.lead_controller": "Откройте каталог по кнопке ниже — сканер рядом с вашим событием",
-                            "menu.lead_guest": "Найдите свои билеты и регистрируйтесь на события по кнопке ниже",
-                            "menu.lead_owner": "Создайте событие или откройте каталог по кнопкам ниже",
-                            "start.bad_payload": "Ссылку не удалось разобрать. Вот что открыто сейчас:",
-                            "start.greeting": "Привет, {name}! Это бот событий AI Qadam.",
-                            "start.greeting_anon": "Привет! Это бот событий AI Qadam."
+                            "bcast.howto.step1": "{{$t['bcast.howto.step1']}}",
+                            "bcast.howto.step2": "{{$t['bcast.howto.step2']}}",
+                            "bcast.howto.step3": "{{$t['bcast.howto.step3']}}",
+                            "bcast.howto.title": "{{$t['bcast.howto.title']}}",
+                            "menu.btn.bcast_help": "{{$t['menu.btn.bcast_help']}}",
+                            "menu.btn.events": "{{$t['menu.btn.events']}}",
+                            "menu.btn.manage": "{{$t['menu.btn.manage']}}",
+                            "menu.btn.new_event": "{{$t['menu.btn.new_event']}}",
+                            "menu.btn.quiz": "{{$t['menu.btn.quiz']}}",
+                            "menu.fallback_text": "{{$t['menu.fallback_text']}}",
+                            "menu.lead_controller": "{{$t['menu.lead_controller']}}",
+                            "menu.lead_guest": "{{$t['menu.lead_guest']}}",
+                            "menu.lead_owner": "{{$t['menu.lead_owner']}}",
+                            "start.bad_payload": "{{$t['start.bad_payload']}}",
+                            "start.greeting": "{{$t['start.greeting']}}",
+                            "start.greeting_anon": "{{$t['start.greeting_anon']}}"
                           }
                         },
                         "sourceCode": {
@@ -358,10 +358,10 @@
                 "input": {
                   "firstName": "{{trigger['output'].data.firstName}}",
                   "texts": {
-                    "onb.btn.agree": "Согласен",
-                    "onb.btn.details": "Подробнее",
-                    "onb.consent": "Согласны на обработку данных: имя, фамилия, должность, компания, город и telegram_id. Храним у себя, третьим не отдаём. Без согласия оформить не сможем.",
-                    "onb.why": "Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем."
+                    "onb.btn.agree": "{{$t['onb.btn.agree']}}",
+                    "onb.btn.details": "{{$t['onb.btn.details']}}",
+                    "onb.consent": "{{$t['onb.consent']}}",
+                    "onb.why": "{{$t['onb.why']}}"
                   }
                 },
                 "sourceCode": {

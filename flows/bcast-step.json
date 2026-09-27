@@ -210,19 +210,19 @@
                         "staffRecords": "{{step_6['output']}}",
                         "telegramId": "{{trigger['output'].data.telegramId}}",
                         "texts": {
-                          "bcast.ask.segment": "Кому отправляем?",
-                          "bcast.btn.cancel": "Отменить рассылку",
-                          "bcast.btn.seg_all": "Все согласившиеся",
-                          "bcast.btn.seg_attended": "Пришедшие",
-                          "bcast.btn.seg_noshow": "Не пришедшие",
-                          "bcast.btn.seg_registered": "Зарегистрированные",
-                          "bcast.segment.all_consent": "Все, кто согласился на анонсы",
-                          "bcast.segment.checked_in": "Пришедшие на событие",
-                          "bcast.segment.no_show": "Зарегистрировались, но не пришли",
-                          "bcast.segment.registered": "Зарегистрированные на событие",
-                          "common.err.event_not_found": "Событие не найдено.",
-                          "common.err.forbidden": "Недостаточно прав для этого действия.",
-                          "common.err.session_expired": "Диалог прервался. Начнём заново: /start"
+                          "bcast.ask.segment": "{{$t['bcast.ask.segment']}}",
+                          "bcast.btn.cancel": "{{$t['bcast.btn.cancel']}}",
+                          "bcast.btn.seg_all": "{{$t['bcast.btn.seg_all']}}",
+                          "bcast.btn.seg_attended": "{{$t['bcast.btn.seg_attended']}}",
+                          "bcast.btn.seg_noshow": "{{$t['bcast.btn.seg_noshow']}}",
+                          "bcast.btn.seg_registered": "{{$t['bcast.btn.seg_registered']}}",
+                          "bcast.segment.all_consent": "{{$t['bcast.segment.all_consent']}}",
+                          "bcast.segment.checked_in": "{{$t['bcast.segment.checked_in']}}",
+                          "bcast.segment.no_show": "{{$t['bcast.segment.no_show']}}",
+                          "bcast.segment.registered": "{{$t['bcast.segment.registered']}}",
+                          "common.err.event_not_found": "{{$t['common.err.event_not_found']}}",
+                          "common.err.forbidden": "{{$t['common.err.forbidden']}}",
+                          "common.err.session_expired": "{{$t['common.err.session_expired']}}"
                         }
                       },
                       "sourceCode": {
@@ -539,15 +539,15 @@
                                   "staffRecords": "{{step_16['output']}}",
                                   "telegramId": "{{trigger['output'].data.telegramId}}",
                                   "texts": {
-                                    "bcast.btn.cancel": "Отменить рассылку",
-                                    "bcast.btn.send": "Отправить всем",
-                                    "bcast.btn.test": "Отправить тест себе",
-                                    "bcast.preview.count": "Получателей: {count}",
-                                    "bcast.preview.title": "Предпросмотр:",
-                                    "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
-                                    "common.err.event_not_found": "Событие не найдено.",
-                                    "common.err.forbidden": "Недостаточно прав для этого действия.",
-                                    "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                                    "bcast.btn.cancel": "{{$t['bcast.btn.cancel']}}",
+                                    "bcast.btn.send": "{{$t['bcast.btn.send']}}",
+                                    "bcast.btn.test": "{{$t['bcast.btn.test']}}",
+                                    "bcast.preview.count": "{{$t['bcast.preview.count']}}",
+                                    "bcast.preview.title": "{{$t['bcast.preview.title']}}",
+                                    "bcast.segment.no_show_locked": "{{$t['bcast.segment.no_show_locked']}}",
+                                    "common.err.event_not_found": "{{$t['common.err.event_not_found']}}",
+                                    "common.err.forbidden": "{{$t['common.err.forbidden']}}",
+                                    "common.err.generic": "{{$t['common.err.generic']}}"
                                   },
                                   "usersByIdsRecords": "{{step_19['output']}}"
                                 },
@@ -1071,10 +1071,10 @@
                     "broadcastRecords": "{{step_27['output']}}",
                     "telegramId": "{{trigger['output'].data.telegramId}}",
                     "texts": {
-                      "bcast.btn.unsubscribe": "Отписаться",
-                      "bcast.test.sent": "Тест отправлен. Проверьте, как выглядит, и подтвердите отправку.",
-                      "common.err.forbidden": "Недостаточно прав для этого действия.",
-                      "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                      "bcast.btn.unsubscribe": "{{$t['bcast.btn.unsubscribe']}}",
+                      "bcast.test.sent": "{{$t['bcast.test.sent']}}",
+                      "common.err.forbidden": "{{$t['common.err.forbidden']}}",
+                      "common.err.generic": "{{$t['common.err.generic']}}"
                     }
                   },
                   "sourceCode": {
@@ -1340,14 +1340,14 @@
                         "ctx": "{{step_38['output']}}",
                         "eventRecords": "{{step_39['output']}}",
                         "texts": {
-                          "bcast.finished": "Рассылка завершена: отправлено {sent}, ошибок {failed}.",
-                          "bcast.interrupted": "Рассылка была прервана. Продолжаем с места остановки — повторно никому не отправляем.",
-                          "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
-                          "bcast.send.blocked_no_test": "Сначала отправьте тест себе — без этого рассылку не запускаем.",
-                          "bcast.send_after_stop": "Рассылка остановлена, повторный запуск невозможен. Для новой рассылки перешлите сообщение боту.",
-                          "common.err.event_not_found": "Событие не найдено.",
-                          "common.err.forbidden": "Недостаточно прав для этого действия.",
-                          "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                          "bcast.finished": "{{$t['bcast.finished']}}",
+                          "bcast.interrupted": "{{$t['bcast.interrupted']}}",
+                          "bcast.segment.no_show_locked": "{{$t['bcast.segment.no_show_locked']}}",
+                          "bcast.send.blocked_no_test": "{{$t['bcast.send.blocked_no_test']}}",
+                          "bcast.send_after_stop": "{{$t['bcast.send_after_stop']}}",
+                          "common.err.event_not_found": "{{$t['common.err.event_not_found']}}",
+                          "common.err.forbidden": "{{$t['common.err.forbidden']}}",
+                          "common.err.generic": "{{$t['common.err.generic']}}"
                         }
                       },
                       "sourceCode": {
@@ -1658,8 +1658,8 @@
                       "broadcastRecords": "{{step_48['output']}}",
                       "telegramId": "{{trigger['output'].data.telegramId}}",
                       "texts": {
-                        "bcast.cancelled": "Рассылка отменена, никому ничего не ушло.",
-                        "bcast.cancelled_running": "Рассылка прервана. Текущий чанк досылается, остаток не уйдёт."
+                        "bcast.cancelled": "{{$t['bcast.cancelled']}}",
+                        "bcast.cancelled_running": "{{$t['bcast.cancelled_running']}}"
                       }
                     },
                     "sourceCode": {

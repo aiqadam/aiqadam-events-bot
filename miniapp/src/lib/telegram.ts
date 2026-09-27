@@ -10,6 +10,17 @@ export function getInitData(): string {
   return tg?.initData ?? '';
 }
 
+// W25: язык Mini App и язык, на котором отвечает сервер. Источник — профиль
+// Telegram (`user.language_code`), поддерживаются ru/uz/en, всё остальное —
+// ru (дефолт проекта). Вне Telegram (браузер, стенд) — тоже ru.
+const SUPPORTED_LANGS = ['ru', 'uz', 'en'];
+
+export function getLang(): string {
+  const raw = String(getTelegram()?.initDataUnsafe?.user?.language_code ?? '').toLowerCase();
+  const base = raw.split('-')[0];
+  return SUPPORTED_LANGS.includes(base) ? base : 'ru';
+}
+
 export function isInTelegram(): boolean {
   const tg = getTelegram();
   return Boolean(tg && tg.initData);

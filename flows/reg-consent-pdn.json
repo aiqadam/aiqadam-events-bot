@@ -126,7 +126,7 @@
                 },
                 "input": {
                   "texts": {
-                    "reg.consent_pdn.declined": "Хорошо, регистрацию не оформляем — без согласия на обработку данных мы не вправе. Если передумаете, откройте ту же ссылку ещё раз."
+                    "reg.consent_pdn.declined": "{{$t['reg.consent_pdn.declined']}}"
                   }
                 },
                 "sourceCode": {
@@ -289,11 +289,11 @@
                           "saveConsentError": "{{step_4['error']}}",
                           "saveRegError": "{{step_5['error']}}",
                           "texts": {
-                            "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
-                            "reg.consent_marketing.ask": "Присылать анонсы следующих событий? На регистрацию это никак не влияет.",
-                            "reg.consent_marketing.btn_no": "Не нужно",
-                            "reg.consent_marketing.btn_yes": "Да, присылайте",
-                            "reg.done.header": "✅ Вы зарегистрированы"
+                            "common.err.generic": "{{$t['common.err.generic']}}",
+                            "reg.consent_marketing.ask": "{{$t['reg.consent_marketing.ask']}}",
+                            "reg.consent_marketing.btn_no": "{{$t['reg.consent_marketing.btn_no']}}",
+                            "reg.consent_marketing.btn_yes": "{{$t['reg.consent_marketing.btn_yes']}}",
+                            "reg.done.header": "{{$t['reg.done.header']}}"
                           }
                         },
                         "sourceCode": {

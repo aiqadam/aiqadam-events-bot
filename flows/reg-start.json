@@ -70,13 +70,13 @@
                       "deadlineAt": "{{step_3['output'].deadlineAt}}",
                       "reason": "{{step_3['output'].reason}}",
                       "texts": {
-                        "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
-                        "event.card.not_found": "Карточку показать не удалось: такого события нет.",
-                        "reg.deadline_passed": "Регистрация закрыта: срок вышел {when}.",
-                        "reg.event_cancelled": "Событие отменено, регистрация недоступна.",
-                        "reg.event_finished": "Событие уже прошло.",
-                        "reg.no_seats": "Свободных мест больше нет. Листа ожидания у нас нет — следите за анонсами.",
-                        "reg.not_published": "Событие ещё не опубликовано — регистрация закрыта."
+                        "common.err.generic": "{{$t['common.err.generic']}}",
+                        "event.card.not_found": "{{$t['event.card.not_found']}}",
+                        "reg.deadline_passed": "{{$t['reg.deadline_passed']}}",
+                        "reg.event_cancelled": "{{$t['reg.event_cancelled']}}",
+                        "reg.event_finished": "{{$t['reg.event_finished']}}",
+                        "reg.no_seats": "{{$t['reg.no_seats']}}",
+                        "reg.not_published": "{{$t['reg.not_published']}}"
                       }
                     },
                     "sourceCode": {
@@ -141,7 +141,7 @@
                     },
                     "input": {
                       "texts": {
-                        "reg.already": "Вы уже зарегистрированы на «{title}». Ваш QR ниже."
+                        "reg.already": "{{$t['reg.already']}}"
                       },
                       "title": "{{step_3['output'].title}}"
                     },
@@ -320,11 +320,11 @@
                       "regDeadlineAt": "{{step_3['output'].regDeadlineAt}}",
                       "startsAt": "{{step_3['output'].startsAt}}",
                       "texts": {
-                        "event.card.deadline_short": "Регистрация до {when}",
-                        "onb.btn.agree": "Согласен",
-                        "onb.btn.details": "Подробнее",
-                        "onb.consent": "Согласны на обработку данных: имя, фамилия, должность, компания, город и telegram_id. Храним у себя, третьим не отдаём. Без согласия оформить не сможем.",
-                        "onb.why": "Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем."
+                        "event.card.deadline_short": "{{$t['event.card.deadline_short']}}",
+                        "onb.btn.agree": "{{$t['onb.btn.agree']}}",
+                        "onb.btn.details": "{{$t['onb.btn.details']}}",
+                        "onb.consent": "{{$t['onb.consent']}}",
+                        "onb.why": "{{$t['onb.why']}}"
                       },
                       "title": "{{step_3['output'].title}}"
                     },
@@ -449,8 +449,8 @@
                       "regDeadlineAt": "{{step_3['output'].regDeadlineAt}}",
                       "startsAt": "{{step_3['output'].startsAt}}",
                       "texts": {
-                        "event.card.btn_register": "Зарегистрироваться",
-                        "event.card.deadline_short": "Регистрация до {when}"
+                        "event.card.btn_register": "{{$t['event.card.btn_register']}}",
+                        "event.card.deadline_short": "{{$t['event.card.deadline_short']}}"
                       },
                       "title": "{{step_3['output'].title}}"
                     },

@@ -79,11 +79,11 @@
                   "registrations": "{{step_1['output']}}",
                   "staff": "{{step_4['output']}}",
                   "texts": {
-                    "dedup.broadcast_targets": "broadcast_targets: строк {rows}, лишних {dupes}",
-                    "dedup.event_staff": "event_staff: строк {rows}, лишних {dupes}",
-                    "dedup.registrations": "registrations: строк {rows}, лишних {dupes}",
-                    "dedup.title": "Дубли строк за {date}",
-                    "dedup.total": "Лишних строк всего: {total}"
+                    "dedup.broadcast_targets": "{{$t['dedup.broadcast_targets']}}",
+                    "dedup.event_staff": "{{$t['dedup.event_staff']}}",
+                    "dedup.registrations": "{{$t['dedup.registrations']}}",
+                    "dedup.title": "{{$t['dedup.title']}}",
+                    "dedup.total": "{{$t['dedup.total']}}"
                   }
                 },
                 "sourceCode": {

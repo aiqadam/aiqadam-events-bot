@@ -1,6 +1,8 @@
 // Общий fetch с таймаутом 15с и тремя исходами: network / server / json
 // Копия логики из ticket.html:166, index.html:175, manage.html:223 — теперь один модуль.
 
+import { getLang } from './telegram';
+
 export const FETCH_TIMEOUT_MS = 15000;
 
 export type ApiResult =
@@ -12,7 +14,11 @@ export async function postJson(url: string, body: unknown): Promise<ApiResult> {
   // Таймаут через Promise.race без AbortSignal — WebView iPhone виснет с signal, а text/plain ломает парсинг body на триггере.
   const fetchPromise = fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // W25: локаль прогона вебхук-флоу — заголовок `ap-parent-run-locale`,
+    // который платформа кладёт в inheritedRunLocale (ADR-0044 п. 3.2). Свой
+    // localeSource у этих флоу не выставлен намеренно — иначе он перебил бы
+    // наследование; без заголовка прогон падает на дефолт проекта (ru).
+    headers: { 'Content-Type': 'application/json', 'ap-parent-run-locale': getLang() },
     body: JSON.stringify(body),
   }).then(async (r) => {
     const raw = await r.text();

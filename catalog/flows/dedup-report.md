@@ -16,7 +16,7 @@
 | step_2 | `tables-find-records event_staff` | ключевые поля `event_id`, `telegram_id` |
 | step_3 | `tables-find-records broadcast_targets` | ключевые поля `broadcast_id`, `telegram_id` |
 | step_4 | `tables-find-records staff` | `telegram_id` — получатели отчёта |
-| step_5 | CODE «dedup report» | счёт дублей, дата Asia/Tashkent, текст из `texts`, список получателей |
+| step_5 | CODE «dedup report» | счёт дублей, дата Asia/Tashkent, текст из `texts` (`$t`-ссылка), список получателей |
 | step_6 | LOOP_ON_ITEMS | по `recipients` из `step_5` |
 | step_7 (в цикле) | `send_text_message` | отчёт `format: None`, `continueOnFailure` |
 
@@ -78,6 +78,6 @@
 - **Дата — Asia/Tashkent** (`Intl`, `ru-RU`, `DD.MM.YYYY`), как и везде в
   проекте (OWN-3): прогон 03:00 по Ташкенту не должен показывать вчерашнюю UTC-дату.
 - **Тексты — из `i18n/ru.json`** (ключи `dedup.*`), сверяются
-  `tools/check-texts.py`; новых литералов в шагах нет (ADR-0014, W24).
+  `tools/check-texts.py`; новых литералов в шагах нет (ADR-0045, W24).
 - **Один отчёт в сутки, время 03:00.** Ночью по Ташкенту, вне часов работы:
   диагностическое сообщение не конкурирует с боевыми.

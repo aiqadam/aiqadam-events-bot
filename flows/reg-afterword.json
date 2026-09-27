@@ -70,8 +70,8 @@
                         "eventId": "{{trigger['output'].data.eventId}}",
                         "miniappUrl": "{{variables['MINIAPP_URL']}}",
                         "texts": {
-                          "afterword.feedback_btn": "Оставить отзыв",
-                          "afterword.thanks": "Спасибо, что были. Надеемся, было не зря."
+                          "afterword.feedback_btn": "{{$t['afterword.feedback_btn']}}",
+                          "afterword.thanks": "{{$t['afterword.thanks']}}"
                         }
                       },
                       "sourceCode": {
