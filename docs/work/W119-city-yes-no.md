@@ -1,10 +1,10 @@
 # W119. Город в онбординге: «Вы из Ташкента?» вместо списка городов
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн
 - **Зависит от**: W107 / ADR-0043 (готов)
-- **Начат**: 2026-09-27 · **Закрыт**: —
+- **Начат**: 2026-09-27 · **Закрыт**: 2026-09-27
 
 ## Цель
 
@@ -38,7 +38,7 @@
 - [x] `tools/check-texts.py`, `check-commands.py`, `check-export-secrets.sh`,
       `prototypes/check.mjs` — зелёные;
 - [x] `catalog/` совпадает с живым проектом;
-- [ ] независимое ревью, вердикт «замечаний нет».
+- [x] независимое ревью, вердикт «замечаний нет» (круги 1–4; круг 4 — чисто).
 
 ## Как проверено
 
@@ -422,6 +422,84 @@ Telegram-чата и `initData` у ревьюера нет. Значения `uz
 Telegram-чата и `initData` у ревьюера нет. Путь «Да» при непустом `eventId`
 (создание регистрации) отдельно не перепрогонялся: ветку `finish` W119 не
 меняет, а код `step_3`/`step_4` побайтово тот же, что прочитан в кругах 1–2.
+
+### Круг 4
+
+- **Ревьюер**: агент (независимый, чистый контекст) · **Дата**: 2026-09-27 ·
+  **Вердикт**: замечаний нет
+
+**Замечание круга 3 (провенанс строки `migrations`) закрыто — проверено
+живьём, а не по записи владельца.**
+
+Живая строка `migrations` `2026-09-27-w119-01` (`app-flow-events-dev`, запись
+`wxoykib6bbGFofXFi9P44`, `package W119`, `object flow:reg-profile`):
+`commit = 11f3b88`, `version_id = Phk4zWtWT0iJpVhBom34q`,
+`object_id = bEz2bKyL82zlIwckxqvxc`, `action = publish`,
+`applied_at = 2026-09-27T16:54:09Z`. `git show 11f3b88:flows/_manifest.json`
+действительно несёт `publishedVersionId = Phk4zWtWT0iJpVhBom34q` для
+`reg-profile`, а `git show 775522b:flows/_manifest.json` — прежний
+`2VZri7RTv01XC0yZLB0so`. Конвенция подтверждена и живым прецедентом W107:
+строка `2026-09-26-w107-01` (`version_id EEvBjDZGB51k4ay0vaZd8`,
+`commit bac425b`), и `git show bac425b:flows/_manifest.json` несёт именно
+`EEvBjDZ…`. `applied_at`, оставленный временем первой публикации, — допустимое
+обратное датирование ([migrations.md](../../catalog/tables/migrations.md)), как
+и в W107.
+
+#### Замечания
+
+Замечаний нет.
+
+#### Чем проверено и чем ограничено
+
+**Живой проект (MCP, `app-flow-events-dev`).**
+- `ap_export_flow` `reg-profile`: `flows[0].id = Phk4zWtWT0iJpVhBom34q`,
+  `state: LOCKED`, `flowId = bEz2bKyL82zlIwckxqvxc`; совпадает с
+  `publishedVersionId` в `flows/_manifest.json` и `version_id` строки
+  `migrations` `2026-09-27-w119-01`. `ap_list_flows` — `reg-profile`
+  ENABLED/published.
+- `ap_validate_flow` — `40/40 valid`, без `translation_key`/`translation_default_locale`.
+- `ap_read_step_code` `step_3`/`step_4` — SHA-256 `80fc5440…`/`9e0814ab…`,
+  совпали с `flows/reg-profile.json`; полный нормализованный дифф живого
+  экспорта с `flows/reg-profile.json` **пуст** (41 узел — `type`/
+  `settings.input`/`sourceCode`, включая `step_3`/`step_4`): снимок репозитория
+  равен живому опубликованному флоу целиком.
+- `ap_flow_structure` — 40 шагов, все `configured`, без `invalid`/заглушек;
+  состав и вложенность (ветки `step_5` 0–7, `step_6`, `step_7`, `step_8→12`,
+  `13→18`, `19→21`, `22→28`, `29→33`, `35→40`) совпадают с
+  `catalog/flows/reg-profile.md`.
+- `ap_list_runs` (TESTING, 25 прогонов) — последний W119-прогон
+  `toWNgbSpF3KcQ06OMbcjw` (17:09:37) прошёл **до** перепубликации версии
+  (17:16:22); после неё прогонов нет, свежего `DRAFT` не создано — гоча №14
+  закрыта. `ap_get_run toWNgbSpF3KcQ06OMbcjw`: `step_4` отдаёт
+  `cardText: 'Вы из Ташкента?'` и `replyMarkup` =
+  `[[{"text":"Да","callback_data":"ob:city:yes"},{"text":"Нет","callback_data":"ob:city:no"}]]`,
+  `nextStep:'ob_city'`; `step_8` пишет сессию `step:'ob_city'`; падает позже
+  на фолбэк-отправке (`400 chat not found`) — после нужных шагов.
+- Таблицы чисты: `in` по `telegram_id` 888888901–907 и `co 888888` в `users`,
+  `sessions`, `registrations` — пусто; в `registrations` 3 строки, все с
+  чужими id.
+
+**Офлайн (запущено мной).** `check-texts.py` — 31 флоу / 286 ссылок `$t` / 0;
+`check-commands.py` — 0; `check-export-secrets.sh` — чисто (8× `BOT_TOKEN`,
+2× `QR_SIGNING_KEY`, 0 значений `auth`); `check-agents.py` — 0;
+`node prototypes/check.mjs` — OK (те же 6 прежних предупреждений
+`ask-name`/`user-name`, не от W119).
+
+**Документы.** SPEC PAR-8 (да/нет + ссылка на ADR-0046), `docs/adr/README.md`
+(0046), `catalog/flows/reg-profile.md` (раздел «Город — вопрос да/нет
+(ADR-0046)»), `prototypes/scenarios.js` (`common.btn.yes/no`,
+`onb.ask_city_input`, `ask-city-text`), `i18n/{ru,uz,en}.json` (`onb.ask_city`
+переписан, `onb.ask_city_input`/`common.btn.yes/no` есть, `onb.btn.write` —
+архив) — согласованы; журнал (`Статус: на проверке`) и строка W119 в
+`docs/STATUS.md` совпадают.
+
+**Ограничение.** Ключа платформы нет — `tools/check-migrations.py` не
+запускался; `flows/_manifest.json ↔ ap_list_flows ↔ migrations` сверены точечно
+(по `reg-profile` совпало; состав — 31/31 + чужой `ChatBot`, [Q34](../OPEN-QUESTIONS.md#q34)).
+Значения `uz`/`en` живьём не сверены (общий хвост W27; `ru` доказан рендером
+карточки `toWNgbSpF3KcQ06OMbcjw`). Живого Telegram-чата и `initData` у ревьюера
+нет. Путь «Да» при непустом `eventId` (создание регистрации) отдельно не
+перепрогонялся: ветку `finish` W119 не меняет.
 
 ## Хвосты и блокеры
 
