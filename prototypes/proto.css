@@ -454,6 +454,21 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
 .ticket-skeleton { width: 232px; height: 232px; max-width: 62vw; border-radius: var(--radius-xl); }
 
 /* ---------- форма ---------- */
+/* W117: переключатель языка — тихая строка настроек (как в продукте), паттерн
+   шапки бренда: коды mono с активным тоном primary, без плашек. */
+.lang-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; }
+.lang-row .label { margin-bottom: 0; }
+.lang-switch { display: inline-flex; align-items: stretch; font-family: var(--font-mono); }
+.lang-switch-btn {
+  appearance: none; border: 0; background: transparent;
+  color: var(--muted-foreground); font: inherit;
+  font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; cursor: pointer;
+  transition: color 150ms var(--ease-out);
+}
+.lang-switch-btn + .lang-switch-btn { border-left: 1px solid var(--border); }
+.lang-switch-btn:hover { color: var(--foreground); }
+.lang-switch-btn.active { color: var(--primary); font-weight: 600; }
 .form-section { margin-bottom: 22px; }
 .form-section-title {
   font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;

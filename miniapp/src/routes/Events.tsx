@@ -977,19 +977,19 @@ function ProfileTab({
   );
   return (
     <div className="form-section">
-      <div className="field">
-        <label className="label">{t('menu.btn.language')}</label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="lang-row">
+        <span className="label" id="profile-lang-label">{t('menu.btn.language')}</span>
+        <div className="lang-switch" role="group" aria-labelledby="profile-lang-label">
           {['ru', 'uz', 'en'].map((code) => (
             <button
               key={code}
               type="button"
               id={'pf-lang-' + code}
-              className={'btn ' + (lang === code ? 'btn-primary' : 'btn-secondary')}
               aria-pressed={lang === code}
+              aria-label={t('lang.btn.' + code)}
               onClick={() => onLangChange(code)}
             >
-              {t('lang.btn.' + code)}
+              {code}
             </button>
           ))}
         </div>

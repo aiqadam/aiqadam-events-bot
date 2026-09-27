@@ -22,6 +22,10 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let catalogTab = 'mine';
   let catalogEmpty = false;
   let profileTried = false;
+  // W117: выбранный язык в моке. Словарь прототипа — только ru.json, поэтому
+  // переключение показывает выбор (подсветка + тост), а текст остаётся ru —
+  // это приписка прототипа, не продукта (в продукте словарь меняется сразу).
+  let profileLang = 'ru';
   let ticketDemo = null;
   let backUrl = '';
   let hashParams = new URLSearchParams('');
@@ -1343,6 +1347,27 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (sub) who.appendChild(E('div', 'profile-sub', sub));
     head.appendChild(who);
     screen.appendChild(head);
+
+    // W117: язык интерфейса — тихая строка настроек вместо трёх крупных
+    // кнопок (решение владельца: кнопки отвлекали от полей формы).
+    const langRow = E('div', 'lang-row');
+    langRow.appendChild(E('span', 'label', T('menu.btn.language')));
+    const langSwitch = E('div', 'lang-switch');
+    ['ru', 'uz', 'en'].forEach((code) => {
+      const b = E('button', 'lang-switch-btn' + (profileLang === code ? ' active' : ''), code.toUpperCase());
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(profileLang === code));
+      b.addEventListener('click', () => {
+        if (profileLang === code) return;
+        profileLang = code;
+        PROTO.toast(T('lang.changed'));
+        renderEvents();
+      });
+      langSwitch.appendChild(b);
+    });
+    langRow.appendChild(langSwitch);
+    screen.appendChild(langRow);
+
     screen.appendChild(E('div', 'profile-note', T('profile.head_note')));
 
     const form = E('div', 'form-section');

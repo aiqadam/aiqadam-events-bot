@@ -156,9 +156,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
 
   // ---------- демо-контролы (в шите обвязки, не на экране) ----------
   const quickIndex = {
-    guest: [['event', 'Карточка события'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['review', 'Всё верно?'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
-    owner: [['ob-event', 'Онбординг'], ['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка события'], ['broadcast', 'Рассылка']],
-    controller: [['ob-event', 'Онбординг'], ['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
+    guest: [['ob-lang', 'Выбор языка'], ['event', 'Карточка события'], ['consent', 'Согласие'], ['name-ok', 'Проверка имени'], ['review', 'Всё верно?'], ['done', 'Билет'], ['reminders', 'Напоминания'], ['afterword', 'Послесловие']],
+    owner: [['ob-lang', 'Выбор языка'], ['ob-event', 'Онбординг'], ['menu', 'Меню'], ['published', 'Публикация'], ['updated', 'Правка события'], ['broadcast', 'Рассылка']],
+    controller: [['ob-lang', 'Выбор языка'], ['ob-event', 'Онбординг'], ['accept-ok', 'Инвайт принят'], ['menu', 'Меню']],
   };
 
   function renderDemo() {
