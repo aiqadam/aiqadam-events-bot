@@ -71,7 +71,9 @@ PROTO.buildScenarios = function (opts) {
   // Первое касание общее для всех ролей (ADR-0032, ADR-0043): входная
   // карточка несёт «зачем» + текст согласия, кнопка «Согласен» (ob:agree)
   // ведёт прямо к вопросу о работе; чистое имя Telegram не подтверждается
-  // отдельным шагом, экрана «Всё верно?» нет — город ведёт в `after`.
+  // отдельным шагом, экрана «Всё верно?» нет. ADR-0046: город спрашивается
+  // да/нет («Вы из Ташкента?») — «Да» ведёт в `after`, «Нет» — на карточку
+  // свободного ввода `onb.ask_city_input`.
   // `after` — шаг после диалога (гость — регистрация, овнер — «профиль
   // сохранён», контролёр — accept); `declinedGo` — куда уйти при отказе.
   const obCore = (after, declinedGo) => ([
@@ -92,10 +94,10 @@ PROTO.buildScenarios = function (opts) {
 
     { id: 'city', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_city')), trace: ['PAR-1', 'ADR-0017'],
       buttons: [
-        { label: 'Ташкент', go: after },
-        { label: 'Алматы', go: after },
-        { label: T('onb.btn.write'), go: 'user-city' },
+        { label: T('common.btn.yes'), go: after },
+        { label: T('common.btn.no'), go: 'ask-city-text' },
       ] },
+    { id: 'ask-city-text', kind: 'card', edit: true, markup: true, card: eventCard(T('onb.ask_city_input')), trace: ['PAR-1', 'ADR-0017'] },
     { id: 'user-city', kind: 'user', text: 'Бишкек', trace: ['PAR-1'] },
   ]);
 
