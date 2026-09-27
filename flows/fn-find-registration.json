@@ -15,6 +15,7 @@
       "name": "step_1",
       "nextAction": {
         "displayName": "read registrations",
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "displayName": "pick earliest",

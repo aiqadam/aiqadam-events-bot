@@ -569,6 +569,7 @@
                                 },
                                 {
                                   "displayName": "stamp blocked_bot",
+                                  "logOutput": false,
                                   "name": "step_32",
                                   "nextAction": {
                                     "displayName": "mark blocked",
@@ -701,6 +702,7 @@
                                           },
                                           {
                                             "displayName": "stamp blocked2",
+                                            "logOutput": false,
                                             "name": "step_40",
                                             "nextAction": {
                                               "displayName": "mark blocked2",

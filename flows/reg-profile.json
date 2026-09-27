@@ -209,6 +209,7 @@
                 },
                 {
                   "displayName": "save consent_pdn",
+                  "logOutput": false,
                   "name": "step_13",
                   "nextAction": {
                     "displayName": "save ob session (consent)",
@@ -498,9 +499,11 @@
                 },
                 {
                   "displayName": "save profile + consent",
+                  "logOutput": false,
                   "name": "step_22",
                   "nextAction": {
                     "displayName": "create registration",
+                    "logOutput": false,
                     "name": "step_23",
                     "nextAction": {
                       "displayName": "session → await_marketing",
@@ -746,6 +749,7 @@
                 },
                 {
                   "displayName": "create registration (repeat)",
+                  "logOutput": false,
                   "name": "step_29",
                   "nextAction": {
                     "displayName": "clear session (repeat)",
@@ -911,6 +915,7 @@
                 },
                 {
                   "displayName": "save profile + consent (no event)",
+                  "logOutput": false,
                   "name": "step_35",
                   "nextAction": {
                     "displayName": "session → await_marketing (no event)",

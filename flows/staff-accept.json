@@ -17,6 +17,7 @@
       "name": "step_1",
       "nextAction": {
         "displayName": "read invite by token hash",
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "displayName": "read event by id",
@@ -175,6 +176,7 @@
                     }
                   },
                   "displayName": "mark invite used (only if not yet used)",
+                  "logOutput": false,
                   "name": "step_7",
                   "settings": {
                     "actionName": "tables-update-record",

@@ -11,6 +11,7 @@
   "state": "LOCKED",
   "trigger": {
     "displayName": "new_telegram_message",
+    "logOutput": false,
     "name": "trigger",
     "nextAction": {
       "displayName": "normalize update",
@@ -25,6 +26,7 @@
             "children": [
               {
                 "displayName": "upsert users",
+                "logOutput": false,
                 "name": "step_6",
                 "nextAction": {
                   "displayName": "read session",
@@ -222,7 +224,19 @@
                                     "mode": "simple",
                                     "waitForResponse": false
                                   },
-                                  "propertySettings": {},
+                                  "propertySettings": {
+                                    "flowProps": {
+                                      "schema": {
+                                        "payload": {
+                                          "defaultValue": {},
+                                          "displayName": "Payload",
+                                          "required": true,
+                                          "type": "OBJECT"
+                                        }
+                                      },
+                                      "type": "MANUAL"
+                                    }
+                                  },
                                   "qadamName": "@aiqadam/qadam-subflows",
                                   "qadamVersion": "0.4.14"
                                 },
@@ -447,7 +461,24 @@
                                     "mode": "simple",
                                     "waitForResponse": false
                                   },
-                                  "propertySettings": {},
+                                  "propertySettings": {
+                                    "flowProps": {
+                                      "schema": {
+                                        "payload": {
+                                          "defaultValue": {
+                                            "chatId": "322876545",
+                                            "eventId": "demo",
+                                            "telegramId": "322876545",
+                                            "token": "aaaaaaaaaaaaaaaaaaaaaa"
+                                          },
+                                          "displayName": "Payload",
+                                          "required": true,
+                                          "type": "OBJECT"
+                                        }
+                                      },
+                                      "type": "MANUAL"
+                                    }
+                                  },
                                   "qadamName": "@aiqadam/qadam-subflows",
                                   "qadamVersion": "0.4.14"
                                 },

@@ -20,6 +20,7 @@
         "name": "step_2",
         "nextAction": {
           "displayName": "save consent_marketing",
+          "logOutput": false,
           "name": "step_3",
           "nextAction": {
             "displayName": "clear session",
