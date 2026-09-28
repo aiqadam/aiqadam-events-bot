@@ -87,4 +87,10 @@ export const CHECKIN_COUNTER_API = endpoint('checkinCounter');
 export const STAFF_INVITE_API = endpoint('staffInvite');
 // W123 (Q62): форма сообщения о проблеме #/report — initData обязателен,
 // staff-гейта нет: пожаловаться может любой.
-export const REPORT_API = endpoint('report');
+// Ленивая резолюция: `report` — новейший ключ карты, и в среде, куда пакет
+// ещё не перенесён (prod promote — отдельный шаг ADR-0050), его отсутствие
+// не должно ронять весь SPA на старте (endpoint() бросает). Отказ тогда
+// локален экрану `#/report`, а не приложению.
+export function reportApi(): string {
+  return endpoint('report');
+}

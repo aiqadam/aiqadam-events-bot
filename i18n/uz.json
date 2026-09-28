@@ -413,7 +413,6 @@
   "report.done": "Xabarni oʻqiymiz. Zarur boʻlsa, chatda javob beramiz.",
   "report.to_events": "Tadbirlarga",
   "report.loading": "Yuklanmoqda…",
-  "report.retry": "Qayta urinish",
   "report.not_in_telegram": "Sahifani brauzerda emas, botdagi tugma orqali oching.",
   "report.error.network": "Aloqa yoʻq. Tarmoqni tekshirib, qayta urinib koʻring.",
   "report.error.server": "Server kutilmaganda javob berdi. Qayta urinib koʻring.",

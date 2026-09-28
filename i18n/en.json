@@ -413,7 +413,6 @@
   "report.done": "We'll read your message. We'll reply in chat if needed.",
   "report.to_events": "To events",
   "report.loading": "Loading…",
-  "report.retry": "Retry",
   "report.not_in_telegram": "Open this page from the bot button, not directly in a browser.",
   "report.error.network": "No connection. Check your network and try again.",
   "report.error.server": "The server responded unexpectedly. Try again.",

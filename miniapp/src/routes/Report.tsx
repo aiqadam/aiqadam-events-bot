@@ -3,7 +3,7 @@ import { t, loadI18n, getLangCode } from '../lib/i18n';
 import { getTelegram, hapticNotification, hapticImpact } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, REPORT_API } from '../lib/api';
+import { postJson, reportApi } from '../lib/api';
 import Icon from '../components/Icon';
 import BackButton from '../components/BackButton';
 
@@ -82,7 +82,18 @@ export default function Report({
     }
     setBusy(true);
     setError('');
-    const res = await postJson(REPORT_API, {
+    // Конфиг среды резолвится здесь, а не на старте приложения: в среде без
+    // ключа `report` (prod promote — отдельный шаг) падает только этот экран.
+    let url = '';
+    try {
+      url = reportApi();
+    } catch {
+      setBusy(false);
+      hapticNotification('error');
+      setError(t('report.error.server'));
+      return;
+    }
+    const res = await postJson(url, {
       initData,
       kind,
       text,
