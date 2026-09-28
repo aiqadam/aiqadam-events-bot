@@ -1,6 +1,7 @@
 // Прототип W41 — мок Mini App (ADR-0027).
 // Hash-роутер как у продукта: #/ticket, #/scan, #/manage, #/manage/:id,
-// #/events, #/feedback (пятый роут принят ADR-0028, W45). Фейковые данные, никаких вызовов
+// #/events, #/feedback (пятый роут принят ADR-0028, W45), #/report (Q62 — идея,
+// ADR не принят). Фейковые данные, никаких вызовов
 // (ADR-0026). Экраны — как продукт: брендовые токены, компоненты и иконки
 // Lucide; требования SPEC — в отдельном шите трассировки.
 'use strict';
@@ -35,6 +36,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let wizardDraft = null;
   let feedbackRating = 0;
   let feedbackSent = false;
+  let reportKind = 'broken';
+  let reportText = '';
+  let reportSent = false;
   let staffQuery = '';
   let staffInviteShown = false;
 
@@ -1417,6 +1421,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     // меняется (в продукте тот же текст, W60).
     screen.appendChild(E('div', 'helper', T('profile.pdn_done', { when: p.pdnAt })));
 
+    // Вход в форму сообщения о проблеме (Q62 — идея): место в табе «Профиль»,
+    // как предлагает Q62.
+    const reportSec = E('div', 'form-section');
+    reportSec.appendChild(btn(T('proto.report_title'), { kind: 'btn-outline', block: true, icon: 'alert', onClick: () => go('#/report') }));
+    reportSec.appendChild(E('div', 'helper', T('proto.report_entry_hint')));
+    screen.appendChild(reportSec);
+
     const acts = E('div', 'sticky-actions');
     acts.appendChild(btn(T('manage.btn.save'), {
       kind: 'btn-primary', onClick: () => {
@@ -1557,6 +1568,75 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setDemo([]);
   }
 
+  // ---------- роут: сообщение о проблеме (шестой роут, Q62 — идея, ADR не принят) ----------
+  // Форма предложения из Q62: без серверной части и прав — пожаловаться может
+  // любой. Поля контекста (экран, версия, событие) прикладываются сами, их не
+  // вводят. Отдельного требования SPEC у экрана нет: он показывает идею.
+  function renderReport() {
+    PROTO.setTrace(['Q62', 'ADR-0017']);
+    clear();
+
+    if (reportSent) {
+      const ok = E('div', 'sheet-success');
+      const ic = E('div', 'success-icon');
+      ic.appendChild(PROTO.icon('check-circle', 34));
+      ok.appendChild(ic);
+      ok.appendChild(E('div', 'success-title', T('proto.report_done_title')));
+      ok.appendChild(E('div', 'app-muted', T('proto.report_done')));
+      screen.appendChild(ok);
+      const acts = E('div', 'app-actions');
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-primary'));
+      screen.appendChild(acts);
+      PROTO.setDemo([
+        { label: T('proto.report_reset'), onClick: () => { reportSent = false; reportText = ''; reportKind = 'broken'; renderReport(); } },
+      ]);
+      return;
+    }
+
+    screen.appendChild(E('div', 'app-title', T('proto.report_title')));
+    screen.appendChild(E('div', 'app-muted', T('proto.report_lead')));
+
+    const kindSec = E('div', 'form-section');
+    kindSec.appendChild(E('div', 'section-label', T('proto.report_kind')));
+    const kinds = E('div', 'segmented wrap');
+    const kindDefs = [
+      ['broken', T('proto.report_kind_broken')],
+      ['text', T('proto.report_kind_text')],
+      ['message', T('proto.report_kind_message')],
+      ['other', T('proto.report_kind_other')],
+    ];
+    kindDefs.forEach(([key, label]) => {
+      const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { reportKind = key; renderReport(); } });
+      if (reportKind === key) b.classList.add('active');
+      kinds.appendChild(b);
+    });
+    kindSec.appendChild(kinds);
+    screen.appendChild(kindSec);
+
+    const textSec = E('div', 'form-section');
+    textSec.appendChild(field(T('proto.report_text'), reportText, {
+      textarea: true,
+      placeholder: T('proto.report_placeholder'),
+      onInput: (e) => { reportText = e.target.value; paintSubmit(); },
+    }));
+    screen.appendChild(textSec);
+    screen.appendChild(E('div', 'helper', T('proto.report_context')));
+
+    const acts = E('div', 'sticky-actions');
+    const submit = btn(T('proto.report_submit'), {
+      kind: 'btn-primary', block: true, disabled: !reportText.trim(),
+      onClick: () => { reportSent = true; renderReport(); },
+    });
+    acts.appendChild(submit);
+    screen.appendChild(acts);
+    function paintSubmit() { submit.disabled = !reportText.trim(); }
+
+    PROTO.setDemo([
+      { label: T('proto.report_autofill'), onClick: () => { reportKind = 'broken'; reportText = 'В табе «Профиль» не сохраняется компания.'; renderReport(); } },
+      { label: T('proto.report_sent'), active: reportSent, onClick: () => { reportSent = true; renderReport(); } },
+    ]);
+  }
+
   // ---------- роутер ----------
   function parseRoute() {
     const p = currentHash();
@@ -1566,6 +1646,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (p.startsWith('/manage/')) return { name: 'manage-event', id: p.slice('/manage/'.length).split('/')[0] || 'new' };
     if (p === '/events' || p === '/events/') return { name: 'events' };
     if (p === '/feedback' || p === '/feedback/') return { name: 'feedback' };
+    if (p === '/report' || p === '/report/') return { name: 'report' };
     return { name: 'index' };
   }
 
@@ -1583,11 +1664,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
     else if (r.name === 'events') {
       const tab = hashParams.get('tab');
-      catalogTab = (tab === 'upcoming' || tab === 'past') ? tab : 'mine';
+      catalogTab = (tab === 'upcoming' || tab === 'past' || tab === 'profile') ? tab : 'mine';
       catalogEmpty = false;
       renderEvents();
     }
     else if (r.name === 'feedback') { feedbackSent = false; feedbackRating = 0; renderFeedback(); }
+    else if (r.name === 'report') { reportSent = false; reportText = ''; reportKind = 'broken'; renderReport(); }
     else {
       // Точка входа продукта — каталог с «Моими билетами» (вердикт владельца).
       history.replaceState(null, '', appHref('#/events'));
