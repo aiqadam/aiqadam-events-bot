@@ -9,7 +9,7 @@
 ## Цель
 
 Догнать `events-prod` до `events-dev` по пакетам, применённым на dev после
-переноса [W122](W122-prod-sync.md) (W109–W121 + i18n). Prod — замороженная копия,
+переноса W122 (PR #194; W109–W121 + i18n). Prod — замороженная копия,
 меняется только осознанным хотфиксом через MCP `app-flow-events-prod`
 (ADR-0042 п. 2). Запрос владельца 2026-09-28: «переноси все».
 
@@ -50,6 +50,14 @@
   `unknown translation key` снялась после заливки 28 ключей.
 - **`ap_export_flow report-api` prod** — 12 шагов, `table_id` и `values` указывают
   на prod-`reports`, `callFlow` — на prod-`fn-hmac-init-data`.
+- **Живой smoke prod** (`/sync`): `report-api` с пустым `initData` → `401`
+  `invalid_init_data` с переведённым текстом (`ru` и `uz` по заголовку
+  `ap-parent-run-locale`); `events-api` → `200` (в prod нет published/finished
+  событий, потому `upcoming`/`past` пусты — совпадает с данными).
+- **Mini App prod**: workflow `pages-prod` run `36449033698` — success; живой
+  `miniapp-prod.events.aiqadam.org` отдаёт `assets/index-BqXbB4H0.js`: только
+  `app-prod.flow.aiqadam.org`, `report` flowId, ленивый чанк `Report-*`; `i18n/ru.json`
+  содержит `report.title`.
 
 ## Журнал
 
