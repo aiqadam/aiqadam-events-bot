@@ -263,6 +263,30 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 прав, что у списков участников); без анонимности, без модерации, без
 уведомления организатору отдельным сообщением.
 
+## `reports`
+
+Сообщения о проблеме из Mini App `#/report`
+([ADR-0050](../docs/adr/0050-sixth-miniapp-page-report.md), W123).
+
+| Поле | Тип | Примечание |
+| --- | --- | --- |
+| `telegram_id` | text | автор, из проверенного `initData` (DAT-1) |
+| `source` | text | канал: `miniapp` (ставит флоу, не клиент) |
+| `kind` | text (`broken`/`text`/`message`/`other`) | вид проблемы |
+| `text` | text | сообщение, ≤2000 символов |
+| `route` | text | откуда открыли форму: `profile` \| `menu` \| `report` |
+| `event_id` | text | событие в контексте; пусто, если не открыто |
+| `app_version` | text | версия клиента Telegram |
+| `context` | text | JSON-строкой: `lang`, `platform`, `version` |
+| `status` | enum | `new` \| `in_progress` \| `resolved`; при записи — `new` |
+| `created_at` | timestamp | UTC |
+
+Уникальный ключ **не объявлен**
+([ADR-0047](../docs/adr/0047-unique-keys-and-types-after-audit.md) п. 1):
+несколько сообщений от одного человека легальны. Пишет только `report-api`,
+после проверки `initData`; staff-гейта и проверки участия нет. Читает инбокс
+владелец вручную ([Q62](OPEN-QUESTIONS.md#q62)); автоуведомлений и digest нет.
+
 ## `quizzes`
 
 Окно викторины в чате ([ADR-0041](adr/0041-quiz-in-chat-not-a-page.md), W103).

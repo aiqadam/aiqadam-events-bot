@@ -85,3 +85,6 @@ export const STAFF_EVENTS_API = endpoint('staffEvents');
 export const CHECKIN_COUNTER_API = endpoint('checkinCounter');
 // W10 (OWN-14): создание одноразовой ссылки-инвайта контролёра (24 ч, один раз).
 export const STAFF_INVITE_API = endpoint('staffInvite');
+// W123 (Q62): форма сообщения о проблеме #/report — initData обязателен,
+// staff-гейта нет: пожаловаться может любой.
+export const REPORT_API = endpoint('report');

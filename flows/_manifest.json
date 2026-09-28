@@ -92,7 +92,7 @@
   {
     "flow": "menu",
     "flowId": "rV2ymkl6ET11uMjbywU4D",
-    "publishedVersionId": "mivExl0RXx77Q2ypz61FT",
+    "publishedVersionId": "2hFzN2UlxECze9iHLk37q",
     "source": "mcp"
   },
   {
@@ -153,6 +153,12 @@
     "flow": "reminders",
     "flowId": "5JiN4gJgdh8ItkzUqVnTf",
     "publishedVersionId": "pLWYK2W4TLhGTuFByzlqH",
+    "source": "mcp"
+  },
+  {
+    "flow": "report-api",
+    "flowId": "R8GgSVXgHsmLSKdEdzygp",
+    "publishedVersionId": "plaa2GTA8W2dToANOUmZW",
     "source": "mcp"
   },
   {
