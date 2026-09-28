@@ -72,8 +72,9 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `description` | text | |
 | `lang` | text | `ru` \| `uz` \| `en` — язык контента (`title`/`description`), дефолт `ru` (OWN-17); пусто у старых записей читается как `ru` |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
-| `address` | text | адрес текстом |
-| `lat`, `lon` | number | для `sendVenue` (OWN-2) |
+| `address` | text | адрес текстом (офлайн) |
+| `online_url` | text | ссылка трансляции (`https://…`) — **признак онлайн-события**: непусто = онлайн (OWN-18, [ADR-0051](adr/0051-online-event-link-instead-of-qr.md)) |
+| `lat`, `lon` | number | для `sendVenue` (OWN-2); у онлайна пусты |
 | `starts_at` | timestamp UTC | |
 | `ends_at` | timestamp UTC | по нему автопереход в `finished` (OWN-4) |
 | `reg_deadline_at` | timestamp UTC | |
@@ -83,6 +84,12 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `published_at`, `cancelled_at`, `finished_at` | timestamp | |
 
 Ссылка на Яндекс.Карты **не хранится** — генерируется из `lat`/`lon` (OWN-2).
+
+**Формат события (онлайн/офлайн)** отдельным переключателем не хранится: непустой
+`online_url` = онлайн, пусто = офлайн ([ADR-0051](adr/0051-online-event-link-instead-of-qr.md),
+уточняет прежнее «онлайн ≡ нет точки» из [Q63](OPEN-QUESTIONS.md#q63)). У онлайна
+`address`/`lat`/`lon` пусты; при переводе события офлайн → онлайн они **очищаются**
+(`clear_columns`), иначе старый адрес остаётся висеть.
 
 Эффективный лимит регистраций (OWN-15):
 
@@ -127,8 +134,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ### notify-on-change
 
 Правка опубликованного события рассылает уведомление зарегистрированным (OWN-5),
-если изменилось любое из: `starts_at`, `ends_at`, `address`, `lat`, `lon`, `title`,
-`reg_deadline_at`, `status`.
+если изменилось любое из: `starts_at`, `ends_at`, `address`, `online_url`, `lat`,
+`lon`, `title`, `reg_deadline_at`, `status`.
 
 Изменение `description`, `photo_file_id`, `capacity` — **не** повод для рассылки.
 В уведомлении перечисляются только фактически изменившиеся поля («было → стало»).
