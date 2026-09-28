@@ -19,9 +19,9 @@
 
 ## Заметки
 
-- **Уникальность `(event_id, telegram_id)` — соглашение флоу, не БД.** Проверено:
-  три строки с одной парой вставляются подряд без жалоб. Чтение — только через
-  эталон [`find-registration`](../snippets/find-registration.md), который берёт самую раннюю (ADR-0003).
+- **Уникальность `(event_id, telegram_id)` объявлена в БД** ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md), W113b):
+  upsert идёт через `ON CONFLICT`, повторная вставка той же пары — `RECORD_DUPLICATE_KEY`;
+  читать по-прежнему через [`find-registration`](../snippets/find-registration.md).
 - «Не пришёл» ищется фильтром `checked_in_at not_exists`: проверено, он
   ловит и `null`, и пустую строку.
 

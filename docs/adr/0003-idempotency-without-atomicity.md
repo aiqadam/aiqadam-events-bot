@@ -2,6 +2,14 @@
 
 **Статус:** принято, 2026-09-08. Основано на проверке живого инстанса (W0).
 
+> **Обновление 2026-09-28 ([ADR-0047](0047-unique-keys-and-types-after-audit.md),
+> пакет [W113b](../work/W113b-declare-unique-keys.md)):** для семи таблиц
+> (`users`, `registrations`, `sessions`, `staff`, `feedback`,
+> `quiz_attempts`, `quiz_answers`) уникальность теперь обеспечена **БД**
+> (объявленный `keyFields`/частичный unique-index, upsert через `ON CONFLICT`),
+> а не только соглашением флоу. Для остальных таблиц ADR-0003 в силе
+> (`event_staff` намеренно без ключа: revoked и active строки сосуществуют).
+
 ## Контекст
 
 ТЗ требует идемпотентности в четырёх местах (IDM-1…IDM-4): регистрация, чекин,

@@ -165,9 +165,11 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `granted_at` | timestamp | |
 | `revoked_at` | timestamp | пусто = права активны (OWN-14) |
 
-**Уникальность: `(event_id, telegram_id)`.**
-Проверка прав контролёра (STF-2) — это ровно «есть строка с этим `event_id`,
-этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
+**Уникальность `(event_id, telegram_id)` — соглашение флоу, ключ в БД не
+объявлен** ([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md) п. 1):
+для одной пары штатно сосуществуют revoked и active строки, выдача/принятие идут
+`tables-create-records`. Проверка прав контролёра (STF-2) — это ровно «есть
+строка с этим `event_id`, этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
 глобальный `staff` — это команда/организаторы, к чекину отношения не имеет.
 Выдаёт и отзывает права **любой staff с доступом к событию** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
 
@@ -252,10 +254,10 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `comment` | text | необязателен, ≤2000 символов |
 | `submitted_at` | timestamp | UTC, последней отправки |
 
-Уникальность `(event_id, telegram_id)` не гарантирована БД
-([ADR-0003](adr/0003-idempotency-without-atomicity.md)); поддерживается
-`tables-upsert-records` с ключом по этой паре — повторная отправка
-перезаписывает прежний отзыв, а не создаёт второй. Пишет только
+Уникальность `(event_id, telegram_id)` **объявлена в БД**
+([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md), W113b); upsert идёт
+через `ON CONFLICT` — повторная отправка перезаписывает прежний отзыв, а не
+создаёт второй. Пишет только
 `feedback-api`, после проверки участия (регистрация с чекином на конкретный
 `event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
@@ -296,9 +298,9 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `started_at` | timestamp | обновляется при старте заново |
 | `finished_at` | timestamp | пусто = не завершена; замок «одна попытка» |
 
-Ключ `(quiz_id, telegram_id)` — `tables-upsert-records`. Завершённую попытку
-перепройти нельзя; недоделанную — можно (сначала). Уникальность не гарантирована
-БД ([ADR-0003](adr/0003-idempotency-without-atomicity.md)).
+Ключ `(quiz_id, telegram_id)` — `tables-upsert-records`; **объявлен в БД**
+([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md), W113b).
+Завершённую попытку перепройти нельзя; недоделанную — можно (сначала).
 
 ## `quiz_answers`
 
@@ -326,10 +328,18 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ни TTL. Атомарного примитива на платформе не существует, поэтому «уникальность»
 ниже — это соглашение наших флоу, а не гарантия БД.
 
-Как мы с этим живём — [ADR-0003](adr/0003-idempotency-without-atomicity.md).
-Коротко: повтор делаем безвредным, дубли схлопываем при чтении, остаток
-**считает** `dedup-report` — диагностика, а не уборка
-([Q42](OPEN-QUESTIONS.md#q42), W12b).
+> **Обновлено 2026-09-28 ([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md),
+> W113b):** платформа дала объявленный уникальный ключ. На семи таблицах
+> (`users`, `registrations`, `sessions`, `staff`, `feedback`,
+> `quiz_attempts`, `quiz_answers`) ключ **объявлен** — уникальность обеспечена
+> БД, upsert идёт через `ON CONFLICT`, вставка дубля — `RECORD_DUPLICATE_KEY`.
+> `event_staff` намеренно без ключа (revoked и active строки сосуществуют).
+> Для остальных таблиц соглашение флоу в силе.
+
+Как мы с этим живём — [ADR-0003](adr/0003-idempotency-without-atomicity.md)
+(для таблиц без объявленного ключа). Коротко: повтор делаем безвредным, дубли
+схлопываем при чтении, остаток **считает** `dedup-report` — диагностика, а не
+уборка ([Q42](OPEN-QUESTIONS.md#q42), W12b).
 
 | Требование | Ключ | Механизм |
 | --- | --- | --- |

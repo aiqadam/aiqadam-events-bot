@@ -16,6 +16,8 @@
 
 ## Заметки
 
+- Ключ `telegram_id` **объявлен в БД** ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md), W113b):
+  upsert через `ON CONFLICT`, одна сессия на пользователя.
 - `draft` проверен на round-trip: строка с `"кавычками"`, `\n`, кириллицей,
   вложенным массивом и `null` вернулась байт в байт. `JSON.parse` в Code step
   разбирает её без оговорок.
