@@ -9,7 +9,7 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
-const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
+const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'lang'] as const;
 
 // Черновик нового события переживает уход со страницы (W42): localStorage,
 // ключ один — второй формы создания на устройстве быть не может.
@@ -45,6 +45,8 @@ const EMPTY_FIELDS: Record<string, string> = {
   reg_deadline_at: '',
   capacity: '',
   overbook_pct: '',
+  // W125 (OWN-17): язык контента события, дефолт ru.
+  lang: 'ru',
 };
 
 type EventData = Record<string, unknown>;
@@ -384,6 +386,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         const v = ev[n];
         next[n] = v === undefined || v === null ? '' : String(v);
       });
+      // W125 (OWN-17): язык контента — только ru|uz|en, пустое/чужое → ru.
+      const lang = String(ev['lang'] || '');
+      next['lang'] = ['ru', 'uz', 'en'].includes(lang) ? lang : 'ru';
       ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((n) => {
         next[n] = utcToLocalInput(String(ev[n] || ''));
       });
@@ -1500,6 +1505,26 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </p>
                     )}
                   </div>
+
+                  {/* W125 (OWN-17): язык контента события — код RU/UZ/EN,
+                      как в переключателе языка профиля (W117). */}
+                  <div className="field">
+                    <span className="label">{t('field.lang')}</span>
+                    <div className="chip-row" role="group" aria-label={t('field.lang')}>
+                      {(['ru', 'uz', 'en'] as const).map((code) => (
+                        <button
+                          key={code}
+                          type="button"
+                          className={`btn btn-secondary btn-sm${(fields['lang'] || 'ru') === code ? ' active' : ''}`}
+                          aria-pressed={(fields['lang'] || 'ru') === code}
+                          aria-label={t(`lang.btn.${code}`)}
+                          onClick={() => setField('lang', code)}
+                        >
+                          {code.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1727,6 +1752,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     <div className="event-body">
                       <div className="event-top">
                         <span className="event-status">{t(`status.${previewStatus}`)}</span>
+                        <span className="badge mono" title={t('field.lang')}>
+                          {String(fields['lang'] || 'ru').toUpperCase()}
+                        </span>
                       </div>
                       <h3 className="event-title">{fields['title'] || t('field.title')}</h3>
                       <div className="event-meta">

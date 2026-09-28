@@ -12,6 +12,7 @@
 | chapter_id | TEXT | `Femtgz8bh7N8jSOMUHfRt` | `FLG7wUpIdITkTd4wSUU5Y` | → `chapters.id`; по нему режется доступ `staff` (ADR-0024) |
 | title | TEXT | `tQEzfGR3hYG0ztG50Po00` | `GZkI8QmdKsUEaHAFzo3sh` | |
 | description | TEXT | `8PdNUVtOvTuwRzJFQDgfy` | `7WeqSNfx6MNzB8gIVPjN3` | |
+| lang | TEXT | `5bvPj315Iv7X8T8rge1d1` | `wkJRAt1iLwMtldr7gIr8Q` | язык контента `ru`/`uz`/`en`, дефолт `ru` (OWN-17); пусто у старых записей читается как `ru`, данные не переписываются |
 | photo_file_id | TEXT | `hfpenYm4IZ5apFOt6cIgD` | `cxblz5YPWPPMfXAadROMf` | Telegram `file_id`, не URL; **временно не используется** ([Q46](../../docs/OPEN-QUESTIONS.md#q46), возврат — [W39](../../docs/BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка)) |
 | address | TEXT | `kSRM3ouou0Owj2yDYk92W` | `cS62NQgXQgmB5LNDuBFfE` | адрес текстом |
 | lat | NUMBER | `EKEX5zyhKo3WChz5ZquY0` | `1Q8tRDqMP8pT7q1Ssx6mS` | для `sendVenue` (OWN-2) |

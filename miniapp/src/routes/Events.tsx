@@ -26,6 +26,9 @@ type CatalogEvent = {
   endsAt: string;
   regDeadlineAt: string;
   status: string;
+  // W125 (OWN-17): язык контента события — ru|uz|en; сервер отдаёт `ru`,
+  // если у записи поле пустое.
+  lang?: string;
   registerLink: string;
 };
 
@@ -808,6 +811,11 @@ function EventCard({
       <div className="event-body">
         <div className="event-top">
           <span className="event-status">{t(statusKey)}</span>
+          {/* W125 (OWN-17): язык контента события — код RU/UZ/EN, как в
+              переключателе языка (W117). */}
+          <span className="badge mono" title={t('field.lang')}>
+            {String(ev.lang || 'ru').toUpperCase()}
+          </span>
         </div>
         <h3 className="event-title">{ev.title}</h3>
         <div className="event-meta">
