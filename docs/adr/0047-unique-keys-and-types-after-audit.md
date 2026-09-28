@@ -1,11 +1,12 @@
 # 0047. Уникальные ключи и типы BOOLEAN/JSON: ревизия после аудита
 
-**Статус:** предложение — на принятие владельцем (заведён пакетом
-[W113](../work/W113-unique-keys.md), 2026-09-28). Уточняет и, при принятии,
-частично заменяет [ADR-0003](0003-idempotency-without-atomicity.md) и
-[ADR-0011](0011-idempotency-on-atomic-primitives.md) в части «уникальность
-обеспечивается только соглашением флоу». Не отменяет «0 кода» и опору на
-`tables`.
+**Статус:** принят 2026-09-28 (решение владельца в чате). П. 1 внедрён
+пакетом [W113b](../work/W113b-declare-unique-keys.md); п. 2 и 3 — приняты как
+решение (типы не мигрировать, очистка — только `clear_columns`/`__clear`).
+Уточняет и частично заменяет [ADR-0003](0003-idempotency-without-atomicity.md)
+и [ADR-0011](0011-idempotency-on-atomic-primitives.md) в части «уникальность
+обеспечивается только соглашением флоу» — для перечисленных ниже таблиц она
+теперь обеспечена БД. Не отменяет «0 кода» и опору на `tables`.
 
 ## Контекст
 
@@ -34,12 +35,16 @@ upsert через `ON CONFLICT`) и на типы `BOOLEAN`/`JSON` (#472) — с
   повторный upsert по ключу — тот же `record id`; `tables-create-records` с
   тем же ключом — `409 RECORD_DUPLICATE_KEY`.
 
-## Решение (предлагается владельцу)
+## Решение (принято)
+
+**Внедрение (W113b, 2026-09-28):** ключи объявлены (`DECLARE_KEY`) на
+перечисленных в п. 1 таблицах; живые upsert'ы проверены — повтор даёт тот же
+`record id`, `tables-create-records` с тем же ключом — `409 RECORD_DUPLICATE_KEY`.
+Схема зафиксирована в `catalog/tables/*` и DATA-MODEL.
 
 1. **Объявить уникальные ключи** там, где пара/набор — настоящий инвариант
    (`users.telegram_id`, `registrations(event_id,telegram_id)`,
-   `sessions.telegram_id`, `staff.telegram_id`,
-   `event_staff(event_id,telegram_id)`, `feedback(event_id,telegram_id)`,
+   `sessions.telegram_id`, `staff.telegram_id`, `feedback(event_id,telegram_id)`,
    `quiz_attempts(quiz_id,telegram_id)`,
    `quiz_answers(quiz_id,telegram_id,question_idx)`). Это **меняет путь
    записи**: upsert уходит на `INSERT … ON CONFLICT` без табличного
@@ -51,12 +56,16 @@ upsert через `ON CONFLICT`) и на типы `BOOLEAN`/`JSON` (#472) — с
    Почему перечислены именно эти таблицы: у них ключ — инвариант домена и
    **несколько писателей** (чат-путь и Mini App, отмена/реактивация, повторный
    онбординг), поэтому объявленный ключ закрывает реальный класс гонок.
-   Остальные проверенные ключи не предлагаются сейчас: `staff_invites.token_hash`
-   — одноразовый токен без конкурирующих писателей; `broadcast_targets` —
-   эфемерная цель одного цикла рассылки; `quiz_questions` — статический
-   контент; `events.id`/`chapters.id`/`quizzes.id`/`broadcasts.id` — уже
-   уникальные генерируемые id; `migrations`/`strings` — append-only/служебные.
-   Ключ на них объявить можно позже, без смены поведения.
+   **`event_staff` намеренно НЕ входит:** по дизайну (ADR-0024, `manage-api`)
+   для одной пары `(event_id, telegram_id)` сосуществуют revoked и active
+   строки, а выдача/принятие идут `tables-create-records` — уникальный ключ
+   сломал бы повторную выдачу после отзыва. Остальные проверенные ключи не
+   предлагаются сейчас: `staff_invites.token_hash` — одноразовый токен без
+   конкурирующих писателей; `broadcast_targets` — эфемерная цель одного цикла
+   рассылки; `quiz_questions` — статический контент;
+   `events.id`/`chapters.id`/`quizzes.id`/`broadcasts.id` — уже уникальные
+   генерируемые id; `migrations`/`strings` — append-only/служебные. Ключ на них
+   объявить можно позже, без смены поведения.
 2. **Типы `BOOLEAN`/`JSON` не мигрировать сейчас.** Флаги
    (`consent_pdn`, `consent_marketing`, `blocked_bot`, `late`) и статусы
    хранятся `STATIC_DROPDOWN` и сравниваются строками у потребителей; миграция

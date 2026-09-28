@@ -35,7 +35,9 @@
 - Все три dropdown'а — `true` / `false` **плюс пустое значение** (его добавляет платформа).
   Пусто ≠ `false`: непроставленный `consent_marketing` читается как `null`, и это
   тоже «нет согласия» (PAR-2), но фильтр `eq false` его **не** найдёт — только `not_exists`.
-- Уникальности по `telegram_id` БД не даёт (ADR-0003), запись идёт через find-then-write.
+- Ключ `telegram_id` **объявлен в БД** ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md), W113b):
+  upsert идёт через `ON CONFLICT`, повторная вставка той же пары — `RECORD_DUPLICATE_KEY`.
+  Для этой таблицы соглашение флоу из ADR-0003 больше не нужно.
 - **Шесть профильных полей (`profile_first_name`…`profile_completed_at`)
   раньше числились в этой таблице с `externalId`, равным `field id`** —
   ошибка с W50, найденная и исправленная в W58 в живых флоу

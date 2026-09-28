@@ -17,9 +17,9 @@
 
 ## Заметки
 
-- **Ключ `(quiz_id, telegram_id)`** — `tables-upsert-records`. Уникальность не
-  гарантирована БД ([ADR-0003](../../docs/adr/0003-idempotency-without-atomicity.md));
-  матч делает qadam. Повторный вход в незавершённую викторину обновляет
+- **Ключ `(quiz_id, telegram_id)`** — `tables-upsert-records`; **объявлен в БД**
+  ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md), W113b),
+  upsert через `ON CONFLICT`. Повторный вход в незавершённую викторину обновляет
   `started_at`, `finished_at` не трогает.
 - **Границы попытки определяется `finished_at`, а не счётчиком ответов**: счёт
   ответов мог бы дать ложное «завершено», если вопросы викторины поправят в середине.
