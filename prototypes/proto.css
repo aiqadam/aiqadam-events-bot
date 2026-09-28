@@ -429,6 +429,10 @@ a.ev-main { display: block; text-decoration: none; color: inherit; }
 .segmented::-webkit-scrollbar { display: none; }
 .segmented .btn { flex-shrink: 0; }
 .segmented .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
+/* Вариантов вида проблемы мало, и все должны быть видны разом: переносим,
+   а не прокручиваем; active-подсветка теряется вне .segmented, поэтому
+   контейнер остаётся тем же. */
+.segmented.wrap { flex-wrap: wrap; overflow-x: visible; }
 
 /* иконка внутри брендового .input-wrap: PROTO.icon отдаёт span, а не svg */
 .input-wrap > .proto-icon {
