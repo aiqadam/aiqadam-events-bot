@@ -165,9 +165,11 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `granted_at` | timestamp | |
 | `revoked_at` | timestamp | пусто = права активны (OWN-14) |
 
-**Уникальность: `(event_id, telegram_id)`.**
-Проверка прав контролёра (STF-2) — это ровно «есть строка с этим `event_id`,
-этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
+**Уникальность `(event_id, telegram_id)` — соглашение флоу, ключ в БД не
+объявлен** ([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md) п. 1):
+для одной пары штатно сосуществуют revoked и active строки, выдача/принятие идут
+`tables-create-records`. Проверка прав контролёра (STF-2) — это ровно «есть
+строка с этим `event_id`, этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
 глобальный `staff` — это команда/организаторы, к чекину отношения не имеет.
 Выдаёт и отзывает права **любой staff с доступом к событию** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
 

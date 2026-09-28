@@ -8,7 +8,7 @@
 | # | Вопрос | Статус |
 | --- | --- | --- |
 | [Q1](#q1) | Доступ к инстансу и MCP | ✅ MCP подключён по OAuth |
-| [Q2](#q2) | Уникальность и атомарность в Tables | ✅ их нет — [ADR-0003](adr/0003-idempotency-without-atomicity.md) |
+| [Q2](#q2) | Уникальность и атомарность в Tables | ✅ их не было — [ADR-0003](adr/0003-idempotency-without-atomicity.md); дополнено 2026-09-28: ключи объявлены на семи таблицах ([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md)) |
 | [Q3](#q3) | Хостинг Mini App | ✅ GitHub Pages из этого репо |
 | [Q4](#q4) | Бот-аккаунт | ✅ отдельный бот под события |
 | [Q5](#q5) | Доставка i18n | ✅ raw.githubusercontent, ветка main |

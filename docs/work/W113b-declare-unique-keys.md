@@ -213,6 +213,57 @@ W113 предлагал и `event_staff(event_id, telegram_id)`. При внед
 но это не доказывает, что `DECLARE_KEY` действительно встал и что upsert
 работает через `ON CONFLICT`.
 
+> Ограничение снято в круге 2: proof переснят читаемым прогоном (`NrOxJk…`),
+> см. ниже.
+
+### Круг 2 (2026-09-28)
+
+- **Ревьюер**: review-agent (тот же канон, чистый контекст) · **Вердикт**: есть замечания — 1, 3, 4 закрыты; 2 закрыто частично.
+
+**Проверено независимо:**
+
+- **Читаемый proof.** `ap_get_run NrOxJk825e8034PJvPAQx` читается: `step_1` —
+  `action: "created"` (`record id MIaOnZijLGegbjggxdyR1`); `step_2` —
+  `action: "updated"` с **тем же** `record id`; `step_3` — ❌ `409
+  RECORD_DUPLICATE_KEY` (прогон при этом SUCCEEDED — `continueOnFailure`
+  сработал); `step_4` — `{ok:true}`. Временный флоу `zz-w113b-proof`
+  (`5QufbJvRx8jU0H8g1DeHt`) существует: `callableFlow` + три
+  сконфигурированных шага (`upsert create` → `upsert update` →
+  `create duplicate` → `done`). Self-report-прогоны `ap_run_action` в журнале
+  теперь честно помечены как **нечитаемые** `ap_get_run`. **Замечание 1
+  закрыто.**
+- **Живой инстанс.** `feedback` — 0 записей (тестовая строка `zz-w113b` /
+  `888888931` удалена). `git diff origin/main...HEAD -- flows/` пуст — временный
+  флоу в репозиторий не попал.
+- **Документы.** `AGENTS.md`/`CLAUDE.md` (стр. 200–204), `docs/ARCHITECTURE.md`
+  (стр. 547–558), `catalog/tables/README.md` (bullet стр. 100–105 и шаг 3
+  рецепта, стр. 51–56), `DATA-MODEL` `feedback`/`quiz_attempts`,
+  `catalog/flows/dedup-report.md` — исправлены; противоречий с ADR-0047 в них
+  нет. **Замечания 3 и 4 закрыты.**
+- **Офлайн (с аргументами):** `check-texts.py` 0 (31 флоу, 285 ссылок),
+  `check-commands.py` 0, `check-export-secrets.sh` 0, `check-agents.py` 0,
+  `node prototypes/check.mjs` 0.
+
+**Замечание 2 закрыто частично — осталось «важно»:**
+
+- `docs/DATA-MODEL.md`, `event_staff` (стр. 168) по-прежнему
+  «**Уникальность: `(event_id, telegram_id)`.**» без оговорки. Противоречит
+  блоку «Идемпотентность» того же файла, карточке
+  [`catalog/tables/event_staff.md`](../../catalog/tables/event_staff.md) и
+  [ADR-0047](../adr/0047-unique-keys-and-types-after-audit.md) п. 1: у
+  `event_staff` ключа нет, revoked+active сосуществуют. Обещание
+  «обновлён `event_staff`» в ответе владельца диф `d409ba8` не подтверждает:
+  файл правился только в `feedback`/`quiz_attempts`.
+- `docs/OPEN-QUESTIONS.md`, **индекс Q2** (стр. 11) по-прежнему
+  «✅ их нет — [ADR-0003]». Тело Q2 (стр. 113–119) дополнено, индекс — нет;
+  противоречие внутри одного файла.
+
+**Вердикт круга 2: есть замечания (одно «важно»).** После правки этих двух
+строк пакет уходит на повторное ревью; правка текстовая, повторный прогон
+proof не нужен. Временный флоу `zz-w113b-proof` удалять после вердикта
+(гоча №11) — вместе с ним перестанет читаться прогон `NrOxJk…` (выводы
+скопированы в журнал).
+
 ## Хвосты и блокеры
 
 - `staff_invites`, `broadcast_targets`, `quiz_questions`, `events`, `chapters`,
