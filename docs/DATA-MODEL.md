@@ -338,8 +338,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 
 Как мы с этим живём — [ADR-0003](adr/0003-idempotency-without-atomicity.md)
 (для таблиц без объявленного ключа). Коротко: повтор делаем безвредным, дубли
-схлопываем при чтении, остаток **считает** `dedup-report` — диагностика, а не
-уборка ([Q42](OPEN-QUESTIONS.md#q42), W12b).
+схлопываем при чтении; фонового отчёта о числе дублей больше нет
+([ADR-0049](adr/0049-abolish-dedup-report.md), W121).
 
 | Требование | Ключ | Механизм |
 | --- | --- | --- |
@@ -355,7 +355,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 задвоенный участник станет двумя.
 
 Ключи `upd:*` истекают по TTL (`store put_if_absent`, [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md));
-дубли строк не убираются, а считаются — `dedup-report` ([Q42](OPEN-QUESTIONS.md#q42)).
+дубли строк не убираются и больше не считаются фоновым отчётом
+([ADR-0049](adr/0049-abolish-dedup-report.md), W121).
 
 ## `migrations` (служебная, ADR-0021)
 
