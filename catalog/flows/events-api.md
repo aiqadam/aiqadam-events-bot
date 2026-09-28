@@ -14,8 +14,8 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём sync-запроса SPA |
-| step_1 | `tables-find-records events` | `status in (published, finished)`, `limit 50`; только поля карточки: `id`, `title`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `status` |
-| step_2 | CODE «build catalog» | постфильтр статуса, деление будущие/прошедшие по `ends_at \|\| starts_at`, сортировка по `starts_at`, сборка `registerLink`; `lat`/`lon` — как есть, для ссылок на карты в Mini App (W72) |
+| step_1 | `tables-find-records events` | `status in (published, finished)`, `limit 50`; только поля карточки: `id`, `title`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `status`, `lang` |
+| step_2 | CODE «build catalog» | постфильтр статуса, деление будущие/прошедшие по `ends_at \|\| starts_at`, сортировка по `starts_at`, сборка `registerLink`; `lat`/`lon` — как есть, для ссылок на карты в Mini App (W72); `lang` — язык контента, пустое у старой записи отдаётся как `ru` (OWN-17) |
 | step_3 | `return_response` (`stop`) | `200 {ok, upcoming[], past[]}` — карточки готовыми полями |
 
 ## Зависимости
@@ -38,6 +38,9 @@
 - **`lat`/`lon` отдаются строкой, пустое значение — `''`, не `0`** (W72, #124):
   Mini App сам строит ссылки на Яндекс.Карты/Google Maps; онлайн-событие с
   пустыми координатами ссылок не получает (см. `miniapp/src/lib/maps.ts`).
+- **`lang` в карточке — язык контента события (OWN-17).** Публичное поле, ПД не
+  несёт; пустое у старой записи отдаётся как `ru`. Каталог рисует по нему чип
+  `RU`/`UZ`/`EN`; фильтрации по языку нет.
 - **Деление на будущие/прошедшие — в CODE, не в фильтре**: диапазонные
   сравнения по `DATE` не работают (Q15). Прошедший — `ends_at` (или
   `starts_at`, если `ends_at` пуст) уже наступил; разрывов нет.

@@ -70,6 +70,7 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `chapter_id` | text → `chapters.id` | чаптер события; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
+| `lang` | text | `ru` \| `uz` \| `en` — язык контента (`title`/`description`), дефолт `ru` (OWN-17); пусто у старых записей читается как `ru` |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
 | `address` | text | адрес текстом |
 | `lat`, `lon` | number | для `sendVenue` (OWN-2) |
