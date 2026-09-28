@@ -312,27 +312,27 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
       <BackButton show={fromApp} onBack={handleBack} />
       <div className={`card ticket-card ${isError && !cancelled ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        <h1 className="empty-heading" id="title">
-          {title}
-        </h1>
-        {evTitle && (
-          <div className="ticket-top" id="ticket-event">
-            <div className="ticket-event">{evTitle}</div>
-            {evWhen && (
-              <div className="ticket-when">
-                <Icon name="calendar" size={15} />
-                <span>{evWhen}</span>
-              </div>
-            )}
-            {evAddress && (
-              <div className="ticket-when">
-                <Icon name="map-pin" size={15} />
-                <span>{evAddress}</span>
-              </div>
-            )}
-            <MapLinks lat={evLat} lon={evLon} address={evAddress} />
-          </div>
-        )}
+        {/* W128: один заголовок — название события. Дубль «Ваш QR для входа»
+            убран: `ticket.title` остаётся только фолбэком, пока контекст
+            события не подгрузился (и в document.title). */}
+        <div className="ticket-top" id="ticket-event">
+          <h1 className="ticket-event" id="title">
+            {evTitle || (dictLoaded ? t('ticket.title') : '')}
+          </h1>
+          {evWhen && (
+            <div className="ticket-when">
+              <Icon name="calendar" size={15} />
+              <span>{evWhen}</span>
+            </div>
+          )}
+          {evAddress && (
+            <div className="ticket-when">
+              <Icon name="map-pin" size={15} />
+              <span>{evAddress}</span>
+            </div>
+          )}
+          <MapLinks lat={evLat} lon={evLon} address={evAddress} />
+        </div>
         {!cancelled && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         <p className="empty-desc msg" id="status" role="status" style={{ margin: '16px 0 0' }}>
           {statusText}

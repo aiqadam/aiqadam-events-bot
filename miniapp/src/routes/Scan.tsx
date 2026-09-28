@@ -73,9 +73,11 @@ export default function Scan({ eventId: propEventId, fromApp = false }: { eventI
       return;
     }
     setPaused(false);
-    setStatus('scan.hint');
+    setStatus('');
     try {
       // Подсказка под заголовком нативного сканера (Bot API 6.4+, до 64 символов).
+      // W128: на странице она не дублируется — живёт только в попапе; под
+      // попапом остаются вердикт и прогресс.
       tg2.showScanQrPopup({ text: t('scan.hint') }, (...args: unknown[]) => {
         let err: string | null = null;
         let result: unknown = null;
@@ -270,7 +272,7 @@ export default function Scan({ eventId: propEventId, fromApp = false }: { eventI
       )}
 
       <p className="empty-desc" id="status" style={{ minHeight: '1.5em' }}>
-        {paused ? t('scan.hint') : statusText}
+        {statusText}
       </p>
 
       {counters && (

@@ -586,6 +586,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
             done={sheetDone}
             profileNeeded={profileNeeded}
             prof={sheetProf}
+            pdnDone={pdnDone}
             onProf={(k, v) => setSheetProf((p) => ({ ...p, [k]: v }))}
             onPdn={() => setPdn(!pdn)}
             onMkt={() => setMkt(!mkt)}
@@ -990,8 +991,23 @@ function ProfileTab({
       {hint && <div className="helper">{hint}</div>}
     </div>
   );
+  // W128: контекст шапки — как в эталоне (renderProfile): инициалы, ФИО и
+  // «должность, компания · город». Пустые части не оставляют лишних разделителей.
+  const initials = ((profile.first || '').trim().slice(0, 1) + (profile.last || '').trim().slice(0, 1)).toUpperCase() || '•';
+  const fullName = (profile.first + ' ' + profile.last).trim();
+  const role = [profile.position, profile.company].filter(Boolean).join(', ');
+  const sub = role + (profile.city ? (role ? ' · ' : '') + profile.city : '');
   return (
     <div className="form-section">
+      {/* W128: шапка профиля — инициалы, имя и контекст (должность, компания,
+          город) над настройками, как в эталоне (renderProfile). */}
+      <div className="profile-head" id="profile-head">
+        <div className="profile-avatar" aria-hidden="true">{initials}</div>
+        <div style={{ minWidth: 0 }}>
+          <div className="profile-name">{fullName || t('common.value.none')}</div>
+          {sub && <div className="profile-sub">{sub}</div>}
+        </div>
+      </div>
       <div className="lang-row">
         <span className="label" id="profile-lang-label">{t('menu.btn.language')}</span>
         <div className="lang-switch" role="group" aria-labelledby="profile-lang-label">
@@ -1038,14 +1054,16 @@ function ProfileTab({
           {t('manage.btn.save')}
         </button>
       </div>
-      {/* W73 (#125, ADR-0039): самоудаление аккаунта (GDPR) — внизу, после
-          сохранения, разрушительная кнопка не первая. */}
-      <div className="app-actions" style={{ marginTop: 8 }}>
+      {/* W73 (#125, ADR-0039): самоудаление аккаунта (GDPR). W128: «опасная
+          зона» — отделена от «Сохранить» линией и заголовком, чтобы промах
+          не удалял аккаунт. Разрушительная кнопка не первая. */}
+      <div className="danger-zone">
+        <div className="section-label">{t('profile.delete.section')}</div>
         <button type="button" className="btn btn-destructive btn-block" id="profile-delete" onClick={onDelete}>
           {t('profile.delete.btn')}
         </button>
+        <p className="helper">{t('profile.delete.hint')}</p>
       </div>
-      <p className="helper">{t('profile.delete.hint')}</p>
     </div>
   );
 }
@@ -1059,6 +1077,7 @@ function RegistrationSheet({
   done,
   profileNeeded,
   prof,
+  pdnDone,
   onProf,
   onPdn,
   onMkt,
@@ -1073,6 +1092,7 @@ function RegistrationSheet({
   done: boolean;
   profileNeeded: boolean;
   prof: { first: string; last: string; position: string; company: string; city: string };
+  pdnDone: string;
   onProf: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
   onPdn: () => void;
   onMkt: () => void;
@@ -1156,6 +1176,9 @@ function RegistrationSheet({
           <p className="empty-heading">{error}</p>
         </div>
       )}
+      {/* W128/W60: профиль заполнен — согласие на обработку данных уже дано,
+          переспрашивать нечем; подпись вместо чекбокса. */}
+      {!profileNeeded && pdnDone && <p className="helper" id="reg-pdn-done">{pdnDone}</p>}
       <div className="sheet-actions">
         <button type="button" className="btn btn-primary btn-lg" id="reg-submit" disabled={(profileNeeded && !pdn) || busy} aria-busy={busy} onClick={onSubmit}>
           {t('event.card.btn_register')}

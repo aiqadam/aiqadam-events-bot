@@ -342,6 +342,7 @@
   "profile.delete.failed": "Не удалось удалить аккаунт.",
   "profile.delete.forbidden": "Так можно удалить только свой аккаунт.",
   "profile.delete.hint": "Удаляет профиль, регистрации и отзывы. Отменить нельзя.",
+  "profile.delete.section": "Опасная зона",
   "profile.delete.title": "Удаление аккаунта",
   "profile.first": "Имя",
   "profile.err": "Заполните имя и фамилию.",

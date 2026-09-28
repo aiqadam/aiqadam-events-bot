@@ -342,6 +342,7 @@
   "profile.delete.failed": "Akkauntni oʻchirib boʻlmadi.",
   "profile.delete.forbidden": "Shu tarzda faqat oʻz akkauntingizni oʻchirishingiz mumkin.",
   "profile.delete.hint": "Profil, roʻyxatlar va fikrlarni oʻchiradi. Qaytarib boʻlmaydi.",
+  "profile.delete.section": "Xavfli hudud",
   "profile.delete.title": "Akkauntni oʻchirish",
   "profile.err": "Ism va familiyani toʻldiring.",
   "profile.first": "Ism",

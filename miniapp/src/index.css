@@ -117,6 +117,27 @@ html, body { touch-action: pan-x pan-y; }
 .lang-switch button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .lang-switch button:hover { color: var(--foreground); }
 .lang-switch button[aria-pressed='true'] { color: var(--primary); font-weight: 600; }
+/* W128: шапка таба «Профиль» — имя, инициалы и контекст (должность, компания,
+   город) над настройками, как в эталоне (`.profile-head`/`.profile-avatar`
+   в proto.css). Только токены бренда. */
+.profile-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.profile-avatar {
+  width: 56px; height: 56px; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--primary-foreground);
+  font-family: var(--font-display); font-weight: 600; font-size: 20px;
+}
+.profile-name { font-family: var(--font-display); font-weight: 600; font-size: 17px; overflow-wrap: anywhere; }
+.profile-sub { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; overflow-wrap: anywhere; }
+/* W128: заголовок экрана и подзаголовок-контекст — паттерн эталона
+   (`.app-title`/`.app-sub` в proto.css). Используют отзыв и жалоба. */
+.app-title { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px; }
+.app-sub { font-size: 13px; color: var(--muted-foreground); margin: -8px 0 14px; overflow-wrap: anywhere; }
+/* W128: «опасная зона» — разрушительное действие отделено от «Сохранить»
+   (заголовок и линия), чтобы промах не удалял аккаунт. В эталоне блока нет:
+   самоудаление — дельта продукта (ADR-0039). */
+.danger-zone { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+.danger-zone .section-label { margin-top: 0; }
 /* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
 .chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */
@@ -201,7 +222,7 @@ html, body { touch-action: pan-x pan-y; }
 /* W51: контекст события над QR (прототип `.ticket-top` в proto.css) —
    название, дата и адрес билета. Только раскладка и токены бренда. */
 .ticket-top { margin-bottom: 4px; }
-.ticket-event { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.ticket-event { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; margin: 0; }
 .ticket-when { font-size: 13px; color: var(--muted-foreground); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; overflow-wrap: anywhere; }
 .sheet-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 .sheet-actions .btn { width: 100%; min-width: 0; }
