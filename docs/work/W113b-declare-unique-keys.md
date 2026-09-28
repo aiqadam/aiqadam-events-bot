@@ -62,14 +62,21 @@ W113 предлагал и `event_staff(event_id, telegram_id)`. При внед
 таблицах — только `checkin-api/step_8` (`update-record` по `record_id`, ключа не
 касается) и `event_staff` (`manage-api`/`staff-accept`, потому и исключён).
 
-**Различающий proof** (таблица `feedback`, временная строка удалена):
+**Различающий proof** (таблица `feedback`, временная строка удалена; id прогонов
+для независимого чтения `ap_get_run`):
 1. `ap_run_action tables-upsert-records`, пара `(zz-w113b, 888888930)` →
-   `action: "created"`;
-2. повтор → `action: "updated"`, **тот же** `record id 7Ev326r3REQTVM1MOiJb7`;
+   `action: "created"` (`lWFSAqLj2YeRwDrEGUkbo`);
+2. повтор → `action: "updated"`, **тот же** `record id 7Ev326r3REQTVM1MOiJb7`
+   (`c9fGfQJjNeAa8aOcoaPDM`);
 3. `tables-create-records` с той же парой → `409 RECORD_DUPLICATE_KEY`
-   (`run Cr0H2Yz9g15xRcGhOCZMI`);
-4. строка удалена; `users`/`sessions` — `create-records` с существующим
-   `telegram_id 322876545` → `409 RECORD_DUPLICATE_KEY`, строк не создано.
+   (`Cr0H2Yz9g15xRcGhOCZMI`);
+4. строка удалена; `users` — `create-records` с существующим
+   `telegram_id 322876545` → `409 RECORD_DUPLICATE_KEY` (`T3ZzeVXVl9ebYhxWvUIf0`),
+   `sessions` — то же (`mOgoGuiRVAZnIoOJGRkaR`), строк не создано.
+
+**Ограничение чтения:** `ap_export_table`/`ap_list_tables` объявленный ключ
+**не показывают**, поэтому read-only интроспекции ключа через MCP нет —
+доказательство поведенческое (прогоны выше: дубль отвергается).
 
 **Офлайн:** `check-texts.py` — 0; `check-commands.py` — 0;
 `check-export-secrets.sh` — чисто; `check-agents.py` — 0;
