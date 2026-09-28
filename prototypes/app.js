@@ -90,6 +90,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     return a;
   }
   function badge(text, kind) { return E('span', 'badge' + (kind ? ' badge-' + kind : ''), text); }
+  // W125: язык контента события — тихий чип-метка (коды RU/UZ/EN, как в
+  // переключателе языка W117). Значение — код, не пользовательская строка.
+  function langChip(code) {
+    const b = E('span', 'badge mono', String(code || 'ru').toUpperCase());
+    b.title = T('field.lang');
+    b.setAttribute('aria-label', T('field.lang') + ': ' + String(code || 'ru').toUpperCase());
+    return b;
+  }
   function initials(name) {
     return String(name || '?').split(/\s+/).slice(0, 2).map((w) => w[0] || '').join('').toUpperCase();
   }
@@ -574,6 +582,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       deadlineLocal: src ? (src.deadlineLocal || '') : '',
       capacity: src && src.capacity ? String(src.capacity) : '',
       overbook: src && src.overbook ? String(src.overbook) : '',
+      lang: src ? (src.lang || 'ru') : 'ru',
     };
     return wizardDraft;
   }
@@ -651,7 +660,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
 
   function renderWizard(body, isNew) {
-    PROTO.setTrace(['OWN-1', 'OWN-2', 'OWN-3', 'OWN-4', 'OWN-5', 'OWN-6', 'OWN-15']);
+    PROTO.setTrace(['OWN-1', 'OWN-2', 'OWN-3', 'OWN-4', 'OWN-5', 'OWN-6', 'OWN-15', 'OWN-17']);
     const f = wizardFields(eventId);
     const step = WIZARD_STEPS[wizardStep];
     const errs = wizardErrors(f);
@@ -730,6 +739,18 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       error: show ? errors.description : '',
       onInput: (e) => { f.description = e.target.value; },
     }));
+    // W125: язык контента события — коды RU/UZ/EN, дефолт `ru`. Язык
+    // интерфейса и рассылок не меняется (OWN-17).
+    const loc = E('div', 'app-field');
+    loc.appendChild(E('label', 'label', T('field.lang')));
+    const mode = E('div', 'segmented');
+    ['ru', 'uz', 'en'].forEach((code) => {
+      const b = btn(code.toUpperCase(), { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { f.lang = code; renderManageEvent(eventId); } });
+      if (f.lang === code) b.classList.add('active');
+      mode.appendChild(b);
+    });
+    loc.appendChild(mode);
+    sec.appendChild(loc);
     body.appendChild(sec);
   }
 
@@ -866,6 +887,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const top = E('div', 'event-top');
     const isDraft = String(eventId) === '5' || eventId === 'new';
     top.appendChild(E('span', 'event-status', (isDraft ? T('status.draft') : T('status.published')).toUpperCase()));
+    top.appendChild(langChip(f.lang));
     b.appendChild(top);
     b.appendChild(E('div', 'event-title', String(f.title || '').trim() || T('manage.err.title_length')));
     const meta = E('div', 'ev-meta');
@@ -1200,7 +1222,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ['past', T('events.list.btn.past')],
       ['profile', T('profile.tab')],
     ];
-    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2', 'OWN-6']);
+    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2', 'OWN-6', 'OWN-17']);
     clear();
 
     const tw = E('div', 'tabs-wrap');
@@ -1276,6 +1298,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const top = E('div', 'event-top');
     top.appendChild(E('span', 'event-status', (ev.status === 'finished' ? T('status.finished') : T('status.published')).toUpperCase()));
     if (ev.tag) top.appendChild(badge('#' + ev.tag, 'primary'));
+    top.appendChild(langChip(ev.lang));
     body.appendChild(top);
     body.appendChild(E('div', 'event-title', ev.title));
     const meta = E('div', 'ev-meta');

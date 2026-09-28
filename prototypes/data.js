@@ -37,6 +37,7 @@ PROTO.data = {
     capacity: 120,
     overbook: 40,
     limit: 168,
+    lang: 'ru',
     status: 'published',
     statusKey: 'status.published',
     inviteLink: 'https://t.me/aiqadam_events_bot?start=e4',
@@ -64,6 +65,7 @@ PROTO.data = {
     id: '6',
     title: 'RAG Reading Group · The Faiss Library',
     when: 'пн, 5 октября · 19:00',
+    lang: 'en',
   },
 
   catalog: {
@@ -77,6 +79,7 @@ PROTO.data = {
         when: 'сб, 26 сентября · 18:30', where: 'Ташкент · IT Park',
         capacity: 120, overbook: 40, registeredCount: 48,
         status: 'published', tag: 'LLM', registered: true, staff: true,
+        lang: 'ru',
         d: { weekday: 'сб', day: '26', month: 'сент' },
       },
       {
@@ -84,6 +87,7 @@ PROTO.data = {
         when: 'пн, 5 октября · 19:00', where: 'Онлайн · Zoom',
         capacity: null, overbook: null, registeredCount: 0,
         status: 'published', tag: 'RAG', registered: false, staff: false,
+        lang: 'en',
         d: { weekday: 'пн', day: '5', month: 'окт' },
       },
       {
@@ -91,6 +95,7 @@ PROTO.data = {
         when: 'сб, 17 октября · 10:00', where: 'Ташкент · IT Park',
         capacity: 60, overbook: 40, registeredCount: 67,
         status: 'published', tag: 'Hackathon', registered: false, staff: false,
+        lang: 'ru',
         d: { weekday: 'сб', day: '17', month: 'окт' },
       },
     ],
@@ -99,12 +104,14 @@ PROTO.data = {
         id: '3', title: 'AI Qadam #3 · Embeddings & Vector DB Day',
         when: 'сб, 5 сентября · 18:30', where: 'Ташкент · IT Park', attended: 178,
         status: 'finished', attendedMe: true, feedbackGiven: false,
+        lang: 'ru',
         d: { weekday: 'сб', day: '5', month: 'сен' },
       },
       {
         id: '2', title: 'AI Qadam Almaty #1 · Computer Vision Day',
         when: 'сб, 22 августа · 18:30', where: 'Алматы · Astana Hub', attended: 134,
         status: 'finished', attendedMe: false, feedbackGiven: false,
+        lang: 'ru',
         d: { weekday: 'сб', day: '22', month: 'авг' },
       },
     ],
@@ -141,6 +148,7 @@ PROTO.data = {
       mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
       status: 'published', statusKey: 'status.published',
       author: true, registered: 48, checkedIn: 31, cancelled: 2,
+      lang: 'ru',
       inviteLink: 'https://t.me/aiqadam_events_bot?start=e4',
     },
     {
@@ -156,6 +164,7 @@ PROTO.data = {
       mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
       status: 'draft', statusKey: 'status.draft',
       author: true, registered: 0, checkedIn: 0, cancelled: 0,
+      lang: 'ru',
       inviteLink: 'https://t.me/aiqadam_events_bot?start=e5',
     },
     {
@@ -171,6 +180,7 @@ PROTO.data = {
       mapUrl: 'https://yandex.ru/maps/?pt=69.279737,41.311081&z=17&l=map',
       status: 'published', statusKey: 'status.published',
       author: false, registered: 67, checkedIn: 0, cancelled: 5,
+      lang: 'ru',
       inviteLink: 'https://t.me/aiqadam_events_bot?start=e7',
     },
   ],
