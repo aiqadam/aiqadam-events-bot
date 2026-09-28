@@ -3,6 +3,7 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "checkin-counter-api",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -74,7 +75,7 @@
                       "regRows": "{{step_4['output']}}",
                       "staffRows": "{{step_3['output']}}",
                       "texts": {
-                        "checkin.forbidden": "Нет прав на чекин этого события"
+                        "checkin.forbidden": "{{$t['checkin.forbidden']}}"
                       }
                     },
                     "sourceCode": {
@@ -222,7 +223,7 @@
                 },
                 "input": {
                   "texts": {
-                    "checkin.unauthorized": "Данные Mini App устарели — переоткройте приложение"
+                    "checkin.unauthorized": "{{$t['checkin.unauthorized']}}"
                   }
                 },
                 "sourceCode": {
@@ -297,7 +298,7 @@
             "exampleData": {
               "sampleData": {}
             },
-            "externalId": "VzXoy80RWnX7pM4dm8eor"
+            "externalId": "TIZvQYTCBVJMsMWNC5EbK"
           },
           "flowProps": {
             "payload": {

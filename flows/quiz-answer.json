@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "quiz-answer",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -443,10 +444,10 @@
                   "shownAt": "{{step_2['output'].shownAt}}",
                   "telegramId": "{{trigger['output'].data.telegramId}}",
                   "texts": {
-                    "quiz.closed": "Викторина сейчас не идёт. Возвращайтесь в дни события.",
-                    "quiz.done": "Спасибо! Викторина пройдена, ответы записаны.",
-                    "quiz.q_header": "Вопрос {n} из {total}:",
-                    "quiz.q_hint": "Ваш ответ — сообщением. 15 секунд."
+                    "quiz.closed": "{{$t['quiz.closed']}}",
+                    "quiz.done": "{{$t['quiz.done']}}",
+                    "quiz.q_header": "{{$t['quiz.q_header']}}",
+                    "quiz.q_hint": "{{$t['quiz.q_hint']}}"
                   }
                 },
                 "sourceCode": {
@@ -597,7 +598,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.15",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

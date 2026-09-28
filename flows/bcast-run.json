@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "bcast-run",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -95,8 +96,8 @@
                                         "fallbackChat": "{{trigger['output'].data.chatId}}",
                                         "sent": 0,
                                         "texts": {
-                                          "bcast.empty_segment": "В этом сегменте никого нет — отправлять некому.",
-                                          "bcast.finished": "Рассылка завершена: отправлено {sent}, ошибок {failed}."
+                                          "bcast.empty_segment": "{{$t['bcast.empty_segment']}}",
+                                          "bcast.finished": "{{$t['bcast.finished']}}"
                                         },
                                         "total": 0
                                       },
@@ -245,7 +246,7 @@
                                               "phase": "start",
                                               "telegramId": "322876545"
                                             },
-                                            "externalId": "uRUDWnYt303De2TuziKm4"
+                                            "externalId": "0yVrF1tXfvdPTqSnCNFL4"
                                           },
                                           "flowProps": {
                                             "payload": {
@@ -372,7 +373,7 @@
                               "regRecords": "{{step_9['output']}}",
                               "segment": "{{step_4['output'].segment}}",
                               "texts": {
-                                "bcast.started": "Рассылка запущена: получателей {count}."
+                                "bcast.started": "{{$t['bcast.started']}}"
                               },
                               "usersByIdsRecords": "{{step_12['output']}}"
                             },
@@ -568,6 +569,7 @@
                                 },
                                 {
                                   "displayName": "stamp blocked_bot",
+                                  "logOutput": false,
                                   "name": "step_32",
                                   "nextAction": {
                                     "displayName": "mark blocked",
@@ -700,6 +702,7 @@
                                           },
                                           {
                                             "displayName": "stamp blocked2",
+                                            "logOutput": false,
                                             "name": "step_40",
                                             "nextAction": {
                                               "displayName": "mark blocked2",
@@ -1119,7 +1122,7 @@
                                           "phase": "start",
                                           "telegramId": "322876545"
                                         },
-                                        "externalId": "uRUDWnYt303De2TuziKm4"
+                                        "externalId": "0yVrF1tXfvdPTqSnCNFL4"
                                       },
                                       "flowProps": {
                                         "payload": {
@@ -1192,8 +1195,8 @@
                                           "fallbackChat": "{{trigger['output'].data.chatId}}",
                                           "sent": "{{step_45['output'].sent}}",
                                           "texts": {
-                                            "bcast.empty_segment": "В этом сегменте никого нет — отправлять некому.",
-                                            "bcast.finished": "Рассылка завершена: отправлено {sent}, ошибок {failed}."
+                                            "bcast.empty_segment": "{{$t['bcast.empty_segment']}}",
+                                            "bcast.finished": "{{$t['bcast.finished']}}"
                                           },
                                           "total": "{{step_45['output'].total}}"
                                         },
@@ -1409,7 +1412,7 @@
                         "mediaMessageId": "{{step_4['output'].mediaMessageId}}",
                         "targetRecords": "{{step_24['output']}}",
                         "texts": {
-                          "bcast.btn.unsubscribe": "Отписаться"
+                          "bcast.btn.unsubscribe": "{{$t['bcast.btn.unsubscribe']}}"
                         }
                       },
                       "sourceCode": {
@@ -1593,10 +1596,10 @@
                 "phase": "{{trigger['output'].data.phase}}",
                 "telegramId": "{{trigger['output'].data.telegramId}}",
                 "texts": {
-                  "bcast.segment.no_show_locked": "Этот сегмент откроется после окончания события — {when}. Пока часть людей ещё в дороге.",
-                  "bcast.send.blocked_no_test": "Сначала отправьте тест себе — без этого рассылку не запускаем.",
-                  "common.err.event_not_found": "Событие не найдено.",
-                  "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже."
+                  "bcast.segment.no_show_locked": "{{$t['bcast.segment.no_show_locked']}}",
+                  "bcast.send.blocked_no_test": "{{$t['bcast.send.blocked_no_test']}}",
+                  "common.err.event_not_found": "{{$t['common.err.event_not_found']}}",
+                  "common.err.generic": "{{$t['common.err.generic']}}"
                 }
               },
               "sourceCode": {
@@ -1708,7 +1711,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

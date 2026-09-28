@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "reg-consent-pdn",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -125,7 +126,7 @@
                 },
                 "input": {
                   "texts": {
-                    "reg.consent_pdn.declined": "Хорошо, регистрацию не оформляем — без согласия на обработку данных мы не вправе. Если передумаете, откройте ту же ссылку ещё раз."
+                    "reg.consent_pdn.declined": "{{$t['reg.consent_pdn.declined']}}"
                   }
                 },
                 "sourceCode": {
@@ -138,12 +139,14 @@
             },
             {
               "displayName": "save consent_pdn",
+              "logOutput": false,
               "name": "step_4",
               "nextAction": {
                 "displayName": "read event title",
                 "name": "step_6",
                 "nextAction": {
                   "displayName": "create or reactivate registration",
+                  "logOutput": false,
                   "name": "step_5",
                   "nextAction": {
                     "displayName": "advance session to await_marketing (draft сохраняется)",
@@ -288,11 +291,11 @@
                           "saveConsentError": "{{step_4['error']}}",
                           "saveRegError": "{{step_5['error']}}",
                           "texts": {
-                            "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
-                            "reg.consent_marketing.ask": "Присылать анонсы следующих событий? На регистрацию это никак не влияет.",
-                            "reg.consent_marketing.btn_no": "Не нужно",
-                            "reg.consent_marketing.btn_yes": "Да, присылайте",
-                            "reg.done.header": "✅ Вы зарегистрированы"
+                            "common.err.generic": "{{$t['common.err.generic']}}",
+                            "reg.consent_marketing.ask": "{{$t['reg.consent_marketing.ask']}}",
+                            "reg.consent_marketing.btn_no": "{{$t['reg.consent_marketing.btn_no']}}",
+                            "reg.consent_marketing.btn_yes": "{{$t['reg.consent_marketing.btn_yes']}}",
+                            "reg.done.header": "{{$t['reg.done.header']}}"
                           }
                         },
                         "sourceCode": {
@@ -360,6 +363,9 @@
                             "RZYFhQBQbSfNzIVEvmYgd": "{{step_2['output'].now}}",
                             "TZyqC63UAWrPbzxuf2q4w": "registered",
                             "WFWifafyD6UNNCxLQyML1": "{{step_2['output'].utm}}",
+                            "__clear": [
+                              "OlFAWgVQmrqhqxlraOPOZ"
+                            ],
                             "mVfpZFCwAZskWXNT7iCuI": "{{trigger['output'].data.telegramId}}",
                             "qQPYl9c0ew6n8w2CGYZII": "{{step_2['output'].eventId}}"
                           }
@@ -368,7 +374,7 @@
                     },
                     "propertySettings": {},
                     "qadamName": "@aiqadam/qadam-tables",
-                    "qadamVersion": "0.4.5"
+                    "qadamVersion": "0.4.6"
                   },
                   "type": "PIECE",
                   "valid": true
@@ -515,7 +521,7 @@
             "telegramId": "{{trigger['output'].data.telegramId}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:pdn:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const telegramId = str(inputs.telegramId);\n  // cardMessageId живёт в draft (ADR-0017); 0 значит «карточки нет,\n  // редактировать нечего» — тогда сразу шлём новое сообщение.\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  // Черновик пересобирается здесь, а не шаблоном в инпуте шага: значения\n  // проходят через JSON.stringify и кавычка в utm не ломает строку.\n  const draftJson = JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId });\n  return {\n    isYes: isYes, eventId: eventId,\n    // W102: непустой sentinel для фильтра step_6 (пустой eq валит шаг).\n    eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    utm: utm,\n    regId: eventId + '-' + telegramId,\n    cardMessageId: cardId, draftJson: draftJson,\n    now: new Date().toISOString()\n  };\n};",
+            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const isYes = str(inputs.callbackData) === 'reg:pdn:yes';\n  let draft = {};\n  try { draft = JSON.parse(str(inputs.sessionDraft) || '{}'); } catch (e) { draft = {}; }\n  const eventId = str(draft.eventId);\n  const utm = str(draft.utm);\n  const telegramId = str(inputs.telegramId);\n  // cardMessageId живёт в draft (ADR-0017); 0 значит «карточки нет,\n  // редактировать нечего» — тогда сразу шлём новое сообщение.\n  const cardMessageId = Number(draft.cardMessageId);\n  const cardId = isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0;\n  // Черновик пересобирается здесь, а не шаблоном в инпуте шага: значения\n  // проходят через JSON.stringify, и кавычка в utm не ломает строку.\n  const draftJson = JSON.stringify({ eventId: eventId, utm: utm, cardMessageId: cardId });\n  return {\n    isYes: isYes, eventId: eventId,\n    // W102: непустой sentinel для фильтра step_6 (пустой eq валит шаг).\n    eventIdOrNone: eventId !== '' ? eventId : '__none__',\n    utm: utm,\n    regId: eventId + '-' + telegramId,\n    cardMessageId: cardId, draftJson: draftJson,\n    now: new Date().toISOString()\n  };\n};",
             "packageJson": "{}"
           }
         },

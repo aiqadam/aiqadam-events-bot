@@ -7,7 +7,7 @@
 - **Назначение**: чанкованный прогон рассылки по 30 получателей с курсором
   (`FLOW_TIMEOUT_SECONDS = 600`), ретраями `429`/`403` и отчётом автору
   события (OWN-11, OWN-12, Q18).
-- **Flow ID (MCP)**: `ABjmnym2NRGldfGeHoGbN` · **externalId**: `uRUDWnYt303De2TuziKm4`
+- **Flow ID (MCP)**: `By03Fpx1pPqJTdaQlhYsQ` · **externalId**: `0yVrF1tXfvdPTqSnCNFL4`
 
 ## Фазы
 

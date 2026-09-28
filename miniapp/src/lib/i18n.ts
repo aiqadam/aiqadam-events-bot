@@ -1,17 +1,65 @@
-// Русский-онли до платформенного i18n — ADR-0014, issue 420
-// Раньше здесь выбирался язык по user.language_code и подгружался i18n/<lang>.json.
-// С 2026-09-13 бот отвечает только по-русски, и выбор языка тут означал бы расхождение.
-// Файлы uz/en в репозитории остаются — здесь они просто не загружаются.
+// W25: язык выбирается по `user.language_code` Telegram (ru/uz/en), дефолт — ru.
+// Русский словарь грузится всегда как основа; словарь выбранного языка ложится
+// поверх. Это даёт честный фолбэк по каждому ключу: пока словарь языка неполон
+// (догон переводов — W27), пользователь видит русскую строку, а не сырой ключ.
+// Платформенные переводы флоу и этот словарь — два слоя: сервер отвечает на
+// языке из заголовка `ap-parent-run-locale` (см. lib/api.ts), клиент — отсюда.
 
-const LANG = 'ru';
+import { getLang } from './telegram';
+
+const SUPPORTED_LANGS = ['ru', 'uz', 'en'];
+
+let LANG = 'ru';
 let dict: Record<string, string> = {};
 let loaded = false;
 let loading: Promise<Record<string, string>> | null = null;
 
+export function getLangCode(): string {
+  return LANG;
+}
+
+export function isSupportedLang(code: string): boolean {
+  return SUPPORTED_LANGS.includes(String(code || '').toLowerCase());
+}
+
+// W114: смена языка из таба «Профиль». Меняет словарь немедленно (компонент
+// перерисовывается по своему state), пишет выбор в localStorage (его читает
+// getLang() — для словаря и заголовка ap-parent-run-locale) и в <html lang>.
+// Запись на сервер (users.lang) делает вызывающий через reg-api set_lang.
+export async function setLang(code: string): Promise<void> {
+  const next = String(code || '').toLowerCase();
+  if (!SUPPORTED_LANGS.includes(next)) return;
+  LANG = next;
+  try {
+    localStorage.setItem('aiqadam.lang', next);
+  } catch {
+    /* localStorage недоступен — выбор всё равно применится в этой сессии */
+  }
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = next;
+  }
+  const base = await load('ru');
+  const over = next === 'ru' ? ({} as Record<string, string>) : await load(next);
+  dict = Object.assign({}, base, over);
+  loaded = true;
+  loading = null;
+}
+
+function load(lang: string): Promise<Record<string, string>> {
+  return fetch('i18n/' + lang + '.json')
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((d: Record<string, string>) => (d && typeof d === 'object' ? d : {}))
+    .catch(() => ({}));
+}
+
 // W42: подстановка {vars} — «Шаг {n} из {m}», «Координаты: {lat}, {lon}» и т. п.
 // Форма та же, что у t() во входах CODE-шагов (catalog/snippets/ru-texts.md).
 export function t(key: string, vars?: Record<string, string | number>): string {
-  let s = dict[key] || key;
+  // W115: пока словарь не загружен, отдаём пустую строку, а не сам ключ —
+  // иначе до ответа fetch на экране мелькают сырые ключи (в любом месте, а не
+  // только в заглушках). Сырой ключ остаётся сигналом отсутствующего ключа
+  // только после загрузки словаря.
+  let s = dict[key] || (loaded ? key : '');
   if (vars) {
     Object.keys(vars).forEach((k) => {
       s = s.split('{' + k + '}').join(String(vars[k]));
@@ -27,18 +75,17 @@ export function getDict(): Record<string, string> {
 export function loadI18n(): Promise<Record<string, string>> {
   if (loaded) return Promise.resolve(dict);
   if (loading) return loading;
-  loading = fetch('i18n/' + LANG + '.json')
-    .then((r) => r.json())
-    .then((d: Record<string, string>) => {
-      dict = d || {};
-      loaded = true;
-      return dict;
-    })
-    .catch(() => {
-      dict = {};
-      loaded = true;
-      return dict;
-    });
+  LANG = getLang();
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = LANG;
+  }
+  const base = load('ru');
+  const over = LANG === 'ru' ? Promise.resolve({} as Record<string, string>) : load(LANG);
+  loading = Promise.all([base, over]).then(([ru, lang]) => {
+    dict = Object.assign({}, ru, lang);
+    loaded = true;
+    return dict;
+  });
   return loading;
 }
 

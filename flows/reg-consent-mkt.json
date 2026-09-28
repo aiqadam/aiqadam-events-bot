@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "reg-consent-mkt",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -19,6 +20,7 @@
         "name": "step_2",
         "nextAction": {
           "displayName": "save consent_marketing",
+          "logOutput": false,
           "name": "step_3",
           "nextAction": {
             "displayName": "clear session",
@@ -137,17 +139,17 @@
                       "records": "{{step_4['output']}}",
                       "saveConsentError": "{{step_3['error']}}",
                       "texts": {
-                        "common.err.generic": "Что-то пошло не так. Попробуйте ещё раз чуть позже.",
-                        "event.card.btn_calendar": "Добавить в календарь",
-                        "events.catalog.hint": "Откройте каталог, чтобы выбрать событие и зарегистрироваться.",
-                        "menu.btn.events": "События",
-                        "menu.btn.quiz": "Викторина",
-                        "profile.saved.header": "✅ Профиль сохранён",
-                        "reg.consent_marketing.saved_no": "Анонсы присылать не будем.",
-                        "reg.consent_marketing.saved_yes": "Договорились, будем присылать анонсы.",
-                        "reg.done.header": "✅ Вы зарегистрированы",
-                        "ticket.header": "🎟 Ваш билет",
-                        "ticket.hint": "Покажите QR на входе. Он откроется по кнопке ниже — сохранять ничего не надо."
+                        "common.err.generic": "{{$t['common.err.generic']}}",
+                        "event.card.btn_calendar": "{{$t['event.card.btn_calendar']}}",
+                        "events.catalog.hint": "{{$t['events.catalog.hint']}}",
+                        "menu.btn.events": "{{$t['menu.btn.events']}}",
+                        "menu.btn.quiz": "{{$t['menu.btn.quiz']}}",
+                        "profile.saved.header": "{{$t['profile.saved.header']}}",
+                        "reg.consent_marketing.saved_no": "{{$t['reg.consent_marketing.saved_no']}}",
+                        "reg.consent_marketing.saved_yes": "{{$t['reg.consent_marketing.saved_yes']}}",
+                        "reg.done.header": "{{$t['reg.done.header']}}",
+                        "ticket.header": "{{$t['ticket.header']}}",
+                        "ticket.hint": "{{$t['ticket.hint']}}"
                       }
                     },
                     "sourceCode": {
@@ -344,7 +346,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

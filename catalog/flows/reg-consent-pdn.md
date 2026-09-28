@@ -6,7 +6,7 @@
 - **Назначение**: согласие на обработку ПД (PAR-1). При `yes` создаёт регистрацию
   и **редактирует карточку** в подтверждение + вопрос о рассылке; при `no` —
   редактирует её же в отказ и закрывает сессию.
-- **Flow ID (MCP)**: `vQJDQ8NecB1PleIFrq07O` · **externalId**: `PUf09unvIwSpobPr1u3kh`
+- **Flow ID (MCP)**: `UgAeyhpI29ndjM4EM3gxf` · **externalId**: `sQkwXETrInr5lns3jHQG2`
 
 ## Шаги
 
@@ -22,7 +22,7 @@
 | step_17 (`no`, On failure) | `send_text_message` | фолбэк: отказ отдельным сообщением |
 | step_4 (`yes`) | `tables-upsert-records users` | `consent_pdn = true` + отметка времени; **без** `continueOnFailure` — намеренно, см. заметку |
 | step_6 (`yes`) | `tables-find-records events` (`continueOnFailure`) | название, дата и адрес для подтверждения; фильтр `id eq eventIdOrNone` — при пустом `eventId` пустая выборка, а не падение |
-| step_5 (`yes`) | `tables-upsert-records registrations` (`continueOnFailure`) | создание или реактивация регистрации |
+| step_5 (`yes`) | `tables-upsert-records registrations` (`continueOnFailure`, `tables` 0.4.6) | создание или реактивация регистрации; per-row `__clear` чистит `cancelled_at` (W109) |
 | step_9 (`yes`) | `tables-upsert-records sessions` (`continueOnFailure`) | `step = await_marketing`, черновик сохраняется |
 | step_7 (`yes`) | CODE «card text: зарегистрирован + вопрос о рассылке» | кульминация с датой и местом + кнопки `reg:mkt:yes` / `reg:mkt:no`; при сбое `step_6`/`step_5`/`step_9` — `common.err.generic` вместо ложного успеха (вход `saveConsentError` от `step_4` тоже читается, но при `continueOnFailure: false` на `step_4` практически недостижим — падение `step_4` останавливает прогон раньше, чем добирается сюда) |
 | step_8 (`yes`) | `edit_message_text` (`continueOnFailure`) | карточка → подтверждение и следующий вопрос |

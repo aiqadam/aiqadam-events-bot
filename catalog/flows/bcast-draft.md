@@ -6,7 +6,7 @@
   `{chatId, telegramId, firstName, fwdText, messageId}`
 - **Назначение**: пересылка овнера → черновик рассылки в `sessions` + выбор
   события кнопками (OWN-9, headline-UX W14).
-- **Flow ID (MCP)**: `2AUeMeakjrrjUqZ0RuGpL` · **externalId**: `uvBaBR9JmEUQV2qKEngnX`
+- **Flow ID (MCP)**: `PuhLvYoJSe4FglAOumCIP` · **externalId**: `9L9aABPZWV3BJbO4Jgrv0`
 
 ## Шаги
 

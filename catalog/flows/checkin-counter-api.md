@@ -2,12 +2,12 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
-  `POST /api/v1/webhooks/lm9S9cRuSZOpVAgl2h44R/sync`; тело запроса —
+  `POST /api/v1/webhooks/c0amTex7C25ESzgvYvzAM/sync`; тело запроса —
   `{ initData, eventId }` (`authType: none`)
 - **Назначение**: счётчики «Отмечено X из Y» для экрана контроля `#/scan`
   (W62) — читает прогресс события один раз при открытии экрана, только для
   staff **этого** события (STF-2). Горячий путь `checkin-api` не тронут.
-- **Flow ID (MCP)**: `lm9S9cRuSZOpVAgl2h44R` · **externalId**: `T2sUoCibzEpXFURHzUQss`
+- **Flow ID (MCP)**: `c0amTex7C25ESzgvYvzAM` · **externalId**: `T2sUoCibzEpXFURHzUQss`
 
 ## Шаги
 

@@ -2,10 +2,10 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` (sync, `authType: none`) —
-  `POST /api/v1/webhooks/WYmnxVM4xPAWZA1IvNZok/sync`
+  `POST /api/v1/webhooks/wRV7Iho1yaxJ7VnsS49P4/sync`
 - **Назначение**: отдаёт подписанный QR-`payload` участнику для клиентского
   рендеринга в роут `#/ticket` SPA (`miniapp/src/routes/Ticket.tsx`) (ADR-0007 — QR не шлётся файлом).
-- **Flow ID (MCP)**: `WYmnxVM4xPAWZA1IvNZok`
+- **Flow ID (MCP)**: `wRV7Iho1yaxJ7VnsS49P4`
 
 ## Вход
 
@@ -27,7 +27,7 @@
 | step_8 (Otherwise) | `return_response` | ответ `401` немедленно |
 | step_3 (valid) | `callFlow fn-find-registration` | своя регистрация на `eventId` |
 | step_4 (valid) | `callFlow fn-sign-qr` (`continueOnFailure`) | подпись `(eventId, userId)` |
-| step_5 (valid) | CODE «decide result» | `not_registered` / `ok`, тексты — `inputs.texts` (ADR-0014) |
+| step_5 (valid) | CODE «decide result» | `not_registered` / `ok`, тексты — `inputs.texts` (ADR-0045, `$t`) |
 | step_6 (valid) | `return_response` | JSON: `{ok, error, text, payload, eventId, userId}` — форма, которую ждёт `#/ticket` |
 
 ### Контракт ответа (согласован с `#/ticket` SPA)

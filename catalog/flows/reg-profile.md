@@ -5,13 +5,17 @@
   (ветка `reg_profile`): колбэки `ob:*` и свободный ввод на шагах `ob_await_*`
   (ADR-0015: одно касание flows, ADR-0016: одинаковые по устройству шаги делят флоу)
 - **Назначение**: онбординг C первого касания (PAR-8, [ADR-0032](../../docs/adr/0032-onboarding-first-touch-profile.md),
-  [ADR-0034](../../docs/adr/0034-onboarding-any-first-touch.md)):
-  зачем → согласие → имя (эвристика) → работа → город → «Всё верно?» → запись.
+  [ADR-0034](../../docs/adr/0034-onboarding-any-first-touch.md),
+  [ADR-0043](../../docs/adr/0043-shorter-onboarding.md)):
+  входная карточка (зачем + согласие) → имя (эвристика) → работа → город
+  («Вы из Ташкента?», «Нет» — ввод текстом) → запись (там же вопрос о
+  рассылке). Экрана «Всё верно?» нет (ADR-0043):
+  выбор города ведёт прямо в `finish`.
   Диалог общий для входа по диплинку события (`draft.eventId` заполнен —
   запись создаёт регистрацию) и для голого `/start` (`eventId` пуст — пишется
   только профиль, регистрировать не на что). Повторное касание (`ob:register`)
   — только создание регистрации, всегда с событием.
-- **Flow ID (MCP)**: `5U3Kv0cSrnvDTrbictA4L` · **externalId**: `bEd0cScLAymIT44Dmtnxu`
+- **Flow ID (MCP)**: `bEz2bKyL82zlIwckxqvxc` · **externalId**: `sXX6wPP7eX2WPJBlWwR0g`
 
 ## Шаги
 
@@ -19,17 +23,17 @@
 |------|----------------|-----------|
 | trigger | `callableFlow` | `callbackData`, `messageText`, `messageId`, `sessionDraft`, `callbackQueryId`, `firstName`, `lastName`, `chatId`, `telegramId` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack колбэка; текстовый путь (пустой id) — мимо, без останова |
-| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
+| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0043: кнопка входной карточки — `ob:agree` (`ob:continue` снят), выбор города ведёт сразу в `finish`, а не в снятый review**; **ADR-0046: город — да/нет: `ob:city:yes` → `finish` с `Ташкент`, `ob:city:no` → `show_ask_city` (ввод текстом), текст на шаге `ob_await_city` → `finish`; W120: алиасы `ob:city:Tashkent/Almaty/write` сняты — такое значение даёт `ignore`**; **W114: `ob:lang:<xx>` на шаге `ob_lang` → `action: 'set_lang'`, `lang` — только `ru\|uz\|en`**; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
 | step_2 | `tables-find-records events` | событие по `id eq eventIdOrNone` (после парсинга — ссылка вперёд невозможна); при онбординге без события (голый `/start`) пустая выборка, а не падение |
-| step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); тексты — вход `texts` (ADR-0014) |
+| step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); **ADR-0043: при `ob:agree` пишет согласие (`writeKind consent`) и сразу отдаёт вопрос о работе при чистом имени из Telegram; подозрительное имя — прежний ручной ввод (`onb.suspect`); экранов согласия и «Всё верно?» нет**; **W114: `set_lang` кладёт язык в `draft.profile.lang` и идёт веткой `card` (рисует карточку согласия, `nextStep: 'ob_consent'`)**; тексты — вход `texts` (ADR-0045, `$t`) |
 | step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `finish_no_event` / `Otherwise` |
 | step_6 (`ignore`), step_7 (`Otherwise`) | CODE noop | чужой вход — тишина |
-| step_8→12 (`card`) | upsert сессии → `edit card` (+ фолбэк новым сообщением с перепиской draft) | обычные шаги диалога |
-| step_13→18 (`consent`) | upsert `consent_pdn` → upsert сессии → `edit card` (+ фолбэк) | согласие пишется до вопросов профиля |
+| step_8→12 (`card`) | upsert сессии → `edit card` (+ фолбэк новым сообщением с перепиской draft) | обычные шаги диалога (вопрос о работе, ручной ввод имени, вопрос о городе — «Вы из Ташкента?», «Нет» — ввод текстом, ADR-0046) |
+| step_13→18 (`consent`) | upsert `consent_pdn` → upsert сессии → `edit card` (+ фолбэк) | согласие пишется до вопросов профиля (PAR-1) и вместе с ним рисуется следующий вопрос — работа или ручной ввод имени (ADR-0043) |
 | step_19→21 (`declined`) | clear сессии → `edit card` (+ фолбэк) | отказ без согласия |
-| step_22→28 (`finish`) | upsert `users` (профиль + consent) → upsert `registrations` → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | «Всё верно?» с событием — регистрация первого касания |
-| step_29→33 (`finish_lite`) | upsert `registrations` → сессия закрыта сентинелом `-` → `edit done` (+ фолбэк) → `send ticket` | повторное касание (W60): `users` не трогаем (профиль не затираем пустым); согласие на рассылку уже дано/отклонено при первом заполнении профиля — вопрос не повторяем, билет уходит сразу вторым сообщением |
-| step_35→40 (`finish_no_event`) | upsert `users` (профиль + consent) → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | ADR-0034: «Всё верно?» без события (голый `/start`) — регистрацию создавать не на что, `registrations` не трогаем; хвост `await_marketing` тот же, `reg-consent-mkt` сам решает по пустому `eventId`, что показать |
+| step_22→28 (`finish`) | upsert `users` (профиль + consent + `lang`) → upsert `registrations` (`__clear` `cancelled_at`, W109) → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | финал с событием — регистрация первого касания; город домешивается из колбэка `ob:city:yes`/текста (ADR-0046); `users.lang` — из `profile.lang` (W114) |
+| step_29→33 (`finish_lite`) | upsert `registrations` (`__clear` `cancelled_at`, W109) → сессия закрыта сентинелом `-` → `edit done` (+ фолбэк) → `send ticket` | повторное касание (W60): `users` не трогаем (профиль не затираем пустым); согласие на рассылку уже дано/отклонено при первом заполнении профиля — вопрос не повторяем, билет уходит сразу вторым сообщением |
+| step_35→40 (`finish_no_event`) | upsert `users` (профиль + consent + `lang`) → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | ADR-0034: финал без события (голый `/start`) — регистрацию создавать не на что, `registrations` не трогаем; хвост `await_marketing` тот же, `reg-consent-mkt` сам решает по пустому `eventId`, что показать; `users.lang` — из `profile.lang` (W114) |
 
 ## Зависимости
 
@@ -96,13 +100,30 @@
   диапазона добавил W72 (#124); та же проверка в `reg-start`/`reg-consent-mkt`.
 - **Позитив живым чатом не прогнан** — хвост на W15: матрица 17/17 локально,
   негатив (`ignore`) — там же; живого `initData` у агента нет.
-- **`show_consent` и вход `reg-start`/`menu` используют разные ключи текста
-  на кнопку.** Обе карточки-предшественницы (`reg-start/step_9`, `menu/step_4`)
-  показывают нейтральную «Дальше» (`onb.btn.continue`, ведёт на саму карточку
-  согласия), а сама карточка согласия — «Согласен» (`onb.btn.agree`, ведёт на
-  `ob:agree`, то есть на фактическое согласие). Общий ключ на обе кнопки был
-  бы неверен в одном из двух мест — «Согласен» до показа текста согласия
-  либо «Дальше» на кнопке, которая и есть согласие.
+- **Входная карточка несёт и «зачем», и текст согласия (ADR-0043).**
+  `reg-start/step_9` и `menu/step_4` показывают `onb.why` + `onb.consent`
+  одной карточкой, а её кнопка — «Согласен» (`onb.btn.agree`, `ob:agree`):
+  нажатие и есть согласие, отдельного экрана `show_consent` и нейтральной
+  «Дальше» (`onb.btn.continue`) больше нет. Полный текст согласия остаётся за
+  «Подробнее» (`onb.details`, `ob:details` → `ob:understood`).
+- **Чистое имя из Telegram не подтверждается (ADR-0043).** При `ob:agree`
+  `step_4` пишет согласие и, если эвристика не сочла имя подозрительным,
+  сразу отдаёт вопрос о работе (`profile` = имя/фамилия из апдейта). Карточка
+  `onb.name_ok` и кнопка «Это я» (`ob:itsme`) сняты. Подозрительное имя —
+  прежний путь: `onb.suspect` → `ob:fixname` → `ob_await_name` → текст руками.
+  Цена решения — чистое, но неверное имя Telegram не показывается до записи;
+  правится в табе «Профиль».
+- **Экрана «Всё верно?» нет (ADR-0043).** Выбор города ведёт прямо в `finish`:
+  город домешивается в `profile` из вывода `step_3` (`p.city`), регистрация
+  создаётся там же. Колбэки `ob:allgood`/`ob:fix` и текст `onb.review` сняты;
+  заодно ушёл баг W59 («Исправить» откатывал на имя, теряя работу и город).
+- **Город — вопрос да/нет (ADR-0046).** Карточка спрашивает «Вы из Ташкента?»
+  (`onb.ask_city`) кнопками «Да»/«Нет» (`common.btn.yes`/`common.btn.no`):
+  «Да» (`ob:city:yes`) — сразу `finish` с городом `Ташкент`; «Нет» (`ob:city:no`)
+  — карточка свободного ввода (`onb.ask_city_input`) и шаг `ob_await_city`, текст
+  становится городом и ведёт в `finish`. Списка городов и кнопки «Написать»
+  больше нет; колбэки `ob:city:Tashkent`/`Almaty`/`write` сняты (W120) — прочее
+  значение уходит в `ignore`. Ключ `onb.btn.write` — архив.
 - **`finish_lite` не переспрашивает согласие на рассылку (W60).** Ветка
   достижима только когда `users.profile_completed_at` уже заполнен
   (`reg-start/step_3`, гейт «профиль заполнен → register»), а заполнение
@@ -138,3 +159,13 @@
   (`Number('') === 0`, баг #124). В билет повторного касания (`finish_lite`)
   добавлена кнопка «Добавить в календарь» — ссылка Google Calendar
   (`text`/`dates`/`location`), собирается только при наличии даты.
+- **Выбор языка на входе (`set_lang`, W114).** Колбэк `ob:lang:<xx>` на шаге
+  `ob_lang` даёт `action: 'set_lang'`; `step_4` кладёт язык в
+  `draft.profile.lang` и идёт существующей веткой `card` — пишет сессию
+  (`step: ob_consent`) и рисует карточку согласия на выбранном языке (локаль
+  прогона уже выставлена `tg-router` по этому же колбэку). `lang` сохраняется
+  через `draft.profile` во всех шагах (`consent_namecheck`/`text_name` мержат
+  `prof`, а не заменяют), а `users.lang` пишется в `finish`/`finish_no_event`.
+  Новых табличных шагов нет — так выбрано (язык живёт в черновике сессии до
+  `finish`), а не из-за ограничения платформы: отдельный `tables-upsert-records
+  users` под запись языка возможен (верхнеуровневые `table_id`/`key_columns`).

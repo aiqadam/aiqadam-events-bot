@@ -39,7 +39,7 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `telegram_id` | text, **PK** | единственный ключ (DAT-1) |
 | `first_name` | text | из апдейта, обновляется при каждом контакте |
 | `last_name` | text | может отсутствовать |
-| `profile_first_name` | text | имя из онбординга (PAR-8), руками или кнопкой «Это я» |
+| `profile_first_name` | text | имя из онбординга (PAR-8): из Telegram (эвристика) или ручным вводом, если имя подозрительное ([ADR-0043](../docs/adr/0043-shorter-onboarding.md)) |
 | `profile_last_name` | text | фамилия из онбординга |
 | `username` | text | справочно, может отсутствовать и меняться |
 | `phone` | text | только из `request_contact` (DAT-2), иначе пусто; **с 2026-09-14 в регистрации не спрашивается** — остаётся в схеме на будущее |
@@ -165,9 +165,11 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `granted_at` | timestamp | |
 | `revoked_at` | timestamp | пусто = права активны (OWN-14) |
 
-**Уникальность: `(event_id, telegram_id)`.**
-Проверка прав контролёра (STF-2) — это ровно «есть строка с этим `event_id`,
-этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
+**Уникальность `(event_id, telegram_id)` — соглашение флоу, ключ в БД не
+объявлен** ([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md) п. 1):
+для одной пары штатно сосуществуют revoked и active строки, выдача/принятие идут
+`tables-create-records`. Проверка прав контролёра (STF-2) — это ровно «есть
+строка с этим `event_id`, этим `telegram_id` и пустым `revoked_at`». Глобального права **чекина** не существует;
 глобальный `staff` — это команда/организаторы, к чекину отношения не имеет.
 Выдаёт и отзывает права **любой staff с доступом к событию** ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md)).
 
@@ -252,10 +254,10 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `comment` | text | необязателен, ≤2000 символов |
 | `submitted_at` | timestamp | UTC, последней отправки |
 
-Уникальность `(event_id, telegram_id)` не гарантирована БД
-([ADR-0003](adr/0003-idempotency-without-atomicity.md)); поддерживается
-`tables-upsert-records` с ключом по этой паре — повторная отправка
-перезаписывает прежний отзыв, а не создаёт второй. Пишет только
+Уникальность `(event_id, telegram_id)` **объявлена в БД**
+([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md), W113b); upsert идёт
+через `ON CONFLICT` — повторная отправка перезаписывает прежний отзыв, а не
+создаёт второй. Пишет только
 `feedback-api`, после проверки участия (регистрация с чекином на конкретный
 `event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
@@ -296,9 +298,9 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `started_at` | timestamp | обновляется при старте заново |
 | `finished_at` | timestamp | пусто = не завершена; замок «одна попытка» |
 
-Ключ `(quiz_id, telegram_id)` — `tables-upsert-records`. Завершённую попытку
-перепройти нельзя; недоделанную — можно (сначала). Уникальность не гарантирована
-БД ([ADR-0003](adr/0003-idempotency-without-atomicity.md)).
+Ключ `(quiz_id, telegram_id)` — `tables-upsert-records`; **объявлен в БД**
+([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md), W113b).
+Завершённую попытку перепройти нельзя; недоделанную — можно (сначала).
 
 ## `quiz_answers`
 
@@ -326,10 +328,18 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ни TTL. Атомарного примитива на платформе не существует, поэтому «уникальность»
 ниже — это соглашение наших флоу, а не гарантия БД.
 
-Как мы с этим живём — [ADR-0003](adr/0003-idempotency-without-atomicity.md).
-Коротко: повтор делаем безвредным, дубли схлопываем при чтении, остаток
-**считает** `dedup-report` — диагностика, а не уборка
-([Q42](OPEN-QUESTIONS.md#q42), W12b).
+> **Обновлено 2026-09-28 ([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md),
+> W113b):** платформа дала объявленный уникальный ключ. На семи таблицах
+> (`users`, `registrations`, `sessions`, `staff`, `feedback`,
+> `quiz_attempts`, `quiz_answers`) ключ **объявлен** — уникальность обеспечена
+> БД, upsert идёт через `ON CONFLICT`, вставка дубля — `RECORD_DUPLICATE_KEY`.
+> `event_staff` намеренно без ключа (revoked и active строки сосуществуют).
+> Для остальных таблиц соглашение флоу в силе.
+
+Как мы с этим живём — [ADR-0003](adr/0003-idempotency-without-atomicity.md)
+(для таблиц без объявленного ключа). Коротко: повтор делаем безвредным, дубли
+схлопываем при чтении; фонового отчёта о числе дублей больше нет
+([ADR-0049](adr/0049-abolish-dedup-report.md), W121).
 
 | Требование | Ключ | Механизм |
 | --- | --- | --- |
@@ -345,7 +355,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 задвоенный участник станет двумя.
 
 Ключи `upd:*` истекают по TTL (`store put_if_absent`, [ADR-0011](adr/0011-idempotency-on-atomic-primitives.md));
-дубли строк не убираются, а считаются — `dedup-report` ([Q42](OPEN-QUESTIONS.md#q42)).
+дубли строк не убираются и больше не считаются фоновым отчётом
+([ADR-0049](adr/0049-abolish-dedup-report.md), W121).
 
 ## `migrations` (служебная, ADR-0021)
 
@@ -353,15 +364,14 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 версией и каким коммитом репозитория описано. Флоу её не читают и не пишут;
 схема и правила ведения — [catalog/tables/migrations.md](../catalog/tables/migrations.md).
 
-## `cancelled_at` — не источник истины о статусе (Q30, 2026-09-12)
+## `cancelled_at` согласован со `status` (W109, 2026-09-28)
 
-У **реактивированной** регистрации `cancelled_at` остаётся от прошлой отмены:
-очистить DATE-поле через qadam `tables` сейчас нечем — пустая строка отвергается
-валидатором дат, а «оставить пустым» у пропа `values` означает «не менять».
+Реактивация регистрации очищает `cancelled_at` явным списком `__clear`
+(`@aiqadam/qadam-tables` 0.4.6, per-row) в шагах, создающих/реактивирующих
+строку: `reg-consent-pdn/step_5`, `reg-api/step_11`/`step_18`,
+`reg-profile/step_23`/`step_29`. Инвариант, обязательный к соблюдению:
+`status = registered` влечёт пустой `cancelled_at`, `status = cancelled` —
+непустой. Списки участников и экспорт (OWN-8) по-прежнему фильтруют по
+`status` (он первичен), но расхождения данных больше не появляются.
 
-**Следствие, обязательное к соблюдению:** статус пары `(event_id, telegram_id)`
-определяется полем **`status`**. Строка со `status = registered` и непустым
-`cancelled_at` — нормальное состояние, а не противоречие в данных.
-Списки участников и экспорт (OWN-8) обязаны фильтровать по `status`.
-
-Подробности и путь к устранению — [Q30](../docs/OPEN-QUESTIONS.md#q30).
+История вопроса — [Q30](OPEN-QUESTIONS.md#q30).

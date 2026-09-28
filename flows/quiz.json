@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "quiz",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -236,11 +237,11 @@
                   "questions": "{{step_3['output']}}",
                   "quizId": "{{step_2['output'].quizId}}",
                   "texts": {
-                    "quiz.already": "Вы уже прошли викторину. Спасибо!",
-                    "quiz.closed": "Викторина сейчас не идёт. Возвращайтесь в дни события.",
-                    "quiz.intro": "Викторина «{title}». Вопросов: {total}. На каждый — 15 секунд, отвечайте сообщением.",
-                    "quiz.q_header": "Вопрос {n} из {total}:",
-                    "quiz.q_hint": "Ваш ответ — сообщением. 15 секунд."
+                    "quiz.already": "{{$t['quiz.already']}}",
+                    "quiz.closed": "{{$t['quiz.closed']}}",
+                    "quiz.intro": "{{$t['quiz.intro']}}",
+                    "quiz.q_header": "{{$t['quiz.q_header']}}",
+                    "quiz.q_hint": "{{$t['quiz.q_hint']}}"
                   },
                   "title": "{{step_2['output'].title}}"
                 },
@@ -376,19 +377,24 @@
     "settings": {
       "input": {
         "exampleData": {
-          "callbackData": "qz:start",
-          "callbackQueryId": "sample-cbq-id",
-          "chatId": "322876545",
-          "firstName": "Тест",
-          "messageId": "0",
-          "telegramId": "322876545"
+          "sampleData": {}
         },
         "mode": "simple"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.15",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

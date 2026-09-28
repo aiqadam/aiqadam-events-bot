@@ -3,8 +3,9 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "fn-parse-start",
+  "localeSource": null,
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",
@@ -71,11 +72,22 @@
     "settings": {
       "input": {
         "exampleData": {
-          "start": "e_demo01"
+          "sampleData": {}
         },
         "mode": "simple"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
       "triggerName": "callableFlow"

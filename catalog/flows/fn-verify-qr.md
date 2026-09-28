@@ -4,7 +4,7 @@
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `checkin-api`
   (ADR-0015 п. 5)
 - **Назначение**: проверить подпись QR-payload участника при сканировании.
-- **Flow ID (MCP)**: `wZbneQfvOoO91zEQTrQGf` · **externalId (для `callFlow`)**: `m5ZG7GqWIQCIluusyNX4c`
+- **Flow ID (MCP)**: `JdHEzDO816Tc1bqYWLASQ` · **externalId (для `callFlow`)**: `kTF1sUzhgHDfBDc8KIYaC`
 
 ## Шаги
 

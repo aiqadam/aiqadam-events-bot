@@ -19,21 +19,20 @@
 
 ## Заметки
 
-- **Уникальность `(event_id, telegram_id)` — соглашение флоу, не БД.** Проверено:
-  три строки с одной парой вставляются подряд без жалоб. Чтение — только через
-  эталон [`find-registration`](../snippets/find-registration.md), который берёт самую раннюю (ADR-0003).
+- **Уникальность `(event_id, telegram_id)` объявлена в БД** ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md), W113b):
+  upsert идёт через `ON CONFLICT`, повторная вставка той же пары — `RECORD_DUPLICATE_KEY`;
+  читать по-прежнему через [`find-registration`](../snippets/find-registration.md).
 - «Не пришёл» ищется фильтром `checked_in_at not_exists`: проверено, он
   ловит и `null`, и пустую строку.
 
-## `cancelled_at` — не источник истины о статусе (Q30, 2026-09-12)
+## `cancelled_at` согласован со `status` (W109, 2026-09-28)
 
-У **реактивированной** регистрации `cancelled_at` остаётся от прошлой отмены:
-очистить DATE-поле через qadam `tables` сейчас нечем — пустая строка отвергается
-валидатором дат, а «оставить пустым» у пропа `values` означает «не менять».
+Реактивация строки очищает `cancelled_at` явным per-row `__clear: [OlFAWgVQmrqhqxlraOPOZ]`
+(`@aiqadam/qadam-tables` 0.4.6) в создающих/реактивирующих шагах:
+`reg-consent-pdn/step_5`, `reg-api/step_11`/`step_18`,
+`reg-profile/step_23`/`step_29`. Инвариант: `status = registered` — пустой
+`cancelled_at`, `status = cancelled` — непустой.
 
-**Следствие, обязательное к соблюдению:** статус пары `(event_id, telegram_id)`
-определяется полем **`status`**. Строка со `status = registered` и непустым
-`cancelled_at` — нормальное состояние, а не противоречие в данных.
-Списки участников и экспорт (OWN-8) обязаны фильтровать по `status`.
-
-Подробности и путь к устранению — [Q30](../../docs/OPEN-QUESTIONS.md#q30).
+Статус пары `(event_id, telegram_id)` по-прежнему определяется полем
+**`status`** (он первичен); списки участников и экспорт (OWN-8) фильтруют по
+нему. История — [Q30](../../docs/OPEN-QUESTIONS.md#q30).

@@ -6,7 +6,7 @@
   payload `{chatId, telegramId, callbackData, callbackQueryId}`
 - **Назначение**: отписка получателя от анонсов (OWN-13). Staff-гейта нет —
   получатель порочит гость.
-- **Flow ID (MCP)**: `eymcIde00G3SNlhaBvAbB` · **externalId**: `4MEoT3F9xRVwSIftttnan`
+- **Flow ID (MCP)**: `WVEZojRTZfntv22NA5geM` · **externalId**: `HbpXmNGNgALXmuTVLaoAk`
 
 ## Шаги
 

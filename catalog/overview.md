@@ -15,7 +15,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 32 | [flows/](flows/) |
+| Флоу | 31 (30 наших + чужой платформенный `ChatBot`, см. ниже) | [flows/](flows/) |
 | Таблицы | 17 | [tables/](tables/) |
 | Connections | 1 на среду — dev `Events-QA-Bot`, prod `Events-Prod` | [connections.md](connections.md) · [environments.md](environments.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
@@ -29,6 +29,10 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Flows
 
+> 31-й флоу инстанса — чужой `ChatBot` (`@aiqadam/qadam-forms`) — унаследован
+> вместе с проектом (Q34, AGENTS.md): в каталог и `flows/_manifest.json` его не
+> заводим, чужую работу от своего имени не описываем.
+
 | Группа | Флоу |
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
@@ -41,8 +45,7 @@ W26 закрыт («готов», независимое ревью, три кр
 | Mini App API | [checkin-api](flows/checkin-api.md), [checkin-counter-api](flows/checkin-counter-api.md) — счётчики прогресса для сканера (W62), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт), [staff-invite](flows/staff-invite.md) — одноразовая ссылка-инвайт контролёра (W10, OWN-14) |
 | Контролёры | [staff-accept](flows/staff-accept.md) — приём инвайт-ссылки `?start=s…` (W10, OWN-14), вызывает `tg-router` |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
-| Диагностика (опс) | [dedup-report](flows/dedup-report.md) — раз в сутки считает дубли строк в `registrations`/`event_staff`/`broadcast_targets` и сообщает организаторам; ничего не удаляет (W12b, Q42) |
-| Не построено, будущий пакет | [i18n-sync](flows/i18n-sync.md) — [W25](../docs/BACKLOG.md#w25-возврат-i18n-на-платформенном-механизме) |
+| Не построено, не будет | `i18n-sync` — не воскрешается: с W25 ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)) строки живут в платформенных переводах `{{$t['ключ']}}`, импортируемых из `i18n/*.json` |
 
 Как читать карточки, проверенные факты про MCP/subflow'ы — [flows/README.md](flows/README.md).
 
@@ -61,9 +64,10 @@ W26 закрыт («готов», независимое ревью, три кр
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
 `feedback` — отзывы участников об событии, оценка 1–5 + комментарий
 ([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
-`strings` создана по схеме, но пуста осознанно: наполняющий её `i18n-sync`
-не построен (см. Flows выше); источник правды для строк —
-`i18n/*.json` в репозитории.
+`strings` создана по схеме, но пуста осознанно и читаться не будет: строки
+флоу с W25 ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)) живут
+в платформенных переводах `{{$t['ключ']}}`, импортируемых из `i18n/*.json`
+(репозиторий — источник правды); наполнявший её `i18n-sync` не воскрешается.
 
 ## Переменные и Connections
 
@@ -123,9 +127,13 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
 кнопкой `web_app` (W38).
 
 Все роутy опираются на общие модули `lib/i18n.ts`/`lib/api.ts`/`lib/theme.ts`:
-`i18n/ru.json` тянется словарём с того же Pages (русский-онли,
-[ADR-0014](../docs/adr/0014-russian-only-until-platform-i18n.md); словарь не
-доехал — на экране сырые ключи, а не пустота), `theme` — из
+`lib/i18n.ts` выбирает язык по `user.language_code` (ru/uz/en, иначе ru) и тянет
+с того же Pages `i18n/ru.json` **как основу** плюс словарь языка **поверх** —
+фолбэк по каждому ключу ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)).
+Пока словарь грузится, подписи пусты — сырых ключей на первом кадре нет
+(W115); сырой ключ на экране — только сигнал отсутствующего ключа после
+загрузки словаря. Язык сервера
+Mini App передаёт заголовком `ap-parent-run-locale` (`lib/api.ts`), `theme` — из
 `Telegram.WebApp.colorScheme → [data-theme]`. QR рисуется на клиенте
 `qrcode` npm ([ADR-0007](../docs/adr/0007-qr-rendered-in-miniapp.md): файл
 картинкой не шлётся). Вендоренные брендовые файлы лежат с лицензиями в
@@ -229,8 +237,9 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
   «Повторить» там, где повтор имеет смысл (не у `not_registered` и не вне
   Telegram).
 - **QR запрашивается, не дожидаясь словаря** `i18n/ru.json`: на плохой связи
-  это единственное, ради чего страницу открыли. Словарь не доехал — подписи
-  будут сырыми ключами, QR будет.
+  это единственное, ради чего страницу открыли. QR будет в любом случае; пока
+  словарь грузится, подписи пусты (без сырых ключей), а сырой ключ возможен
+  лишь как сигнал отсутствующего ключа после загрузки (W115).
 
 ## Схема потоков данных
 

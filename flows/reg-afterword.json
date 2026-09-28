@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "reg-afterword",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -69,8 +70,8 @@
                         "eventId": "{{trigger['output'].data.eventId}}",
                         "miniappUrl": "{{variables['MINIAPP_URL']}}",
                         "texts": {
-                          "afterword.feedback_btn": "Оставить отзыв",
-                          "afterword.thanks": "Спасибо, что были. Надеемся, было не зря."
+                          "afterword.feedback_btn": "{{$t['afterword.feedback_btn']}}",
+                          "afterword.thanks": "{{$t['afterword.thanks']}}"
                         }
                       },
                       "sourceCode": {
@@ -271,7 +272,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

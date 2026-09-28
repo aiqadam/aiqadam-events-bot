@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "staff-accept",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -16,6 +17,7 @@
       "name": "step_1",
       "nextAction": {
         "displayName": "read invite by token hash",
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "displayName": "read event by id",
@@ -131,7 +133,7 @@
                             "eventId": "{{step_4['output'].eventId}}",
                             "miniappUrl": "{{variables['MINIAPP_URL']}}",
                             "texts": {
-                              "staff.accept.btn.scanner": "Открыть сканер"
+                              "staff.accept.btn.scanner": "{{$t['staff.accept.btn.scanner']}}"
                             }
                           },
                           "sourceCode": {
@@ -174,6 +176,7 @@
                     }
                   },
                   "displayName": "mark invite used (only if not yet used)",
+                  "logOutput": false,
                   "name": "step_7",
                   "settings": {
                     "actionName": "tables-update-record",
@@ -303,10 +306,10 @@
                 "inviteRows": "{{step_2['output']}}",
                 "telegramId": "{{trigger['output'].data.telegramId}}",
                 "texts": {
-                  "staff.accept.expired": "Срок действия ссылки истёк.",
-                  "staff.accept.invalid": "Ссылка не найдена.",
-                  "staff.accept.ok": "Вы контролёр события «{title}».",
-                  "staff.accept.used": "Ссылка уже использована."
+                  "staff.accept.expired": "{{$t['staff.accept.expired']}}",
+                  "staff.accept.invalid": "{{$t['staff.accept.invalid']}}",
+                  "staff.accept.ok": "{{$t['staff.accept.ok']}}",
+                  "staff.accept.used": "{{$t['staff.accept.used']}}"
                 },
                 "tokenHash": "{{step_1['output']}}"
               },
@@ -424,7 +427,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

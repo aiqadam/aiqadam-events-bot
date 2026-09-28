@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "reminders",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -75,10 +76,10 @@
                           "miniappUrl": "{{variables['MINIAPP_URL']}}",
                           "target": "{{step_5['output'].item}}",
                           "texts": {
-                            "remind.24h": "Напоминание: «{title}» завтра, {when}. Адрес: {address}",
-                            "remind.2h": "«{title}» через два часа, {when}. Адрес: {address}",
-                            "remind.btn.directions": "Как добраться",
-                            "ticket.btn.open": "Открыть билет"
+                            "remind.24h": "{{$t['remind.24h']}}",
+                            "remind.2h": "{{$t['remind.2h']}}",
+                            "remind.btn.directions": "{{$t['remind.btn.directions']}}",
+                            "ticket.btn.open": "{{$t['ticket.btn.open']}}"
                           }
                         },
                         "sourceCode": {

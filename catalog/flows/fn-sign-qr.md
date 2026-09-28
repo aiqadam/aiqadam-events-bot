@@ -6,7 +6,7 @@
   ходит: `reg-consent-mkt` шлёт кнопку `web_app` на `#/ticket`, а подписывает
   уже `my-qr-api` при открытии страницы
 - **Назначение**: подписать QR-payload участника (`c<eventId>-<userId>-<sig>`).
-- **Flow ID (MCP)**: `9XXJu9hlSJC8nIfoYjMcV` · **externalId (для `callFlow`)**: `VvSckbBbWGJcq7MaNGbwm`
+- **Flow ID (MCP)**: `SS91uEqPxhpn0yzBct6M4` · **externalId (для `callFlow`)**: `zxS7MKLXGaCDf3KStMTZN`
 
 ## Шаги
 

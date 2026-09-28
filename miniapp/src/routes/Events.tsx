@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
-import { t, loadI18n } from '../lib/i18n';
+import { t, loadI18n, getLangCode, setLang, isSupportedLang } from '../lib/i18n';
 import { getTelegram, hapticImpact, hapticNotification } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
@@ -62,6 +62,8 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
   const [profileState, setProfileState] = useState<MineState>(inTelegram ? 'loading' : 'off');
   const [profileMsg, setProfileMsg] = useState('');
   const [pdnDone, setPdnDone] = useState('');
+  // W114: язык интерфейса таба «Профиль» — переключатель (ru/uz/en).
+  const [uiLang, setUiLang] = useState(getLangCode());
   // W73 (#125, ADR-0039): самоудаление аккаунта — только свой, по initData.
   const [deleteSheet, setDeleteSheet] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -94,18 +96,18 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     const res = await postJson(EVENTS_API, {});
     if (res.kind === 'network') {
       hapticNotification('error');
-      setLoadfail(t('events.err.network'));
+      setLoadfail('events.err.network');
       return;
     }
     if (res.kind === 'server') {
       hapticNotification('error');
-      setLoadfail(t('events.err.server'));
+      setLoadfail('events.err.server');
       return;
     }
     const d = res.data as Record<string, unknown>;
     if (!d['ok'] || !Array.isArray(d['upcoming']) || !Array.isArray(d['past'])) {
       hapticNotification('error');
-      setLoadfail(t('events.err.server'));
+      setLoadfail('events.err.server');
       return;
     }
     setUpcoming(d['upcoming'] as CatalogEvent[]);
@@ -121,13 +123,13 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     if (res.kind === 'network') {
       hapticNotification('error');
       setMineState('error');
-      setMineError(t('events.err.network'));
+      setMineError('events.err.network');
       return;
     }
     if (res.kind === 'server') {
       hapticNotification('error');
       setMineState('error');
-      setMineError(t('events.err.server'));
+      setMineError('events.err.server');
       return;
     }
     const d = res.data as Record<string, unknown>;
@@ -138,7 +140,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     }
     setMineState('error');
     hapticNotification('error');
-    setMineError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : t('events.err.server'));
+    setMineError(typeof d['text'] === 'string' && d['text'] ? String(d['text']) : 'events.err.server');
   }, [inTelegram, initData]);
 
   const loadStaffEvents = useCallback(async () => {
@@ -169,6 +171,12 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setProfile({ first: s(p['first']), last: s(p['last']), position: s(p['position']), company: s(p['company']), city: s(p['city']) });
     setProfileMkt(Boolean(res.data['consentMarketing']));
     setPdnDone(s(res.data['pdnDone']));
+    // W114: выбранный язык хранится на сервере (users.lang) — источник правды
+    // для бота. Подтягиваем его в клиент, если он ещё не применён локально.
+    const serverLang = s(res.data['lang']);
+    if (isSupportedLang(serverLang) && serverLang !== getLangCode()) {
+      void setLang(serverLang).then(() => setUiLang(serverLang));
+    }
     setProfileState('ready');
   }, [inTelegram, initData]);
 
@@ -196,6 +204,28 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
     setProfileMkt(Boolean(res.data['consentMarketing']));
     setProfileMsg(t('manage.saved.updated'));
   }, [initData, profile, profileMkt]);
+
+  // W114: переключатель языка. Сначала пишем users.lang на сервере (set_lang),
+  // затем сразу меняем словарь Mini App и запоминаем выбор в localStorage
+  // (его читает getLang() — для словаря и заголовка ap-parent-run-locale).
+  const changeLang = useCallback(async (code: string) => {
+    if (!isSupportedLang(code) || code === getLangCode()) return;
+    hapticImpact('light');
+    // W116: язык переключаем локально сразу — словарь, подсветка и localStorage
+    // не зависят от того, удалось ли записать users.lang на сервере. Запись —
+    // best-effort: она нужна только чтобы бот отвечал на выбранном языке; её
+    // сбой не должен оставлять экран на прежнем языке (как было в W114/W115).
+    await setLang(code);
+    setUiLang(code);
+    const res = await postJson(REG_API, { action: 'set_lang', initData, lang: code });
+    if (res.kind !== 'json' || !res.data['ok']) {
+      hapticNotification('error');
+      showToast(t('lang.sync_failed'));
+      return;
+    }
+    hapticNotification('success');
+    showToast(t('lang.changed'));
+  }, [initData, showToast]);
 
   // W73 (#125, ADR-0039): удаление своего аккаунта — сервер берёт telegram_id
   // из initData, тело чужой id не удаляет. Подтверждение обязательно (confirm).
@@ -239,7 +269,14 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
         tg.expand();
       } catch {}
     }
-    void loadI18n().then(() => setDictLoaded(true));
+    // W115: uiLang инициализируется из getLangCode() в useState — до того, как
+    // loadI18n() выставит LANG из getLang()/localStorage, там ещё дефолт `ru`.
+    // Синхронизируем после загрузки словаря, иначе подсвечен не тот язык, а
+    // нажатие на фактический язык игнорируется (code === getLangCode()).
+    void loadI18n().then(() => {
+      setDictLoaded(true);
+      setUiLang(getLangCode());
+    });
     void loadEvents();
     void loadMine();
     void loadStaffEvents();
@@ -454,7 +491,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
       {loadfail && (
         <div className="card result bad" id="loadfail">
           <p className="empty-heading" id="loadfailText">
-            {loadfail}
+            {t(loadfail)}
           </p>
           <button type="button" className="btn btn-secondary" id="retry" onClick={() => void loadEvents()}>
             {t('manage.btn.retry')}
@@ -484,6 +521,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
           mkt={profileMkt}
           pdnDone={pdnDone}
           msg={profileMsg}
+          lang={uiLang}
           onChange={(k, v) => {
             setProfile((p) => ({ ...p, [k]: v }));
             setProfileMsg('');
@@ -492,6 +530,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
             setProfileMkt((v) => !v);
             setProfileMsg('');
           }}
+          onLangChange={(code) => void changeLang(code)}
           onSave={() => void saveProfile()}
           onDelete={() => {
             setDeleteError('');
@@ -502,7 +541,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
 
       {!loadfail && (tab === 'upcoming' || tab === 'past') && !eventsLoaded && (
         <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-          {dictLoaded ? t('events.loading') : ''}
+          {t('events.loading')}
         </p>
       )}
 
@@ -614,7 +653,7 @@ function MineTab({
   if (state === 'error') {
     return (
       <div className="card result bad" id="mine-fail">
-        <p className="empty-heading">{error}</p>
+        <p className="empty-heading">{error.startsWith('events.err.') ? t(error) : error}</p>
         <button type="button" className="btn btn-secondary" id="mine-retry" onClick={onRetry}>
           {t('manage.btn.retry')}
         </button>
@@ -624,7 +663,7 @@ function MineTab({
   if (state === 'loading' && rows.length === 0) {
     return (
       <p className="empty-desc" style={{ textAlign: 'center', padding: 32 }}>
-        {dictLoaded ? t('events.loading') : ''}
+        {t('events.loading')}
       </p>
     );
   }
@@ -873,8 +912,10 @@ function ProfileTab({
   mkt,
   pdnDone,
   msg,
+  lang,
   onChange,
   onMktChange,
+  onLangChange,
   onSave,
   onDelete,
 }: {
@@ -885,8 +926,10 @@ function ProfileTab({
   mkt: boolean;
   pdnDone: string;
   msg: string;
+  lang: string;
   onChange: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
   onMktChange: () => void;
+  onLangChange: (code: string) => void;
   onSave: () => void;
   onDelete: () => void;
 }) {
@@ -934,6 +977,23 @@ function ProfileTab({
   );
   return (
     <div className="form-section">
+      <div className="lang-row">
+        <span className="label" id="profile-lang-label">{t('menu.btn.language')}</span>
+        <div className="lang-switch" role="group" aria-labelledby="profile-lang-label">
+          {['ru', 'uz', 'en'].map((code) => (
+            <button
+              key={code}
+              type="button"
+              id={'pf-lang-' + code}
+              aria-pressed={lang === code}
+              aria-label={t('lang.btn.' + code)}
+              onClick={() => onLangChange(code)}
+            >
+              {code}
+            </button>
+          ))}
+        </div>
+      </div>
       <p className="app-muted">{t('profile.head_note')}</p>
       {field('pf-first', t('profile.first'), 'first')}
       {field('pf-last', t('profile.last'), 'last')}

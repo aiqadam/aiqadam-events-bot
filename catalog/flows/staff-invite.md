@@ -2,13 +2,13 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
-  `POST /api/v1/webhooks/nFIO7cJiEXlQMCdr6lLjc/sync`; тело — `{initData, eventId}`
+  `POST /api/v1/webhooks/S1DNFpjCsKyFTWN0T3u31/sync`; тело — `{initData, eventId}`
   (`authType: none`)
 - **Назначение**: выдать овнеру одноразовую ссылку-инвайт контролёра
   `?start=s<eventId>-<token>` на 24 ч (OWN-14). Кнопка живёт в Mini App, на табе
   «Контролёры» `#/manage/:id` — в чат карточка-инвайт не приходит (вердикт
   владельца 2026-09-21)
-- **Flow ID (MCP)**: `nFIO7cJiEXlQMCdr6lLjc`
+- **Flow ID (MCP)**: `S1DNFpjCsKyFTWN0T3u31`
 
 ## Шаги
 

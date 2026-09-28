@@ -9,7 +9,7 @@
   одна каноническая строка пары
 - **Назначение**: найти каноническую регистрацию участника на событие, схлопнув
   дубли по `(event_id, telegram_id)` детерминированно (IDM-1, ADR-0003).
-- **Flow ID (MCP)**: `O5TtpU4antbkUgeKXVwq5` · **externalId (для `callFlow`)**: `Q3iGnxOcpjzeUVvXQc48L`
+- **Flow ID (MCP)**: `2tUdR4D92NJB4f0kVgtAf` · **externalId (для `callFlow`)**: `TUAYfa0xFF7DpPM0zxONb`
 
 ## Шаги
 

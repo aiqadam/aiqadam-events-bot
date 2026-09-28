@@ -6,7 +6,9 @@
 - **Назначение**: единственная точка входа бота — дедуп по `update_id` (IDM-4),
   апсерт `users`, классификация апдейта, делегирование одному из касаний
   регистрации (ADR-0015), спискам/отмене или входу на страницу `manage`.
-- **Flow ID (MCP)**: `nyaBzgKGG8TTTsryjc9tW` · **externalId**: — (не subflow)
+- **Flow ID (MCP)**: `5rpOArwaUifCX6IYF4IEQ` · **externalId**: — (не subflow)
+- **`localeSource`**: `{{step_27['output'].lang}}` — локаль прогона для `$t`,
+  наследуется вызываемыми флоу (W114; ADR-0045)
 
 ## Контракт
 
@@ -74,8 +76,9 @@
 | step_2 | `@aiqadam/qadam-store : put_if_absent` | атомарный захват `upd:<update_id>` (IDM-4); окно дедупликации — сутки |
 | step_3 | CODE «gate» | `proceed`/`reason` (`bad_update`/`duplicate`/`from_bot`/`non_private_chat`) |
 | step_4 | ROUTER: `proceed` / `Otherwise` (лог) | |
-| step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot` |
+| step_6 | `tables-upsert-records users` | апсерт по `telegram_id`, снимает `blocked_bot`; **`lang` не пишется** — сохранённый выбор языка не затирается языком Telegram (W114) |
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
+| step_27 | CODE «effective lang» | язык прогона: `users.lang` → `draft.profile.lang` (выбор в этом онбординге) → `language_code`; колбэк `ob:lang:<xx>` задаёт локаль этого же прогона; whitelist `ru\|uz\|en` (W114). Вывод — источник `localeSource` флоу |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
 | step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагу `ob_await_*` в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft` (**W79, #131:** и фото без подписи — `hasPhoto`, если апдейт не альбомный, `mediaGroupId === ''`); **колбэки меню — по префиксу `menu:`** (W68, #120; W99: маршрут `menu_cb`, ack до входа в меню). Проверки рассылок и меню стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод `ob_await_*` перекрывает его (п. 9 контракта) |
 | step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`menu_cb`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`quiz`/`quiz_answer`/`Otherwise` | |
@@ -202,3 +205,15 @@
   фото на том же шаге → `Otherwise` (ответом не считается). Ack колбэка
   `qz:start` — `step_26` в ветке `quiz`, до вызова `quiz` (тот же приём, что
   W99 у `menu_cb`).
+- **Язык прогона — `step_27` (W114).** `localeSource` флоу ссылается на его
+  вывод, поэтому `$t` в вызываемых флоу идёт на выбранном языке. Приоритет:
+  колбэк `ob:lang:<xx>` (`pending`) → `users.lang` (`stored`, из вывода
+  `step_6`) → `draft.profile.lang` (выбор в незавершённом онбординге, из
+  `step_8`) → `language_code` Telegram. Whitelist `ru|uz|en`: чужое значение
+  локали валит шаг (`$t` без перевода), поэтому сужаются все источники;
+  пустая строка уходит на дефолт проекта (`ru`). Шаг стоит **после `step_8`**:
+  черновик сессии читается только там. `upsert` (`step_6`) отдаёт все ячейки
+  строки, поэтому отдельного чтения `users` для `stored` не нужно. `lang` из
+  апсерта `users` убран — иначе каждый апдейт затирал бы выбор языком клиента.
+  Различающие прогоны: `tg=uz, stored=''` → `uz`; `stored=en, tg=uz` → `en`;
+  колбэк `ob:lang:ru` при `stored=en` → `ru`.

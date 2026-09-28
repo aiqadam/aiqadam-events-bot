@@ -1,12 +1,11 @@
 {
   "agentIds": [],
-  "backupFiles": {
-    "31": "wcqj6dWeHyaRWSD9Hkz5x"
-  },
+  "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "bcast-unsub",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -18,6 +17,7 @@
       "name": "step_1",
       "nextAction": {
         "displayName": "read user",
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "displayName": "decide unsub",
@@ -54,6 +54,7 @@
               },
               {
                 "displayName": "clear consent_marketing",
+                "logOutput": false,
                 "name": "step_6",
                 "nextAction": {
                   "displayName": "send done",
@@ -154,8 +155,8 @@
             "input": {
               "telegramId": "{{trigger['output'].data.telegramId}}",
               "texts": {
-                "unsub.already": "Вы и так не подписаны на анонсы.",
-                "unsub.done": "Анонсы больше присылать не будем. Регистрации это не затронуло."
+                "unsub.already": "{{$t['unsub.already']}}",
+                "unsub.done": "{{$t['unsub.done']}}"
               },
               "userRecords": "{{step_2['output']}}"
             },
@@ -232,7 +233,6 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
-      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",

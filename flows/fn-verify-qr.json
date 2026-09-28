@@ -3,8 +3,9 @@
   "backupFiles": null,
   "connectionIds": [],
   "displayName": "fn-verify-qr",
+  "localeSource": null,
   "notes": [],
-  "schemaVersion": "31",
+  "schemaVersion": "32",
   "state": "LOCKED",
   "trigger": {
     "displayName": "callableFlow",

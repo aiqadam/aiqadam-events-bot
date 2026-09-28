@@ -10,18 +10,18 @@
   онбординг C, что и по диплинку события, только без карточки события;
   профиль заполнен — меню-хаб с набором кнопок по ролям (гость /
   организатор / контролёр).
-- **Flow ID (MCP)**: `1DORFhP9F3W00KpKz5wDw` · **externalId**: `BOLkFV1GreF8r7opvDCVo`
+- **Flow ID (MCP)**: `rV2ymkl6ET11uMjbywU4D` · **externalId**: `qn6AT1kov72lFzAuuUA36`
 
 ## Шаги
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `callableFlow` | `chatId`, `firstName`, `badPayload`, `fallback`, `telegramId`, `callbackData`, `callbackQueryId` |
-| step_1 | `tables-find-records users` | `profile_completed_at` вызывающего — гейт ADR-0034 |
-| step_2 | CODE «gate» | `needsOnboard` (пусто → true) |
+| step_1 | `tables-find-records users` | `profile_completed_at` вызывающего — гейт ADR-0034; `lang` (W114) |
+| step_2 | CODE «gate» | `needsOnboard` (пусто → true); `needsLang` — `users.lang` пуст (W114) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
 | step_8→12 (`has_profile`) | `tables-find-records staff` → `event_staff` → `events` → CODE «render menu» → `send_text_message` | прежнее меню-хаб без изменений (см. ниже) |
-| step_4→7 (`needs_onboard`) | CODE «build onboarding entry card (no event)» → `send_text_message` → CODE «draft JSON» → `tables-upsert-records sessions` | why-карточка онбординга без события, сессия `ob_consent` с `eventId: ''`; дальше колбэки `ob:*` подхватывает `reg-profile` (маршрутизация `tg-router` не знает о `menu` — работает по префиксу и активной сессии) |
+| step_4→7 (`needs_onboard`) | CODE «build onboarding entry card (no event)» → `send_text_message` → CODE «draft JSON» → `tables-upsert-records sessions` | входная карточка онбординга без события: `onb.why` + `onb.consent` **одним экраном**, кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`, ADR-0043), сессия `ob_consent` с `eventId: ''`; **при `needsLang` — вместо согласия `lang.ask` с кнопками `ob:lang:ru\|uz\|en`, сессия `ob_lang` (W114)**; `step_4` выводит `sessionStep`, `step_6`/`step_7` его пишут. Дальше колбэки `ob:*` подхватывает `reg-profile` |
 | step_13 (`Otherwise`) | CODE noop | недостижимая ветка, нужна платформе как непустой fallback |
 
 ### `has_profile` — прежнее меню (без изменений)
@@ -98,7 +98,7 @@
   по имени; лид (`menu.lead_guest`/`lead_owner`/`lead_controller`) и кнопки
   не отличаются от `/start`. Для нового гостя (профиль не заполнен) флаг
   ни на что не влияет: сначала тот же онбординг (ADR-0034).
-- **Тексты — через `inputs.texts`** (ADR-0014), ключи `menu.*`, `onb.*` и
+- **Тексты — через `inputs.texts`** (ADR-0045, `$t`), ключи `menu.*`, `onb.*` и
   `start.*`. `format: None` в ветке меню (без разметки), `MarkdownV2` в
   ветке онбординга (общий эталон экранирования с `reg-start`/`reg-profile`).
 - **Кнопка «Как сделать рассылку» (W68, #120).** У организатора (и двойной
@@ -124,3 +124,11 @@
   первой строкой `[Викторина / qz:start]`, затем `События`; организатор —
   `[Панель администратора, События, Новое событие, Как сделать рассылку]`,
   затем `Викторина`.
+- **Выбор языка — та же входная карточка, что у `reg-start` (W114).** При
+  пустом `users.lang` (`step_2.needsLang`) ветка `needs_onboard` отдаёт
+  вопрос `lang.ask` с кнопками `ob:lang:ru|uz|en` и сессией `ob_lang`; выбрав
+  язык, человек получает карточку согласия от `reg-profile`. Выбравшие язык
+  раньше видят прежнюю карточку согласия. Новых табличных шагов нет:
+  `users.lang` пишет `reg-profile` в `finish_no_event` (для голого `/start`).
+  У пользователей с уже заполненным профилем (и пустым `users.lang`) карточки
+  языка нет — язык меняется переключателем в табе «Профиль» Mini App.

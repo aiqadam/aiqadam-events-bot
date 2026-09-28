@@ -2,9 +2,10 @@
   "agentIds": [],
   "backupFiles": null,
   "connectionIds": [
-    "TZTlXaCEO2hEvimUowbSA"
+    "Oct3laLPiavfizCJagLcM"
   ],
   "displayName": "menu",
+  "localeSource": null,
   "notes": [],
   "schemaVersion": "32",
   "state": "LOCKED",
@@ -84,22 +85,22 @@
                           "staffRoleRecords": "{{step_8['output']}}",
                           "telegramId": "{{trigger['output'].data.telegramId}}",
                           "texts": {
-                            "bcast.howto.step1": "1. Напишите пост в «Избранном»",
-                            "bcast.howto.step2": "2. Зажмите его → «Переслать» → этот бот",
-                            "bcast.howto.step3": "3. Выберите событие и аудиторию",
-                            "bcast.howto.title": "Как сделать рассылку",
-                            "menu.btn.bcast_help": "Как сделать рассылку",
-                            "menu.btn.events": "События",
-                            "menu.btn.manage": "Панель администратора",
-                            "menu.btn.new_event": "Новое событие",
-                            "menu.btn.quiz": "Викторина",
-                            "menu.fallback_text": "Не понял сообщение. Вот что можно сделать:",
-                            "menu.lead_controller": "Откройте каталог по кнопке ниже — сканер рядом с вашим событием",
-                            "menu.lead_guest": "Найдите свои билеты и регистрируйтесь на события по кнопке ниже",
-                            "menu.lead_owner": "Создайте событие или откройте каталог по кнопкам ниже",
-                            "start.bad_payload": "Ссылку не удалось разобрать. Вот что открыто сейчас:",
-                            "start.greeting": "Привет, {name}! Это бот событий AI Qadam.",
-                            "start.greeting_anon": "Привет! Это бот событий AI Qadam."
+                            "bcast.howto.step1": "{{$t['bcast.howto.step1']}}",
+                            "bcast.howto.step2": "{{$t['bcast.howto.step2']}}",
+                            "bcast.howto.step3": "{{$t['bcast.howto.step3']}}",
+                            "bcast.howto.title": "{{$t['bcast.howto.title']}}",
+                            "menu.btn.bcast_help": "{{$t['menu.btn.bcast_help']}}",
+                            "menu.btn.events": "{{$t['menu.btn.events']}}",
+                            "menu.btn.manage": "{{$t['menu.btn.manage']}}",
+                            "menu.btn.new_event": "{{$t['menu.btn.new_event']}}",
+                            "menu.btn.quiz": "{{$t['menu.btn.quiz']}}",
+                            "menu.fallback_text": "{{$t['menu.fallback_text']}}",
+                            "menu.lead_controller": "{{$t['menu.lead_controller']}}",
+                            "menu.lead_guest": "{{$t['menu.lead_guest']}}",
+                            "menu.lead_owner": "{{$t['menu.lead_owner']}}",
+                            "start.bad_payload": "{{$t['start.bad_payload']}}",
+                            "start.greeting": "{{$t['start.greeting']}}",
+                            "start.greeting_anon": "{{$t['start.greeting_anon']}}"
                           }
                         },
                         "sourceCode": {
@@ -281,10 +282,14 @@
                         ],
                         "table_id": "toTKgngMTqDNJWDpQMh4d",
                         "values": {
+                          "key_columns": [
+                            "N8CdPxcdxLX9vFCINvZbL"
+                          ],
+                          "table_id": "toTKgngMTqDNJWDpQMh4d",
                           "values": [
                             {
                               "ESthrMwpn29JLvE2BNIj4": "registration",
-                              "IdGimBh539UlGSz6L0Pyo": "ob_consent",
+                              "IdGimBh539UlGSz6L0Pyo": "{{step_4['output'].sessionStep}}",
                               "N8CdPxcdxLX9vFCINvZbL": "{{trigger['output'].data.telegramId}}",
                               "U9P3zTZHcFdAAtzLVVSYn": "{{step_4['output'].now}}",
                               "sctBFEsMf10UobeFgzsVt": "{{step_6['output'].draft}}"
@@ -309,10 +314,11 @@
                       }
                     },
                     "input": {
-                      "cardMessageId": "{{step_5['output'].body.result.message_id}}"
+                      "cardMessageId": "{{step_5['output'].body.result.message_id}}",
+                      "sessionStep": "{{step_4['output'].sessionStep}}"
                     },
                     "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  const cardMessageId = Number(inputs.cardMessageId);\n  const draft = {\n    eventId: '',\n    utm: '',\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: 'ob_consent'\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};",
+                      "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // W114: шаг сессии приходит из step_4 — ob_lang (язык ещё не выбран) или\n  // ob_consent (прежняя карточка согласия).\n  const cardMessageId = Number(inputs.cardMessageId);\n  const step = str(inputs.sessionStep) === 'ob_lang' ? 'ob_lang' : 'ob_consent';\n  const draft = {\n    eventId: '',\n    utm: '',\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: step\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};\n",
                       "packageJson": "{}"
                     }
                   },
@@ -356,13 +362,20 @@
                 },
                 "input": {
                   "firstName": "{{trigger['output'].data.firstName}}",
+                  "needsLang": "{{step_2['output'].needsLang}}",
                   "texts": {
-                    "onb.btn.continue": "Дальше",
-                    "onb.why": "Впервые у нас — пара слов, зачем просим данные: в жизни сообщества участвуем поимённо. Нужно знать участников. Не продаём и в спам не пускаем."
+                    "lang.ask": "{{$t['lang.ask']}}",
+                    "lang.btn.en": "{{$t['lang.btn.en']}}",
+                    "lang.btn.ru": "{{$t['lang.btn.ru']}}",
+                    "lang.btn.uz": "{{$t['lang.btn.uz']}}",
+                    "onb.btn.agree": "{{$t['onb.btn.agree']}}",
+                    "onb.btn.details": "{{$t['onb.btn.details']}}",
+                    "onb.consent": "{{$t['onb.consent']}}",
+                    "onb.why": "{{$t['onb.why']}}"
                   }
                 },
                 "sourceCode": {
-                  "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг без диплинка — та же why-карточка, что у reg-start\n  // при входе по ссылке события, но без фактов события (их тут нет).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const replyMarkup = { inline_keyboard: [[{ text: t('onb.btn.continue'), callback_data: 'ob:continue' }]] };\n  return { text: esc(t('onb.why')), replyMarkup: replyMarkup, now: new Date().toISOString() };\n};",
+                  "code": "export const code = async (inputs) => {\n  // ADR-0034 / ADR-0043: онбординг без диплинка — та же входная карточка, что\n  // у reg-start при входе по ссылке события, но без фактов события (их тут\n  // нет). ADR-0043: «зачем данные» и текст согласия — одной карточкой, кнопка\n  // называет согласие («Согласен», ob:agree); «Подробнее» (ob:details)\n  // остаётся второй кнопкой — там полный текст и путь отказа.\n  // W114: пока язык не выбран (needsLang), первой карточкой идёт вопрос о\n  // языке с тремя кнопками ob:lang:*; шаг сессии ob_lang, карточку согласия\n  // отдаст reg-profile.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n  const esc = (v) => String(v === undefined || v === null ? '' : v)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!])/g, '\\\\$1');\n  const needsLang = inputs.needsLang === true || String(inputs.needsLang) === 'true';\n  let text;\n  let replyMarkup;\n  let sessionStep;\n  if (needsLang) {\n    text = esc(t('lang.ask'));\n    replyMarkup = { inline_keyboard: [[\n      { text: t('lang.btn.ru'), callback_data: 'ob:lang:ru' },\n      { text: t('lang.btn.uz'), callback_data: 'ob:lang:uz' },\n      { text: t('lang.btn.en'), callback_data: 'ob:lang:en' }\n    ]] };\n    sessionStep = 'ob_lang';\n  } else {\n    text = esc(t('onb.why')) + '\\n\\n' + esc(t('onb.consent'));\n    replyMarkup = { inline_keyboard: [[\n      { text: t('onb.btn.agree'), callback_data: 'ob:agree' },\n      { text: t('onb.btn.details'), callback_data: 'ob:details' }\n    ]] };\n    sessionStep = 'ob_consent';\n  }\n  return { text: text, replyMarkup: replyMarkup, now: new Date().toISOString(), sessionStep: sessionStep };\n};\n",
                   "packageJson": "{}"
                 }
               },
@@ -442,7 +455,7 @@
             "records": "{{step_1['output']}}"
           },
           "sourceCode": {
-            "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг — на первое /start вообще, не только на диплинк\n  // события. Гейт один на все роли: пока профиль не заполнен, ни staff,\n  // ни owner не видят своего меню — сначала тот же онбординг, что и гость.\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const row = arr(inputs.records).map(flat)[0] || {};\n  const profileCompletedAt = String(row.profile_completed_at || '');\n  return { needsOnboard: profileCompletedAt === '', profileCompletedAt: profileCompletedAt };\n};",
+            "code": "export const code = async (inputs) => {\n  // ADR-0034: онбординг — на первое /start вообще, не только на диплинк\n  // события. Гейт один на все роли: пока профиль не заполнен, ни staff,\n  // ни owner не видят своего меню — сначала тот же онбординг, что и гость.\n  // W114: needsLang — язык ещё не выбран (users.lang пуст): первой карточкой\n  // онбординга идёт вопрос о языке, а не согласие (см. step_4).\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const row = arr(inputs.records).map(flat)[0] || {};\n  const profileCompletedAt = String(row.profile_completed_at || '');\n  const lang = String(row.lang || '').trim();\n  return { needsOnboard: profileCompletedAt === '', profileCompletedAt: profileCompletedAt, needsLang: lang === '' };\n};\n",
             "packageJson": "{}"
           }
         },
@@ -462,7 +475,8 @@
         "input": {
           "columns": [
             "JtylZU291K7TuMn9c9F2t",
-            "EAlXy4XsXGAeM7UrS0TIQ"
+            "EAlXy4XsXGAeM7UrS0TIQ",
+            "wW12TT5X2kFgLryWbnnm5"
           ],
           "filters": {
             "filters": [
@@ -491,15 +505,22 @@
     "settings": {
       "input": {
         "exampleData": {
-          "badPayload": "false",
-          "chatId": "322876545",
-          "fallback": "false",
-          "firstName": "Тест",
-          "telegramId": "322876545"
+          "sampleData": {}
         },
         "mode": "simple"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "exampleData": {
+          "schema": {
+            "sampleData": {
+              "displayName": "Sample Data",
+              "required": true,
+              "type": "OBJECT"
+            }
+          },
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
       "sampleData": {},

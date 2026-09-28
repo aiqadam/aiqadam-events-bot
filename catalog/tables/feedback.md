@@ -20,11 +20,11 @@
 
 ## Заметки
 
-- **Уникальность ключа не гарантирована БД** ([ADR-0003](../../docs/adr/0003-idempotency-without-atomicity.md)):
-  `tables-upsert-records` матчит `event_id`+`telegram_id` на своей стороне.
-  Проверено различающим прогоном ([feedback-api.md](../flows/feedback-api.md)):
-  первый `submit` — `action: created`; повторный `submit` той же пары —
-  `action: updated`, тот же `record id`, значения перезаписаны, дублей нет.
+- **Ключ `(event_id, telegram_id)` объявлен в БД** ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md), W113b):
+  upsert через `ON CONFLICT`. Проверено различающим прогоном
+  ([feedback-api.md](../flows/feedback-api.md)): первый `submit` —
+  `action: created`; повторный `submit` той же пары — `action: updated`, тот же
+  `record id`, значения перезаписаны; вставка дубля — `RECORD_DUPLICATE_KEY`.
 - **Доступ на чтение — только автору/staff события**, та же граница прав, что
   у списков участников ([manage-api.md](../flows/manage-api.md), действие
   `feedback_list`); отзывы не видны никому, кроме организаторов своего чаптера.
