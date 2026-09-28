@@ -3622,3 +3622,42 @@ trigger-output) не ретраится.
 - [ ] `tools/check-commands.py` чист (новой команды нет);
 - [ ] `catalog/` обновлён (флоу, таблица, overview), строка `migrations` записана;
 - [ ] независимое ревью, вердикт «замечаний нет».
+
+---
+
+## W124. Язык Mini App при холодном запуске: жалоба из `#/report`
+
+> **Заведён 2026-09-28 по жалобе владельца** через сам `#/report` (запись
+> `0alHttkl0zEO6vSvulhUM`, прогон `HEqBKGowxgbCG3gqfkKjI`). Трогает только
+> `miniapp/`; флоу, таблицы и `i18n/*.json` не затрагивает.
+
+**Цель:** на первом холодном запуске язык интерфейса соответствует
+`user.language_code` из `initData`, а не дефолту `ru`, и `reports.context.lang`
+описывает язык, на котором форма реально показана.
+
+**Причина (дефект W114/W115/W123):**
+
+- `getLang()` (`miniapp/src/lib/telegram.ts`) читает
+  `getTelegram()?.initDataUnsafe?.user?.language_code`. На macOS-клиенте
+  `initDataUnsafe.user` в момент монтирования ещё не заполнен, поэтому
+  `getLang()` возвращает дефолт `ru`, хотя сырой `initData` уже содержит `en`.
+- `loadI18n()` (`miniapp/src/lib/i18n.ts`) снимает `LANG = getLang()` **один
+  раз** и кэширует словарь: интерфейс навсегда остаётся русским, тогда как
+  заголовок `ap-parent-run-locale` в том же запросе уже `en`.
+- `Report.tsx` вычисляет `context` в `useMemo(..., [tg])` **до** загрузки
+  словаря — `context.lang` заморожен на дефолте всегда, независимо от словаря.
+
+**Готово, когда:**
+
+- [ ] `getLang()` берёт `user.language_code` из сырого `initData` как фолбэк
+      (после localStorage и `initDataUnsafe`); явный выбор в «Профиле»
+      по-прежнему перебивает язык Telegram;
+- [ ] `reports.context.lang` совпадает с языком словаря на момент отправки;
+- [ ] headless-прогон различает: `initData` с `language_code=en` + пустой
+      `initDataUnsafe` → словарь и `context.lang` = `en` (до правки — `ru`);
+- [ ] `miniapp` собирается (`build:dev`); офлайн-проверки — 0;
+      `docs/I18N.md`/`catalog/` — если поведение там описано;
+- [ ] независимое ревью, вердикт «замечаний нет».
+
+**Зависит от:** W114/W115/W116 (готовы), W123 (готов). **Не входит:** живая
+проверка в Telegram за владельцем, перенос на prod.
