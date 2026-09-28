@@ -51,10 +51,10 @@
 - [x] W25-конвертация `texts`→`{{$t[...]}}` на prod (все пользовательские флоу);
 - [x] W114/W116 (язык), W119/W120 (город) применены на prod;
 - [x] Mini App prod пересобран (`main`→`prod`, `build:prod` зелёный) и запушен;
-- [x] строки `migrations` на prod (40 строк `2026-09-28-w122-01…40`);
+- [x] строки `migrations` на prod (47 строк `2026-09-28-w122-01…47`);
 - [x] `catalog/environments.md` отражает состояние;
 - [x] финальная сверка: 30 общих флоу prod↔dev, **0 расхождений шагов**;
-- [ ] независимое ревью, вердикт «замечаний нет».
+- [ ] независимое ревью, вердикт «замечаний нет» (круг 1 — «есть замечания», исправлено; ждём круг 2).
 
 ## Как проверено (фаза 1)
 
@@ -87,7 +87,7 @@
   текст (`…устарели…` / `…eskirgan…` / `…expired…`), без `TranslationKeyNotFound`.
 - **`tg-router`**: `step_27` в дереве, `step_9` под ним, `localeSource`
   выставлен, `auth` на триггере/step_15/22/26 на месте, `logOutput:false`.
-- **`migrations` prod**: 40 строк `w122-01…40`, `action`/`version_id` сверены.
+- **`migrations` prod**: 47 строк `w122-01…47`, `action`/`version_id` сверены.
 
 ## Журнал
 
@@ -137,6 +137,13 @@
   платформенный, Q34). Живой пробник `reg-api /sync` на prod: `$t` резолвится
   в `ru`/`uz`/`en`/`ru-RU` (401 `invalid_init_data` с переведённым текстом, без
   `TranslationKeyNotFound`).
+- **2026-09-28** — **Ревью круг 1**: вердикт «есть замечания» — два «важно»
+  (неполная W25: 6 текстов в `reminders/step_8`, `reg-start/step_18`,
+  `staff-accept/step_10`; 4 prod-флоу в `DRAFT`), три «на будущее». Исправлено:
+  три шага переведены на `{{$t}}` и перепубликованы (`w122-45…47`), четыре
+  флоу опубликованы в `LOCKED` (`w122-41…44`). «На будущее»: фильтры — диф
+  dev↔prod идентичен (не воспроизводится), `flowProps` — платформенная
+  сериализация, `DECLARE_KEY` — ограничение проверки.
 
 ## Хвосты и блокеры
 
@@ -146,3 +153,137 @@
   город да/нет) — за владельцем: у агента нет телефона.
 - Прогон `tg-router` на prod больше не ретраится (`logOutput:false`, цена
   ADR-0044) — как и на dev.
+
+## Ревью
+
+- **Ревьюер**: независимый review-agent (opencode, `deepseek-v4.1-flash`), **дата**: 2026-09-28
+- **Вердикт**: **есть замечания**
+
+Живой prod проверен read-only через MCP `app-flow-events-prod`: bulk-экспорт
+`ap_export_flow` по 30 общим флоу в обеих средах с независимым дифом, структуры
+ключевых флоу, `ap_validate_flow` по всем 30, `migrations`, `ap_list_runs`/
+`ap_get_run`, каталог переводов. REST-POST к платформе не делался (запрещён и
+ролью, и харнессом); живой пробник `$t` подтверждён чтением прод-прогонов
+владельца того же сценария.
+
+### Замечания
+
+1. **важно** — W25-конвертация `texts`→`{{$t[...]}}` на prod неполна: **6
+   пользовательских текстов остались русскими литералами**.
+   - `reminders`, `step_8` («reminder text», внутри `LOOP_ON_ITEMS`):
+     `remind.24h`, `remind.2h`, `remind.btn.directions`, `ticket.btn.open`;
+     версия `sxt9fKhn548NZtwM91d2E` (LOCKED), в `migrations` W122 строки по
+     `reminders` нет — флоу вообще не попал в W25-пакет `w122-25…40`.
+   - `reg-start`, `step_18` («текст сбоя: попробуйте ещё раз», onFailure-ветка):
+     `common.err.generic`; версия `yzDxSbBNB6ME3qtMbdlUm` (`w122-23`).
+   - `staff-accept`, `step_10` («build scanner button», onSuccess-ветка):
+     `staff.accept.btn.scanner`; версия `g6JcrpxiZU7vNh4d5I9St` (`w122-39`).
+   На dev те же тексты — `{{$t[...]}}`, а все 6 ключей уже есть в prod-каталоге
+   переводов с ru/uz/en, то есть правка сводится к копированию dev-входа.
+   Следствие: uz/en-пользователь получит русские напоминания и подпись кнопки.
+   Это прямо противоречит отмеченному пункту чек-листа «W25-конвертация
+   `texts`→`{{$t[...]}}` на prod (все пользовательские флоу)» и журнальному
+   «0 расхождений». **До исправления пакет не может стать `готов`.**
+
+2. **важно** — **4 prod-флоу экспортируются в состоянии `DRAFT`**, а не
+   `LOCKED`, поэтому `ap_export_flow` отдаёт по ним черновик, а не
+   опубликованную версию: `events-api` (`HhYjxjK2rTGcN4onpD4uZ`),
+   `fn-parse-start` (`oG1KA0SNUzlEeyBSHHlpf`),
+   `fn-sign-qr` (`4y8YAiiYEDb9ldW1fHRbl`),
+   `fn-verify-qr` (`s4pUC42gyWRWavdVdqarr`). W122 этих флоу не касался; в
+   `migrations` последняя публикация `events-api` — W72
+   (`hJyGxfWMj3WGtihDMtfJV`), по трём `fn-*` строк публикации нет. Содержимое
+   шагов совпадает с dev, но именно у этих четырёх «0 расхождений» доказано
+   для черновика, а не для того, что видит пользователь. Нужно выяснить
+   причину draft (след `ap_test_flow`/незавершённая правка?) и убедиться, что
+   published = dev; при расхождении — опубликовать. `fn-sign-qr`/`fn-verify-qr`
+   — крипто-шаги, подтверждение их published-версии особенно существенно.
+
+3. **на будущее** — у prod в трёх фильтрах `tables-find-records` потерян
+   `filters[].field.id`, который есть на dev: `menu` (чтение `users` по
+   `telegram_id`), `reg-api`, `reg-start`. По схеме qadam `field` — «column
+   name or id», `name`+`type` на месте, так что фильтр рабочий; но это
+   расхождение со всеми прочими фильтрами и с dev. Поскольку в проекте уже
+   был класс дефектов «потерянный фильтр = fail-open», стоит выровнять до dev
+   или подтвердить живым прогоном затронутого шага.
+
+4. **на будущее** — у prod отсутствует `settings.propertySettings.flowProps`
+   (есть на dev) в `manage-api` и в `tg-router` (callFlow-ветки `menu` и
+   `staff_accept`). Это UI-метаданные для резолва динамических пропов;
+   рантайм читает `input.flowProps`, который совпадает, поэтому поведение не
+   меняется, но с dev расходится.
+
+5. **на будущее** — `DECLARE_KEY` по W113b (7 таблиц) через MCP **независимо
+   не перепроверяется**: ни `ap_export_table`, ни `ap_list_tables` объявленный
+   ключ не отдают. Опираюсь на `migrations` `w122-01…07` и на то, что
+   платформа отказала бы при дублях; отдельного живого подтверждения нет —
+   записать как ограничение проверки.
+
+### Ответ владельца (исправления, 2026-09-28)
+
+1. *Исправлено.* Остаток W25 действительно был неполон: мой диф обходил
+   `nextAction`/`children`, но не `continueOnFailureBranches`, а тело
+   `LOOP_ON_ITEMS` (`reminders/step_8`) экспорт вообще не отдаёт — шаг взят из
+   `ap_read_step_code`. Переведены на dev-входы и перепубликованы:
+   `reminders/step_8`, `reg-start/step_18`, `staff-accept/step_10`
+   (`migrations` `w122-45…47`). Живой прогон напоминаний — за владельцем.
+2. *Исправлено.* Причина — drift от dev (dev `LOCKED`, prod `DRAFT`). Все
+   четыре флоу валидированы (`valid: true`) и опубликованы, теперь `LOCKED`
+   (`migrations` `w122-41…44`). `fn-sign-qr`/`fn-verify-qr` сверились с dev
+   побайтово по `sourceCode`.
+3. *Проверено — не воспроизводится.* Прямой диф `filters` dev↔prod по
+   `menu`/`reg-api`/`reg-start` (сравнение полного JSON фильтра, включая
+   `field.id`) — **идентичны**, `field.id` отсутствует в **обеих** средах
+   (платформенная сериализация фильтра по `name`+`type`). Расхождения с dev и
+   класса «потерянный фильтр = fail-open» тут нет; оставлено как есть.
+4. *Принято как платформенный артефакт сериализации.* `propertySettings.flowProps`
+   — UI-метаданные; рантайм читает `input.flowProps`, который совпадает с dev
+   (то же явление зафиксировано в W112). Правки не требует.
+5. *Принято как ограничение проверки.* `DECLARE_KEY` через MCP не читается;
+   опора — `migrations` `w122-01…07` и fail-closed поведение платформы при
+   дублях. Тем же ограничением живёт W113b на dev.
+
+### Что подтверждено на живом prod (без замечаний)
+
+- `ap_list_flows` prod: ровно **30** флоу, все `ENABLED`/published,
+  `dedup-report` отсутствует (dev — 31, из них `ChatBot` — чужой платформенный).
+- `tg-router`: `step_27` «effective lang» на месте, `step_9` под ним;
+  `localeSource = {{step_27['output'].lang}}` — совпадает с dev; `[LOG OFF]`
+  на триггере и `step_6`; `auth` (prod-connection `KIbx…`) на триггере,
+  `step_15`, `step_22`, `step_26`.
+- W109: per-row `__clear: ["OlFAWgVQmrqhqxlraOPOZ"]` на
+  `reg-consent-pdn/step_5`, `reg-api/step_11`/`step_18`,
+  `reg-profile/step_23`/`step_29` — совпадает с dev; шаги на `tables` 0.4.6.
+- W112: `logOutput` совпадает dev↔prod во всех 30 общих флоу — диф не нашёл ни
+  одного расхождения по `logOutput`.
+- `ap_validate_flow` по всем 30 prod-флоу: `valid: true`, `invalidSteps: 0`,
+  `issues: []`, `warnings: []`; `translation_default_locale`/`translation_key`
+  отсутствуют.
+- `migrations` prod: 40 строк `2026-09-28-w122-01…40`; все 32 `publish`-строки
+  сверены, **последняя publish по каждому из 22 объектов совпала с живым
+  `ap_export_flow.flows[0].id`**; у `table:`-строк `version_id` «-», `commit` «-».
+- i18n: **199** различных `$t`-ключей, реально используемых в prod-флоу, — все
+  есть в prod-каталоге переводов и все с ru/uz/en; недостающих ключей нет.
+- Живой `$t`: прод-прогоны `reg-api` `hXLzlUoD5kJvMdEIQ5ANL` (ru,
+  «…устарели…»), `eEiKVuxLpvgpN5oE8vAHi` (uz, «…eskirgan…»),
+  `c6qK2IKJ7atNeZSKPRrNY` (en, «…expired…») от 2026-09-28 07:18–07:20,
+  `environment: PRODUCTION`, `SUCCEEDED`, `invalid_init_data`, без
+  `TranslationKeyNotFound`.
+- AppSec: экспорт не содержит значений connections/variables (`ap_export_flow`
+  очищает `auth`; `check-export-secrets.sh` — чисто); W122 не трогал логику
+  авторизации/IDOR (только тексты, `lang`, город); `telegram_id`/`lang` берутся
+  из проверенного источника (`initData`/апдейт).
+- Офлайн: `check-texts.py` (280 ссылок, 0 расхождений), `check-commands.py`
+  (0 нарушений), `check-export-secrets.sh` (чисто), `check-agents.py` (ok).
+
+### Ограничения ревью
+
+- Живой `POST /sync`-пробник `$t` не воспроизводился: POST к платформе
+  запрещён ролью ревьюера и заблокирован харнессом; проверено чтением
+  прод-прогонов того же сценария (`ap_get_run`).
+- Bulk-сверка 30 флоу сделана read-only MCP-вызовами (`ap_export_flow` обеих
+  сред) с нормализацией env-специфики (`auth`, `flow.externalId`, sample data);
+  `tools/check-migrations.py` без ключа платформы не запускался.
+- `catalog/environments.md` в части «логика флоу prod пошагово совпадает …
+  0 расхождений шагов» **не соответствует** фактам п. 1–4; после исправления
+  формулировку нужно уточнить.
