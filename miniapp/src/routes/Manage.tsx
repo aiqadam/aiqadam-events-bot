@@ -1260,7 +1260,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                 const regClosed = ev.status === 'published' && regDeadlinePassed(utcMs(ev.reg_deadline_at || ''), ms, now);
                 return (
                   <li key={ev.id}>
-                    <a className={`event-card${past ? ' past' : ''}`} href={`#/manage/${ev.id}`}>
+                    {/* W129: карточка — `<div>`, а не `<a>`: ссылка на событие
+                        растянута заголовком (`.event-card-link::after`), кнопки
+                        сканера/удаления лежат отдельно и не вложены в ссылку. */}
+                    <div className={`event-card${past ? ' past' : ''}`}>
                       <div className="date-plate">
                         <span className="month">{p.month}</span>
                         <span className="day">{p.day}</span>
@@ -1276,7 +1279,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           )}
                           {ev.isAuthor && <span className="badge mono">{t('manage.list.author')}</span>}
                         </div>
-                        <h3 className="event-title">{ev.title}</h3>
+                        <h3 className="event-title">
+                          <a className="event-card-link" href={`#/manage/${ev.id}`}>
+                            {ev.title}
+                          </a>
+                        </h3>
                         <div className="event-meta">
                           <span className="meta-item">{utcToTime(ev.starts_at)}</span>
                         </div>
@@ -1284,11 +1291,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                             только контролёру (гейт — staffIds с сервера). */}
                         {staffIds[ev.id] && !past && (
                           <div className="app-actions" style={{ marginTop: 8 }}>
-                            <a
-                              className="btn btn-secondary"
-                              href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <a className="btn btn-secondary" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
                               {t('menu.btn.scanner')}
                             </a>
                           </div>
@@ -1300,18 +1303,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                               type="button"
                               className="btn btn-destructive"
                               id={`delete-${ev.id}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openDelete(ev.id, ev.title);
-                              }}
+                              onClick={() => openDelete(ev.id, ev.title)}
                             >
                               {t('manage.delete.btn')}
                             </button>
                           </div>
                         )}
                       </div>
-                    </a>
+                    </div>
                   </li>
                 );
               })}
@@ -1365,33 +1364,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           )}
 
           {/* W66 (OWN-4.1): «Удалить»/«Отменить» — на первом экране события,
-              а не на последнем шаге визарда (issue #118). */}
-          {eventId && manageTab === 'event' && !done && !confirmExit && (origStatus === 'draft' || origStatus === 'published') && (
-            <div className="app-actions" id="event-danger-actions" style={{ marginBottom: 12 }}>
-              {origStatus === 'draft' && (
-                <button
-                  type="button"
-                  className="btn btn-destructive"
-                  id="delete-event"
-                  disabled={busy}
-                  onClick={() => openDelete(eventId, fields['title'])}
-                >
-                  {t('manage.delete.btn')}
-                </button>
-              )}
-              {origStatus === 'published' && (
-                <button
-                  type="button"
-                  className="btn btn-destructive"
-                  id="cancel-event-top"
-                  disabled={busy}
-                  onClick={() => setCancelSheet(true)}
-                >
-                  {t('owner.event.btn.cancel_event')}
-                </button>
-              )}
-            </div>
-          )}
+              а не на последнем шаге визарда (issue #118).
+              W129: не первым и не самым заметным — блок перенесён в конец формы,
+              в «опасную зону» (ниже полей, перед кнопками шага). */}
 
           {(!eventId || manageTab === 'event') && (confirmExit ? (
             <div className="card result bad" id="exit-confirm">
@@ -1487,7 +1462,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
                   <div className="field">
                     <label className="label" htmlFor="f-description">
-                      {t('field.description')}
+                      {t('field.description_optional')}
                     </label>
                     <textarea
                       className={`textarea ${fieldError('description') ? 'error' : ''}`}
@@ -1498,7 +1473,6 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       value={fields['description']}
                       onChange={(e) => setField('description', e.target.value)}
                     />
-                    <p className="helper">{t('manage.hint.description')}</p>
                     {fieldError('description') && (
                       <p className="helper error" id="e-description">
                         {fieldError('description')}
@@ -1832,6 +1806,36 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                 </div>
               )}
 
+              {/* W129: «опасная зона» — удаление/отмена внизу формы, ниже полей
+                  и не первым элементом; доступность кнопок сохранена. */}
+              {eventId && manageTab === 'event' && !done && !confirmExit && (origStatus === 'draft' || origStatus === 'published') && (
+                <div className="danger-zone" id="event-danger-actions">
+                  <div className="section-label">{t('manage.danger.section')}</div>
+                  {origStatus === 'draft' && (
+                    <button
+                      type="button"
+                      className="btn btn-destructive btn-block"
+                      id="delete-event"
+                      disabled={busy}
+                      onClick={() => openDelete(eventId, fields['title'])}
+                    >
+                      {t('manage.delete.btn')}
+                    </button>
+                  )}
+                  {origStatus === 'published' && (
+                    <button
+                      type="button"
+                      className="btn btn-destructive btn-block"
+                      id="cancel-event-top"
+                      disabled={busy}
+                      onClick={() => setCancelSheet(true)}
+                    >
+                      {t('owner.event.btn.cancel_event')}
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="sticky-actions">
                 {step > 0 && (
                   <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
@@ -1898,7 +1902,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           </div>
                         </div>
                       </div>
-                      <div className="tabs" id="parts-filter" role="tablist" style={{ marginBottom: 12 }}>
+                      {/* W129: фильтры участников — `.segmented.wrap` эталона,
+                          а не `.tabs`: четыре подписи со счётчиками переносятся
+                          и видны целиком, без горизонтальной прокрутки. */}
+                      <div className="segmented wrap" id="parts-filter" role="tablist">
                         {(
                           [
                             ['all', 'participants.filter.btn.all', parts.rows.length],
@@ -1912,7 +1919,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                             type="button"
                             role="tab"
                             aria-selected={partsFilter === key}
-                            className={`tab${partsFilter === key ? ' active' : ''}`}
+                            className={`btn btn-secondary btn-sm${partsFilter === key ? ' active' : ''}`}
                             id={`f-${key}`}
                             onClick={() => setPartsFilter(key)}
                           >
