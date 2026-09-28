@@ -46,15 +46,14 @@
 ## Чек-лист готовности
 
 - [x] W109, W112, W113b, W121 применены на prod, флоу опубликованы;
-- [ ] каталог переводов и `defaultLocale=ru` на prod (владелец, UI);
-- [ ] W25-конвертация `texts` и `localeSource` на prod;
-- [ ] W114/W116/W119/W120 применены на prod;
-- [x] Mini App prod пересобран (`main`→`prod`, `build:prod` зелёный) и запушен в ветку `prod`;
 - [x] каталог переводов на prod залит (441 ключ × ru/uz/en);
-- [ ] `project.defaultLocale = ru` на prod — **блокер публикации** `$t`-флоу;
-- [x] W114 для `tg-router` на prod (step_27 + `localeSource`), опубликован;
-- [x] строки `migrations` на prod по каждой правке (19 строк `2026-09-28-w122-01…19`);
-- [ ] `catalog/environments.md` отражает расхождения/состояние;
+- [x] `project.defaultLocale = ru` на prod (владелец, UI);
+- [x] W25-конвертация `texts`→`{{$t[...]}}` на prod (все пользовательские флоу);
+- [x] W114/W116 (язык), W119/W120 (город) применены на prod;
+- [x] Mini App prod пересобран (`main`→`prod`, `build:prod` зелёный) и запушен;
+- [x] строки `migrations` на prod (40 строк `2026-09-28-w122-01…40`);
+- [x] `catalog/environments.md` отражает состояние;
+- [x] финальная сверка: 30 общих флоу prod↔dev, **0 расхождений шагов**;
 - [ ] независимое ревью, вердикт «замечаний нет».
 
 ## Как проверено (фаза 1)
@@ -76,6 +75,19 @@
 - **Диф сред.** `auth`/`flow`-ссылки не трогались: export `reg-consent-pdn`
   несёт prod-connection `KIbx…` и prod-`externalId` `PUf09unv…`, совпадающий
   с вызовом из prod `tg-router`. Перепривязка не потребовалась.
+
+## Как проверено (фаза 2)
+
+- **Сверка dev↔prod по всем флоу** (`ap_export_flow`, 30 общих): сначала
+  40 отличающихся шагов (только `texts`), после переноса — **0**.
+- **Валидатор**: каждый публикуемый флоу `ap_validate_flow` — valid; до
+  `defaultLocale` были `translation_default_locale` (блокер), после — чисто.
+- **Живой пробник `$t`** на prod (`reg-api /sync`, пустой `initData`):
+  заголовок `ap-parent-run-locale` → `ru`/`uz`/`en`/`ru-RU` дают переведённый
+  текст (`…устарели…` / `…eskirgan…` / `…expired…`), без `TranslationKeyNotFound`.
+- **`tg-router`**: `step_27` в дереве, `step_9` под ним, `localeSource`
+  выставлен, `auth` на триггере/step_15/22/26 на месте, `logOutput:false`.
+- **`migrations` prod**: 40 строк `w122-01…40`, `action`/`version_id` сверены.
 
 ## Журнал
 
@@ -111,10 +123,26 @@
   `dist/` собран), коммит `3551460`, запушено в `origin/prod`. Деплой —
   CI репозитория `aiqadam/aiqadam-events-bot-prod` (в этом репо `pages.yml`
   реагирует только на `main`, `prod` его не триггерит).
+- **2026-09-28** — Владелец выставил `project.defaultLocale = ru` на prod.
+  Валидатор перестал давать `translation_default_locale`: все 4 флоу valid.
+  Опубликованы `reg-profile` `SLNDfnPegKww7FLX9ewF9`, `reg-api`
+  `39naNidX19agPOACPbMLC`, `reg-start` `yzDxSbBNB6ME3qtMbdlUm`, `menu`
+  `ZYG367q9x1nXxiqk0VcI4` (`migrations` `w122-21…24`).
+- **2026-09-28** — **Остаток W25** (остальные пользовательские флоу): сверка
+  всех 30 общих флоу показала 40 шагов, отличающихся **только** полем `texts`
+  (литерал vs `{{$t[...]}}`). Портированы dev-входы в 16 флоу, все
+  опубликованы (`migrations` `w122-25…40`).
+- **2026-09-28** — **Финальная сверка**: `ap_export_flow` dev vs prod по 30
+  общим флоу — **0 расхождений шагов**; `ChatBot` — только на dev (чужой
+  платформенный, Q34). Живой пробник `reg-api /sync` на prod: `$t` резолвится
+  в `ru`/`uz`/`en`/`ru-RU` (401 `invalid_init_data` с переведённым текстом, без
+  `TranslationKeyNotFound`).
 
 ## Хвосты и блокеры
 
-- Импорт переводов и `defaultLocale` на prod — действие владельца в UI
-  (MCP prod без инструментов переводов).
-- Mini App prod — отдельный репозиторий/ветка (`aiqadam/aiqadam-events-bot-prod`,
-  ветка `prod`), деплой владельцем или через CI.
+- Деплой Mini App prod — CI репо `aiqadam/aiqadam-events-bot-prod` (ветка
+  `prod` запушена); живая проверка на устройстве — за владельцем.
+- Живой сквозной прогон бота в Telegram (карточка языка, uz/en ответы,
+  город да/нет) — за владельцем: у агента нет телефона.
+- Прогон `tg-router` на prod больше не ретраится (`logOutput:false`, цена
+  ADR-0044) — как и на dev.
