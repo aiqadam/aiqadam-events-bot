@@ -342,6 +342,7 @@
   "profile.delete.failed": "Could not delete the account.",
   "profile.delete.forbidden": "This way you can delete only your own account.",
   "profile.delete.hint": "Deletes your profile, registrations and feedback. This cannot be undone.",
+  "profile.delete.section": "Danger zone",
   "profile.delete.title": "Account deletion",
   "profile.err": "Fill in your first and last name.",
   "profile.first": "First name",
