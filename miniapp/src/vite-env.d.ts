@@ -35,6 +35,9 @@ interface TelegramWebApp {
     [key: string]: unknown;
   };
   colorScheme: 'light' | 'dark';
+  // W123: версия клиента и платформа — контекст сообщения о проблеме (Q62).
+  version?: string;
+  platform?: string;
   ready: () => void;
   expand: () => void;
   // W53: таб рассылки — «Перейти в чат»: страница закрывается, пользователь

@@ -1010,6 +1010,14 @@ function ProfileTab({
           {msg}
         </p>
       )}
+      {/* W123 (Q62): сообщение о проблеме — вход из профиля в #/report. */}
+      <div className="form-section" id="profile-report">
+        <a className="btn btn-secondary btn-block" id="profile-report-btn" href="#/report?from=profile">
+          <Icon name="alert" />
+          {t('report.title')}
+        </a>
+        <p className="helper">{t('report.entry_hint')}</p>
+      </div>
       <div className="sheet-actions">
         <button type="button" className="btn btn-primary btn-lg" id="profile-save" onClick={onSave}>
           {t('manage.btn.save')}

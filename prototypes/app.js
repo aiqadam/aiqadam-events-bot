@@ -1,7 +1,7 @@
 // Прототип W41 — мок Mini App (ADR-0027).
 // Hash-роутер как у продукта: #/ticket, #/scan, #/manage, #/manage/:id,
-// #/events, #/feedback (пятый роут принят ADR-0028, W45), #/report (Q62 — идея,
-// ADR не принят). Фейковые данные, никаких вызовов
+// #/events, #/feedback (пятый роут принят ADR-0028, W45), #/report (шестой —
+// ADR-0050, W123). Фейковые данные, никаких вызовов
 // (ADR-0026). Экраны — как продукт: брендовые токены, компоненты и иконки
 // Lucide; требования SPEC — в отдельном шите трассировки.
 'use strict';
@@ -1421,11 +1421,11 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     // меняется (в продукте тот же текст, W60).
     screen.appendChild(E('div', 'helper', T('profile.pdn_done', { when: p.pdnAt })));
 
-    // Вход в форму сообщения о проблеме (Q62 — идея): место в табе «Профиль»,
+    // Вход в форму сообщения о проблеме (Q62, ADR-0050): место в табе «Профиль»,
     // как предлагает Q62.
     const reportSec = E('div', 'form-section');
-    reportSec.appendChild(btn(T('proto.report_title'), { kind: 'btn-outline', block: true, icon: 'alert', onClick: () => go('#/report') }));
-    reportSec.appendChild(E('div', 'helper', T('proto.report_entry_hint')));
+    reportSec.appendChild(btn(T('report.title'), { kind: 'btn-outline', block: true, icon: 'alert', onClick: () => go('#/report') }));
+    reportSec.appendChild(E('div', 'helper', T('report.entry_hint')));
     screen.appendChild(reportSec);
 
     const acts = E('div', 'sticky-actions');
@@ -1568,12 +1568,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setDemo([]);
   }
 
-  // ---------- роут: сообщение о проблеме (шестой роут, Q62 — идея, ADR не принят) ----------
-  // Форма предложения из Q62: без серверной части и прав — пожаловаться может
+  // ---------- роут: сообщение о проблеме (шестой роут, Q62, ADR-0050) ----------
+  // Форма из Q62: без серверной части и прав — пожаловаться может
   // любой. Поля контекста (экран, версия, событие) прикладываются сами, их не
-  // вводят. Отдельного требования SPEC у экрана нет: он показывает идею.
+  // вводят. Требование — SPEC PAR-12, ADR-0050.
   function renderReport() {
-    PROTO.setTrace(['Q62', 'ADR-0017']);
+    PROTO.setTrace(['ADR-0050', 'Q62']);
     clear();
 
     if (reportSent) {
@@ -1581,8 +1581,8 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       const ic = E('div', 'success-icon');
       ic.appendChild(PROTO.icon('check-circle', 34));
       ok.appendChild(ic);
-      ok.appendChild(E('div', 'success-title', T('proto.report_done_title')));
-      ok.appendChild(E('div', 'app-muted', T('proto.report_done')));
+      ok.appendChild(E('div', 'success-title', T('report.done_title')));
+      ok.appendChild(E('div', 'app-muted', T('report.done')));
       screen.appendChild(ok);
       const acts = E('div', 'app-actions');
       acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-primary'));
@@ -1593,17 +1593,17 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       return;
     }
 
-    screen.appendChild(E('div', 'app-title', T('proto.report_title')));
-    screen.appendChild(E('div', 'app-muted', T('proto.report_lead')));
+    screen.appendChild(E('div', 'app-title', T('report.title')));
+    screen.appendChild(E('div', 'app-muted', T('report.lead')));
 
     const kindSec = E('div', 'form-section');
-    kindSec.appendChild(E('div', 'section-label', T('proto.report_kind')));
+    kindSec.appendChild(E('div', 'section-label', T('report.kind_label')));
     const kinds = E('div', 'segmented wrap');
     const kindDefs = [
-      ['broken', T('proto.report_kind_broken')],
-      ['text', T('proto.report_kind_text')],
-      ['message', T('proto.report_kind_message')],
-      ['other', T('proto.report_kind_other')],
+      ['broken', T('report.kind.broken')],
+      ['text', T('report.kind.text')],
+      ['message', T('report.kind.message')],
+      ['other', T('report.kind.other')],
     ];
     kindDefs.forEach(([key, label]) => {
       const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { reportKind = key; renderReport(); } });
@@ -1614,16 +1614,16 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     screen.appendChild(kindSec);
 
     const textSec = E('div', 'form-section');
-    textSec.appendChild(field(T('proto.report_text'), reportText, {
+    textSec.appendChild(field(T('report.text_label'), reportText, {
       textarea: true,
-      placeholder: T('proto.report_placeholder'),
+      placeholder: T('report.placeholder'),
       onInput: (e) => { reportText = e.target.value; paintSubmit(); },
     }));
     screen.appendChild(textSec);
-    screen.appendChild(E('div', 'helper', T('proto.report_context')));
+    screen.appendChild(E('div', 'helper', T('report.context')));
 
     const acts = E('div', 'sticky-actions');
-    const submit = btn(T('proto.report_submit'), {
+    const submit = btn(T('report.submit'), {
       kind: 'btn-primary', block: true, disabled: !reportText.trim(),
       onClick: () => { reportSent = true; renderReport(); },
     });
