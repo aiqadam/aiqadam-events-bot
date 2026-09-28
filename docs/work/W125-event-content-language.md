@@ -1,6 +1,6 @@
 # W125. Язык контента события: поле `lang`, показ в карточке
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: вне волн
 - **Зависит от**: —
@@ -20,7 +20,11 @@
 | таблица `events` (поле `lang`) | `R4aSQpLZvw7d3u6DVOSjH` | [catalog/tables/events.md](../../catalog/tables/events.md) |
 | flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
 | flow `events-api` | `7MSsiJX1OJM9jcvZoU7g5` | [catalog/flows/events-api.md](../../catalog/flows/events-api.md) |
-| фрагмент `event-card` | — | [catalog/snippets/event-card.md](../../catalog/snippets/event-card.md) |
+| flow `reg-start` (чат-карточка) | `furNEp5R3KFZ2jdSni2Eu` | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
+
+Эталон [`catalog/snippets/event-card.md`](../../catalog/snippets/event-card.md) W125
+**не менялся** — он никем не встраивается, и чат-карточку `reg-start` строит
+своими CODE-шагами; ключ `event.card.lang` добавлен только в них.
 
 ## Чек-лист готовности
 
@@ -89,12 +93,91 @@
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 > Владелец пакета сюда не пишет — только отвечает под замечаниями, что исправлено.
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: независимый агент (чистый контекст, opencode/deepseek-v4.1-flash) · **Дата**: 2026-09-28 · **Вердикт**: есть замечания (блокеров и «важно» нет; три `на будущее`)
 
 ### Замечания
 
-1. —
+1. **на будущее** — наличие платформенных переводов `event.card.lang` (ru/uz/en)
+   живьём не подтверждено. MCP-инструмент `ap_list_translations` в наборе этой
+   сессии не выдан, ключа платформы на машине нет, `GET /api/v1/translations` без
+   авторизации отвечает `403`, `tools/check-migrations.py` по той же причине не
+   запускается. `event.card.lang` — единственный флоу-ключ W125 (`field.lang` —
+   только Mini App); при его отсутствии `reg-start/step_9` падает
+   `TranslationKeyNotFoundError`, а живого прогона `reg-start` после публикации
+   нет (в истории только `FAILED [TEST]` от 26–27.09). Репозиторная сторона чиста:
+   ключ есть во всех трёх `i18n/*.json`, `check-texts.py` — 289 ссылок/0
+   расхождений, `ap_validate_flow` зелёный, но это лишь косвенное свидетельство
+   (по `reg-start` нет ни одного шага-прогона, который бы резолвил `$t`).
+   Владельцу: подтвердить живым `reg-start` (он и так в хвостах журнала).
+   - *Исправлено (частично, 2026-09-28)*: наличие переводов подтверждено живым
+     `ap_list_translations` — `event.card.lang` (id `vp4bKoX8VTWXe64fRBz6i`) и
+     `field.lang` (id `GIJQA657Jcz8NFxjL5L5p`) присутствуют, `locales: en, ru, uz`.
+     Живой прогон `reg-start` (нужен `initData`) — остаётся хвостом на владельца,
+     как у прочих пакетов.
+
+2. **на будущее** — живая **запись** `manage-api` (нормализация `fields.lang` →
+   `ru|uz|en`, persist в `step_11`) не проверена ни одним прогоном: последние
+   прогоны `manage-api` — 27.09, до W125. Различающий curl доказан только для
+   **чтения** (`events-api`): `w125probe1` `lang=uz`→`"uz"`, `w125probe2`
+   пусто→`"ru"` (прогон `uMrgYKHkgwbM3oREk3Vv2`), записи удалены. Сам журнал это
+   честно называет («чего проверка не покрыла»); закрывается живым сохранением
+   события с `lang=uz`    и повторным `load`.
+   - *Не исправляется кодом (2026-09-28)*: живая запись `manage-api` требует
+     валидного `initData` Telegram — вынесено в хвосты (живой e2e за владельцем).
+     Проводка нормализации и записи подтверждена чтением живого кода и различающим
+     curl для чтения (`events-api`).
+
+3. **на будущее** — журнал («Что построено») называет артефактом пакета
+   `catalog/snippets/event-card.md`, но этот файл W125 **не менялся** (последняя
+   правка — W56), и эталон по-прежнему печатает карточку без `event.card.lang`.
+   Вреда нет (`Встраивают: никто`, правила 1–3 `snippets/README` на него не
+   действуют), но запись вводит в заблуждение о составе работ. Там же: статус
+   журнала — «в работе» (`docs/work/W125-event-content-language.md:3`), тогда как
+   `STATUS.md` и сам факт передачи на ревью — «на проверке».
+   - *Исправлено (2026-09-28)*: `catalog/snippets/event-card.md` убран из
+     «Что построено» (он не менялся; добавлена явная оговорка), статус журнала
+     приведён к `на проверке`.
+
+### Чем проверено
+
+**Живой проект (`app-flow-events-dev`, MCP).**
+
+- **Таблица `events`** (`R4aSQpLZvw7d3u6DVOSjH`, `ap_export_table`/`ap_list_tables`):
+  поле `lang` — `TEXT`, externalId `5bvPj315Iv7X8T8rge1d1`, внутренний id
+  `wkJRAt1iLwMtldr7gIr8Q` — совпадает с `catalog/tables/events.md` и
+  `DATA-MODEL.md`. Временных записей нет: в таблице 2 записи (`mu9rqipgetmp`,
+  `mu9uzchnu2il`), обе с пустым `lang` — `w125probe1/2` удалены.
+- **`ap_flow_structure(includeInput=true)` + `ap_read_step_code`**:
+  `events-api/step_1` читает `lang` в проекции (`5bvPj315…`), `step_2` отдаёт
+  `lang: r.lang || 'ru'`; `manage-api/step_7` — `EVENT_KEYS` c `lang`, `normLang`
+  (`ru|uz|en`, иначе `ru`), `load` отдаёт нормализованный `lang`, `step_11` пишет
+  `5bvPj315…`; `reg-start/step_3` — `lang: ev.lang || 'ru'`, `step_9`/`step_14`
+  печатают `esc(t('event.card.lang', …))` в фактах (`MarkdownV2`), `notify-on-change`
+  не затронут. Все шаги `configured`; `ap_validate_flow` — 21/61/4, все valid.
+- **Гоча 12** (частичный `input` затирает вложенный объект): рекурсивная сверка
+  `flows/*.json` с `9e05f28^` — изменения только **добавочные**, ни один ключ
+  `texts`/`values` не потерян (`events-api` +`lang` в `columns`; `manage-api`
+  +`lang` в `values[0]`; `reg-start` +`lang` и +`event.card.lang` в `step_9`/`step_14`).
+- **`ap_export_flow`**: `flows[0].id` = `publishedVersionId` манифеста для всех трёх
+  (`Bu8TA4i0…`/`CUr9g2J7…`/`94sZLch…`), `state: LOCKED` — черновик после публикации
+  не правился. Строки `migrations` `2026-09-28-w125-01..04` совпадают по
+  `object_id`/`version_id`; публикаций после W125 на инстансе нет.
+- **Офлайн**: `check-texts.py` 289/0, `check-commands.py` 0,
+  `check-export-secrets.sh` чисто, `node prototypes/check.mjs` OK,
+  `miniapp npm run build:dev` — выход 0.
+- **Каталог против проекта**: `catalog/tables/events.md`, `catalog/flows/{events-api,
+  manage-api,reg-start}.md`, `catalog/overview.md`, `docs/DATA-MODEL.md`,
+  `docs/SPEC.md` (OWN-17) — утверждения совпадают с живым проектом, лишнего нет.
+- **AppSec**: права `manage-api` (`staff`-строка + чаптер, сентинел `-`, `403`)
+  не изменены, `lang` — обычное поле записи и обхода не даёт; `events-api`
+  публичен, `lang` — не ПД; новых фильтров с возможным пустым значением нет;
+  экранирование MarkdownV2 в `reg-start` не сломано (`esc` применён к
+  `event.card.lang`, значение — код из БД/дефолт).
 
 ## Хвосты и блокеры
 
+- **живой e2e за владельцем**: `reg-start` (карточка со строкой «Язык: …» на
+  выбранном языке) и сохранение языка в форме `#/manage` через `manage-api` —
+  требуют валидного `initData` Telegram; различающий curl покрыл только чтение
+  (`events-api`).
 - перенос на prod — отдельным решением владельца (как у прочих пакетов).
