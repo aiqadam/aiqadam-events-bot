@@ -62,21 +62,27 @@ W113 предлагал и `event_staff(event_id, telegram_id)`. При внед
 таблицах — только `checkin-api/step_8` (`update-record` по `record_id`, ключа не
 касается) и `event_staff` (`manage-api`/`staff-accept`, потому и исключён).
 
-**Различающий proof** (таблица `feedback`, временная строка удалена; id прогонов
-для независимого чтения `ap_get_run`):
-1. `ap_run_action tables-upsert-records`, пара `(zz-w113b, 888888930)` →
-   `action: "created"` (`lWFSAqLj2YeRwDrEGUkbo`);
-2. повтор → `action: "updated"`, **тот же** `record id 7Ev326r3REQTVM1MOiJb7`
-   (`c9fGfQJjNeAa8aOcoaPDM`);
-3. `tables-create-records` с той же парой → `409 RECORD_DUPLICATE_KEY`
-   (`Cr0H2Yz9g15xRcGhOCZMI`);
-4. строка удалена; `users` — `create-records` с существующим
-   `telegram_id 322876545` → `409 RECORD_DUPLICATE_KEY` (`T3ZzeVXVl9ebYhxWvUIf0`),
-   `sessions` — то же (`mOgoGuiRVAZnIoOJGRkaR`), строк не создано.
+**Читаемый различающий proof** (временный диагностический флоу
+`zz-w113b-proof`, id `5QufbJvRx8jU0H8g1DeHt`; прогон **читается `ap_get_run`**,
+флоу держится до вердикта — гоча №11). Прогон `NrOxJk825e8034PJvPAQx`
+(`TESTING`, SUCCEEDED):
+- `step_1` (`tables-upsert-records`) → `action: "created"`, `record id
+  MIaOnZijLGegbjggxdyR1`;
+- `step_2` (upsert той же пары) → `action: "updated"`, **тот же** `record id`;
+- `step_3` (`tables-create-records` той же пары, `continueOnFailure`) →
+  ❌ `409 RECORD_DUPLICATE_KEY`;
+- `step_4` → `{ok:true}` (прогон не упал, исходы шагов видны).
 
-**Ограничение чтения:** `ap_export_table`/`ap_list_tables` объявленный ключ
-**не показывают**, поэтому read-only интроспекции ключа через MCP нет —
-доказательство поведенческое (прогоны выше: дубль отвергается).
+Тестовая строка `feedback` (`zz-w113b`, `888888931`) удалена.
+
+**Вспомогательный self-report** (`ap_run_action`, id — только метки вызовов, они
+**не читаются** `ap_get_run`): `lWFSAqLj2YeRwDrEGUkbo` (created),
+`c9fGfQJjNeAa8aOcoaPDM` (updated), `Cr0H2Yz9g15xRcGhOCZMI` (feedback dup),
+`T3ZzeVXVl9ebYhxWvUIf0` (users dup), `mOgoGuiRVAZnIoOJGRkaR` (sessions dup).
+
+**Ограничение интроспекции:** объявленный ключ `ap_export_table`/`ap_list_tables`
+**не показывают**, read-only проверки ключа через MCP нет — доказательство
+поведенческое (прогон `NrOxJk…`).
 
 **Офлайн:** `check-texts.py` — 0; `check-commands.py` — 0;
 `check-export-secrets.sh` — чисто; `check-agents.py` — 0;
@@ -98,13 +104,114 @@ W113 предлагал и `event_staff(event_id, telegram_id)`. При внед
 
 ## Ревью
 
-> Заполняет независимый ревьюер по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
+- **Ревьюер**: review-agent (независимый, чистый контекст) · **Дата**: 2026-09-28 · **Вердикт**: есть замечания (1 блокер, 2 «важно», 1 «на будущее»)
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+### Что проверено
+
+- **Формы записи флоу (экспорт `flows/*.json`).** Все 48 `tables-upsert-records`
+  на семи таблицах несут `key_columns`, **равный** объявленному ключу
+  (0 расхождений), и в каждой строке `values` присутствуют все ключевые
+  `externalId`. `create-records`/`update-record` на семи таблицах — только
+  `checkin-api/step_8` (`update-record` по `record_id`, ключа не касается);
+  `event_staff` пишут `manage-api/step_22` и `staff-accept/step_8` через
+  `create-records` (таблица намеренно без ключа), `manage-api/step_28` —
+  `update-record` по нему же. Упоминание `manage-api`/`staff-accept` в журнале
+  соответствует экспорту.
+- **Миграции.** Семь строк `2026-09-28-w113b-01..07`: `action=update`,
+  `object=table:*`, `object_id` — внутренние id таблиц (совпадают с
+  `ap_list_tables` и карточками), `commit=2dd60b4`, `package=W113b`. Всего в
+  `migrations` 320 строк = 313 (аудит W113) + 7.
+- **Живой инстанс не сломан.** 17 таблиц на месте; `feedback` — 0 записей
+  (временная строка удалена); `users` и `sessions` — по 119 записей, те же
+  числа, что в аудите W113, то есть дублей от proof-вставок не осталось;
+  `telegram_id 322876545` есть и в `users`, и в `sessions` (по 1 строке).
+- **Документы.** [ADR-0047](../adr/0047-unique-keys-and-types-after-audit.md) —
+  «Принято» и в самом файле, и в `adr/README.md`; ADR-0003/0011 несут корректные
+  шапки-обновления; карточки семи таблиц и `event_staff` описывают ключ/его
+  отсутствие верно (сверено с `ap_export_table`).
+- **Офлайн (запущено с аргументами):** `check-texts.py` — 0 (31 флоу, 285
+  ссылок), `check-commands.py` — 0, `check-export-secrets.sh` — 0,
+  `check-agents.py` — 0, `node prototypes/check.mjs` — 0. Экспорт флоу PR не
+  менял (правок не требовалось), все 31 флоу `valid: true`, `state: LOCKED`.
+- **Ограничение интроспекции.** `ap_export_table` (проверено на `feedback`) и
+  `ap_list_tables` объявленный ключ не показывают — read-only способа увидеть
+  `keyFields` нет; доказательство может быть только поведенческим.
 
 ### Замечания
 
-1. —
+1. **блокер** Записанные proof-прогоны не читаются, а журнал выдаёт их за
+   читаемые. `ap_get_run` на `events-dev` и `events-prod` отвечает
+   «Flow run not found» на все пять id (`lWFSAqLj2YeRwDrEGUkbo`,
+   `c9fGfQJjNeAa8aOcoaPDM`, `Cr0H2Yz9g15xRcGhOCZMI`, `T3ZzeVXVl9ebYhxWvUIf0`,
+   `mOgoGuiRVAZnIoOJGRkaR`), тогда как настоящий флоу-прогон
+   (`Qiq3wJ9Q7dlRCLMJtLaYC`) читается. Журнал подаёт их как «id прогонов для
+   независимого чтения `ap_get_run`» — это неверно: прогонов `ap_run_action` в
+   этом сторе нет. Следствие: центральное утверждение пакета (ключи объявлены,
+   upsert через `ON CONFLICT`, дубль — `RECORD_DUPLICATE_KEY` на семи живых
+   таблицах, по которым **сменился путь записи**) не подтверждено ничем, кроме
+   самоотчёта, а интроспекции ключа нет вовсе. Риск высок: если ключ не встал
+   или расходится с шагом, это ломает идемпотентность регистрации/чекина.
+   Починить: снять различающий proof так, чтобы его прогон читался `ap_get_run`
+   (временный диагностический флоу на `tables`-шагах, как `zz-diag-*` W60,
+   не удалять до вердикта — гоча №11; либо другой воспроизводимый способ) и
+   убрать из журнала ложь про читаемость `ap_run_action`-id. Если
+   доказательство решено оставить самоотчётом — назвать его так прямо (как в
+   W113), без ссылки на `ap_get_run`.
+   - *Исправлено*: снят **читаемый** proof — временный флоу `zz-w113b-proof`
+     (`5QufbJvRx8jU0H8g1DeHt`), прогон `NrOxJk825e8034PJvPAQx` читается
+     `ap_get_run`: created → updated (тот же id) → `RECORD_DUPLICATE_KEY`;
+     self-report-прогоны `ap_run_action` больше не выдаются за читаемые
+     (2026-09-28).
+
+2. **важно** Current-state документы всё ещё утверждают, что уникальность БД не
+   обеспечена и ADR-0003 в силе, — прямое противоречие внедрённому ADR-0047:
+   - `docs/DATA-MODEL.md`, `feedback` (стр. 255: «Уникальность … не гарантирована
+     БД») и `quiz_attempts` (стр. 300: «Уникальность не гарантирована БД») —
+     для этих таблиц теперь ложь;
+   - `docs/DATA-MODEL.md`, `event_staff` (стр. 168: «Уникальность:
+     `(event_id, telegram_id)`») — вводит в заблуждение: ключа нет,
+     revoked+active сосуществуют;
+   - `AGENTS.md` (стр. 197: «в проекте уникальность им не обеспечивается и
+     ADR-0003 в силе»; стр. 201: проект ключи «не принял»); `CLAUDE.md` —
+     симлинк на него;
+   - `docs/ARCHITECTURE.md` (стр. 550–557: «уникальных индексов в Tables нет»,
+     «ADR-0003 в силе», «`upsert` … в проекте не используется и прогоном не
+     проверен»);
+   - `catalog/tables/README.md` (стр. 94: «Уникальных индексов нет — три строки
+     с одной парой … вставились подряд»);
+   - `docs/OPEN-QUESTIONS.md`, индекс Q2 (стр. 11: «✅ их нет — ADR-0003»).
+   ADR-0003/0011 обновлены шапками корректно, но «что сейчас» в этих файлах
+   осталось прежним. Починить формулировки, не удаляя историю (в
+   OPEN-QUESTIONS — пометкой ответа).
+   - *Исправлено*: обновлены `docs/DATA-MODEL.md` (`feedback`, `quiz_attempts`,
+     `event_staff`), `AGENTS.md`/`CLAUDE.md`, `docs/ARCHITECTURE.md`,
+     `catalog/tables/README.md`, индекс Q2 в `docs/OPEN-QUESTIONS.md` (2026-09-28).
+
+3. **важно** Рецепт пересборки схемы в `catalog/tables/README.md` (стр. 41–52)
+   не включает объявление ключей, хотя каталог — спека для пересборки. Собранный
+   с нуля проект (в том числе объявленный отдельным хотфиксом перенос на
+   `events-prod`, ADR-0042) получит таблицы **без** `DECLARE_KEY` и тихо вернёт
+   поведение ADR-0003. Добавить шаг `DECLARE_KEY` по ключам из «Заметок»
+   карточек семи таблиц.
+   - *Исправлено*: в `catalog/tables/README.md` добавлен шаг 3 «объявить
+     уникальные ключи» (семь таблиц; `event_staff` — без ключа) (2026-09-28).
+
+4. **на будущее** `catalog/flows/dedup-report.md` (стр. 39–40) обобщает
+   «`tables-upsert-records` — не уникальный индекс»; для `users`,
+   `registrations`, `sessions` это уже не так. Из читаемых флоу таблиц ключ
+   объявлен у `registrations` и `staff`. Уточнить формулировку, не удаляя
+   карточку.
+   - *Исправлено*: формулировка уточнена — для таблиц с объявленным ключом
+     дубль невозможен, их вклад в метрику нулевой; ADR-0003 — для остальных
+     (2026-09-28).
+
+### Ограничение ревью
+
+Объявленный ключ через MCP не интроспектируется, а записанные proof-прогоны
+нечитаемы (замечание 1). Независимо подтвердить исход proof не удалось;
+форма записи флоу и отсутствие лишних строк проверены и замечаний не вызвали,
+но это не доказывает, что `DECLARE_KEY` действительно встал и что upsert
+работает через `ON CONFLICT`.
 
 ## Хвосты и блокеры
 
@@ -112,4 +219,7 @@ W113 предлагал и `event_staff(event_id, telegram_id)`. При внед
   `quizzes`, `broadcasts`, `migrations`, `strings` — ключи не объявлены (см.
   ADR-0047 п. 1); при необходимости — отдельно.
 - `event_staff` — намеренно без ключа.
+- **Временный флоу `zz-w113b-proof` (`5QufbJvRx8jU0H8g1DeHt`)** держится до
+  вердикта (гоча №11), затем удаляется — вместе с ним перестанет читаться
+  прогон `NrOxJk825e8034PJvPAQx` (доказательство скопировано сюда).
 - Перенос на prod — отдельным хотфиксом (ADR-0042).

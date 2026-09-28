@@ -252,10 +252,10 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `comment` | text | необязателен, ≤2000 символов |
 | `submitted_at` | timestamp | UTC, последней отправки |
 
-Уникальность `(event_id, telegram_id)` не гарантирована БД
-([ADR-0003](adr/0003-idempotency-without-atomicity.md)); поддерживается
-`tables-upsert-records` с ключом по этой паре — повторная отправка
-перезаписывает прежний отзыв, а не создаёт второй. Пишет только
+Уникальность `(event_id, telegram_id)` **объявлена в БД**
+([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md), W113b); upsert идёт
+через `ON CONFLICT` — повторная отправка перезаписывает прежний отзыв, а не
+создаёт второй. Пишет только
 `feedback-api`, после проверки участия (регистрация с чекином на конкретный
 `event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
@@ -296,9 +296,9 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | `started_at` | timestamp | обновляется при старте заново |
 | `finished_at` | timestamp | пусто = не завершена; замок «одна попытка» |
 
-Ключ `(quiz_id, telegram_id)` — `tables-upsert-records`. Завершённую попытку
-перепройти нельзя; недоделанную — можно (сначала). Уникальность не гарантирована
-БД ([ADR-0003](adr/0003-idempotency-without-atomicity.md)).
+Ключ `(quiz_id, telegram_id)` — `tables-upsert-records`; **объявлен в БД**
+([ADR-0047](adr/0047-unique-keys-and-types-after-audit.md), W113b).
+Завершённую попытку перепройти нельзя; недоделанную — можно (сначала).
 
 ## `quiz_answers`
 

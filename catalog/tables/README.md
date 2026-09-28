@@ -48,7 +48,13 @@
 2. для каждого поля типа `STATIC_DROPDOWN` — `options` **массивом строк**
    из раздела «Dropdown-значения» ниже, в том же порядке; пустой вариант
    не перечисляем, его добавляет платформа сама;
-3. `ap_list_tables` + `ap_get_piece_props` — снять новые id и обновить каталог
+3. **объявить уникальные ключи** `ap_manage_fields` `DECLARE_KEY` на семи
+   таблицах ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md)):
+   `users.telegram_id`, `registrations(event_id,telegram_id)`,
+   `sessions.telegram_id`, `staff.telegram_id`, `feedback(event_id,telegram_id)`,
+   `quiz_attempts(quiz_id,telegram_id)`, `quiz_answers(quiz_id,telegram_id,question_idx)`;
+   `event_staff` — **без** ключа (revoked и active строки сосуществуют);
+4. `ap_list_tables` + `ap_get_piece_props` — снять новые id и обновить каталог
    для нового проекта.
 
 Колонки в файлах таблиц читать так: значения dropdown'ов, упомянутые в колонке
@@ -91,5 +97,9 @@
   без нормализации к UTC. Инвариант «всё в UTC» (OWN-3) держат только флоу.
 - **Пустое значение и `null` — разные вещи, но `not_exists` ловит оба.**
   Проверено на `checked_in_at` (`null`) и `capacity` (`""`).
-- **Уникальных индексов нет** — три строки с одной парой `(event_id, telegram_id)`
-  вставились подряд ([ADR-0003](../../docs/adr/0003-idempotency-without-atomicity.md)).
+- **Уникальные ключи объявляются явно** ([ADR-0047](../../docs/adr/0047-unique-keys-and-types-after-audit.md),
+  W113b): на семи таблицах ключ объявлен, уникальность обеспечивает БД
+  (`ON CONFLICT`, дубль — `RECORD_DUPLICATE_KEY`); `event_staff` и остальные —
+  без ключа, там действует соглашение флоу (ADR-0003). `ap_export_table`/
+  `ap_list_tables` объявленный ключ **не показывают** — проверка только
+  поведенческая (вставка дубля).
