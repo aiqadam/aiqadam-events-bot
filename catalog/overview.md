@@ -15,8 +15,8 @@ W26 закрыт («готов», независимое ревью, три кр
 
 | Что | Сколько | Карточки |
 |---|---|---|
-| Флоу | 31 (30 наших + чужой платформенный `ChatBot`, см. ниже) | [flows/](flows/) |
-| Таблицы | 17 | [tables/](tables/) |
+| Флоу | 32 (31 наших + чужой платформенный `ChatBot`, см. ниже) | [flows/](flows/) |
+| Таблицы | 18 | [tables/](tables/) |
 | Connections | 1 на среду — dev `Events-QA-Bot`, prod `Events-Prod` | [connections.md](connections.md) · [environments.md](environments.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
@@ -36,13 +36,13 @@ W26 закрыт («готов», независимое ревью, три кр
 | Группа | Флоу |
 |---|---|
 | Точка входа бота | [tg-router](flows/tg-router.md) |
-| Меню-хаб | [menu](flows/menu.md) — голый `/start`, любая незнакомая команда и обычный текст (W73); у организатора кнопка «Как сделать рассылку» (`menu:bcast_help`, W68); в окне викторины кнопка «Викторина» (`qz:start`, W103) есть у всех ролей |
+| Меню-хаб | [menu](flows/menu.md) — голый `/start`, любая незнакомая команда и обычный текст (W73); у организатора кнопка «Как сделать рассылку» (`menu:bcast_help`, W68); в окне викторины кнопка «Викторина» (`qz:start`, W103) есть у всех ролей; кнопка «Сообщить о проблеме» (`web_app` `#/report`, W123) — всем ролям последней строкой |
 | Викторина | [quiz](flows/quiz.md) — вход по кнопке (окно `starts_at`/`ends_at`, одна попытка, первый вопрос); [quiz-answer](flows/quiz-answer.md) — свободный текст-ответ, следующий вопрос или финал (W103, [ADR-0041](../docs/adr/0041-quiz-in-chat-not-a-page.md)) |
 | Регистрация участника | [reg-start](flows/reg-start.md) (вход + гейт профиля: заполнен — один тап, нет — онбординг), [reg-profile](flows/reg-profile.md) (онбординг C, PAR-8), [reg-consent-pdn](flows/reg-consent-pdn.md), [reg-consent-mkt](flows/reg-consent-mkt.md) (старые сессии `await_pdn`/`await_marketing` — новых касаний туда нет) — телефон в регистрации не спрашивается; из каталога регистрацию делает [reg-api](flows/reg-api.md) (только заполненный профиль) |
 | Жизненный цикл гостя | [reg-afterword](flows/reg-afterword.md) — послесловие после чекина (только благодарность + кнопка отзыва, W45); вызывает [lifecycle](flows/lifecycle.md) |
 | Жизненный цикл и напоминания | [lifecycle](flows/lifecycle.md) — `published → finished` по `ends_at` (OWN-4); [reminders](flows/reminders.md) — `24h`/`2h` (OWN-16, IDM-3). Оба ENABLED |
 | Рассылки | [bcast-draft](flows/bcast-draft.md) — пересылка→черновик+событие; [bcast-step](flows/bcast-step.md) — колбэки `ev/seg/test/send/cancel`; [bcast-unsub](flows/bcast-unsub.md) — отписка без staff-гейта; [bcast-run](flows/bcast-run.md) — чанки по 30 с курсором (OWN-9…OWN-13) |
-| Mini App API | [checkin-api](flows/checkin-api.md), [checkin-counter-api](flows/checkin-counter-api.md) — счётчики прогресса для сканера (W62), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт), [staff-invite](flows/staff-invite.md) — одноразовая ссылка-инвайт контролёра (W10, OWN-14) |
+| Mini App API | [checkin-api](flows/checkin-api.md), [checkin-counter-api](flows/checkin-counter-api.md) — счётчики прогресса для сканера (W62), [my-qr-api](flows/my-qr-api.md), [manage-api](flows/manage-api.md), [events-api](flows/events-api.md), [reg-api](flows/reg-api.md), [feedback-api](flows/feedback-api.md) — приём отзывов (W45, Q53), [report-api](flows/report-api.md) — приём сообщений о проблеме (W123, Q62, без staff-гейта), [staff-events-api](flows/staff-events-api.md) — чьи кнопки сканера (W50, вердикт), [staff-invite](flows/staff-invite.md) — одноразовая ссылка-инвайт контролёра (W10, OWN-14) |
 | Контролёры | [staff-accept](flows/staff-accept.md) — приём инвайт-ссылки `?start=s…` (W10, OWN-14), вызывает `tg-router` |
 | Функции (один уровень вложенности, ADR-0015 п. 5) | [fn-hmac-init-data](flows/fn-hmac-init-data.md), [fn-sign-qr](flows/fn-sign-qr.md), [fn-verify-qr](flows/fn-verify-qr.md), [fn-parse-start](flows/fn-parse-start.md), [fn-find-registration](flows/fn-find-registration.md) |
 | Не построено, не будет | `i18n-sync` — не воскрешается: с W25 ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)) строки живут в платформенных переводах `{{$t['ключ']}}`, импортируемых из `i18n/*.json` |
@@ -51,7 +51,7 @@ W26 закрыт («готов», независимое ревью, три кр
 
 ## Таблицы
 
-Все 11 доменных из [DATA-MODEL.md](../docs/DATA-MODEL.md) плюс служебная
+Все 16 доменных из [DATA-MODEL.md](../docs/DATA-MODEL.md) плюс служебная
 [`migrations`](tables/migrations.md) (журнал изменений инстанса,
 [ADR-0021](../docs/adr/0021-repo-is-source-of-truth-migrations-table.md));
 схема и `externalId` — в [tables/](tables/), рецепт пересборки —
@@ -64,6 +64,8 @@ W26 закрыт («готов», независимое ревью, три кр
 ([ADR-0024](../docs/adr/0024-staff-by-chapter-event-staff-checkin.md), W32).
 `feedback` — отзывы участников об событии, оценка 1–5 + комментарий
 ([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
+`reports` — сообщения о клиентских проблемах из `#/report`, без ключа и без
+staff-гейта ([ADR-0050](../docs/adr/0050-sixth-miniapp-page-report.md), W123).
 `strings` создана по схеме, но пуста осознанно и читаться не будет: строки
 флоу с W25 ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)) живут
 в платформенных переводах `{{$t['ключ']}}`, импортируемых из `i18n/*.json`
@@ -78,15 +80,17 @@ W26 закрыт («готов», независимое ревью, три кр
 Статика на GitHub Pages, адрес — в переменной `MINIAPP_URL`. SPA на Vite+React+TS
 ([ADR-0022](../docs/adr/0022-miniapp-react-spa.md)), hash-роутер
 (`#/ticket?event_id=`, `#/scan?event_id=`, `#/manage`, `#/manage/:id`,
-`#/events?tab=mine|upcoming|past`, `#/feedback?event_id=`), сборка
+`#/events?tab=mine|upcoming|past|profile`, `#/feedback?event_id=`,
+`#/report?from=`), сборка
 `miniapp/dist/`. Среда задаётся **на сборке** (W105, [ADR-0042](../docs/adr/0042-two-environments-one-repo.md)):
 dev — `npm run build:dev` (`pages.yml`, из `main`), prod — `npm run build:prod`
 (репозиторий `aiqadam/aiqadam-events-bot-prod`, из ветки `prod`); адреса и API-базы
 сред — [environments.md](environments.md).
-Построены пять роутов — `ticket`/`scan`/`manage`/`events`/`feedback`
-([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45).
-Шестой — только новым ADR.
-[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на пятую страницу ADR-0023/ADR-0028.
+Построены шесть роутов — `ticket`/`scan`/`manage`/`events`/`feedback`/`report`
+([ADR-0028](../docs/adr/0028-feedback-screen-fifth-miniapp-page.md), W45;
+[ADR-0050](../docs/adr/0050-sixth-miniapp-page-report.md), W123).
+Седьмой — только новым ADR.
+[ADR-0017](../docs/adr/0017-screen-not-message.md) п. 3 и [ADR-0022](../docs/adr/0022-miniapp-react-spa.md) расширены на пятую/шестую страницу ADR-0023/ADR-0028/ADR-0050.
 
 | Роут | Роль | API |
 |---|---|---|
@@ -96,8 +100,9 @@ dev — `npm run build:dev` (`pages.yml`, из `main`), prod — `npm run build:
 участников со счётчиками и выгружает CSV/JSON (W13), получает ссылку
 регистрации (W37), видит отзывы участников (W45) | [manage-api](flows/manage-api.md) |
 | `#/manage/new` | создание — сразу форма визарда из чата (кнопки создания в списке нет, вердикт W49/W50) | [manage-api](flows/manage-api.md) |
-| `#/events?tab=mine\|upcoming\|past\|profile` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; билет живёт до конца события (QR доступен и после старта); карточка с закрытым дедлайном объясняет это текстом, а не молчит; прошлое событие с чекином ведёт на отзыв; регистрация — шитом PAR-1/PAR-2 на месте (+ поля профиля, если пуст, PAR-8), подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)); вход из бота (`#/events` без таба) переключает таб на «Мои билеты», даже если каталог уже открыт; таб «Профиль» (четвёртый) — правка имени/должности/компании/города, согласие залочено, кнопка «Удалить аккаунт» с подтверждением (GDPR, W73/[ADR-0039](../docs/adr/0039-account-self-deletion-gdpr.md)); кнопка сканера — на карточке, видно только контролёру (гейт — [staff-events-api](flows/staff-events-api.md), W50); «Поделиться» на карточке «Будущих» и на билете — диплинк регистрации `?start=e<id>` в Telegram или копией (PAR-9, W65) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
+| `#/events?tab=mine\|upcoming\|past\|profile` | гость смотрит афишу: будущие и прошедшие карточками; таб «Мои билеты» (первый) — свои регистрации со статусами; билет живёт до конца события (QR доступен и после старта); карточка с закрытым дедлайном объясняет это текстом, а не молчит; прошлое событие с чекином ведёт на отзыв; регистрация — шитом PAR-1/PAR-2 на месте (+ поля профиля, если пуст, PAR-8), подтверждение — билет; отмена — с экрана билета `#/ticket` (W43, PAR-5 — только экраном, [Q57](../docs/OPEN-QUESTIONS.md#q57)); вход из бота (`#/events` без таба) переключает таб на «Мои билеты», даже если каталог уже открыт; таб «Профиль» (четвёртый) — правка имени/должности/компании/города, согласие залочено, кнопка «Удалить аккаунт» с подтверждением (GDPR, W73/[ADR-0039](../docs/adr/0039-account-self-deletion-gdpr.md)); кнопка сканера — на карточке, видно только контролёру (гейт — [staff-events-api](flows/staff-events-api.md), W50); «Поделиться» на карточке «Будущих» и на билете — диплинк регистрации `?start=e<id>` в Telegram или копией (PAR-9, W65); язык контента события — чипом RU/UZ/EN на карточке (W125, OWN-17; фильтрации по языку нет) | [events-api](flows/events-api.md), [reg-api](flows/reg-api.md) |
 | `#/feedback?event_id=` | гость, который был на событии, оставляет оценку 1–5 и необязательный комментарий; вход из послесловия ([reg-afterword](flows/reg-afterword.md)) и из «Прошедших» в `#/events`; доступ — по факту участия, решает сервер (W45, ADR-0028, [Q53](../docs/OPEN-QUESTIONS.md#q53)) | [feedback-api](flows/feedback-api.md) |
+| `#/report?from=` | любой пользователь (гость или организатор) сообщает о клиентской проблеме — вид и текст, контекст (экран, версия, событие) прикладывается сам; `staff`-гейта нет, решает только `initData`; вход из таба «Профиль» (`from=profile`) и кнопки меню (`from=menu`) (W123, ADR-0050, [Q62](../docs/OPEN-QUESTIONS.md#q62)) | [report-api](flows/report-api.md) |
 
 Роут `manage` открывается кнопками карточки [menu](flows/menu.md): «Новое событие»
 (`web_app` сразу на `#/manage/new`; W50: кнопки создания в списке нет) и
@@ -120,14 +125,16 @@ dev — `npm run build:dev` (`pages.yml`, из `main`), prod — `npm run build:
 Tailwind 4 + брендовые компоненты, `qrcode` npm lazy только на `ticket`,
 `manage`, `events` и `feedback` — ленивые чанки. Чанки: `ticket`+`scan` один,
 `manage` отдельный, `events` отдельный (3,7 КиБ, 1,4 КиБ gzip), `feedback`
-отдельный (4,3 КиБ, 1,4 КиБ gzip, W45), `qrcode` отдельный
+отдельный (4,3 КиБ, 1,4 КиБ gzip, W45), `report` отдельный
+(3,7 КиБ, 1,4 КиБ gzip, W123), `qrcode` отдельный
 (25 КиБ, 10 КиБ gzip). `ticket`+`scan` открываются до того, как догрузился
-`manage`, `events` или `feedback` — бюджет `initial <50 КиБ` из ADR-0020 по
+`manage`, `events`, `feedback` или `report` — бюджет `initial <50 КиБ` из ADR-0020 по
 смыслу, а не буквально; каталог `#/events` — публичный экран с входом из чата
 кнопкой `web_app` (W38).
 
 Все роутy опираются на общие модули `lib/i18n.ts`/`lib/api.ts`/`lib/theme.ts`:
-`lib/i18n.ts` выбирает язык по `user.language_code` (ru/uz/en, иначе ru) и тянет
+`lib/i18n.ts` выбирает язык по `user.language_code` (ru/uz/en, иначе ru; при
+незаполненном `initDataUnsafe.user` — из сырого `initData`, W124) и тянет
 с того же Pages `i18n/ru.json` **как основу** плюс словарь языка **поверх** —
 фолбэк по каждому ключу ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)).
 Пока словарь грузится, подписи пусты — сырых ключей на первом кадре нет

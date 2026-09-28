@@ -11,7 +11,31 @@ const TZ = 'Asia/Tashkent';
 // W25: месяц и день недели — на языке пользователя (ru/uz/en), время и числа
 // остаются числовыми. Форматы дат не хардкодятся в строках (I18N-3).
 const INTL: Record<string, string> = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-GB' };
-const LOCALE = INTL[getLang()] || 'ru-RU';
+
+// W124: язык — не снимок на импорте. Иначе холодный старт застревает на дефолте
+// `ru`, а переключение языка в «Профиле» оставляет даты на прежнем языке до
+// перезагрузки. Форматтеры строятся под текущий язык и кэшируются по локали.
+type Fmts = { plate: Intl.DateTimeFormat; time: Intl.DateTimeFormat; when: Intl.DateTimeFormat };
+const fmtCache: Record<string, Fmts> = {};
+function fmts(): Fmts {
+  const loc = INTL[getLang()] || 'ru-RU';
+  if (!fmtCache[loc]) {
+    fmtCache[loc] = {
+      plate: new Intl.DateTimeFormat(loc, { timeZone: TZ, day: '2-digit', month: 'short', weekday: 'short' }),
+      time: new Intl.DateTimeFormat(loc, { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
+      when: new Intl.DateTimeFormat(loc, {
+        timeZone: TZ,
+        weekday: 'short',
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }),
+    };
+  }
+  return fmtCache[loc];
+}
 
 const partsFmt = new Intl.DateTimeFormat('en-GB', {
   timeZone: TZ,
@@ -40,53 +64,29 @@ export function utcMs(iso: string): number {
   return Date.parse(/[Zz]$/.test(iso) || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z');
 }
 
-const plateFmt = new Intl.DateTimeFormat(LOCALE, {
-  timeZone: TZ,
-  day: '2-digit',
-  month: 'short',
-  weekday: 'short',
-});
-
 // Дата для плашки EventCard: месяц/день/день недели по Ташкенту.
 export function utcToPlate(iso: string): { month: string; day: string; weekday: string } {
   const ms = utcMs(iso);
   if (!isFinite(ms)) return { month: '', day: '', weekday: '' };
   const p: Record<string, string> = {};
-  plateFmt.formatToParts(new Date(ms)).forEach((x) => {
+  fmts().plate.formatToParts(new Date(ms)).forEach((x) => {
     p[x.type] = x.value;
   });
   const clean = (s: string) => (s || '').replace(/\.$/, '');
   return { month: clean(p['month'] || ''), day: p['day'] || '', weekday: clean(p['weekday'] || '') };
 }
 
-const timeFmt = new Intl.DateTimeFormat(LOCALE, {
-  timeZone: TZ,
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
-
 export function utcToTime(iso: string): string {
   const ms = utcMs(iso);
-  return isFinite(ms) ? timeFmt.format(new Date(ms)) : '';
+  return isFinite(ms) ? fmts().time.format(new Date(ms)) : '';
 }
 
 // Строка «сб, 26 сентября · 18:30» для меты карточки каталога (форма прототипа W41).
-const whenFmt = new Intl.DateTimeFormat(LOCALE, {
-  timeZone: TZ,
-  weekday: 'short',
-  day: 'numeric',
-  month: 'long',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
-
 export function utcToWhen(iso: string): string {
   const ms = utcMs(iso);
   if (!isFinite(ms)) return '';
   const p: Record<string, string> = {};
-  whenFmt.formatToParts(new Date(ms)).forEach((x) => {
+  fmts().when.formatToParts(new Date(ms)).forEach((x) => {
     p[x.type] = x.value;
   });
   // «сб, 26 сентября · 18:30» — форма прототипа: запятая после дня недели.

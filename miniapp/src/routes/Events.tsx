@@ -26,6 +26,9 @@ type CatalogEvent = {
   endsAt: string;
   regDeadlineAt: string;
   status: string;
+  // W125 (OWN-17): язык контента события — ru|uz|en; сервер отдаёт `ru`,
+  // если у записи поле пустое.
+  lang?: string;
   registerLink: string;
 };
 
@@ -808,6 +811,11 @@ function EventCard({
       <div className="event-body">
         <div className="event-top">
           <span className="event-status">{t(statusKey)}</span>
+          {/* W125 (OWN-17): язык контента события — код RU/UZ/EN, как в
+              переключателе языка (W117). */}
+          <span className="badge mono" title={t('field.lang')}>
+            {String(ev.lang || 'ru').toUpperCase()}
+          </span>
         </div>
         <h3 className="event-title">{ev.title}</h3>
         <div className="event-meta">
@@ -1010,6 +1018,14 @@ function ProfileTab({
           {msg}
         </p>
       )}
+      {/* W123 (Q62): сообщение о проблеме — вход из профиля в #/report. */}
+      <div className="form-section" id="profile-report">
+        <a className="btn btn-secondary btn-block" id="profile-report-btn" href="#/report?from=profile">
+          <Icon name="alert" />
+          {t('report.title')}
+        </a>
+        <p className="helper">{t('report.entry_hint')}</p>
+      </div>
       <div className="sheet-actions">
         <button type="button" className="btn btn-primary btn-lg" id="profile-save" onClick={onSave}>
           {t('manage.btn.save')}

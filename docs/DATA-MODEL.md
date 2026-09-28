@@ -70,6 +70,7 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `chapter_id` | text → `chapters.id` | чаптер события; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
+| `lang` | text | `ru` \| `uz` \| `en` — язык контента (`title`/`description`), дефолт `ru` (OWN-17); пусто у старых записей читается как `ru` |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
 | `address` | text | адрес текстом |
 | `lat`, `lon` | number | для `sendVenue` (OWN-2) |
@@ -262,6 +263,30 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 `event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
 уведомления организатору отдельным сообщением.
+
+## `reports`
+
+Сообщения о проблеме из Mini App `#/report`
+([ADR-0050](../docs/adr/0050-sixth-miniapp-page-report.md), W123).
+
+| Поле | Тип | Примечание |
+| --- | --- | --- |
+| `telegram_id` | text | автор, из проверенного `initData` (DAT-1) |
+| `source` | text | канал: `miniapp` (ставит флоу, не клиент) |
+| `kind` | text (`broken`/`text`/`message`/`other`) | вид проблемы |
+| `text` | text | сообщение, ≤2000 символов |
+| `route` | text | откуда открыли форму: `profile` \| `menu` \| `report` |
+| `event_id` | text | событие в контексте; пусто, если не открыто |
+| `app_version` | text | версия клиента Telegram |
+| `context` | text | JSON-строкой: `lang`, `platform`, `version` |
+| `status` | enum | `new` \| `in_progress` \| `resolved`; при записи — `new` |
+| `created_at` | timestamp | UTC |
+
+Уникальный ключ **не объявлен**
+([ADR-0047](../docs/adr/0047-unique-keys-and-types-after-audit.md) п. 1):
+несколько сообщений от одного человека легальны. Пишет только `report-api`,
+после проверки `initData`; staff-гейта и проверки участия нет. Читает инбокс
+владелец вручную ([Q62](OPEN-QUESTIONS.md#q62)); автоуведомлений и digest нет.
 
 ## `quizzes`
 
