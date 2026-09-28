@@ -14,8 +14,9 @@
 | description | TEXT | `8PdNUVtOvTuwRzJFQDgfy` | `7WeqSNfx6MNzB8gIVPjN3` | |
 | lang | TEXT | `5bvPj315Iv7X8T8rge1d1` | `wkJRAt1iLwMtldr7gIr8Q` | язык контента `ru`/`uz`/`en`, дефолт `ru` (OWN-17); пусто у старых записей читается как `ru`, данные не переписываются |
 | photo_file_id | TEXT | `hfpenYm4IZ5apFOt6cIgD` | `cxblz5YPWPPMfXAadROMf` | Telegram `file_id`, не URL; **временно не используется** ([Q46](../../docs/OPEN-QUESTIONS.md#q46), возврат — [W39](../../docs/BACKLOG.md#w39-возврат-афиши-в-mini-app-форма-и-доставка)) |
-| address | TEXT | `kSRM3ouou0Owj2yDYk92W` | `cS62NQgXQgmB5LNDuBFfE` | адрес текстом |
-| lat | NUMBER | `EKEX5zyhKo3WChz5ZquY0` | `1Q8tRDqMP8pT7q1Ssx6mS` | для `sendVenue` (OWN-2) |
+| address | TEXT | `kSRM3ouou0Owj2yDYk92W` | `cS62NQgXQgmB5LNDuBFfE` | адрес текстом (офлайн) |
+| online_url | TEXT | `ko1bekdWsaspUtTydMee1` | `AlbcLXdnwdbubkxeAUrkf` | ссылка трансляции `https://…`; **непусто = онлайн-событие** (OWN-18, [ADR-0051](../../docs/adr/0051-online-event-link-instead-of-qr.md)) |
+| lat | NUMBER | `EKEX5zyhKo3WChz5ZquY0` | `1Q8tRDqMP8pT7q1Ssx6mS` | для `sendVenue` (OWN-2); у онлайна пусто |
 | lon | NUMBER | `Br2f0wjLugSGIS2kjfoFE` | `vUjQ80W4oqe2YQ8kByUUS` | |
 | starts_at | DATE | `8me4o2U2wj6cyrv8lfJv9` | `SBg2C3f2Mj6axkPQoYEHY` | UTC |
 | ends_at | DATE | `zIA6xEHm7y1bwkajoYDQn` | `MPxJsawgCgyOdHSL4mVms` | UTC, по нему автопереход в `finished` (OWN-4) |
@@ -30,6 +31,10 @@
 ## Заметки
 
 - Ссылки на Я.Карты в таблице нет — генерируется из `lat`/`lon` (OWN-2).
+- **Формат события отдельным переключателем не хранится:** непустой `online_url`
+  = онлайн, пусто = офлайн ([ADR-0051](../../docs/adr/0051-online-event-link-instead-of-qr.md)).
+  Онлайн-событие не генерирует QR: ссылку видят только зарегистрированные
+  (билет + напоминания), публичный каталог её не отдаёт.
 - Дефолт `overbook_pct = 40` таблицей **не** обеспечивается: `NUMBER` без значения
   читается как `null`. Форма `manage` пишет поле только заполненным владельцем,
   у событий, созданных прежним чатовым визардом, оно пусто; дефолт

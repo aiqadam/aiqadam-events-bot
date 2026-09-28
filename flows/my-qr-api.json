@@ -19,16 +19,77 @@
             "displayName": "find own registration",
             "name": "step_3",
             "nextAction": {
-              "displayName": "sign qr",
-              "name": "step_4",
+              "displayName": "read event online url",
+              "name": "step_9",
               "nextAction": {
-                "displayName": "decide result",
-                "name": "step_5",
+                "displayName": "sign qr",
+                "name": "step_4",
                 "nextAction": {
-                  "displayName": "respond",
-                  "name": "step_6",
+                  "displayName": "decide result",
+                  "name": "step_5",
+                  "nextAction": {
+                    "displayName": "respond",
+                    "name": "step_6",
+                    "settings": {
+                      "actionName": "return_response",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "fields": {
+                          "body": {
+                            "error": "{{step_5['output'].error}}",
+                            "eventId": "{{step_5['output'].eventId}}",
+                            "ok": "{{step_5['output'].ok}}",
+                            "online": "{{step_5['output'].online}}",
+                            "payload": "{{step_5['output'].payload}}",
+                            "text": "{{step_5['output'].text}}",
+                            "url": "{{step_5['output'].url}}",
+                            "userId": "{{step_5['output'].userId}}"
+                          },
+                          "headers": {},
+                          "respond": "stop",
+                          "responseType": "json",
+                          "status": "{{step_5['output'].httpStatus}}"
+                        },
+                        "respond": "stop",
+                        "responseType": "json"
+                      },
+                      "propertySettings": {
+                        "fields": {
+                          "schema": {
+                            "body": {
+                              "displayName": "JSON Body",
+                              "required": true,
+                              "type": "JSON"
+                            },
+                            "headers": {
+                              "displayName": "Headers",
+                              "required": false,
+                              "type": "OBJECT"
+                            },
+                            "status": {
+                              "defaultValue": 200,
+                              "displayName": "Status",
+                              "required": false,
+                              "type": "NUMBER"
+                            }
+                          },
+                          "type": "MANUAL"
+                        }
+                      },
+                      "qadamName": "@aiqadam/qadam-webhook",
+                      "qadamVersion": "0.1.34"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
                   "settings": {
-                    "actionName": "return_response",
                     "errorHandlingOptions": {
                       "continueOnFailure": {
                         "value": false
@@ -38,78 +99,60 @@
                       }
                     },
                     "input": {
-                      "fields": {
-                        "body": {
-                          "error": "{{step_5['output'].error}}",
-                          "eventId": "{{step_5['output'].eventId}}",
-                          "ok": "{{step_5['output'].ok}}",
-                          "payload": "{{step_5['output'].payload}}",
-                          "text": "{{step_5['output'].text}}",
-                          "userId": "{{step_5['output'].userId}}"
-                        },
-                        "headers": {},
-                        "status": "{{step_5['output'].httpStatus}}"
-                      },
-                      "respond": "stop",
-                      "responseType": "json"
-                    },
-                    "propertySettings": {
-                      "fields": {
-                        "schema": {
-                          "body": {
-                            "displayName": "JSON Body",
-                            "required": true,
-                            "type": "JSON"
-                          },
-                          "headers": {
-                            "displayName": "Headers",
-                            "required": false,
-                            "type": "OBJECT"
-                          },
-                          "status": {
-                            "defaultValue": 200,
-                            "displayName": "Status",
-                            "required": false,
-                            "type": "NUMBER"
-                          }
-                        },
-                        "type": "MANUAL"
+                      "event": "{{step_9['output']}}",
+                      "eventId": "{{trigger['output'].body.eventId}}",
+                      "hmac": "{{step_1['output'].data}}",
+                      "reg": "{{step_3['output'].data}}",
+                      "sign": "{{step_4['output'].data}}",
+                      "texts": {
+                        "checkin.not_registered": "{{$t['checkin.not_registered']}}"
                       }
                     },
-                    "qadamName": "@aiqadam/qadam-webhook",
-                    "qadamVersion": "0.1.34"
+                    "sourceCode": {
+                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n\n  const hmac = inputs.hmac || {};\n  const telegramId = String(hmac.telegramId || '');\n\n  const reg = inputs.reg || {};\n  const found = reg.found === true || reg.found === 'true';\n  const registered = reg.registered === true || reg.registered === 'true';\n\n  const sign = inputs.sign || {};\n\n  // W67 (ADR-0051): событие читает step_9. Непустой online_url = онлайн-событие:\n  // QR не выдаём вовсе — вместо подписи отдаём ссылку трансляции. Подписывать\n  // нечего, а ссылка и так видна только по initData + проверке регистрации.\n  const evRows = Array.isArray(inputs.event) ? inputs.event\n    : (inputs.event && Array.isArray(inputs.event.records) ? inputs.event.records : []);\n  const first = evRows[0] || null;\n  const cells = (first && first.cells && typeof first.cells === 'object') ? first.cells : {};\n  let onlineUrl = '';\n  Object.keys(cells).forEach((fid) => {\n    const c = cells[fid];\n    if (c && typeof c === 'object' && c.fieldName === 'online_url') onlineUrl = c.value === undefined || c.value === null ? '' : String(c.value);\n  });\n\n  let httpStatus = 200;\n  let ok = false;\n  let error = '';\n  let text = '';\n  let payload = '';\n  let online = false;\n  let url = '';\n\n  if (!found || !registered) {\n    error = 'not_registered'; text = t('checkin.not_registered');\n  } else if (onlineUrl !== '') {\n    ok = true; online = true; url = onlineUrl;\n  } else {\n    ok = true; payload = String(sign.payload || '');\n  }\n\n  return {\n    httpStatus: httpStatus, ok: ok, error: error, text: text, payload: payload,\n    online: online, url: url,\n    eventId: String(inputs.eventId || ''), userId: telegramId\n  };\n};\n",
+                      "packageJson": "{}"
+                    }
                   },
-                  "type": "PIECE",
+                  "type": "CODE",
                   "valid": true
                 },
                 "settings": {
+                  "actionName": "callFlow",
                   "errorHandlingOptions": {
                     "continueOnFailure": {
-                      "value": false
+                      "value": true
                     },
                     "retryOnFailure": {
                       "value": false
                     }
                   },
                   "input": {
-                    "eventId": "{{trigger['output'].body.eventId}}",
-                    "hmac": "{{step_1['output'].data}}",
-                    "reg": "{{step_3['output'].data}}",
-                    "sign": "{{step_4['output'].data}}",
-                    "texts": {
-                      "checkin.not_registered": "{{$t['checkin.not_registered']}}"
-                    }
+                    "executionMode": "inline",
+                    "flow": {
+                      "exampleData": {
+                        "sampleData": {}
+                      },
+                      "externalId": "zxS7MKLXGaCDf3KStMTZN"
+                    },
+                    "flowProps": {
+                      "payload": {
+                        "eventId": "{{trigger['output'].body.eventId}}",
+                        "qrSigningKey": "{{variables['QR_SIGNING_KEY']}}",
+                        "userId": "{{step_1['output'].data.telegramId}}"
+                      }
+                    },
+                    "mode": "simple",
+                    "waitForResponse": true
                   },
-                  "sourceCode": {
-                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] || key);\n\n  const hmac = inputs.hmac || {};\n  const telegramId = String(hmac.telegramId || '');\n\n  const reg = inputs.reg || {};\n  const found = reg.found === true || reg.found === 'true';\n  const registered = reg.registered === true || reg.registered === 'true';\n\n  const sign = inputs.sign || {};\n\n  let httpStatus = 200;\n  let ok = false;\n  let error = '';\n  let text = '';\n  let payload = '';\n\n  if (!found || !registered) {\n    error = 'not_registered'; text = t('checkin.not_registered');\n  } else {\n    ok = true; payload = String(sign.payload || '');\n  }\n\n  return {\n    httpStatus: httpStatus, ok: ok, error: error, text: text, payload: payload,\n    eventId: String(inputs.eventId || ''), userId: telegramId\n  };\n};",
-                    "packageJson": "{}"
-                  }
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-subflows",
+                  "qadamVersion": "0.4.14"
                 },
-                "type": "CODE",
+                "type": "PIECE",
                 "valid": true
               },
               "settings": {
-                "actionName": "callFlow",
+                "actionName": "tables-find-records",
                 "errorHandlingOptions": {
                   "continueOnFailure": {
                     "value": true
@@ -119,26 +162,29 @@
                   }
                 },
                 "input": {
-                  "executionMode": "inline",
-                  "flow": {
-                    "exampleData": {
-                      "sampleData": {}
-                    },
-                    "externalId": "zxS7MKLXGaCDf3KStMTZN"
+                  "columns": [
+                    "ko1bekdWsaspUtTydMee1"
+                  ],
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": {
+                          "id": "39qJ4o2MYyNYsT2VtxfcK",
+                          "name": "id",
+                          "type": "TEXT"
+                        },
+                        "operator": "eq",
+                        "value": "{{trigger['output'].body.eventId}}"
+                      }
+                    ]
                   },
-                  "flowProps": {
-                    "payload": {
-                      "eventId": "{{trigger['output'].body.eventId}}",
-                      "qrSigningKey": "{{variables['QR_SIGNING_KEY']}}",
-                      "userId": "{{step_1['output'].data.telegramId}}"
-                    }
-                  },
-                  "mode": "simple",
-                  "waitForResponse": true
+                  "limit": 1,
+                  "record_ids": [],
+                  "table_id": "R4aSQpLZvw7d3u6DVOSjH"
                 },
                 "propertySettings": {},
-                "qadamName": "@aiqadam/qadam-subflows",
-                "qadamVersion": "0.4.14"
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.4.6"
               },
               "type": "PIECE",
               "valid": true
