@@ -129,6 +129,17 @@ html, body { touch-action: pan-x pan-y; }
 .event-card .date-plate { align-self: start; }
 /* Афиша (W38): мета двумя строками — дата и адрес не слипаются (как .preview). */
 .event-card .event-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+/* W127: длинный адрес переносится, а иконка `map-pin` остаётся у первой
+   строки — мета не «разрывается» (иконка не уезжает в середину абзаца). */
+.event-card .event-meta .meta-item { align-items: flex-start; min-width: 0; overflow-wrap: anywhere; }
+.event-card .event-meta .meta-item svg { flex-shrink: 0; margin-top: 1px; }
+/* W127: действия карточки — паттерн эталона `.event-actions` (не `.app-actions`
+   с `flex:1`: второстепенные кнопки не растягиваются на полстроки). Primary —
+   первый и на всю ширину (`btn-block`), сканер/«Поделиться» — компактные
+   (`btn-sm`) вторым рядом. */
+.event-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 0; }
+.event-actions + .event-actions { margin-top: 8px; }
+.event-actions .btn { flex: 0 0 auto; }
 .capacity-live {
   display: flex;
   align-items: baseline;

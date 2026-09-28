@@ -7,7 +7,6 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, EVENTS_API, REG_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToPlate, utcToWhen, utcMs } from '../lib/dates';
 import Icon from '../components/Icon';
-import MapLinks from '../components/MapLinks';
 import Sheet from '../components/Sheet';
 import Toast, { useToast } from '../components/Toast';
 
@@ -732,21 +731,24 @@ function MineCard({
             </span>
           )}
         </div>
-        <MapLinks lat={ev.lat} lon={ev.lon} address={ev.address} />
         {showQr && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
-            <a className="btn btn-primary" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`} onClick={onOpenTicket(ev.id)}>
+          <div className="event-actions">
+            <a className="btn btn-primary btn-block" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`} onClick={onOpenTicket(ev.id)}>
               <Icon name="external" />
               {t('reg.qr.button')}
             </a>
-            <button type="button" className="btn btn-outline" id="share" onClick={() => onShare(ev)}>
+          </div>
+        )}
+        {showQr && (
+          <div className="event-actions">
+            <button type="button" className="btn btn-outline btn-sm" id="share" onClick={() => onShare(ev)}>
               <Icon name="share" />
               {t('manage.btn.share')}
             </button>
           </div>
         )}
         {!showQr && attended && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
+          <div className="event-actions">
             <a className="btn btn-outline" href={`#/feedback?event_id=${encodeURIComponent(ev.id)}`}>
               {t('afterword.feedback_btn')}
             </a>
@@ -827,18 +829,17 @@ function EventCard({
             </span>
           )}
         </div>
-        <MapLinks lat={ev.lat} lon={ev.lon} address={ev.address} />
         {action === 'qr' && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
-            <a className="btn btn-primary" id="ticket" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`}>
+          <div className="event-actions">
+            <a className="btn btn-primary btn-block" id="ticket" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`}>
               <Icon name="external" />
               {t('reg.qr.button')}
             </a>
           </div>
         )}
         {action === 'register' && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
-            <a className="btn btn-primary" id="register" href={ev.registerLink} onClick={onRegister(ev)}>
+          <div className="event-actions">
+            <a className="btn btn-primary btn-block" id="register" href={ev.registerLink} onClick={onRegister(ev)}>
               <Icon name="external" />
               {t('event.card.btn_register')}
             </a>
@@ -850,26 +851,32 @@ function EventCard({
           </div>
         )}
         {action === 'feedback' && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
+          <div className="event-actions">
             <a className="btn btn-outline" id="feedback" href={`#/feedback?event_id=${encodeURIComponent(ev.id)}`}>
               {t('afterword.feedback_btn')}
             </a>
           </div>
         )}
         {/* W50 (вердикт W49): сканер — рядом с событием, видно только
-            контролёру (canScan — из staff-events-api, решает сервер). */}
+            контролёру (canScan — из staff-events-api, решает сервер).
+            W127: сканер и «Поделиться» — компактные, вторым рядом, не
+            спорят с primary (кнопки `btn-sm`, как в эталоне `.event-actions`). */}
         {canScan && !past && (
-          <div className="app-actions" style={{ marginTop: 8 }}>
-            <a className="btn btn-secondary" id="scan" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
+          <div className="event-actions">
+            <a className="btn btn-outline btn-sm" id="scan" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
               {t('menu.btn.scanner')}
             </a>
+            <button type="button" className="btn btn-outline btn-sm" id="share" onClick={() => onShare(ev)}>
+              <Icon name="share" />
+              {t('manage.btn.share')}
+            </button>
           </div>
         )}
         {/* PAR-9/W65: поделиться событием доступно обычному пользователю;
             на прошедшем события ссылка регистрации смысла не несёт. */}
-        {!past && (
-          <div className="app-actions" style={{ marginTop: 8 }}>
-            <button type="button" className="btn btn-outline" id="share" onClick={() => onShare(ev)}>
+        {!past && !canScan && (
+          <div className="event-actions">
+            <button type="button" className="btn btn-outline btn-sm" id="share" onClick={() => onShare(ev)}>
               <Icon name="share" />
               {t('manage.btn.share')}
             </button>
