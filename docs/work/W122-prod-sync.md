@@ -50,6 +50,9 @@
 - [ ] W25-конвертация `texts` и `localeSource` на prod;
 - [ ] W114/W116/W119/W120 применены на prod;
 - [x] Mini App prod пересобран (`main`→`prod`, `build:prod` зелёный) и запушен в ветку `prod`;
+- [x] каталог переводов на prod залит (441 ключ × ru/uz/en);
+- [ ] `project.defaultLocale = ru` на prod — **блокер публикации** `$t`-флоу;
+- [x] W114 для `tg-router` на prod (step_27 + `localeSource`), опубликован;
 - [x] строки `migrations` на prod по каждой правке (19 строк `2026-09-28-w122-01…19`);
 - [ ] `catalog/environments.md` отражает расхождения/состояние;
 - [ ] независимое ревью, вердикт «замечаний нет».
@@ -87,6 +90,21 @@
   инструменты переводов, а prod `texts` — литеральные (копия снята
   2026-09-26, W25/W27 — 2026-09-27). Значит, для `{{$t[...]}}` каталог на
   prod заливает **владелец через UI**, затем конвертируются `texts`.
+- **2026-09-28** — Владелец обновил prod: MCP снова отдаёт 51 инструмент,
+  включая `ap_list/upsert/delete_translations`. Каталог `i18n/{ru,uz,en}.json`
+  (441 ключ) залит на prod через MCP-эндпоинт (сессия не перечитала реестр —
+  инструменты вызваны прямым JSON-RPC к `app-prod…/mcp`, тот же MCP).
+- **2026-09-28** — **W114 для `tg-router` портирован на prod**: `step_27`
+  «effective lang» (код+input с dev), `upsert users` без колонки `lang`,
+  `localeSource = {{step_27['output'].lang}}` (ставится только импортом
+  шаблона — отдельной ручки нет), возвращены `auth` на триггере/step_15/
+  step_22/step_26 (экспорт очищает), `logOutput:false` на триггере/step_6.
+  Опубликован: версия `2OUVYFWqKPVrwmE1hYTqM`; `migrations` prod `w122-20`.
+- **2026-09-28** — `reg-profile`, `reg-start`, `menu`, `reg-api` переведены
+  на dev-версии шагов (`texts`→`{{$t[...]}}`, `lang`/`sessionStep`, метки,
+  проекции `columns`): 22 шага, drafts. **Публикация заблокирована**: у prod
+  нет `project.defaultLocale`, валидатор даёт `translation_default_locale`
+  (`reg-api/step_9` — invalid). Нужен `defaultLocale = ru` в UI prod.
 - **2026-09-28** — **Mini App prod**: `origin/prod` отставала от `main` на
   100 коммитов (сборка W104-эпохи, русского-онли). Смержено `main`→`prod`
   без конфликтов, `npm ci && npm run build:prod` — зелёный (95 модулей,
