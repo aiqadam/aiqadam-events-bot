@@ -18,6 +18,25 @@ export function getInitData(): string {
 // (lib/api.ts), на котором сервер отвечает.
 const SUPPORTED_LANGS = ['ru', 'uz', 'en'];
 
+// W124: на части клиентов (macOS Desktop) `initDataUnsafe.user` пуст в момент
+// старта, хотя сырой `initData` уже несёт `user.language_code`. Читаем язык
+// напрямую из initData — значение влияет только на язык интерфейса, тогда как
+// `telegram_id` и права по-прежнему считает сервер из проверенного initData
+// (DAT-1), так что доверять сырому значению здесь безопасно.
+function langFromInitData(initData: string): string {
+  if (!initData) return '';
+  try {
+    const raw = new URLSearchParams(initData).get('user');
+    if (!raw) return '';
+    const u = JSON.parse(raw) as { language_code?: unknown };
+    return String(u?.language_code ?? '')
+      .toLowerCase()
+      .split('-')[0];
+  } catch {
+    return '';
+  }
+}
+
 export function getLang(): string {
   try {
     const stored = String(localStorage.getItem('aiqadam.lang') || '').toLowerCase();
@@ -27,7 +46,9 @@ export function getLang(): string {
   }
   const raw = String(getTelegram()?.initDataUnsafe?.user?.language_code ?? '').toLowerCase();
   const base = raw.split('-')[0];
-  return SUPPORTED_LANGS.includes(base) ? base : 'ru';
+  if (SUPPORTED_LANGS.includes(base)) return base;
+  const fromInitData = langFromInitData(getInitData());
+  return SUPPORTED_LANGS.includes(fromInitData) ? fromInitData : 'ru';
 }
 
 export function isInTelegram(): boolean {

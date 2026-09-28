@@ -3649,14 +3649,16 @@ trigger-output) не ретраится.
 
 **Готово, когда:**
 
-- [ ] `getLang()` берёт `user.language_code` из сырого `initData` как фолбэк
+- [x] `getLang()` берёт `user.language_code` из сырого `initData` как фолбэк
       (после localStorage и `initDataUnsafe`); явный выбор в «Профиле»
       по-прежнему перебивает язык Telegram;
-- [ ] `reports.context.lang` совпадает с языком словаря на момент отправки;
-- [ ] headless-прогон различает: `initData` с `language_code=en` + пустой
+- [x] `reports.context.lang` совпадает с языком словаря на момент отправки;
+- [x] даты (`lib/dates.ts`) рендерятся в языке на момент рендера, а не снятым
+      на импорте: смена языка в «Профиле» обновляет и даты;
+- [x] headless-прогон различает: `initData` с `language_code=en` + пустой
       `initDataUnsafe` → словарь и `context.lang` = `en` (до правки — `ru`);
-- [ ] `miniapp` собирается (`build:dev`); офлайн-проверки — 0;
-      `docs/I18N.md`/`catalog/` — если поведение там описано;
+- [x] `miniapp` собирается (`build:dev`); офлайн-проверки — 0;
+      `docs/I18N.md`/`catalog/` синхронны;
 - [ ] независимое ревью, вердикт «замечаний нет».
 
 **Зависит от:** W114/W115/W116 (готовы), W123 (готов). **Не входит:** живая

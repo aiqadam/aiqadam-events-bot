@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { t, loadI18n, getLangCode } from '../lib/i18n';
 import { getTelegram, hapticNotification, hapticImpact } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
@@ -64,15 +64,6 @@ export default function Report({
     });
   }, []);
 
-  // Контекст — то, что человек вводить не должен: язык, платформа, версия
-  // клиента. Строкой JSON (поле `context` — TEXT, DATA-MODEL).
-  const context = useMemo(() => {
-    const c: Record<string, string> = { lang: getLangCode() };
-    if (tg?.platform) c.platform = String(tg.platform);
-    if (tg?.version) c.version = String(tg.version);
-    return JSON.stringify(c);
-  }, [tg]);
-
   const submit = useCallback(async () => {
     if (busy || !text.trim()) return;
     if (!tg || !initData) {
@@ -101,7 +92,15 @@ export default function Report({
       route: from || 'report',
       eventId: eventId || '',
       appVersion: tg.version ? String(tg.version) : '',
-      context,
+      // Контекст — то, что человек вводить не должен: язык, платформа, версия
+      // клиента (поле `context` — TEXT, DATA-MODEL). Собирается в момент
+      // отправки, а не в `useMemo([tg])`: иначе `lang` снимался бы до загрузки
+      // словаря и замирал на дефолте (W124).
+      context: JSON.stringify({
+        lang: getLangCode(),
+        ...(tg.platform ? { platform: String(tg.platform) } : {}),
+        ...(tg.version ? { version: String(tg.version) } : {}),
+      }),
     });
     setBusy(false);
     if (res.kind === 'network') {
@@ -123,7 +122,7 @@ export default function Report({
     const txt = typeof d['text'] === 'string' && d['text'] ? d['text'] : t('report.error.unknown');
     hapticNotification('error');
     setError(txt);
-  }, [busy, text, tg, initData, kind, from, eventId, context]);
+  }, [busy, text, tg, initData, kind, from, eventId]);
 
   if (!dictLoaded) {
     return (
