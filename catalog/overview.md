@@ -133,7 +133,8 @@ Tailwind 4 + брендовые компоненты, `qrcode` npm lazy толь
 кнопкой `web_app` (W38).
 
 Все роутy опираются на общие модули `lib/i18n.ts`/`lib/api.ts`/`lib/theme.ts`:
-`lib/i18n.ts` выбирает язык по `user.language_code` (ru/uz/en, иначе ru) и тянет
+`lib/i18n.ts` выбирает язык по `user.language_code` (ru/uz/en, иначе ru; при
+незаполненном `initDataUnsafe.user` — из сырого `initData`, W124) и тянет
 с того же Pages `i18n/ru.json` **как основу** плюс словарь языка **поверх** —
 фолбэк по каждому ключу ([ADR-0045](../docs/adr/0045-i18n-on-platform-dollar-t.md)).
 Пока словарь грузится, подписи пусты — сырых ключей на первом кадре нет
