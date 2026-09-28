@@ -50,7 +50,7 @@
 - [x] `project.defaultLocale = ru` на prod (владелец, UI);
 - [x] W25-конвертация `texts`→`{{$t[...]}}` на prod (все пользовательские флоу);
 - [x] W114/W116 (язык), W119/W120 (город) применены на prod;
-- [x] Mini App prod пересобран (`main`→`prod`, `build:prod` зелёный) и запушен;
+- [x] Mini App prod пересобран (`main`→`prod`, `build:prod` зелёный), запушен и **задеплоен** (workflow `pages-prod` репо `aiqadam/aiqadam-events-bot-prod`, run `36398755348`);
 - [x] строки `migrations` на prod (51 строка `2026-09-28-w122-01…51`);
 - [x] `catalog/environments.md` отражает состояние;
 - [x] финальная сверка: 30 общих флоу prod↔dev, **0 расхождений шагов**;
@@ -144,6 +144,12 @@
   флоу опубликованы в `LOCKED` (`w122-41…44`). «На будущее»: фильтры — диф
   dev↔prod идентичен (не воспроизводится), `flowProps` — платформенная
   сериализация, `DECLARE_KEY` — ограничение проверки.
+- **2026-09-28** — **Деплой Mini App prod**: workflow `pages-prod` в репо
+  `aiqadam/aiqadam-events-bot-prod` запущен `workflow_dispatch` (run
+  `36398755348`, success) — он сам чекаутит ветку `prod` `aiqadam-events-bot`,
+  собирает `build:prod` и публикует Pages. Проверено: `miniapp-prod…` отдаёт
+  `assets/index-DfD21f1G.js` (наш prod-билд), в бандле есть
+  `ap-parent-run-locale`, `last-modified` 2026-09-28.
 - **2026-09-28** — **Ревью круг 2**: закрыты оба «важно»; остались два «на
   будущее», из них одно — моя ошибка: `field.id` в трёх фильтрах действительно
   отсутствовал на prod (мой нормализованный диф исключал `id` рекурсивно).
