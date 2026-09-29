@@ -72,8 +72,10 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `description` | text | |
 | `lang` | text | `ru` \| `uz` \| `en` — язык контента (`title`/`description`), дефолт `ru` (OWN-17); пусто у старых записей читается как `ru` |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
-| `address` | text | адрес текстом |
-| `lat`, `lon` | number | для `sendVenue` (OWN-2) |
+| `address` | text | адрес текстом (офлайн) |
+| `format` | enum | `online` \| `offline` — **признак формата события** (OWN-18, [ADR-0052](adr/0052-event-format-field-online-offline.md)); пусто у старых записей читается как офлайн, кроме непустой `online_url` |
+| `online_url` | text | ссылка трансляции (`https://…`), **необязательна** у онлайна и может появиться позже; у офлайна не используется |
+| `lat`, `lon` | number | для `sendVenue` (OWN-2); у онлайна пусты |
 | `starts_at` | timestamp UTC | |
 | `ends_at` | timestamp UTC | по нему автопереход в `finished` (OWN-4) |
 | `reg_deadline_at` | timestamp UTC | |
@@ -83,6 +85,15 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `published_at`, `cancelled_at`, `finished_at` | timestamp | |
 
 Ссылка на Яндекс.Карты **не хранится** — генерируется из `lat`/`lon` (OWN-2).
+
+**Формат события (онлайн/офлайн)** — явное поле `format`
+([ADR-0052](adr/0052-event-format-field-online-offline.md), отменяет «неявный
+признак» из [ADR-0051](adr/0051-online-event-link-instead-of-qr.md) и
+[Q63](OPEN-QUESTIONS.md#q63)). Онлайн не зависит от наличия ссылки: ссылку
+можно задать позже. У нового онлайн-события `address`/`lat`/`lon` пусты. При
+переводе существующего события офлайн → онлайн старые `address`/`lat`/`lon`
+**автоматически не очищаются** (пустое значение Tables = «не менять»); очистка —
+хвост W67, отдельным пакетом ([ADR-0051](adr/0051-online-event-link-instead-of-qr.md) п. 5).
 
 Эффективный лимит регистраций (OWN-15):
 
@@ -127,8 +138,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ### notify-on-change
 
 Правка опубликованного события рассылает уведомление зарегистрированным (OWN-5),
-если изменилось любое из: `starts_at`, `ends_at`, `address`, `lat`, `lon`, `title`,
-`reg_deadline_at`, `status`.
+если изменилось любое из: `starts_at`, `ends_at`, `address`, `format`,
+`online_url`, `lat`, `lon`, `title`, `reg_deadline_at`, `status`.
 
 Изменение `description`, `photo_file_id`, `capacity` — **не** повод для рассылки.
 В уведомлении перечисляются только фактически изменившиеся поля («было → стало»).
