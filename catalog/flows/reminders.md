@@ -70,5 +70,6 @@
   ([#124](https://github.com/aiqadam/aiqadam-events-bot/issues/124)).
 - **`reply_markup` — JSON-проп `send_text_message`**; `format: None` inline-кнопкам
   не мешает (текст по-прежнему без разметки — класс инъекций разметкой закрыт).
-- **Ключи текстов**: `remind.24h` / `remind.2h` + переиспользованный
-  `ticket.btn.open` и новый `remind.btn.directions`.
+- **Ключи текстов**: `remind.24h` / `remind.2h`, онлайн `remind.24h_online` /
+  `remind.2h_online` и `remind.*_online_pending` (W131), плюс переиспользованные
+  `ticket.btn.open`, `remind.btn.stream` и новый `remind.btn.directions`.

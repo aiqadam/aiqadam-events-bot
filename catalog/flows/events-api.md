@@ -14,7 +14,7 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-webhook : catch_webhook` | приём sync-запроса SPA |
-| step_1 | `tables-find-records events` | `status in (published, finished)`, `limit 50`; только поля карточки: `id`, `title`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `status`, `lang` |
+| step_1 | `tables-find-records events` | `status in (published, finished)`, `limit 50`; только поля карточки: `id`, `title`, `address`, `format`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `status`, `lang` |
 | step_2 | CODE «build catalog» | постфильтр статуса, деление будущие/прошедшие по `ends_at \|\| starts_at`, сортировка по `starts_at`, сборка `registerLink`; `lat`/`lon` — как есть, для ссылок на карты в Mini App (W72); `lang` — язык контента, пустое у старой записи отдаётся как `ru` (OWN-17) |
 | step_3 | `return_response` (`stop`) | `200 {ok, upcoming[], past[]}` — карточки готовыми полями |
 
