@@ -1,10 +1,10 @@
 # W67. Онлайн-событие: ссылка на трансляцию вместо QR
 
-- **Статус**: на проверке (реворк формата после вердикта владельца)
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: Phase 3 ([#119](https://github.com/aiqadam/aiqadam-events-bot/issues/119))
 - **Зависит от**: решения владельца — поле `events.online_url` (2026-09-29) и явный формат `events.format` (2026-09-29, [ADR-0052](../../docs/adr/0052-event-format-field-online-offline.md))
-- **Начат**: 2026-09-29 · **Закрыт**: —
+- **Начат**: 2026-09-29 · **Закрыт**: 2026-09-29
 
 ## Цель
 
@@ -265,8 +265,81 @@ Telegram-опыт поверх эталона, а не расхождение с
 платформы; совпадение манифест ↔ инстанс ↔ `migrations` проверено точечно по
 переопубликованным флоу.
 
+## Ревью — круг 3
+
+- **Ревьюер**: субагент-ревьюер (opencode, deepseek-v4.1-flash) · **Дата**: 2026-09-29 · **Вердикт**: есть замечания (одно `на будущее`; блокеров и «важно» нет)
+
+Проверен реворк [ADR-0052](../../docs/adr/0052-event-format-field-online-offline.md)
+(`a0a7790`): признак онлайна — явное `events.format`, `online_url` необязательна.
+Живой `events-dev` + дифф/офлайн.
+
+**Проверено живьём (замечаний нет):**
+
+- **Схема.** `events.format` существует (externalId `8bBZDyWWWFBV311w5lPY7`,
+  значения `online`/`offline` в живых записях). Бэкфилл 4 событий: с адресом/
+  точкой → `offline`, пусто → `online` — совпало. `migrations` W67 — 5 строк,
+  включая поле `online_url` (w67-01) и поле `format` + бэкфилл (w67-05).
+- **`manage-api/step_7`** (версия `jVI2MiMVeaHOKT6ylATSm`): `FORMAT_VALUES`/
+  `normFormat` (пусто/чужое → из `online_url`), `format` в `EVENT_KEYS`/`fields`/
+  `load`, `isOnline = format === 'online'`, `online_url` валидируется только
+  если непуста, `step_11` пишет `8bBZDyWWWFBV311w5lPY7` = `format`;
+  `notify-on-change` — строка `field.format` и (у онлайна) `field.online_url`.
+  Код `step_7` и маппинг `step_11` побайтово совпали с `flows/manage-api.json`.
+- **`my-qr-api/step_5`** (версия `RqTg2UZmVygqLDorpTJXp`): онлайн по `format`,
+  `url` может быть пустым; при `found && registered && !online && !hasEvent` —
+  `500`; `step_9` читает `online_url` + `format`. **Регресс-кейс подтверждён
+  кодом:** онлайн с пустой ссылкой → `{ok:true, online:true, url:""}` (не QR);
+  `#/ticket` ветвит по `online`, а не по `url` (`Ticket.tsx`), QR-плита не
+  рисуется, статус `ticket.online.pending`.
+- **`reminders/step_2`/`step_4`/`step_8`** (версия `SrCQzCLC55MwCa3AWzXwg`):
+  живой `step_2` несёт `format` (гонка прошлого круга устранена), считает
+  `online`, глушит `mapsUrl`; `step_4` пробрасывает `online`/`onlineUrl`;
+  `step_8` — онлайн-текст без «Адрес: », кнопка трансляции только при непустой
+  ссылке; `step_1` читает `format`. Всё совпало с экспортом.
+- **AppSec.** `events-api` `online_url` не читает и не отдаёт (проекция без
+  `ko1bekd…`/`8bBZDy…`); IDOR/гранты `manage-api` не тронуты; гейт `my-qr-api`
+  (`initData` → активная регистрация) не ослаблен; онлайн без ссылки не даёт QR.
+- **«Ссылка позже».** `if (format === 'online' && orig.online_url !== onlineUrl)`
+  → строка в `notify-on-change` зарегистрированным (появление/смена ссылки).
+
+**Офлайн:** `tools/check-texts.py` — 297 ссылок, 0 расхождений;
+`tools/check-export-secrets.sh` — чисто; `node prototypes/check.mjs` — OK;
+`miniapp: npm run build` — OK. Версии манифеста `jVI2…`/`RqTg…`/`SrCQz…`
+совпали с `migrations`; `ap_export_flow my-qr-api` — `flows[0].id`
+`RqTg2UZmVygqLDorpTJXp`. `check-migrations.py` — без ключа платформы (сверка
+точечная).
+
+### Замечания
+
+1. **`на будущее`** — Снять уже заданную ссылку формой нельзя, и уведомление
+   при этом лжёт. `manage-api/step_7` пишет `onlineUrl: isOnline ? onlineUrl :
+   ''`; если организатор стирает поле (событие остаётся `format=online`),
+   `step_11` (`tables-upsert-records` 0.4.5) получает пустую строку, а пустой
+   TEXT = «не менять» — старое значение остаётся в БД. `my-qr-api/step_9` читает
+   живое значение, поэтому билет продолжит показывать старую ссылку, при этом
+   `notify-on-change` успевает сообщить зарегистрированным `online_url <было> → —`.
+   Тот же корень, что у названного хвоста очистки `address`/`lat`/`lon` (пустая
+   строка Tables) — свести к нему. Не блокер: основное требование (ссылка
+   появляется позже) работает, замена непустой ссылки пишется.
+
+## Ответ владельца пакета (круг 3, 2026-09-29)
+
+- Реворк формата ([ADR-0052](../../docs/adr/0052-event-format-field-online-offline.md))
+  ревью прошёл: блокеров и «важно» нет. Единственное «на будущее» — снять уже
+  заданную ссылку формой нельзя (пустая строка Tables = «не менять», при этом
+  уведомление уходит, а `step_9` отдаёт старую ссылку). **Принято хвостом** с тем
+  же корнем, что очистка `address`/`lat`/`lon`: лечится `clear_columns` /
+  отдельным `tables-update-record`, отдельным пакетом. Добавление и смена
+  непустой ссылки работают.
+
 ## Хвосты и блокеры
 
+- **Очистка ячеек (`address`/`lat`/`lon` при offline → online и снятие
+  `online_url`) — один корень.** Пустое значение Tables = «не менять»;
+  `tables-upsert-records` на пине 0.4.5 без `clear_columns`. Фикс — отдельный
+  шаг `tables-update-record` (`clear_columns`) либо перепривязка `step_11` на
+  `tables` 0.4.6, отдельным пакетом. Следствие: у переведённого события может
+  остаться старый адрес, а снятую ссылку форма не убирает.
 - **Очистка `address`/`lat`/`lon` при offline → online.** Подтверждено чтением
   кода и семантики Tables (пустая строка = «не менять»), `tables-upsert-records`
   на пине 0.4.5 не содержит `clear_columns`. Фикс — отдельный шаг
