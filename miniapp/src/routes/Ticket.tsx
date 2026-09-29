@@ -35,7 +35,9 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
   // Для заголовка после i18n
   const [title, setTitle] = useState('AI Qadam Events');
 
-  // W67 (OWN-18): онлайн-событие — вместо QR ссылка на трансляцию.
+  // W67 (OWN-18): онлайн-событие — вместо QR ссылка на трансляцию (может ещё
+  // не быть задана: тогда «появится позже», без QR).
+  const [online, setOnline] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
 
   // W51: контекст события над QR (прототип ticket-top) — название/дата/адрес
@@ -143,10 +145,12 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
         return;
       }
       const data = res.data as Record<string, unknown>;
-      if (data['ok'] && data['online'] && data['url']) {
-        // W67: QR для онлайна не генерируется — вместо плиты ссылка.
-        setStreamUrl(String(data['url']));
-        showStatus('ticket.online.ready');
+      if (data['ok'] && (data['online'] === true || data['online'] === 'true')) {
+        // W67: QR для онлайна не генерируется. Ссылка есть — кнопка, нет — «позже».
+        const u = String(data['url'] || '');
+        setOnline(true);
+        setStreamUrl(u);
+        showStatus(u ? 'ticket.online.ready' : 'ticket.online.pending');
       } else if (data['ok'] && data['payload']) {
         renderQr(String(data['payload']));
         showStatus('ticket.show_at_entrance');
@@ -340,7 +344,7 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
           )}
           <MapLinks lat={evLat} lon={evLon} address={evAddress} />
         </div>
-        {!cancelled && !streamUrl && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
+        {!cancelled && !online && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         {!cancelled && streamUrl && (
           <button
             type="button"

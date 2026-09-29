@@ -28,9 +28,9 @@
 | step_7 (Otherwise) | CODE «invalid init data response» | `texts['checkin.unauthorized']`, `httpStatus: 401` |
 | step_8 (Otherwise) | `return_response` | ответ `401` немедленно |
 | step_3 (valid) | `callFlow fn-find-registration` | своя регистрация на `eventId` |
-| step_9 (valid) | `tables-find-records events` (`continueOnFailure`) | `online_url` события по `id`; сбой чтения = офлайн |
+| step_9 (valid) | `tables-find-records events` (`continueOnFailure`) | `format` и `online_url` события по `id`; сбой чтения = офлайн-ветка с ошибкой |
 | step_4 (valid) | `callFlow fn-sign-qr` (`continueOnFailure`) | подпись `(eventId, userId)` (для офлайна; онлайн подпись не отдаёт) |
-| step_5 (valid) | CODE «decide result» | `not_registered` / `ok`; при непустом `online_url` — `ok` + `online:true` + `url`, без `payload` |
+| step_5 (valid) | CODE «decide result» | `not_registered` / `ok`; при `format=online` — `ok` + `online:true` + `url` (ссылка может быть пустой), без `payload`; регистрация есть, а событие не прочитано → `500` |
 | step_6 (valid) | `return_response` | JSON: `{ok, error, text, payload, online, url, eventId, userId}` — форма, которую ждёт `#/ticket` |
 
 ### Контракт ответа (согласован с `#/ticket` SPA)
@@ -38,7 +38,7 @@
 | Ситуация | Тело |
 |---|---|
 | успех (офлайн) | `{ok: true, payload: "c<eventId>-<userId>-<sig>"}` |
-| успех (онлайн) | `{ok: true, online: true, url: "<online_url>"}` — без `payload` |
+| успех (онлайн) | `{ok: true, online: true, url: "<online_url или ''>"}` — без `payload`; пустой `url` = ссылка ещё не задана |
 | `initData` невалиден/просрочен | `{ok: false, error: "invalid_init_data", text}`, HTTP 401 |
 | нет активной регистрации | `{ok: false, error: "not_registered", text}` |
 
@@ -66,14 +66,14 @@
   роут `#/ticket` проверяет `data.ok`/`data.error`, а не `{status,...}`
   (как `checkin-api`) — форма ответа этого флоу подстроена под уже
   задеплоенную статику, а не выбрана свободно.
-- **Онлайн-событие (W67, ADR-0051).** `step_9` читает `online_url` (чужой
-  `eventId`/пустая выборка = офлайн, `continueOnFailure` не роняет флоу);
-  непустая ссылка = онлайн. `fn-sign-qr` при этом всё равно вызывается (подпись
-  не возвращается — «подписывать нечего» относится к выдаче, а не к вызову).
+- **Онлайн-событие (W67, [ADR-0052](../../docs/adr/0052-event-format-field-online-offline.md)).**
+  `step_9` читает `format` и `online_url` (чужой `eventId`/пустая выборка —
+  офлайн-ветка, но `step_5` отдаёт `500`, если регистрация есть, а события нет).
+  Онлайн — `format === 'online'` (старые записи без `format` — непустая ссылка).
+  QR для онлайна не выдаётся никогда: есть ссылка — она, нет — пустой `url`.
+  `fn-sign-qr` в цепочке всё равно вызывается (подпись не возвращается).
   Ссылка видна только владельцу `initData` с активной регистрацией; публичный
-  `events-api` её не отдаёт. Если регистрация есть, а событие не прочитано
-  (`step_9` упал), `step_5` отдаёт `500 server_error`, а не подписанный QR —
-  тихого отката на QR для онлайна нет.
+  `events-api` её не отдаёт.
 - **Менять ROUTER можно только пересборкой цепочки внутри ветки** — та же
   грабля, что в `checkin-api`: вставка ROUTER'а в существующее ребро не
   гейтит старое продолжение (CLAUDE.md, Gotchas Qadam Flow, п. 10).

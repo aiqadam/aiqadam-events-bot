@@ -10,10 +10,10 @@
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
 | trigger | `@aiqadam/qadam-schedule : cron_expression` | каждые 15 мин, Asia/Tashkent |
-| step_1 | `tables-find-records events` | только `published`; колонки включают `lat`/`lon` (карта) и `online_url` (онлайн) |
-| step_2 | CODE «due windows» | `dt = starts_at - now`; окно `24h` / `2h`; `when` словами Asia/Tashkent; `dueIdsCsv` + сентинел; `onlineUrl`; `mapsUrl` из валидных `lat`/`lon` (у онлайна пусто) |
+| step_1 | `tables-find-records events` | только `published`; колонки включают `lat`/`lon` (карта), `format` и `online_url` (онлайн) |
+| step_2 | CODE «due windows» | `dt = starts_at - now`; окно `24h` / `2h`; `when` словами Asia/Tashkent; `dueIdsCsv` + сентинел; `online` (по `format`), `onlineUrl`; `mapsUrl` из валидных `lat`/`lon` (у онлайна пусто) |
 | step_3 | `tables-find-records registrations` | `event_id in dueIds` и `status = registered` |
-| step_4 | CODE «targets» | join регистраций с окнами, дедуп пар `(event_id, telegram_id)`, проброс `onlineUrl` и `mapsUrl` |
+| step_4 | CODE «targets» | join регистраций с окнами, дедуп пар `(event_id, telegram_id)`, проброс `online`, `onlineUrl`, `mapsUrl` |
 | step_5 | LOOP_ON_ITEMS | по `targets` |
 | step_6 (в цикле) | `store : put_if_absent` | захват `rm:<event_id>:<kind>:<telegram_id>`, `COLLECTION`, TTL 48 ч |
 | step_7 (в цикле) | ROUTER «первый раз?» | `stored` / `Otherwise` |
@@ -53,11 +53,12 @@
   (W51: было «17 сентября 2026 г. в 17:41»). Форма прототипа (`when='18:30'`).
 - **Сентинел `__none__`** — как в `lifecycle`. Find-шаги обязаны содержать
   `limit` + `record_ids` (иначе невалидны).
-- **Онлайн-событие (W67, [ADR-0051](../../docs/adr/0051-online-event-link-instead-of-qr.md)):**
-  непустой `online_url` даёт текст без строки «Адрес: » и кнопку «Открыть
-  трансляцию» (`url`, `remind.btn.stream`) вместо «Как добраться». Карта для
-  онлайна не собирается (`mapsUrl` пуст). Ключи `remind.24h_online` /
-  `remind.2h_online` — новые, в платформенных переводах.
+- **Онлайн-событие (W67, [ADR-0052](../../docs/adr/0052-event-format-field-online-offline.md)):**
+  `format=online` даёт текст без строки «Адрес: ». Кнопка «Открыть трансляцию»
+  (`url`, `remind.btn.stream`) — только когда `online_url` задана; не задана —
+  вторых кнопок нет (ссылка появится позже). Карта для онлайна не собирается
+  (`mapsUrl` пуст). Ключи `remind.24h_online` / `remind.2h_online` — новые, в
+  платформенных переводах.
 - **Кнопки под напоминанием ([#142](https://github.com/aiqadam/aiqadam-events-bot/issues/142)):**
   «Открыть билет» — `web_app` на `#/ticket?event_id=<id>` (метка `ticket.btn.open`,
   как на экране билета); «Как добраться» — `url` на Яндекс.Карты, только при

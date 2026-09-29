@@ -9,7 +9,7 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
-const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'lang', 'online_url'] as const;
+const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'lang', 'online_url', 'format'] as const;
 
 // Черновик нового события переживает уход со страницы (W42): localStorage,
 // ключ один — второй формы создания на устройстве быть не может.
@@ -48,8 +48,9 @@ const EMPTY_FIELDS: Record<string, string> = {
   overbook_pct: '',
   // W125 (OWN-17): язык контента события, дефолт ru.
   lang: 'ru',
-  // W67 (OWN-18): ссылка трансляции — непусто = онлайн-событие.
+  // W67 (OWN-18, ADR-0052): формат события — явный признак; ссылка необязательна.
   online_url: '',
+  format: 'offline',
 };
 
 type EventData = Record<string, unknown>;
@@ -185,11 +186,11 @@ function clientErrors(
   const address = (f['address'] || '').trim();
   if (address && (address.length < 2 || address.length > 300)) add(1, 'address', 'manage.err.address_length');
   else if (strict && !address && (!geo || !geo.online)) add(1, 'address', 'manage.err.required');
-  // W67 (OWN-18, ADR-0051): онлайн-событие без ссылки трансляции не публикуется;
-  // ссылка обязана начинаться с https://. Серверная проверка — та же.
+  // W67 (OWN-18, ADR-0052): ссылка трансляции необязательна (появится позже);
+  // если задана — https://. Серверная проверка — та же.
   if (geo && geo.online) {
     const onlineUrl = (f['online_url'] || '').trim();
-    if (strict && !/^https:\/\/\S+$/.test(onlineUrl)) add(1, 'online_url', 'manage.err.online_url');
+    if (onlineUrl && !/^https:\/\/\S+$/.test(onlineUrl)) add(1, 'online_url', 'manage.err.online_url');
   }
   (['starts_at', 'ends_at', 'reg_deadline_at'] as const).forEach((k) => {
     if (strict && !f[k]) add(1, k, 'manage.err.datetime');
@@ -391,7 +392,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const fillForm = useCallback(
     (ev: EventData) => {
       const next: Record<string, string> = {};
-      ['title', 'description', 'address', 'lat', 'lon', 'capacity', 'overbook_pct', 'online_url'].forEach((n) => {
+      ['title', 'description', 'address', 'lat', 'lon', 'capacity', 'overbook_pct', 'online_url', 'format'].forEach((n) => {
         const v = ev[n];
         next[n] = v === undefined || v === null ? '' : String(v);
       });
@@ -404,11 +405,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       setFields(next);
       setLoaded(next);
       applyStatus(String(ev['status'] || 'draft'));
-      // W67 (OWN-18, ADR-0051): формат — непустой `online_url` (онлайн) против
-      // пустого (офлайн). Офлайн с координатами предзаполняет ссылку эквивалентной.
-      const onlineUrl = String(next['online_url'] || '').trim();
-      const isOnline = onlineUrl !== '';
+      // W67 (OWN-18, ADR-0052): признак онлайна — явный format; ссылка необязательна.
       const hasCoords = String(next['lat'] || '').trim() !== '' && String(next['lon'] || '').trim() !== '';
+      const onlineUrl = String(next['online_url'] || '').trim();
+      const fmt = String(next['format'] || '');
+      // Формат пустой у старых записей: выводим из ссылки/координат.
+      const isOnline = fmt === 'online' || (fmt !== 'offline' && (onlineUrl !== '' || !hasCoords));
+      next['format'] = isOnline ? 'online' : 'offline';
       setOnline(isOnline);
       setMapLink(!isOnline && hasCoords ? equivLink(next['lon'], next['lat']) : '');
     },
@@ -832,13 +835,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       if (nextOnline) {
         // Онлайн — только даты (2026-09-20): точку сносим, адрес и ссылку на
         // карту чистим; ссылка трансляции — отдельное поле, её не трогаем.
-        setFields((prev) => ({ ...prev, address: '', lat: '', lon: '' }));
+        setFields((prev) => ({ ...prev, format: 'online', address: '', lat: '', lon: '' }));
         setMapLink('');
         setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon' && e.field !== 'address'));
       } else {
-        // Офлайн: ссылка трансляции не нужна — чистим, иначе событие останется
-        // онлайн по признаку `online_url` (W67, ADR-0051).
-        setFields((prev) => ({ ...prev, online_url: '' }));
+        // Офлайн: ссылка трансляции не нужна — чистим (W67, ADR-0052).
+        setFields((prev) => ({ ...prev, format: 'offline', online_url: '' }));
         setErrs((prev) => prev.filter((e) => e.field !== 'online_url'));
       }
     },
