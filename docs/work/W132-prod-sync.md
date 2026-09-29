@@ -37,7 +37,55 @@
 
 ## Как проверено
 
-- (заполняется по ходу)
+- **Переводы**: 24 новых ключа (W67+W131+Mini App W127–W129) × ru/uz/en залиты
+  `ap_upsert_translations` — все приняты (`{{$t[...]}}` резолвится).
+- **Схема**: поля `events.online_url` (TEXT, int `KkMoC2mC…`, ext `XKetQH8z…`) и
+  `events.format` (STATIC_DROPDOWN online/offline, int `UQJPGbIB…`, ext
+  `JMI0Ec14…`) созданы. Маппинг dev→prod: `lang` ext `5bvPj31…`→`6UVLXYAb…`
+  (int `wkJRAt…`→`U0UzI9…`); остальные поля/таблицы совпадают.
+- **`events-api`** (`wEdKdE4R…`): `step_1` колонки +`format`/`lang` (prod-extId),
+  `step_2` код с `format` (хотфикс `filter(isPast)`); valid 4/4; тестовый прогон
+  `S1YABeAXhs1fLjGUPY1YV` SUCCEEDED (200, пустые срезы — в prod нет
+  published/finished); опубликован `gH5ELg3aWARzG09OvEZud` (LOCKED).
+- **`my-qr-api`** (`WYmnxVM4…`): `step_9` добавлен `ap_add_step` AFTER `step_3` —
+  цепочка перелинковалась сама (`step_3→step_9→step_4`, гоча 10 — только про
+  ROUTER); `step_5` код+вход, `step_6` вход; `step_9` pin 0.4.6 +
+  `continueOnFailure`; valid 10/10; `step_5` сверен `ap_read_step_code`
+  побайтово с dev; тест невалидного пути `Go0rJjukO3af4EjK2zkVY` SUCCEEDED
+  (401 с переводом); опубликован `tQFCoEZoqXNzgZubp6wfY` (LOCKED). Валидный путь
+  (step_9→step_5) — хвост на владельца (нужен живой initData).
+- **`reminders`** (`HJvh8nEh…`): `step_1` колонки +`online_url`/`format`,
+  `step_2`/`step_4` код (online/onlineUrl/mapsUrl), `step_8` код + 9 ключей
+  `texts`; valid 11/11; `step_8` сверен `ap_read_step_code`; опубликован
+  `nSo5U6QmXwOyKV5be1c4X` (LOCKED). Прогон не делался (отправка сообщений);
+  живой e2e — хвост на владельца.
+- **`manage-api`** (`CcGPwuW4…`): `step_7` код+вход (41 ключ `texts`), `step_11`
+  upsert +`format`/`online_url` (prod-extId); valid 61/61; `step_7` сверен
+  `ap_read_step_code` с dev; опубликован `VsdhuEi5Fg81i8krk8oQY` (LOCKED);
+  экспорт проверен субагентом: `step_11` — 19 ключей, 3 маппинга точны, `step_7`
+  — `normFormat` + `online_url` в `EVENT_KEYS`. Save-путь живьём — хвост на
+  владельца (нужен живой initData staff).
+- **`reg-api`** (`SiYL8m6k…`): `step_8` колонки +`format`, `step_9` код+вход
+  (20 ключей `texts`); valid 46/45+1 skipped (`step_12`, W60); `step_9` сверен
+  `ap_read_step_code` построчно (по пути поймана и исправлена своя ошибка
+  транскрипции: `deadline_passed`/`too_late` — см. журнал); опубликован
+  `Rb7bbeoW9LedMwlyinfYI` (LOCKED), экспорт проверен субагентом.
+- **`reg-start`** (`FkxtgayO…`): `step_3` код+вход, `step_7` код+вход (4 ключа),
+  `step_8` вход (auth KIbx сохранён — сверено структурой); valid 21/21;
+  опубликован `FF9ueU6ECgXvUV4tL3FUb` (LOCKED), экспорт сверен.
+- **`reg-profile`** (`5U3Kv0cS…`): `step_2` колонки +`format`, `step_4` код+вход
+  (38 ключей); valid 40/40; `step_4` сверен `ap_read_step_code`; опубликован
+  `WLYauRql1cnoNrNFHTduo` (LOCKED), экспорт проверен субагентом.
+- **`reg-consent-mkt`** (`3gLF6Tcb…`): `step_4` колонки +`format`, `step_5`
+  код+вход (12 ключей); valid 11/11; `step_5` сверен `ap_read_step_code`;
+  опубликован `umKDENNz63nFu5S4K6aNd` (LOCKED), экспорт сверен.
+- **Бэкфилл**: 2 живые записи prod `events` → `format=offline` (Meetup #3 с
+  адресом; тест «Кладдадд» без ссылки — поведение сохранено, оба cancelled).
+- **`migrations` prod**: 11 строк `2026-09-29-w132-01…11` (2 поля, переводы,
+  8 публикаций с version_id).
+- **Нормализованный диф**: все портированные шаги сверены read-back/экспортом
+  с dev; auth/connection и callFlow-ссылки prod не тронуты (проверено в
+  экспортах: `KIbx…`, `VzXoy…`/`Q3iGnx…`/`VvSckb…` на месте).
 
 ## Журнал
 
@@ -45,6 +93,13 @@
   Инвентарь: `git log prod..main` — 28 коммитов (W127, W128, W129, W67, W131+хотфикс).
   `ap_list_flows`: dev — 32 (31 наш + чужой `ChatBot`), prod — 31, все published/ENABLED.
   Id сред разошлись после W106 (карта — `catalog/environments.md`).
+
+- **2026-09-29** — инстанс готов: 8 флоу опубликованы, бэкфилл и 11 строк
+  `migrations` на prod. Урок: при ручном переносе CODE-кода легко внести
+  ошибку в «правдоподобную» строку (`reason: 'no_seats'` вместо
+  `'deadline_passed'`, подмена `too_late`-ветки) — валидатор её не видит;
+  ловится только построчной сверкой read-back с dev-файлом. Для оставшихся
+  шагов сверка делалась построчно, больше расхождений нет.
 
 ## Ревью
 
