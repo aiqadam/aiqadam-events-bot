@@ -20,7 +20,7 @@
 | step_2 | CODE «decide yes/no + разбор draft» | `isYes`, `cardMessageId`, `eventId`, `utm`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_4` (пустой `eq` валит шаг) |
 | step_3 | `tables-upsert-records users` (`continueOnFailure`) | `consent_marketing = true/false` + отметка времени **всегда** |
 | step_6 | `tables-upsert-records sessions` (`continueOnFailure`) | сессия закрыта сентинелом `-` |
-| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки: `title`, `starts_at`, `ends_at`, `address`, `lat`, `lon` (W76 — карта и календарь); фильтр `id eq eventIdOrNone` — при онбординге без события (ADR-0034) даёт пустую выборку, а не падение |
+| step_4 | `tables-find-records events` (`continueOnFailure`) | событие для финальной карточки: `title`, `starts_at`, `ends_at`, `address`, `lat`, `lon` (W76 — карта и календарь), `format` (W131 — онлайн без QR); фильтр `id eq eventIdOrNone` — при онбординге без события (ADR-0034) даёт пустую выборку, а не падение |
 | step_10 | `tables-find-records quizzes` | все викторины (limit 10); диапазон по DATE не фильтруется (Q15) — окно проверяет CODE `step_5` (W103) |
 | step_5 | CODE «тексты: финальная карточка и билет» | `cardText`/`ticketText`/`ticketReplyMarkup`, время Tashkent; при сбое `step_3`/`step_6`/`step_4` — оба текста заменяются на `common.err.generic`; заголовок карточки и содержимое второго сообщения зависят от `hasEvent = eventId !== ''`. W76: карточка несёт адрес и «Открыть на карте» (только при валидных координатах, не `(0,0)`), в билет добавлена кнопка «Добавить в календарь». W103: пока открыто окно викторины, в билет добавляется кнопка «Викторина» (`callback_data: qz:start`) |
 | step_7 | `edit_message_text` (`continueOnFailure`) | карточка → итог диалога, **кнопки сняты** |
@@ -40,7 +40,7 @@
 - **`consent_pdn` этот флоу не трогает** (PAR-1/PAR-2).
 - **Билет уходит новым сообщением, а не редактированием карточки.** Правило ADR-0017: состояние диалога редактируется, факт, к которому вернутся, отправляется. Билет оказывается внизу ленты, а не наверху, где висит карточка начала диалога.
 - **У финального редактирования есть фолбэк** (`step_8`): `cardMessageId = 0` или удалённая карточка дают `400 «message to edit not found»`, шлём новую карточку. Это единственный фолбэк в этом флоу.
-- **Тексты — во входе `texts`** (ADR-0045, `$t`); ссылки `$t` сверены с `i18n/ru.json`: `reg.done.header`/`profile.saved.header` (заголовок карточки — по `hasEvent`), `reg.consent_marketing.saved_yes/no`, `ticket.header`, `ticket.hint`, `events.catalog.hint`, `menu.btn.events`.
+- **Тексты — во входе `texts`** (ADR-0045, `$t`); ссылки `$t` сверены с `i18n/ru.json`: `reg.done.header`/`profile.saved.header` (заголовок карточки — по `hasEvent`), `reg.consent_marketing.saved_yes/no`, `ticket.header`, `ticket.hint` (онлайн — `ticket.hint_online`, W131), `events.catalog.hint`, `menu.btn.events`.
 - **Без диплинка (ADR-0034) заголовок — «Профиль сохранён», не «Вы
   зарегистрированы»**: `eventId` в черновике сессии пуст, регистрации не
   было (её создавать было не на что — см. `catalog/flows/reg-profile.md`,

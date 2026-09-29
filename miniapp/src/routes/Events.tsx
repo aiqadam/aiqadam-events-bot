@@ -7,7 +7,6 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, EVENTS_API, REG_API, STAFF_EVENTS_API } from '../lib/api';
 import { utcToPlate, utcToWhen, utcMs } from '../lib/dates';
 import Icon from '../components/Icon';
-import MapLinks from '../components/MapLinks';
 import Sheet from '../components/Sheet';
 import Toast, { useToast } from '../components/Toast';
 
@@ -29,6 +28,9 @@ type CatalogEvent = {
   // W125 (OWN-17): язык контента события — ru|uz|en; сервер отдаёт `ru`,
   // если у записи поле пустое.
   lang?: string;
+  // W131 (ADR-0053): публичный признак формата — `online`/`offline`; на
+  // онлайне карточка зовёт билет, а не «Показать QR». Ссылку сервер не отдаёт.
+  format?: string;
   registerLink: string;
 };
 
@@ -587,6 +589,7 @@ export default function Events({ tab: routeTab }: { tab: EventsTab }) {
             done={sheetDone}
             profileNeeded={profileNeeded}
             prof={sheetProf}
+            pdnDone={pdnDone}
             onProf={(k, v) => setSheetProf((p) => ({ ...p, [k]: v }))}
             onPdn={() => setPdn(!pdn)}
             onMkt={() => setMkt(!mkt)}
@@ -732,21 +735,24 @@ function MineCard({
             </span>
           )}
         </div>
-        <MapLinks lat={ev.lat} lon={ev.lon} address={ev.address} />
         {showQr && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
-            <a className="btn btn-primary" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`} onClick={onOpenTicket(ev.id)}>
+          <div className="event-actions">
+            <a className="btn btn-primary btn-block" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`} onClick={onOpenTicket(ev.id)}>
               <Icon name="external" />
-              {t('reg.qr.button')}
+              {t(ev.format === 'online' ? 'ticket.btn.open' : 'reg.qr.button')}
             </a>
-            <button type="button" className="btn btn-outline" id="share" onClick={() => onShare(ev)}>
+          </div>
+        )}
+        {showQr && (
+          <div className="event-actions">
+            <button type="button" className="btn btn-outline btn-sm" id="share" onClick={() => onShare(ev)}>
               <Icon name="share" />
               {t('manage.btn.share')}
             </button>
           </div>
         )}
         {!showQr && attended && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
+          <div className="event-actions">
             <a className="btn btn-outline" href={`#/feedback?event_id=${encodeURIComponent(ev.id)}`}>
               {t('afterword.feedback_btn')}
             </a>
@@ -827,18 +833,17 @@ function EventCard({
             </span>
           )}
         </div>
-        <MapLinks lat={ev.lat} lon={ev.lon} address={ev.address} />
         {action === 'qr' && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
-            <a className="btn btn-primary" id="ticket" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`}>
+          <div className="event-actions">
+            <a className="btn btn-primary btn-block" id="ticket" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`}>
               <Icon name="external" />
-              {t('reg.qr.button')}
+              {t(ev.format === 'online' ? 'ticket.btn.open' : 'reg.qr.button')}
             </a>
           </div>
         )}
         {action === 'register' && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
-            <a className="btn btn-primary" id="register" href={ev.registerLink} onClick={onRegister(ev)}>
+          <div className="event-actions">
+            <a className="btn btn-primary btn-block" id="register" href={ev.registerLink} onClick={onRegister(ev)}>
               <Icon name="external" />
               {t('event.card.btn_register')}
             </a>
@@ -850,26 +855,32 @@ function EventCard({
           </div>
         )}
         {action === 'feedback' && (
-          <div className="app-actions" style={{ marginTop: 0 }}>
+          <div className="event-actions">
             <a className="btn btn-outline" id="feedback" href={`#/feedback?event_id=${encodeURIComponent(ev.id)}`}>
               {t('afterword.feedback_btn')}
             </a>
           </div>
         )}
         {/* W50 (вердикт W49): сканер — рядом с событием, видно только
-            контролёру (canScan — из staff-events-api, решает сервер). */}
+            контролёру (canScan — из staff-events-api, решает сервер).
+            W127: сканер и «Поделиться» — компактные, вторым рядом, не
+            спорят с primary (кнопки `btn-sm`, как в эталоне `.event-actions`). */}
         {canScan && !past && (
-          <div className="app-actions" style={{ marginTop: 8 }}>
-            <a className="btn btn-secondary" id="scan" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
+          <div className="event-actions">
+            <a className="btn btn-outline btn-sm" id="scan" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
               {t('menu.btn.scanner')}
             </a>
+            <button type="button" className="btn btn-outline btn-sm" id="share" onClick={() => onShare(ev)}>
+              <Icon name="share" />
+              {t('manage.btn.share')}
+            </button>
           </div>
         )}
         {/* PAR-9/W65: поделиться событием доступно обычному пользователю;
             на прошедшем события ссылка регистрации смысла не несёт. */}
-        {!past && (
-          <div className="app-actions" style={{ marginTop: 8 }}>
-            <button type="button" className="btn btn-outline" id="share" onClick={() => onShare(ev)}>
+        {!past && !canScan && (
+          <div className="event-actions">
+            <button type="button" className="btn btn-outline btn-sm" id="share" onClick={() => onShare(ev)}>
               <Icon name="share" />
               {t('manage.btn.share')}
             </button>
@@ -983,8 +994,23 @@ function ProfileTab({
       {hint && <div className="helper">{hint}</div>}
     </div>
   );
+  // W128: контекст шапки — как в эталоне (renderProfile): инициалы, ФИО и
+  // «должность, компания · город». Пустые части не оставляют лишних разделителей.
+  const initials = ((profile.first || '').trim().slice(0, 1) + (profile.last || '').trim().slice(0, 1)).toUpperCase() || '•';
+  const fullName = (profile.first + ' ' + profile.last).trim();
+  const role = [profile.position, profile.company].filter(Boolean).join(', ');
+  const sub = role + (profile.city ? (role ? ' · ' : '') + profile.city : '');
   return (
     <div className="form-section">
+      {/* W128: шапка профиля — инициалы, имя и контекст (должность, компания,
+          город) над настройками, как в эталоне (renderProfile). */}
+      <div className="profile-head" id="profile-head">
+        <div className="profile-avatar" aria-hidden="true">{initials}</div>
+        <div style={{ minWidth: 0 }}>
+          <div className="profile-name">{fullName || t('common.value.none')}</div>
+          {sub && <div className="profile-sub">{sub}</div>}
+        </div>
+      </div>
       <div className="lang-row">
         <span className="label" id="profile-lang-label">{t('menu.btn.language')}</span>
         <div className="lang-switch" role="group" aria-labelledby="profile-lang-label">
@@ -1031,14 +1057,16 @@ function ProfileTab({
           {t('manage.btn.save')}
         </button>
       </div>
-      {/* W73 (#125, ADR-0039): самоудаление аккаунта (GDPR) — внизу, после
-          сохранения, разрушительная кнопка не первая. */}
-      <div className="app-actions" style={{ marginTop: 8 }}>
+      {/* W73 (#125, ADR-0039): самоудаление аккаунта (GDPR). W128: «опасная
+          зона» — отделена от «Сохранить» линией и заголовком, чтобы промах
+          не удалял аккаунт. Разрушительная кнопка не первая. */}
+      <div className="danger-zone">
+        <div className="section-label">{t('profile.delete.section')}</div>
         <button type="button" className="btn btn-destructive btn-block" id="profile-delete" onClick={onDelete}>
           {t('profile.delete.btn')}
         </button>
+        <p className="helper">{t('profile.delete.hint')}</p>
       </div>
-      <p className="helper">{t('profile.delete.hint')}</p>
     </div>
   );
 }
@@ -1052,6 +1080,7 @@ function RegistrationSheet({
   done,
   profileNeeded,
   prof,
+  pdnDone,
   onProf,
   onPdn,
   onMkt,
@@ -1066,6 +1095,7 @@ function RegistrationSheet({
   done: boolean;
   profileNeeded: boolean;
   prof: { first: string; last: string; position: string; company: string; city: string };
+  pdnDone: string;
   onProf: (k: 'first' | 'last' | 'position' | 'company' | 'city', v: string) => void;
   onPdn: () => void;
   onMkt: () => void;
@@ -1081,12 +1111,12 @@ function RegistrationSheet({
             <Icon name="check-circle" size={34} />
           </div>
           <div className="success-title">{t('reg.done.header')}</div>
-          <div className="app-muted">{t('reg.done.hint')}</div>
+          <div className="app-muted">{t(ev.format === 'online' ? 'reg.done.hint_online' : 'reg.done.hint')}</div>
         </div>
         <div className="sheet-actions">
           <button type="button" className="btn btn-primary btn-lg" id="reg-ticket" onClick={onTicket}>
             <Icon name="external" />
-            {t('reg.qr.button')}
+            {t(ev.format === 'online' ? 'ticket.btn.open' : 'reg.qr.button')}
           </button>
         </div>
       </>
@@ -1149,6 +1179,9 @@ function RegistrationSheet({
           <p className="empty-heading">{error}</p>
         </div>
       )}
+      {/* W128/W60: профиль заполнен — согласие на обработку данных уже дано,
+          переспрашивать нечем; подпись вместо чекбокса. */}
+      {!profileNeeded && pdnDone && <p className="helper" id="reg-pdn-done">{pdnDone}</p>}
       <div className="sheet-actions">
         <button type="button" className="btn btn-primary btn-lg" id="reg-submit" disabled={(profileNeeded && !pdn) || busy} aria-busy={busy} onClick={onSubmit}>
           {t('event.card.btn_register')}

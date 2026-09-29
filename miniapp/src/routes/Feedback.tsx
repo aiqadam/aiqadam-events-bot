@@ -3,7 +3,8 @@ import { t, loadI18n } from '../lib/i18n';
 import { getTelegram, hapticNotification } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
-import { postJson, FEEDBACK_API } from '../lib/api';
+import { postJson, FEEDBACK_API, EVENTS_API } from '../lib/api';
+import { utcToWhen } from '../lib/dates';
 import Icon from '../components/Icon';
 import BackButton from '../components/BackButton';
 
@@ -32,6 +33,12 @@ export default function Feedback({ eventId, fromApp = false }: { eventId: string
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [given, setGiven] = useState(false);
+
+  // W128: контекст события под заголовком (эталон renderFeedback: `.app-sub`):
+  // название и дата. Берём из публичной афиши — feedback-api отдаёт только
+  // сам отзыв; чужой eventId всё равно отсекается сервером (403).
+  const [evTitle, setEvTitle] = useState('');
+  const [evWhen, setEvWhen] = useState('');
 
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -94,6 +101,19 @@ export default function Feedback({ eventId, fromApp = false }: { eventId: string
       document.title = t('feedback.title');
       void load();
     });
+    // W128: название и дата события — из публичной афиши (без initData).
+    if (eventId) {
+      void postJson(EVENTS_API, {}).then((res) => {
+        if (res.kind !== 'json') return;
+        const list = ([] as Array<Record<string, unknown>>)
+          .concat(Array.isArray(res.data['upcoming']) ? (res.data['upcoming'] as Array<Record<string, unknown>>) : [])
+          .concat(Array.isArray(res.data['past']) ? (res.data['past'] as Array<Record<string, unknown>>) : []);
+        const ev = list.find((e) => String(e['id'] || '') === eventId);
+        if (!ev) return;
+        setEvTitle(String(ev['title'] || ''));
+        setEvWhen(utcToWhen(String(ev['startsAt'] || '')));
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -186,6 +206,12 @@ export default function Feedback({ eventId, fromApp = false }: { eventId: string
     <main style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
       <BackButton show={fromApp} onBack={() => window.history.back()} />
       <h1 className="app-title">{t('feedback.title')}</h1>
+      {(evTitle || evWhen) && (
+        <div className="app-sub" id="feedback-event">
+          {evTitle}
+          {evWhen ? (evTitle ? ' · ' + evWhen : evWhen) : ''}
+        </div>
+      )}
       <p className="app-muted">{t('feedback.lead')}</p>
 
       <div className="form-section">
