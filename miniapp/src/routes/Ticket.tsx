@@ -314,6 +314,15 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
     }
   }, [dictLoaded]);
 
+  // W131 (ADR-0053): тип события известен после ответа my-qr-api — на онлайне
+  // заголовок/документ говорят о трансляции, а не о QR.
+  useEffect(() => {
+    if (!dictLoaded) return;
+    const key = online ? 'ticket.title_online' : 'ticket.title';
+    setTitle(t(key));
+    document.title = t(key);
+  }, [online, dictLoaded]);
+
   const statusText = cancelled || (statusKey ? t(statusKey) : errorText);
   const retryLabel = t('ticket.retry');
   // Название для подтверждения отмены — как в прототипе: без «ёлочек».
@@ -328,7 +337,7 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
             события не подгрузился (и в document.title). */}
         <div className="ticket-top" id="ticket-event">
           <h1 className="ticket-event" id="title">
-            {evTitle || (dictLoaded ? t('ticket.title') : '')}
+            {evTitle || (dictLoaded ? t(online ? 'ticket.title_online' : 'ticket.title') : '')}
           </h1>
           {evWhen && (
             <div className="ticket-when">
@@ -336,13 +345,13 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
               <span>{evWhen}</span>
             </div>
           )}
-          {evAddress && (
+          {!online && evAddress && (
             <div className="ticket-when">
               <Icon name="map-pin" size={15} />
               <span>{evAddress}</span>
             </div>
           )}
-          <MapLinks lat={evLat} lon={evLon} address={evAddress} />
+          {!online && <MapLinks lat={evLat} lon={evLon} address={evAddress} />}
         </div>
         {!cancelled && !online && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         {!cancelled && streamUrl && (

@@ -135,6 +135,8 @@
   `reg-consent-mkt/step_5`); `step_31` (`continueOnFailure`) ведёт на
   `step_33` («send ticket») тем же приёмом, что `reg-consent-mkt/step_7→9`
   (продолжение исполняется независимо от ветки отказа, CLAUDE.md гоча №15).
+  Текст билета на онлайне (`format=online`) — `ticket.hint_online` вместо
+  `ticket.hint`, слова QR там нет ([ADR-0053](../../docs/adr/0053-online-event-no-qr-wording.md), W131).
   Сессия закрывается сентинелом `-` до отправки карточки (`step_30`), а не
   после: следующего колбэка не предполагается, обновлять `cardMessageId`
   незачем — тот же приём, что в ветке `declined`.

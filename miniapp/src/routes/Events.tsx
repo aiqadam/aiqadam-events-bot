@@ -28,6 +28,9 @@ type CatalogEvent = {
   // W125 (OWN-17): язык контента события — ru|uz|en; сервер отдаёт `ru`,
   // если у записи поле пустое.
   lang?: string;
+  // W131 (ADR-0053): публичный признак формата — `online`/`offline`; на
+  // онлайне карточка зовёт билет, а не «Показать QR». Ссылку сервер не отдаёт.
+  format?: string;
   registerLink: string;
 };
 
@@ -736,7 +739,7 @@ function MineCard({
           <div className="event-actions">
             <a className="btn btn-primary btn-block" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`} onClick={onOpenTicket(ev.id)}>
               <Icon name="external" />
-              {t('reg.qr.button')}
+              {t(ev.format === 'online' ? 'ticket.btn.open' : 'reg.qr.button')}
             </a>
           </div>
         )}
@@ -834,7 +837,7 @@ function EventCard({
           <div className="event-actions">
             <a className="btn btn-primary btn-block" id="ticket" href={`#/ticket?event_id=${encodeURIComponent(ev.id)}`}>
               <Icon name="external" />
-              {t('reg.qr.button')}
+              {t(ev.format === 'online' ? 'ticket.btn.open' : 'reg.qr.button')}
             </a>
           </div>
         )}
@@ -1108,12 +1111,12 @@ function RegistrationSheet({
             <Icon name="check-circle" size={34} />
           </div>
           <div className="success-title">{t('reg.done.header')}</div>
-          <div className="app-muted">{t('reg.done.hint')}</div>
+          <div className="app-muted">{t(ev.format === 'online' ? 'reg.done.hint_online' : 'reg.done.hint')}</div>
         </div>
         <div className="sheet-actions">
           <button type="button" className="btn btn-primary btn-lg" id="reg-ticket" onClick={onTicket}>
             <Icon name="external" />
-            {t('reg.qr.button')}
+            {t(ev.format === 'online' ? 'ticket.btn.open' : 'reg.qr.button')}
           </button>
         </div>
       </>
