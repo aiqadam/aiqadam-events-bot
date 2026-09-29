@@ -75,7 +75,14 @@ prod поднят восстановлением дампа dev. Две лову
 | Сущность | dev | prod |
 | --- | --- | --- |
 | flowId / externalId | новые (W106) — в [flows/](flows/) | прежние, копия до пересборки |
-| table_id / field_id | без изменений | совпадают с dev |
+| table_id / field_id | без изменений, **кроме трёх полей `events`** (ниже) | совпадают с dev, кроме `lang`/`online_url`/`format` |
+
+> **Исключение (W132, 2026-09-29).** Три поля `events` созданы в средах
+> независимо и несут разные id: `lang` (dev int `wkJRAt…`/ext `5bvPj31…`,
+> prod int `U0UzI9…`/ext `6UVLXYAb…`), `online_url` (dev `Albc…`/`ko1bekd…`,
+> prod `KkMoC2mC…`/`XKetQH8z…`), `format` (dev `JJtphc…`/`8bBZDy…`, prod
+> `UQJPGb…`/`JMI0Ec14…`). При переносе шагов, читающих/пишущих эти поля,
+> id маппятся по имени поля, а не копируются.
 | `migrations` | история dev + строки W106 | унаследована от dev |
 
 Новые dev-`flowId` и `externalId` — в карточках [flows/](flows/) и в

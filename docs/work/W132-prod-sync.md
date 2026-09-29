@@ -86,6 +86,15 @@
 - **Нормализованный диф**: все портированные шаги сверены read-back/экспортом
   с dev; auth/connection и callFlow-ссылки prod не тронуты (проверено в
   экспортах: `KIbx…`, `VzXoy…`/`Q3iGnx…`/`VvSckb…` на месте).
+- **Живой smoke prod** (`/sync`, 2026-09-29): `events-api` → 200
+  `{"ok":true,"past":[],"upcoming":[]}` (новый код с `format`, без 500);
+  `my-qr-api` с пустым initData → 401 `invalid_init_data` с русским переводом
+  (`$t` на prod резолвится).
+- **Mini App prod**: `main`→`prod` мерж `79d224e` (без конфликтов, `report`
+  в `.env.prod` сохранён), `build:prod` зелёный (96 модулей, чанк `Report`,
+  `dist/i18n/ru.json` — 491 ключ), запушено; деплой `pages-prod` run
+  `36554987716` success; живой `miniapp-prod…` отдаёт `index-DptZRk5_.js`,
+  `i18n/ru.json` — 491 ключ, все новые на месте.
 
 ## Журнал
 
