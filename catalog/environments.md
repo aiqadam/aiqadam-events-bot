@@ -14,7 +14,7 @@
 | Telegram connection | `Oct3laLPiavfizCJagLcM` (`Events-QA-Bot`) | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) |
 | Бот | `@aiqadam_events_qa_bot` (id `8106260912`) | `@aiqadam_events_dev_bot` (id `8762958531`) — исторический dev-бот, оставшийся prod |
 | `MINIAPP_URL` | `https://miniapp.events.aiqadam.org/` | `https://miniapp-prod.events.aiqadam.org/` |
-| Статус | пересобран из репозитория (W106, 2026-09-26) — новые id | догнан до dev буквально (W122, 2026-09-28); flowId — прежние |
+| Статус | пересобран из репозитория (W106, 2026-09-26) — новые id | догнан до dev буквально (W122 + [W126](../docs/work/W126-prod-sync.md), 2026-09-28); flowId — прежние |
 
 ## Mini App
 
