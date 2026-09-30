@@ -9,7 +9,7 @@ import { setupThemeListener } from '../lib/theme';
 import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
-const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct'] as const;
+const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'lang', 'online_url', 'format'] as const;
 
 // Черновик нового события переживает уход со страницы (W42): localStorage,
 // ключ один — второй формы создания на устройстве быть не может.
@@ -30,6 +30,7 @@ const STEP_OF_FIELD: Record<string, number> = {
   geo: 1,
   lat: 1,
   lon: 1,
+  online_url: 1,
   capacity: 2,
   overbook_pct: 2,
 };
@@ -45,6 +46,11 @@ const EMPTY_FIELDS: Record<string, string> = {
   reg_deadline_at: '',
   capacity: '',
   overbook_pct: '',
+  // W125 (OWN-17): язык контента события, дефолт ru.
+  lang: 'ru',
+  // W67 (OWN-18, ADR-0052): формат события — явный признак; ссылка необязательна.
+  online_url: '',
+  format: 'offline',
 };
 
 type EventData = Record<string, unknown>;
@@ -180,6 +186,12 @@ function clientErrors(
   const address = (f['address'] || '').trim();
   if (address && (address.length < 2 || address.length > 300)) add(1, 'address', 'manage.err.address_length');
   else if (strict && !address && (!geo || !geo.online)) add(1, 'address', 'manage.err.required');
+  // W67 (OWN-18, ADR-0052): ссылка трансляции необязательна (появится позже);
+  // если задана — https://. Серверная проверка — та же.
+  if (geo && geo.online) {
+    const onlineUrl = (f['online_url'] || '').trim();
+    if (onlineUrl && !/^https:\/\/\S+$/.test(onlineUrl)) add(1, 'online_url', 'manage.err.online_url');
+  }
   (['starts_at', 'ends_at', 'reg_deadline_at'] as const).forEach((k) => {
     if (strict && !f[k]) add(1, k, 'manage.err.datetime');
   });
@@ -380,21 +392,28 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const fillForm = useCallback(
     (ev: EventData) => {
       const next: Record<string, string> = {};
-      ['title', 'description', 'address', 'lat', 'lon', 'capacity', 'overbook_pct'].forEach((n) => {
+      ['title', 'description', 'address', 'lat', 'lon', 'capacity', 'overbook_pct', 'online_url', 'format'].forEach((n) => {
         const v = ev[n];
         next[n] = v === undefined || v === null ? '' : String(v);
       });
+      // W125 (OWN-17): язык контента — только ru|uz|en, пустое/чужое → ru.
+      const lang = String(ev['lang'] || '');
+      next['lang'] = ['ru', 'uz', 'en'].includes(lang) ? lang : 'ru';
       ['starts_at', 'ends_at', 'reg_deadline_at'].forEach((n) => {
         next[n] = utcToLocalInput(String(ev[n] || ''));
       });
       setFields(next);
       setLoaded(next);
       applyStatus(String(ev['status'] || 'draft'));
-      // Вердикт W49: формат выводится из координат (онлайн ⟺ точки нет);
-      // правка с координатами предзаполняет ссылку эквивалентной.
+      // W67 (OWN-18, ADR-0052): признак онлайна — явный format; ссылка необязательна.
       const hasCoords = String(next['lat'] || '').trim() !== '' && String(next['lon'] || '').trim() !== '';
-      setOnline(!hasCoords);
-      setMapLink(hasCoords ? equivLink(next['lon'], next['lat']) : '');
+      const onlineUrl = String(next['online_url'] || '').trim();
+      const fmt = String(next['format'] || '');
+      // Формат пустой у старых записей: выводим из ссылки/координат.
+      const isOnline = fmt === 'online' || (fmt !== 'offline' && (onlineUrl !== '' || !hasCoords));
+      next['format'] = isOnline ? 'online' : 'offline';
+      setOnline(isOnline);
+      setMapLink(!isOnline && hasCoords ? equivLink(next['lon'], next['lat']) : '');
     },
     [applyStatus],
   );
@@ -814,11 +833,15 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     (nextOnline: boolean) => {
       setOnline(nextOnline);
       if (nextOnline) {
-        // Онлайн — только даты (решение владельца 2026-09-20): точку сносим,
-        // поле ссылки и адрес чистим, их ошибки снимаем.
-        setFields((prev) => ({ ...prev, address: '', lat: '', lon: '' }));
+        // Онлайн — только даты (2026-09-20): точку сносим, адрес и ссылку на
+        // карту чистим; ссылка трансляции — отдельное поле, её не трогаем.
+        setFields((prev) => ({ ...prev, format: 'online', address: '', lat: '', lon: '' }));
         setMapLink('');
         setErrs((prev) => prev.filter((e) => e.field !== 'geo' && e.field !== 'lat' && e.field !== 'lon' && e.field !== 'address'));
+      } else {
+        // Офлайн: ссылка трансляции не нужна — чистим (W67, ADR-0052).
+        setFields((prev) => ({ ...prev, format: 'offline', online_url: '' }));
+        setErrs((prev) => prev.filter((e) => e.field !== 'online_url'));
       }
     },
     [],
@@ -1255,7 +1278,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                 const regClosed = ev.status === 'published' && regDeadlinePassed(utcMs(ev.reg_deadline_at || ''), ms, now);
                 return (
                   <li key={ev.id}>
-                    <a className={`event-card${past ? ' past' : ''}`} href={`#/manage/${ev.id}`}>
+                    {/* W129: карточка — `<div>`, а не `<a>`: ссылка на событие
+                        растянута заголовком (`.event-card-link::after`), кнопки
+                        сканера/удаления лежат отдельно и не вложены в ссылку. */}
+                    <div className={`event-card${past ? ' past' : ''}`}>
                       <div className="date-plate">
                         <span className="month">{p.month}</span>
                         <span className="day">{p.day}</span>
@@ -1271,7 +1297,11 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           )}
                           {ev.isAuthor && <span className="badge mono">{t('manage.list.author')}</span>}
                         </div>
-                        <h3 className="event-title">{ev.title}</h3>
+                        <h3 className="event-title">
+                          <a className="event-card-link" href={`#/manage/${ev.id}`}>
+                            {ev.title}
+                          </a>
+                        </h3>
                         <div className="event-meta">
                           <span className="meta-item">{utcToTime(ev.starts_at)}</span>
                         </div>
@@ -1279,11 +1309,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                             только контролёру (гейт — staffIds с сервера). */}
                         {staffIds[ev.id] && !past && (
                           <div className="app-actions" style={{ marginTop: 8 }}>
-                            <a
-                              className="btn btn-secondary"
-                              href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <a className="btn btn-secondary" href={`#/scan?event_id=${encodeURIComponent(ev.id)}`}>
                               {t('menu.btn.scanner')}
                             </a>
                           </div>
@@ -1295,18 +1321,14 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                               type="button"
                               className="btn btn-destructive"
                               id={`delete-${ev.id}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openDelete(ev.id, ev.title);
-                              }}
+                              onClick={() => openDelete(ev.id, ev.title)}
                             >
                               {t('manage.delete.btn')}
                             </button>
                           </div>
                         )}
                       </div>
-                    </a>
+                    </div>
                   </li>
                 );
               })}
@@ -1360,33 +1382,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
           )}
 
           {/* W66 (OWN-4.1): «Удалить»/«Отменить» — на первом экране события,
-              а не на последнем шаге визарда (issue #118). */}
-          {eventId && manageTab === 'event' && !done && !confirmExit && (origStatus === 'draft' || origStatus === 'published') && (
-            <div className="app-actions" id="event-danger-actions" style={{ marginBottom: 12 }}>
-              {origStatus === 'draft' && (
-                <button
-                  type="button"
-                  className="btn btn-destructive"
-                  id="delete-event"
-                  disabled={busy}
-                  onClick={() => openDelete(eventId, fields['title'])}
-                >
-                  {t('manage.delete.btn')}
-                </button>
-              )}
-              {origStatus === 'published' && (
-                <button
-                  type="button"
-                  className="btn btn-destructive"
-                  id="cancel-event-top"
-                  disabled={busy}
-                  onClick={() => setCancelSheet(true)}
-                >
-                  {t('owner.event.btn.cancel_event')}
-                </button>
-              )}
-            </div>
-          )}
+              а не на последнем шаге визарда (issue #118).
+              W129: не первым и не самым заметным — блок перенесён в конец формы,
+              в «опасную зону» (ниже полей, перед кнопками шага). */}
 
           {(!eventId || manageTab === 'event') && (confirmExit ? (
             <div className="card result bad" id="exit-confirm">
@@ -1482,7 +1480,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
 
                   <div className="field">
                     <label className="label" htmlFor="f-description">
-                      {t('field.description')}
+                      {t('field.description_optional')}
                     </label>
                     <textarea
                       className={`textarea ${fieldError('description') ? 'error' : ''}`}
@@ -1493,12 +1491,31 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       value={fields['description']}
                       onChange={(e) => setField('description', e.target.value)}
                     />
-                    <p className="helper">{t('manage.hint.description')}</p>
                     {fieldError('description') && (
                       <p className="helper error" id="e-description">
                         {fieldError('description')}
                       </p>
                     )}
+                  </div>
+
+                  {/* W125 (OWN-17): язык контента события — код RU/UZ/EN,
+                      как в переключателе языка профиля (W117). */}
+                  <div className="field">
+                    <span className="label">{t('field.lang')}</span>
+                    <div className="chip-row" role="group" aria-label={t('field.lang')}>
+                      {(['ru', 'uz', 'en'] as const).map((code) => (
+                        <button
+                          key={code}
+                          type="button"
+                          className={`btn btn-secondary btn-sm${(fields['lang'] || 'ru') === code ? ' active' : ''}`}
+                          aria-pressed={(fields['lang'] || 'ru') === code}
+                          aria-label={t(`lang.btn.${code}`)}
+                          onClick={() => setField('lang', code)}
+                        >
+                          {code.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1528,6 +1545,30 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                       </button>
                     </div>
                   </div>
+
+                  {online && (
+                    <div className="field">
+                      <label className="label" htmlFor="f-online_url">
+                        {t('field.online_url')}
+                      </label>
+                      <input
+                        className={`input ${fieldError('online_url') ? 'error' : ''}`}
+                        id="f-online_url"
+                        type="url"
+                        inputMode="url"
+                        autoComplete="off"
+                        placeholder={t('manage.online.placeholder')}
+                        value={fields['online_url'] || ''}
+                        onChange={(e) => setField('online_url', e.target.value)}
+                      />
+                      <p className="helper">{t('manage.online.hint')}</p>
+                      {fieldError('online_url') && (
+                        <p className="helper error" id="e-online_url">
+                          {fieldError('online_url')}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {!online && (
                     <>
@@ -1727,6 +1768,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                     <div className="event-body">
                       <div className="event-top">
                         <span className="event-status">{t(`status.${previewStatus}`)}</span>
+                        <span className="badge mono" title={t('field.lang')}>
+                          {String(fields['lang'] || 'ru').toUpperCase()}
+                        </span>
                       </div>
                       <h3 className="event-title">{fields['title'] || t('field.title')}</h3>
                       <div className="event-meta">
@@ -1804,6 +1848,36 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                 </div>
               )}
 
+              {/* W129: «опасная зона» — удаление/отмена внизу формы, ниже полей
+                  и не первым элементом; доступность кнопок сохранена. */}
+              {eventId && manageTab === 'event' && !done && !confirmExit && (origStatus === 'draft' || origStatus === 'published') && (
+                <div className="danger-zone" id="event-danger-actions">
+                  <div className="section-label">{t('manage.danger.section')}</div>
+                  {origStatus === 'draft' && (
+                    <button
+                      type="button"
+                      className="btn btn-destructive btn-block"
+                      id="delete-event"
+                      disabled={busy}
+                      onClick={() => openDelete(eventId, fields['title'])}
+                    >
+                      {t('manage.delete.btn')}
+                    </button>
+                  )}
+                  {origStatus === 'published' && (
+                    <button
+                      type="button"
+                      className="btn btn-destructive btn-block"
+                      id="cancel-event-top"
+                      disabled={busy}
+                      onClick={() => setCancelSheet(true)}
+                    >
+                      {t('owner.event.btn.cancel_event')}
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="sticky-actions">
                 {step > 0 && (
                   <button type="button" className="btn btn-secondary" id="wizard-prev" onClick={prevStep}>
@@ -1870,7 +1944,10 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           </div>
                         </div>
                       </div>
-                      <div className="tabs" id="parts-filter" role="tablist" style={{ marginBottom: 12 }}>
+                      {/* W129: фильтры участников — `.segmented.wrap` эталона,
+                          а не `.tabs`: четыре подписи со счётчиками переносятся
+                          и видны целиком, без горизонтальной прокрутки. */}
+                      <div className="segmented wrap" id="parts-filter" role="tablist">
                         {(
                           [
                             ['all', 'participants.filter.btn.all', parts.rows.length],
@@ -1884,7 +1961,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                             type="button"
                             role="tab"
                             aria-selected={partsFilter === key}
-                            className={`tab${partsFilter === key ? ' active' : ''}`}
+                            className={`btn btn-secondary btn-sm${partsFilter === key ? ' active' : ''}`}
                             id={`f-${key}`}
                             onClick={() => setPartsFilter(key)}
                           >

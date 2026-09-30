@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { t, loadI18n } from '../lib/i18n';
-import { getTelegram, hapticNotification } from '../lib/telegram';
+import { getTelegram, hapticNotification, openExternal } from '../lib/telegram';
 import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MY_QR_API, EVENTS_API, REG_API } from '../lib/api';
@@ -34,6 +34,11 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
 
   // Для заголовка после i18n
   const [title, setTitle] = useState('AI Qadam Events');
+
+  // W67 (OWN-18): онлайн-событие — вместо QR ссылка на трансляцию (может ещё
+  // не быть задана: тогда «появится позже», без QR).
+  const [online, setOnline] = useState(false);
+  const [streamUrl, setStreamUrl] = useState('');
 
   // W51: контекст события над QR (прототип ticket-top) — название/дата/адрес
   // из публичной афиши, чтобы при нескольких билетах было видно, чей QR открыт.
@@ -140,7 +145,13 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
         return;
       }
       const data = res.data as Record<string, unknown>;
-      if (data['ok'] && data['payload']) {
+      if (data['ok'] && (data['online'] === true || data['online'] === 'true')) {
+        // W67: QR для онлайна не генерируется. Ссылка есть — кнопка, нет — «позже».
+        const u = String(data['url'] || '');
+        setOnline(true);
+        setStreamUrl(u);
+        showStatus(u ? 'ticket.online.ready' : 'ticket.online.pending');
+      } else if (data['ok'] && data['payload']) {
         renderQr(String(data['payload']));
         showStatus('ticket.show_at_entrance');
       } else if (data['error'] === 'not_registered' || data['error'] === 'invalid_init_data') {
@@ -303,6 +314,15 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
     }
   }, [dictLoaded]);
 
+  // W131 (ADR-0053): тип события известен после ответа my-qr-api — на онлайне
+  // заголовок/документ говорят о трансляции, а не о QR.
+  useEffect(() => {
+    if (!dictLoaded) return;
+    const key = online ? 'ticket.title_online' : 'ticket.title';
+    setTitle(t(key));
+    document.title = t(key);
+  }, [online, dictLoaded]);
+
   const statusText = cancelled || (statusKey ? t(statusKey) : errorText);
   const retryLabel = t('ticket.retry');
   // Название для подтверждения отмены — как в прототипе: без «ёлочек».
@@ -312,28 +332,39 @@ export default function Ticket({ eventId, fromApp = false }: { eventId: string; 
     <main style={{ maxWidth: 384, margin: '0 auto', padding: 16, textAlign: 'center' }}>
       <BackButton show={fromApp} onBack={handleBack} />
       <div className={`card ticket-card ${isError && !cancelled ? 'error' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        <h1 className="empty-heading" id="title">
-          {title}
-        </h1>
-        {evTitle && (
-          <div className="ticket-top" id="ticket-event">
-            <div className="ticket-event">{evTitle}</div>
-            {evWhen && (
-              <div className="ticket-when">
-                <Icon name="calendar" size={15} />
-                <span>{evWhen}</span>
-              </div>
-            )}
-            {evAddress && (
-              <div className="ticket-when">
-                <Icon name="map-pin" size={15} />
-                <span>{evAddress}</span>
-              </div>
-            )}
-            <MapLinks lat={evLat} lon={evLon} address={evAddress} />
-          </div>
+        {/* W128: один заголовок — название события. Дубль «Ваш QR для входа»
+            убран: `ticket.title` остаётся только фолбэком, пока контекст
+            события не подгрузился (и в document.title). */}
+        <div className="ticket-top" id="ticket-event">
+          <h1 className="ticket-event" id="title">
+            {evTitle || (dictLoaded ? t(online ? 'ticket.title_online' : 'ticket.title') : '')}
+          </h1>
+          {evWhen && (
+            <div className="ticket-when">
+              <Icon name="calendar" size={15} />
+              <span>{evWhen}</span>
+            </div>
+          )}
+          {!online && evAddress && (
+            <div className="ticket-when">
+              <Icon name="map-pin" size={15} />
+              <span>{evAddress}</span>
+            </div>
+          )}
+          {!online && <MapLinks lat={evLat} lon={evLon} address={evAddress} />}
+        </div>
+        {!cancelled && !online && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
+        {!cancelled && streamUrl && (
+          <button
+            type="button"
+            className="btn btn-primary btn-block"
+            id="open-stream"
+            onClick={() => openExternal(streamUrl)}
+          >
+            <Icon name="external" />
+            {t('ticket.btn.stream')}
+          </button>
         )}
-        {!cancelled && <div ref={qrElRef} className="qr-plate" data-theme="light" id="qr" />}
         <p className="empty-desc msg" id="status" role="status" style={{ margin: '16px 0 0' }}>
           {statusText}
         </p>

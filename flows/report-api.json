@@ -1,0 +1,416 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "report-api",
+  "localeSource": null,
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "catch_webhook",
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "verify initData",
+      "name": "step_1",
+      "nextAction": {
+        "children": [
+          {
+            "displayName": "invalid init data response",
+            "name": "step_3",
+            "nextAction": {
+              "displayName": "respond (invalid init data)",
+              "name": "step_4",
+              "settings": {
+                "actionName": "return_response",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "fields": {
+                    "body": {
+                      "error": "{{step_3['output'].error}}",
+                      "ok": "{{step_3['output'].ok}}",
+                      "text": "{{step_3['output'].text}}"
+                    },
+                    "headers": {},
+                    "status": "{{step_3['output'].httpStatus}}"
+                  },
+                  "respond": "stop",
+                  "responseType": "json"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-webhook",
+                "qadamVersion": "0.1.38"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "texts": {
+                  "report.error.init": "{{$t['report.error.init']}}"
+                }
+              },
+              "sourceCode": {
+                "code": "export const code = async (inputs) => {\n  // W123: невалидный/просроченный initData — 401 до любых обращений к таблице.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const text = String(texts['report.error.init'] || 'report.error.init');\n  return { httpStatus: 401, ok: false, error: 'invalid_init_data', text: text };\n};",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          },
+          {
+            "displayName": "validate report",
+            "name": "step_5",
+            "nextAction": {
+              "children": [
+                {
+                  "displayName": "respond (reject)",
+                  "name": "step_7",
+                  "settings": {
+                    "actionName": "return_response",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "fields": {
+                        "body": {
+                          "error": "{{step_5['output'].error}}",
+                          "fields": "{{step_5['output'].fields}}",
+                          "ok": "{{step_5['output'].ok}}",
+                          "text": "{{step_5['output'].text}}"
+                        },
+                        "headers": {},
+                        "status": "{{step_5['output'].httpStatus}}"
+                      },
+                      "respond": "stop",
+                      "responseType": "json"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-webhook",
+                    "qadamVersion": "0.1.38"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "write report",
+                  "name": "step_8",
+                  "nextAction": {
+                    "displayName": "respond (saved)",
+                    "name": "step_9",
+                    "settings": {
+                      "actionName": "return_response",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "fields": {
+                          "body": {
+                            "ok": true,
+                            "text": "{{step_5['output'].text}}"
+                          },
+                          "headers": {},
+                          "status": 200
+                        },
+                        "respond": "stop",
+                        "responseType": "json"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-webhook",
+                      "qadamVersion": "0.1.38"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-create-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "table_id": "LKEqlq1X7RuWz5WC4zkov",
+                      "values": {
+                        "values": [
+                          {
+                            "2pkq2z4UxPaBOpkFrNcxZ": "{{step_5['output'].reportText}}",
+                            "BlWlLNDJBPyPWzV4ZHDpE": "miniapp",
+                            "O7synV9WJ1iBxu7FSiCia": "{{step_5['output'].eventId}}",
+                            "S1uNdyJE9CeC0qsHMiM6Y": "new",
+                            "UEqoFiL14RSnsOHW711lF": "{{step_5['output'].context}}",
+                            "l9s5a9h6Z7pFnksSRfZ0t": "{{step_5['output'].kind}}",
+                            "s786ml5lOzEbw02nC0pHk": "{{step_5['output'].route}}",
+                            "suhwdR7GjaLmSdzUIogjm": "{{step_5['output'].createdAt}}",
+                            "wiYzzqiHQP9vfWgDgQ9ki": "{{step_5['output'].telegramId}}",
+                            "yiqF3pdUMkj3hqwCGUip9": "{{step_5['output'].appVersion}}"
+                          }
+                        ]
+                      }
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.4.6"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                {
+                  "displayName": "respond (unexpected outcome — fail closed)",
+                  "name": "step_10",
+                  "settings": {
+                    "actionName": "return_response",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "fields": {
+                        "body": {
+                          "error": "server",
+                          "ok": false,
+                          "text": "{{$t['report.error.server']}}"
+                        },
+                        "headers": {},
+                        "status": 500
+                      },
+                      "respond": "stop",
+                      "responseType": "json"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-webhook",
+                    "qadamVersion": "0.1.38"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                }
+              ],
+              "displayName": "outcome",
+              "name": "step_6",
+              "settings": {
+                "branches": [
+                  {
+                    "branchName": "reject",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_5['output'].outcome}}",
+                          "operator": "TEXT_DOES_NOT_EXACTLY_MATCH",
+                          "secondValue": "ok"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "ok",
+                    "branchType": "CONDITION",
+                    "conditions": [
+                      [
+                        {
+                          "firstValue": "{{step_5['output'].outcome}}",
+                          "operator": "TEXT_EXACTLY_MATCHES",
+                          "secondValue": "ok"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "branchName": "Otherwise",
+                    "branchType": "FALLBACK"
+                  }
+                ],
+                "executionType": "EXECUTE_FIRST_MATCH"
+              },
+              "type": "ROUTER",
+              "valid": true
+            },
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "appVersion": "{{trigger['output'].body.appVersion}}",
+                "context": "{{trigger['output'].body.context}}",
+                "eventId": "{{trigger['output'].body.eventId}}",
+                "hmac": "{{step_1['output'].data}}",
+                "kind": "{{trigger['output'].body.kind}}",
+                "route": "{{trigger['output'].body.route}}",
+                "text": "{{trigger['output'].body.text}}",
+                "texts": {
+                  "report.error.init": "{{$t['report.error.init']}}",
+                  "report.error.kind": "{{$t['report.error.kind']}}",
+                  "report.error.long": "{{$t['report.error.long']}}",
+                  "report.error.text": "{{$t['report.error.text']}}",
+                  "report.ok": "{{$t['report.ok']}}"
+                }
+              },
+              "sourceCode": {
+                "code": "export const code = async (inputs) => {\n  // W123: валидация сообщения о проблеме. Staff-гейта нет — пожаловаться\n  // может любой, у кого валидный initData. text обязателен (≤2000), kind —\n  // из объявленного набора; eventId — только контекст, не гейт прав, поэтому\n  // хранится лишь в форме нашего slug (иначе пусто).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n\n  const base = {\n    ok: false, error: '', text: '', httpStatus: 200, fields: {},\n    telegramId: telegramId, kind: '', reportText: '', route: '',\n    eventId: '', appVersion: '', context: '', status: 'new', createdAt: ''\n  };\n\n  if (!/^\\d{1,20}$/.test(telegramId)) {\n    return Object.assign({}, base, { outcome: 'invalid', httpStatus: 401, error: 'invalid_init_data', text: t('report.error.init') });\n  }\n\n  const allowed = { broken: true, text: true, message: true, other: true };\n  const kind = str(inputs.kind);\n  if (!allowed[kind]) {\n    return Object.assign({}, base, { outcome: 'validation', httpStatus: 422, error: 'validation', text: t('report.error.kind'), fields: { kind: 'report.error.kind' } });\n  }\n\n  const reportText = str(inputs.text).trim();\n  if (!reportText) {\n    return Object.assign({}, base, { outcome: 'validation', httpStatus: 422, error: 'validation', text: t('report.error.text'), fields: { text: 'report.error.text' } });\n  }\n  if (reportText.length > 2000) {\n    return Object.assign({}, base, { outcome: 'validation', httpStatus: 422, error: 'validation', text: t('report.error.long'), fields: { text: 'report.error.long' } });\n  }\n\n  const rawEvent = str(inputs.eventId);\n  const eventId = /^[A-Za-z0-9_]{1,64}$/.test(rawEvent) ? rawEvent : '';\n  const route = str(inputs.route).slice(0, 200);\n  const appVersion = str(inputs.appVersion).slice(0, 64);\n  const context = str(inputs.context).slice(0, 2000);\n\n  return Object.assign({}, base, {\n    outcome: 'ok', ok: true, kind: kind, reportText: reportText,\n    route: route, eventId: eventId, appVersion: appVersion,\n    context: context, createdAt: new Date().toISOString(), text: t('report.ok')\n  });\n};",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          },
+          {
+            "displayName": "respond (unexpected initData check outcome — fail closed)",
+            "name": "step_11",
+            "settings": {
+              "actionName": "return_response",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "fields": {
+                  "body": {
+                    "error": "invalid_init_data",
+                    "ok": false,
+                    "text": "{{$t['report.error.init']}}"
+                  },
+                  "headers": {},
+                  "status": 401
+                },
+                "respond": "stop",
+                "responseType": "json"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-webhook",
+              "qadamVersion": "0.1.38"
+            },
+            "type": "PIECE",
+            "valid": true
+          }
+        ],
+        "displayName": "initData valid?",
+        "name": "step_2",
+        "settings": {
+          "branches": [
+            {
+              "branchName": "invalid",
+              "branchType": "CONDITION",
+              "conditions": [
+                [
+                  {
+                    "firstValue": "{{step_1['output'].data.valid}}",
+                    "operator": "TEXT_DOES_NOT_EXACTLY_MATCH",
+                    "secondValue": "true"
+                  }
+                ]
+              ]
+            },
+            {
+              "branchName": "valid",
+              "branchType": "CONDITION",
+              "conditions": [
+                [
+                  {
+                    "firstValue": "{{step_1['output'].data.valid}}",
+                    "operator": "TEXT_EXACTLY_MATCHES",
+                    "secondValue": "true"
+                  }
+                ]
+              ]
+            },
+            {
+              "branchName": "Otherwise",
+              "branchType": "FALLBACK"
+            }
+          ],
+          "executionType": "EXECUTE_FIRST_MATCH"
+        },
+        "type": "ROUTER",
+        "valid": true
+      },
+      "settings": {
+        "actionName": "callFlow",
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "executionMode": "inline",
+          "flow": {
+            "exampleData": {
+              "sampleData": {}
+            },
+            "externalId": "TIZvQYTCBVJMsMWNC5EbK"
+          },
+          "flowProps": {
+            "payload": {
+              "botToken": "{{variables['BOT_TOKEN']}}",
+              "initData": "{{trigger['output'].body.initData}}",
+              "maxAgeSeconds": 300
+            }
+          },
+          "mode": "simple",
+          "waitForResponse": true
+        },
+        "propertySettings": {},
+        "qadamName": "@aiqadam/qadam-subflows",
+        "qadamVersion": "0.4.17"
+      },
+      "type": "PIECE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "authFields": {},
+        "authType": "none"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-webhook",
+      "qadamVersion": "0.1.38",
+      "triggerName": "catch_webhook"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

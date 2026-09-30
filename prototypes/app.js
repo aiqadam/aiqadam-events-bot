@@ -1,6 +1,7 @@
 // Прототип W41 — мок Mini App (ADR-0027).
 // Hash-роутер как у продукта: #/ticket, #/scan, #/manage, #/manage/:id,
-// #/events, #/feedback (пятый роут принят ADR-0028, W45). Фейковые данные, никаких вызовов
+// #/events, #/feedback (пятый роут принят ADR-0028, W45), #/report (шестой —
+// ADR-0050, W123). Фейковые данные, никаких вызовов
 // (ADR-0026). Экраны — как продукт: брендовые токены, компоненты и иконки
 // Lucide; требования SPEC — в отдельном шите трассировки.
 'use strict';
@@ -35,6 +36,9 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   let wizardDraft = null;
   let feedbackRating = 0;
   let feedbackSent = false;
+  let reportKind = 'broken';
+  let reportText = '';
+  let reportSent = false;
   let staffQuery = '';
   let staffInviteShown = false;
 
@@ -86,6 +90,14 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     return a;
   }
   function badge(text, kind) { return E('span', 'badge' + (kind ? ' badge-' + kind : ''), text); }
+  // W125: язык контента события — тихий чип-метка (коды RU/UZ/EN, как в
+  // переключателе языка W117). Значение — код, не пользовательская строка.
+  function langChip(code) {
+    const b = E('span', 'badge mono', String(code || 'ru').toUpperCase());
+    b.title = T('field.lang');
+    b.setAttribute('aria-label', T('field.lang') + ': ' + String(code || 'ru').toUpperCase());
+    return b;
+  }
   function initials(name) {
     return String(name || '?').split(/\s+/).slice(0, 2).map((w) => w[0] || '').join('').toUpperCase();
   }
@@ -570,6 +582,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       deadlineLocal: src ? (src.deadlineLocal || '') : '',
       capacity: src && src.capacity ? String(src.capacity) : '',
       overbook: src && src.overbook ? String(src.overbook) : '',
+      lang: src ? (src.lang || 'ru') : 'ru',
     };
     return wizardDraft;
   }
@@ -647,7 +660,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
   }
 
   function renderWizard(body, isNew) {
-    PROTO.setTrace(['OWN-1', 'OWN-2', 'OWN-3', 'OWN-4', 'OWN-5', 'OWN-6', 'OWN-15']);
+    PROTO.setTrace(['OWN-1', 'OWN-2', 'OWN-3', 'OWN-4', 'OWN-5', 'OWN-6', 'OWN-15', 'OWN-17']);
     const f = wizardFields(eventId);
     const step = WIZARD_STEPS[wizardStep];
     const errs = wizardErrors(f);
@@ -726,6 +739,18 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       error: show ? errors.description : '',
       onInput: (e) => { f.description = e.target.value; },
     }));
+    // W125: язык контента события — коды RU/UZ/EN, дефолт `ru`. Язык
+    // интерфейса и рассылок не меняется (OWN-17).
+    const loc = E('div', 'app-field');
+    loc.appendChild(E('label', 'label', T('field.lang')));
+    const mode = E('div', 'segmented');
+    ['ru', 'uz', 'en'].forEach((code) => {
+      const b = btn(code.toUpperCase(), { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { f.lang = code; renderManageEvent(eventId); } });
+      if (f.lang === code) b.classList.add('active');
+      mode.appendChild(b);
+    });
+    loc.appendChild(mode);
+    sec.appendChild(loc);
     body.appendChild(sec);
   }
 
@@ -862,6 +887,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const top = E('div', 'event-top');
     const isDraft = String(eventId) === '5' || eventId === 'new';
     top.appendChild(E('span', 'event-status', (isDraft ? T('status.draft') : T('status.published')).toUpperCase()));
+    top.appendChild(langChip(f.lang));
     b.appendChild(top);
     b.appendChild(E('div', 'event-title', String(f.title || '').trim() || T('manage.err.title_length')));
     const meta = E('div', 'ev-meta');
@@ -1196,7 +1222,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
       ['past', T('events.list.btn.past')],
       ['profile', T('profile.tab')],
     ];
-    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2', 'OWN-6']);
+    PROTO.setTrace(['PAR-3', 'PAR-4', 'ADR-0023', 'PAR-1', 'PAR-2', 'IDM-1', 'STF-2', 'OWN-6', 'OWN-17']);
     clear();
 
     const tw = E('div', 'tabs-wrap');
@@ -1272,6 +1298,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     const top = E('div', 'event-top');
     top.appendChild(E('span', 'event-status', (ev.status === 'finished' ? T('status.finished') : T('status.published')).toUpperCase()));
     if (ev.tag) top.appendChild(badge('#' + ev.tag, 'primary'));
+    top.appendChild(langChip(ev.lang));
     body.appendChild(top);
     body.appendChild(E('div', 'event-title', ev.title));
     const meta = E('div', 'ev-meta');
@@ -1417,6 +1444,13 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     // меняется (в продукте тот же текст, W60).
     screen.appendChild(E('div', 'helper', T('profile.pdn_done', { when: p.pdnAt })));
 
+    // Вход в форму сообщения о проблеме (Q62, ADR-0050): место в табе «Профиль»,
+    // как предлагает Q62.
+    const reportSec = E('div', 'form-section');
+    reportSec.appendChild(btn(T('report.title'), { kind: 'btn-outline', block: true, icon: 'alert', onClick: () => go('#/report') }));
+    reportSec.appendChild(E('div', 'helper', T('report.entry_hint')));
+    screen.appendChild(reportSec);
+
     const acts = E('div', 'sticky-actions');
     acts.appendChild(btn(T('manage.btn.save'), {
       kind: 'btn-primary', onClick: () => {
@@ -1557,6 +1591,75 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     PROTO.setDemo([]);
   }
 
+  // ---------- роут: сообщение о проблеме (шестой роут, Q62, ADR-0050) ----------
+  // Форма из Q62: без серверной части и прав — пожаловаться может
+  // любой. Поля контекста (экран, версия, событие) прикладываются сами, их не
+  // вводят. Требование — SPEC PAR-12, ADR-0050.
+  function renderReport() {
+    PROTO.setTrace(['ADR-0050', 'Q62']);
+    clear();
+
+    if (reportSent) {
+      const ok = E('div', 'sheet-success');
+      const ic = E('div', 'success-icon');
+      ic.appendChild(PROTO.icon('check-circle', 34));
+      ok.appendChild(ic);
+      ok.appendChild(E('div', 'success-title', T('report.done_title')));
+      ok.appendChild(E('div', 'app-muted', T('report.done')));
+      screen.appendChild(ok);
+      const acts = E('div', 'app-actions');
+      acts.appendChild(linkBtn(T('feedback.to_events'), '#/events', 'btn-primary'));
+      screen.appendChild(acts);
+      PROTO.setDemo([
+        { label: T('proto.report_reset'), onClick: () => { reportSent = false; reportText = ''; reportKind = 'broken'; renderReport(); } },
+      ]);
+      return;
+    }
+
+    screen.appendChild(E('div', 'app-title', T('report.title')));
+    screen.appendChild(E('div', 'app-muted', T('report.lead')));
+
+    const kindSec = E('div', 'form-section');
+    kindSec.appendChild(E('div', 'section-label', T('report.kind_label')));
+    const kinds = E('div', 'segmented wrap');
+    const kindDefs = [
+      ['broken', T('report.kind.broken')],
+      ['text', T('report.kind.text')],
+      ['message', T('report.kind.message')],
+      ['other', T('report.kind.other')],
+    ];
+    kindDefs.forEach(([key, label]) => {
+      const b = btn(label, { kind: 'btn-secondary', size: 'btn-sm', onClick: () => { reportKind = key; renderReport(); } });
+      if (reportKind === key) b.classList.add('active');
+      kinds.appendChild(b);
+    });
+    kindSec.appendChild(kinds);
+    screen.appendChild(kindSec);
+
+    const textSec = E('div', 'form-section');
+    textSec.appendChild(field(T('report.text_label'), reportText, {
+      textarea: true,
+      placeholder: T('report.placeholder'),
+      onInput: (e) => { reportText = e.target.value; paintSubmit(); },
+    }));
+    screen.appendChild(textSec);
+    screen.appendChild(E('div', 'helper', T('report.context')));
+
+    const acts = E('div', 'sticky-actions');
+    const submit = btn(T('report.submit'), {
+      kind: 'btn-primary', block: true, disabled: !reportText.trim(),
+      onClick: () => { reportSent = true; renderReport(); },
+    });
+    acts.appendChild(submit);
+    screen.appendChild(acts);
+    function paintSubmit() { submit.disabled = !reportText.trim(); }
+
+    PROTO.setDemo([
+      { label: T('proto.report_autofill'), onClick: () => { reportKind = 'broken'; reportText = 'В табе «Профиль» не сохраняется компания.'; renderReport(); } },
+      { label: T('proto.report_sent'), active: reportSent, onClick: () => { reportSent = true; renderReport(); } },
+    ]);
+  }
+
   // ---------- роутер ----------
   function parseRoute() {
     const p = currentHash();
@@ -1566,6 +1669,7 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     if (p.startsWith('/manage/')) return { name: 'manage-event', id: p.slice('/manage/'.length).split('/')[0] || 'new' };
     if (p === '/events' || p === '/events/') return { name: 'events' };
     if (p === '/feedback' || p === '/feedback/') return { name: 'feedback' };
+    if (p === '/report' || p === '/report/') return { name: 'report' };
     return { name: 'index' };
   }
 
@@ -1583,11 +1687,12 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     }
     else if (r.name === 'events') {
       const tab = hashParams.get('tab');
-      catalogTab = (tab === 'upcoming' || tab === 'past') ? tab : 'mine';
+      catalogTab = (tab === 'upcoming' || tab === 'past' || tab === 'profile') ? tab : 'mine';
       catalogEmpty = false;
       renderEvents();
     }
     else if (r.name === 'feedback') { feedbackSent = false; feedbackRating = 0; renderFeedback(); }
+    else if (r.name === 'report') { reportSent = false; reportText = ''; reportKind = 'broken'; renderReport(); }
     else {
       // Точка входа продукта — каталог с «Моими билетами» (вердикт владельца).
       history.replaceState(null, '', appHref('#/events'));

@@ -8,6 +8,8 @@ const Manage = lazy(() => import('./routes/Manage'));
 const Events = lazy(() => import('./routes/Events'));
 // W45 (ADR-0028): пятая страница SPA — форма отзыва.
 const Feedback = lazy(() => import('./routes/Feedback'));
+// W123 (ADR-0050): шестая страница SPA — форма сообщения о проблеме.
+const Report = lazy(() => import('./routes/Report'));
 
 type Route =
   | { name: 'ticket'; eventId: string }
@@ -15,6 +17,7 @@ type Route =
   | { name: 'manage'; eventId: string }
   | { name: 'events'; tab: 'mine' | 'upcoming' | 'past' | 'profile' }
   | { name: 'feedback'; eventId: string }
+  | { name: 'report'; eventId: string; from: string }
   | { name: 'notfound'; hash: string };
 
 function parseHash(hash: string): Route {
@@ -54,6 +57,10 @@ function parseHash(hash: string): Route {
     // W45 (ADR-0028): вход из послесловия и из «Прошедших» в #/events.
     return { name: 'feedback', eventId: getEventId() };
   }
+  if (pathPart === '/report' || pathPart === '/report/') {
+    // W123 (ADR-0050): вход из «Профиля» (?from=profile) и кнопки меню (?from=menu).
+    return { name: 'report', eventId: getEventId(), from: search.get('from') || '' };
+  }
   // legacy support: ticket.html?event_id= etc — если кто-то открыл старый URL без hash, hash будет пустой, но location.search содержит event_id
   // Мы не можем отличить, но App может проверить location.search как fallback для ticket/scan
   return { name: 'notfound', hash };
@@ -67,7 +74,8 @@ function isAppRoute(r: Route): boolean {
     r.name === 'scan' ||
     r.name === 'manage' ||
     r.name === 'events' ||
-    r.name === 'feedback'
+    r.name === 'feedback' ||
+    r.name === 'report'
   );
 }
 
@@ -148,6 +156,7 @@ export default function App() {
       {route.name === 'manage' && <Manage eventId={route.eventId} />}
       {route.name === 'events' && <Events tab={route.tab} />}
       {route.name === 'feedback' && <Feedback eventId={route.eventId} fromApp={fromApp} />}
+      {route.name === 'report' && <Report eventId={route.eventId} from={route.from} fromApp={fromApp} />}
     </Suspense>
   );
 }

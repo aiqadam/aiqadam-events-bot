@@ -1,12 +1,14 @@
 # Таблицы: как читать этот каталог и как воспроизвести схему
 
-Живое состояние — 11 доменных таблиц в проекте `events-dev`, собраны в
+Живое состояние — 16 доменных таблиц в проекте `events-dev`, собраны в
 пакете W1 ([журнал](../../docs/work/W01-tables.md)), плюс служебная
 [`migrations`](migrations.md) (W31, [ADR-0021](../../docs/adr/0021-repo-is-source-of-truth-migrations-table.md));
 `staff` заведена в [W32](../../docs/work/W32-owners-initdata.md)
 ([ADR-0024](../../docs/adr/0024-staff-by-chapter-event-staff-checkin.md)),
 [`feedback`](feedback.md) — в [W45](../../docs/BACKLOG.md#w45-послесловие-благодарность-и-форма-отзыва)
-([ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)).
+([ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)),
+[`reports`](reports.md) — в [W123](../../docs/BACKLOG.md#w123-сообщение-о-проблеме-из-продукта-q62--экран-mini-app)
+([ADR-0050](../../docs/adr/0050-sixth-miniapp-page-report.md)).
 Домен викторины — `quizzes`, `quiz_questions`, `quiz_attempts`, `quiz_answers` —
 в [W103](../../docs/BACKLOG.md#w103-викторина-в-боте-свободный-ответ-окно-одна-попытка)
 ([ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md)). Модель и смысл полей —

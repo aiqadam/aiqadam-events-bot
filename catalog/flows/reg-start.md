@@ -23,12 +23,12 @@
 | step_3 | CODE «decide outcome» | `existing` / `onboard` / `register` / `declined` (семь причин, включая `internal_error`); гейт профиля: заполнен → `register` со строкой профиля, иначе `onboard`; **`needsLang` — `users.lang` пуст (W114)** |
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
-| step_7→8 (`existing`) | CODE `reg.already` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1) |
-| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`) — нажатие «Согласен» и есть согласие; согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72). **При `needsLang` — вместо согласия вопрос `lang.ask` с тремя кнопками `ob:lang:ru\|uz\|en` (W114)**; выводит `sessionStep` (`ob_lang`/`ob_consent`) |
+| step_7→8 (`existing`) | CODE `reg.already`/`reg.already_online` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1); формат из `step_3.format` — онлайн получает текст и кнопку «Открыть билет» без QR (W131) |
+| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`) — нажатие «Согласен» и есть согласие; согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72); в фактах — язык контента (`event.card.lang`, W125/OWN-17). **При `needsLang` — вместо согласия вопрос `lang.ask` с тремя кнопками `ob:lang:ru\|uz\|en` (W114)**; выводит `sessionStep` (`ob_lang`/`ob_consent`) |
 | step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
 | step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии; `step` — из `step_9.sessionStep` (`ob_lang`/`ob_consent`, W114) |
 | step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step` — из `step_9.sessionStep` |
-| step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`); ссылка на карту — та же проверка, что в `step_9` (W72) |
+| step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`); ссылка на карту — та же проверка, что в `step_9` (W72); язык контента — в фактах (`event.card.lang`, W125/OWN-17) |
 | step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
 | step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
 | step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
@@ -39,7 +39,7 @@
 
 - **Таблицы**: `events`, `registrations`, `users` (чтение), `sessions` (запись)
 - **Флоу**: вызывается из `tg-router`; продолжает `reg-profile` (ветки `onboard`/`register`)
-- **Переменные**: `MINIAPP_URL` (кнопка QR в ветке `existing`)
+- **Переменные**: `MINIAPP_URL` (кнопка билета в ветке `existing`; надпись — «Показать QR» офлайн или «Открыть билет» онлайн, W131)
 - **Connections**: connection среды ([environments.md](../environments.md))
 
 ## Заметки
@@ -70,6 +70,11 @@
   в Атлантике, а без проверки диапазона — на произвольную «координату». Guard в
   `reg-profile`/`reg-consent-mkt` завёл W76 (без диапазона), диапазон восстановлен
   W72 (#124) — как и здесь.
+- **Язык контента события — факт карточки (OWN-17, W125).** `step_3` кладёт
+  `lang` из строки события (`ev.lang || 'ru'`) в `base`; `step_9`/`step_14`
+  печатают `event.card.lang` в фактах. Пустое значение старой записи читается
+  как `ru` — данные не перезаписываются. Язык интерфейса и рассылок это не
+  меняет.
 - **`step_12` читает профиль по `externalId` полей `users`, не по `id`.**
   У каждого поля таблицы два идентификатора (гоча CLAUDE.md №1): `columns`
   на чтении терпит `id` молча (отдаёт `null`), `values` на записи — нет.
@@ -103,7 +108,9 @@
   Пустой `overbook_pct` читается как **40**, пустой `capacity` — как «лимита нет».
 - **Ветка `existing` проверяется раньше состояния события**: у уже
   зарегистрированного участника отменённое или завершённое событие всё равно
-  даёт `existing` с кнопкой QR, а не отказ.
+  даёт `existing` с кнопкой билета, а не отказ; на онлайне (`format=online`)
+  текст и надпись кнопки — без QR
+  ([ADR-0053](../../docs/adr/0053-online-event-no-qr-wording.md), W131).
 - **Страховка от молчаливой потери тапа** ([Q32](../../docs/OPEN-QUESTIONS.md#q32)).
   `step_1`/`step_2` — `continueOnFailure`;   `step_3` читает их `error` и, если
   чтение упало, декларирует `reason: 'internal_error'` — уходит в уже

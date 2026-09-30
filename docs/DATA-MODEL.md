@@ -70,9 +70,12 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `chapter_id` | text → `chapters.id` | чаптер события; сейчас общий `1` ([ADR-0024](adr/0024-staff-by-chapter-event-staff-checkin.md), [Q8](OPEN-QUESTIONS.md#q8)) |
 | `title` | text | |
 | `description` | text | |
+| `lang` | text | `ru` \| `uz` \| `en` — язык контента (`title`/`description`), дефолт `ru` (OWN-17); пусто у старых записей читается как `ru` |
 | `photo_file_id` | text | Telegram `file_id`, не URL |
-| `address` | text | адрес текстом |
-| `lat`, `lon` | number | для `sendVenue` (OWN-2) |
+| `address` | text | адрес текстом (офлайн) |
+| `format` | enum | `online` \| `offline` — **признак формата события** (OWN-18, [ADR-0052](adr/0052-event-format-field-online-offline.md)); пусто у старых записей читается как офлайн, кроме непустой `online_url` |
+| `online_url` | text | ссылка трансляции (`https://…`), **необязательна** у онлайна и может появиться позже; у офлайна не используется |
+| `lat`, `lon` | number | для `sendVenue` (OWN-2); у онлайна пусты |
 | `starts_at` | timestamp UTC | |
 | `ends_at` | timestamp UTC | по нему автопереход в `finished` (OWN-4) |
 | `reg_deadline_at` | timestamp UTC | |
@@ -82,6 +85,15 @@ dropdown-значения и рецепт пересборки — [catalog/tabl
 | `published_at`, `cancelled_at`, `finished_at` | timestamp | |
 
 Ссылка на Яндекс.Карты **не хранится** — генерируется из `lat`/`lon` (OWN-2).
+
+**Формат события (онлайн/офлайн)** — явное поле `format`
+([ADR-0052](adr/0052-event-format-field-online-offline.md), отменяет «неявный
+признак» из [ADR-0051](adr/0051-online-event-link-instead-of-qr.md) и
+[Q63](OPEN-QUESTIONS.md#q63)). Онлайн не зависит от наличия ссылки: ссылку
+можно задать позже. У нового онлайн-события `address`/`lat`/`lon` пусты. При
+переводе существующего события офлайн → онлайн старые `address`/`lat`/`lon`
+**автоматически не очищаются** (пустое значение Tables = «не менять»); очистка —
+хвост W67, отдельным пакетом ([ADR-0051](adr/0051-online-event-link-instead-of-qr.md) п. 5).
 
 Эффективный лимит регистраций (OWN-15):
 
@@ -126,8 +138,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 ### notify-on-change
 
 Правка опубликованного события рассылает уведомление зарегистрированным (OWN-5),
-если изменилось любое из: `starts_at`, `ends_at`, `address`, `lat`, `lon`, `title`,
-`reg_deadline_at`, `status`.
+если изменилось любое из: `starts_at`, `ends_at`, `address`, `format`,
+`online_url`, `lat`, `lon`, `title`, `reg_deadline_at`, `status`.
 
 Изменение `description`, `photo_file_id`, `capacity` — **не** повод для рассылки.
 В уведомлении перечисляются только фактически изменившиеся поля («было → стало»).
@@ -262,6 +274,30 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 `event_id`). Читают — автор/staff события через `#/manage` (та же граница
 прав, что у списков участников); без анонимности, без модерации, без
 уведомления организатору отдельным сообщением.
+
+## `reports`
+
+Сообщения о проблеме из Mini App `#/report`
+([ADR-0050](../docs/adr/0050-sixth-miniapp-page-report.md), W123).
+
+| Поле | Тип | Примечание |
+| --- | --- | --- |
+| `telegram_id` | text | автор, из проверенного `initData` (DAT-1) |
+| `source` | text | канал: `miniapp` (ставит флоу, не клиент) |
+| `kind` | text (`broken`/`text`/`message`/`other`) | вид проблемы |
+| `text` | text | сообщение, ≤2000 символов |
+| `route` | text | откуда открыли форму: `profile` \| `menu` \| `report` |
+| `event_id` | text | событие в контексте; пусто, если не открыто |
+| `app_version` | text | версия клиента Telegram |
+| `context` | text | JSON-строкой: `lang`, `platform`, `version` |
+| `status` | enum | `new` \| `in_progress` \| `resolved`; при записи — `new` |
+| `created_at` | timestamp | UTC |
+
+Уникальный ключ **не объявлен**
+([ADR-0047](../docs/adr/0047-unique-keys-and-types-after-audit.md) п. 1):
+несколько сообщений от одного человека легальны. Пишет только `report-api`,
+после проверки `initData`; staff-гейта и проверки участия нет. Читает инбокс
+владелец вручную ([Q62](OPEN-QUESTIONS.md#q62)); автоуведомлений и digest нет.
 
 ## `quizzes`
 
