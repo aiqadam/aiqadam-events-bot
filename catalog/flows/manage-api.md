@@ -29,7 +29,7 @@
 | `link` | только при `resolve_geo`: ссылка Яндекс.Карт; из неё берётся **только числовой `oid`** (хост — `yandex.*`, путь `/maps/org/…`), в Геокодер уходит `uri=ymapsbm1://org?oid=…`; короткие `maps/-/…` не поддержаны — в них нет `oid` |
 | `eventId` | slug `^[A-Za-z0-9_]{1,12}$`; пустой = создание; всё иное → сентинел `-` (пустая выборка и отказ) |
 | `newId` | только при создании: slug того же вида, который страница генерирует один раз на открытие формы — ключ идемпотентности (ADR-0003); событие получает этот `id` |
-| `fields` | только при `save`: `title`, `description`, `address`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `capacity`, `overbook_pct`, `lang`, `status` — строки как в форме; даты `YYYY-MM-DDTHH:mm` **ташкентские** |
+| `fields` | только при `save`: `title`, `description`, `address`, `format`, `online_url`, `lat`, `lon`, `starts_at`, `ends_at`, `reg_deadline_at`, `capacity`, `overbook_pct`, `lang`, `status` — строки как в форме; даты `YYYY-MM-DDTHH:mm` **ташкентские** |
 
 ## Шаги
 
@@ -105,7 +105,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | `initData` невалиден/просрочен (>300 c) | 401 | `{ok:false, error:"invalid_init_data", text}` |
 | нет строки `staff`; событие не найден; `event.chapter_id` не подходит под `staff.chapter_id`; сентинел `-`; создание с `newId`, занятым записью чужого чаптера | 403 | `{ok:false, error:"forbidden", text}` — одинаково, ничего не перечисляем |
 | поля не прошли валидацию | 422 | `{ok:false, error:"validation", text, fields:{<поле>: <ключ i18n>}}` — ключ поля `geo` относится к паре `lat`/`lon` |
-| `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,lang,hasPhoto}, eventId, inviteLink}` — `inviteLink` непустой только у `published`; `lang` пустой у старой записи отдаётся как `ru` |
+| `load` staff'ом своего чаптера | 200 | `{ok:true, event:{id,title,description,address,format,online_url,lat,lon,starts_at,ends_at,reg_deadline_at,status,capacity,overbook_pct,lang,hasPhoto}, eventId, inviteLink}` — `format` нормализован (`online`/`offline`) | — `inviteLink` непустой только у `published`; `lang` пустой у старой записи отдаётся как `ru` |
 | `list` staff'ом | 200 | `{ok:true, events:[{id,title,starts_at,status,reg_deadline_at,isAuthor,address?,lat?,lon?}], count}` — события своего чаптера; `address`/`lat`/`lon` только у своих (`isAuthor`) и только при непустом адресе (недавние места, W42); не staff — `403`, как у `load` |
 | `save` | 200 | `{ok:true, text, eventId, inviteLink}` — `eventId` созданного события нужен странице, чтобы второй «Сохранить» стал правкой, а не дублем; `inviteLink` — только у `published` |
 | `staff_list` (staff чаптера) | 200 | `{ok:true, title, staff:[{telegram_id, item}]}` — только активные строки события, `item` отформатирован сервером |
@@ -198,6 +198,13 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   отвергается только если есть точка (`lat`/`lon`); онлайн (точки нет)
   публикуется без адреса (решение владельца 2026-09-20). Непустой адрес
   всегда проверяется на длину 2–300.
+- **`format` (W67, OWN-18, [ADR-0052](../../docs/adr/0052-event-format-field-online-offline.md))** —
+  признак формата (`online`/`offline`); пустое/чужое читается из старых данных
+  (непустая `online_url` → онлайн, иначе офлайн). **`online_url`** — необязательная
+  ссылка трансляции (может появиться позже); если задана — `https://`, ≤500 (иначе
+  `422` `manage.err.online_url`). При онлайне адрес и точка в запись пишутся
+  пустыми (уже стоящие значения не очищаются — хвост); смена `format`/`online_url`
+  у опубликованного события входит в `notify-on-change`.
 - **`capacity`** — целое ≥ 1 или пусто; **`overbook_pct`** — 0…100 или пусто.
   Пусто у `NUMBER`/`DATE` значит «не менять», не «очистить» (см. CLAUDE.md,
   лимиты Tables) — снять раз выставленную ёмкость формой нельзя.
@@ -222,8 +229,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 - **Уведомление (OWN-5)** — только если событие **был** `published` до правки:
   `status → cancelled` даёт `notify.event_cancelled`; иначе список
   «было → стало» по полям [notify-on-change](../../docs/DATA-MODEL.md#notify-on-change)
-  (`title`, `address`, `starts_at`, `ends_at`, `reg_deadline_at`, `lat`/`lon`,
-  `status`). Правка `description`, `capacity`, `overbook_pct` уведомления не
+  (`title`, `address`, `format`, `online_url`, `starts_at`, `ends_at`,
+  `reg_deadline_at`, `lat`/`lon`, `status`). Правка `description`, `capacity`, `overbook_pct` уведомления не
   даёт. Даты в уведомлении — Asia/Tashkent словами.
 - **Фото формой не трогается** — `photo_file_id` не входит в `values` upsert'а;
   создать афишу формой нельзя ([Q46](../../docs/OPEN-QUESTIONS.md#q46)).

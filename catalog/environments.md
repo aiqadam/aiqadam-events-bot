@@ -14,7 +14,7 @@
 | Telegram connection | `Oct3laLPiavfizCJagLcM` (`Events-QA-Bot`) | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) |
 | Бот | `@aiqadam_events_qa_bot` (id `8106260912`) | `@aiqadam_events_dev_bot` (id `8762958531`) — исторический dev-бот, оставшийся prod |
 | `MINIAPP_URL` | `https://miniapp.events.aiqadam.org/` | `https://miniapp-prod.events.aiqadam.org/` |
-| Статус | пересобран из репозитория (W106, 2026-09-26) — новые id | копия dev на 2026-09-26 + хотфиксы W122 (PR #194; W109–W121 + i18n) и [W126](../../docs/work/W126-prod-sync.md) (W123/W124/W125) |
+| Статус | пересобран из репозитория (W106, 2026-09-26) — новые id | догнан до dev буквально (W122 + [W126](../docs/work/W126-prod-sync.md), 2026-09-28); flowId — прежние |
 
 ## Mini App
 
@@ -27,6 +27,24 @@
 | Деплой | `pages.yml` (этот репозиторий) | репо `aiqadam/aiqadam-events-bot-prod`, `pages-prod.yml` |
 | Адрес | `miniapp.events.aiqadam.org` | `miniapp-prod.events.aiqadam.org` |
 | API-база | `app.flow.aiqadam.org` | `app-prod.flow.aiqadam.org` |
+
+## Синхронизация prod с dev (W122, 2026-09-28)
+
+Хотфикс [ADR-0042](../docs/adr/0042-two-environments-one-repo.md): prod догнал
+dev по всем пакетам, применённым на dev после копии 2026-09-26. Логика флоу prod
+пошагово совпадает с dev (`ap_export_flow` обеих сред, 30 общих флоу, 0
+расхождений шагов), id сред по-прежнему разные.
+
+- **W109/W112/W113b/W121** (средовые механики): `__clear`/`cancelled_at` на 5
+  шагах, `logOutput:false` (25 точек), `DECLARE_KEY` на 7 таблицах,
+  `dedup-report` удалён.
+- **i18n (W25/W27)**: на prod залит каталог платформенных переводов
+  (`i18n/{ru,uz,en}.json`, 441 ключ), выставлен `project.defaultLocale = ru`,
+  `texts` во всех пользовательских флоу переведены на `{{$t[...]}}`.
+- **W114/W116 (язык), W119/W120 (город)**: `tg-router` `step_27` +
+  `localeSource`, карточка `ob:lang`, `set_lang`, город «Вы из Ташкента?».
+- **Mini App prod**: ветка `prod` догнала `main` (W122), собрана `build:prod`
+  и задеплоена из репо `aiqadam/aiqadam-events-bot-prod`.
 
 ## Копия инсталляции (2026-09-26)
 
@@ -75,7 +93,14 @@ prod поднят восстановлением дампа dev. Две лову
 | Сущность | dev | prod |
 | --- | --- | --- |
 | flowId / externalId | новые (W106) — в [flows/](flows/) | прежние, копия до пересборки |
-| table_id / field_id | без изменений | совпадают с dev |
+| table_id / field_id | без изменений, **кроме трёх полей `events`** (ниже) | совпадают с dev, кроме `lang`/`online_url`/`format` |
+
+> **Исключение (W132, 2026-09-29).** Три поля `events` созданы в средах
+> независимо и несут разные id: `lang` (dev int `wkJRAt…`/ext `5bvPj31…`,
+> prod int `U0UzI9…`/ext `6UVLXYAb…`), `online_url` (dev `Albc…`/`ko1bekd…`,
+> prod `KkMoC2mC…`/`XKetQH8z…`), `format` (dev `JJtphc…`/`8bBZDy…`, prod
+> `UQJPGb…`/`JMI0Ec14…`). При переносе шагов, читающих/пишущих эти поля,
+> id маппятся по имени поля, а не копируются.
 | `migrations` | история dev + строки W106 | унаследована от dev |
 
 Новые dev-`flowId` и `externalId` — в карточках [flows/](flows/) и в

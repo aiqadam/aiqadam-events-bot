@@ -70,11 +70,10 @@ html, body { touch-action: pan-x pan-y; }
 /* W71 (#123): в узком окне (~380px) табы умещаются без горизонтальной прокрутки.
    Ширину окна Mini App задать нельзя, поэтому табы сжимаются равномерно;
    overflow-x: auto выше остаётся фолбэком для совсем узких окон.
-   `:not(#parts-filter)` — фильтр участников переиспользует .tabs/.tab со
-   счётчиками (в эталоне это .segmented); его сжимать нельзя — подписи
-   наложатся. */
+   W129: фильтр участников больше не `.tabs`, а `.segmented.wrap` (переносится,
+   сжимать не нужно) — прежнее исключение `:not(#parts-filter)` снято. */
 @media (max-width: 400px) {
-  .tabs:not(#parts-filter) .tab { flex: 1 1 0; min-width: 0; padding: 0 6px; justify-content: center; }
+  .tabs .tab { flex: 1 1 0; min-width: 0; padding: 0 6px; justify-content: center; }
   .tabs-scroll .tabs { min-width: 0; }
   .tabs-scroll .tab { padding: 0 6px; }
 }
@@ -100,6 +99,21 @@ html, body { touch-action: pan-x pan-y; }
 .chip-row .btn { max-width: 100%; min-width: 0; }
 /* W77: выбранный чип/формат — подсветка primary (эталон `.segmented .btn.active`). */
 .chip-row .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
+/* W129: сегменты-фильтры — как в эталоне (`.segmented`/`.segmented.wrap`
+   в proto.css). Без переноса едут горизонтальной прокруткой, `.wrap` —
+   переносится, чтобы все четыре фильтра участников были видны разом. */
+.segmented { display: flex; gap: 6px; margin: 12px 0; overflow-x: auto; }
+.segmented::-webkit-scrollbar { display: none; }
+.segmented .btn { flex-shrink: 0; }
+.segmented .btn.active { border-color: var(--primary); color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
+.segmented.wrap { flex-wrap: wrap; overflow-x: visible; }
+.segmented .count { font-family: var(--font-mono); font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border); }
+/* W129: карточка списка `#/manage` — клик по всей карточке даёт ссылка-заголовок
+   (растянута через ::after), а кнопки сканера/удаления лежат отдельно, не внутри
+   `<a>` (вложенный интерактив недопустим). */
+.event-card-link { color: inherit; text-decoration: none; }
+.event-card-link::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+.event-card .app-actions { position: relative; z-index: 2; }
 /* W117: переключатель языка — тихая строка настроек, а не три крупные кнопки
    (решение владельца: кнопки отвлекали от полей формы). Вид — паттерн шапки
    бренда: коды mono с активным тоном primary, без плашек. Только токены. */
@@ -117,6 +131,27 @@ html, body { touch-action: pan-x pan-y; }
 .lang-switch button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .lang-switch button:hover { color: var(--foreground); }
 .lang-switch button[aria-pressed='true'] { color: var(--primary); font-weight: 600; }
+/* W128: шапка таба «Профиль» — имя, инициалы и контекст (должность, компания,
+   город) над настройками, как в эталоне (`.profile-head`/`.profile-avatar`
+   в proto.css). Только токены бренда. */
+.profile-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.profile-avatar {
+  width: 56px; height: 56px; border-radius: 999px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--primary-foreground);
+  font-family: var(--font-display); font-weight: 600; font-size: 20px;
+}
+.profile-name { font-family: var(--font-display); font-weight: 600; font-size: 17px; overflow-wrap: anywhere; }
+.profile-sub { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; overflow-wrap: anywhere; }
+/* W128: заголовок экрана и подзаголовок-контекст — паттерн эталона
+   (`.app-title`/`.app-sub` в proto.css). Используют отзыв и жалоба. */
+.app-title { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px; }
+.app-sub { font-size: 13px; color: var(--muted-foreground); margin: -8px 0 14px; overflow-wrap: anywhere; }
+/* W128: «опасная зона» — разрушительное действие отделено от «Сохранить»
+   (заголовок и линия), чтобы промах не удалял аккаунт. В эталоне блока нет:
+   самоудаление — дельта продукта (ADR-0039). */
+.danger-zone { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+.danger-zone .section-label { margin-top: 0; }
 /* Длинный адрес недавнего места — обрезаем, а не рвём вёрстку. */
 .chip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Слипшееся длинное слово (URL, токен) не должно растаскивать карточку. */
@@ -129,6 +164,17 @@ html, body { touch-action: pan-x pan-y; }
 .event-card .date-plate { align-self: start; }
 /* Афиша (W38): мета двумя строками — дата и адрес не слипаются (как .preview). */
 .event-card .event-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+/* W127: длинный адрес переносится, а иконка `map-pin` остаётся у первой
+   строки — мета не «разрывается» (иконка не уезжает в середину абзаца). */
+.event-card .event-meta .meta-item { align-items: flex-start; min-width: 0; overflow-wrap: anywhere; }
+.event-card .event-meta .meta-item svg { flex-shrink: 0; margin-top: 1px; }
+/* W127: действия карточки — паттерн эталона `.event-actions` (не `.app-actions`
+   с `flex:1`: второстепенные кнопки не растягиваются на полстроки). Primary —
+   первый и на всю ширину (`btn-block`), сканер/«Поделиться» — компактные
+   (`btn-sm`) вторым рядом. */
+.event-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 0; }
+.event-actions + .event-actions { margin-top: 8px; }
+.event-actions .btn { flex: 0 0 auto; }
 .capacity-live {
   display: flex;
   align-items: baseline;
@@ -190,7 +236,7 @@ html, body { touch-action: pan-x pan-y; }
 /* W51: контекст события над QR (прототип `.ticket-top` в proto.css) —
    название, дата и адрес билета. Только раскладка и токены бренда. */
 .ticket-top { margin-bottom: 4px; }
-.ticket-event { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.ticket-event { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; margin: 0; }
 .ticket-when { font-size: 13px; color: var(--muted-foreground); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; overflow-wrap: anywhere; }
 .sheet-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 .sheet-actions .btn { width: 100%; min-width: 0; }
