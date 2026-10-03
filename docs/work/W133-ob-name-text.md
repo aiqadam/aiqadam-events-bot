@@ -49,6 +49,8 @@
 - публикации dev: `reg-profile IotKaHI804eW07IvimapP`, `tg-router zed7ldrfwv9gzCRo6dq2N`;
   экспорт MCP сразу после публикаций (`state: LOCKED`), `flows/*.json` +
   `_manifest.json` обновлены тем же изменением;
+  коммит `11cf057`, строки `migrations 2026-10-03-w133-01/02`
+  (`a7LpiTZ0gP7mKNX1quJhF`, `EHIAomiwcGoIUGARPVyKl`);
 - `check-texts.py` — 31 флоу / 305 ссылок `$t` / 0 расхождений;
   `check-commands.py` — 0 нарушений; `check-export-secrets.sh` — чисто;
 - таблицы dev чисты: `telegram_id 644000133` в `users`/`sessions` — пусто;
