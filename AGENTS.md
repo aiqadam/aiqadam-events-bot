@@ -1,5 +1,7 @@
 # Как работать в этом репозитории
 
+> **В PROD НЕ ЛЕЗТЬ БЕЗ РАЗРЕШЕНИЯ ВЛАДЕЛЬЦА. PROD И DEV — РАЗНЫЕ ВЕРСИИ ИНСТАНСА.**
+
 Events Bot для AI Qadam. Несущий стек — [Qadam Flow](https://github.com/aiqadam/qadam-flow),
 инстанс <https://app.flow.aiqadam.org>.
 
