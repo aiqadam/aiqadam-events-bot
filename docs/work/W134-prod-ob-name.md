@@ -1,6 +1,6 @@
 # W134. Перенос W133 на prod: имя текстом без кнопки (хотфикс ADR-0042)
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: вне волн (хотфикс [ADR-0042](../adr/0042-two-environments-one-repo.md))
 - **Зависит от**: W133 (готов на dev) — ✅
@@ -30,7 +30,16 @@
 
 ## Как проверено
 
-- пока не проверено
+- сверка до правки: prod `tg-router/step_10` и `reg-profile/step_3` — дословно dev до W133 (нет `obTextStep`, нет `ob_name → text_name`); остальной код идентичен dev;
+- `ap_validate_step_config` (CODE) обоих новых кодов до применения — valid 2/2;
+- правки строго последовательно (гоча 16): сначала callee `reg-profile/step_3`, затем caller `tg-router/step_10`;
+- `ap_read_step_code` после каждого `ap_update_step` — оба шага лежат побайтово как отправлено (ханки W133 на месте, входы шагов не тронуты, усечений нет);
+- логическая матрица на точных копиях кода (`node`, 10 кейсов, все PASS): текст на `ob_name` → `reg_profile` + `text_name` (фикс); текст на `ob_await_name`/`ob_await_work`/`ob_await_city`, колбэки `ob:fixname`/`ob:lang`/`ob:city`, меню-фолбэк W73 на `ob_consent` и без сессии — как раньше;
+- `ap_validate_flow` prod: `reg-profile` 40/40 valid, `tg-router` 28/28 valid;
+- публикации prod по одной (callee→caller): `reg-profile`, затем `tg-router` — обе `published and enabled`;
+- живой трафик после публикаций: последние 10 прогонов prod `tg-router` — все SUCCEEDED, 1.3–2.1 с (норма, без FAILED);
+- табличные шаги не тронуты (пины tables на prod живые — предупреждений нет); переводы не тронуты (новых ключей нет); `flows/*.json` не тронуты (канон — dev, ADR-0042);
+- офлайн-проверки: `check-texts.py` — 0 расхождений, `check-commands.py` — 0 нарушений, `check-export-secrets.sh` — чисто.
 
 ## Журнал
 
