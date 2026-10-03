@@ -67,7 +67,7 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_42 (search) | CODE «staff: search candidates» | права повторно по полям (Q25), запрос <2 символов → пустой список, пул = участники + staff чаптера (+глобальные), минус активные; совпадение по имени/`@username` регистронезависимо, топ-20; `outcome` = `done` / `error` |
 | step_43 (search) | `return_response` (`stop`) | `200 {ok:true, candidates:[{telegram_id,name,username}], count}` / `403` |
 | step_44 (participants) | `tables-find-records registrations` | участники события (`event_id`, проекция `event_id`+`telegram_id`+`status`+`checked_in_at`+`registered_at`, `limit: 200`) |
-| step_45 (participants) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+`first_name`+`last_name`+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
+| step_45 (participants) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+`profile_first_name`+`profile_last_name`+`first_name`+`last_name`+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
 | step_60 (participants) | `tables-find-records users` | база подписчиков анонсов: фильтр `consent_marketing eq true`, проекция `telegram_id`+`consent_marketing`+`blocked_bot`, `limit: 500` — счётчик `all_consent` для таба «Рассылка» (W68, #120); то же правило, что в `bcast-step`/`bcast-run` |
 | step_46 (participants) | CODE «participants: shape + export» | гейт повторно по полям (Q25), схлопывание дублей по `telegram_id`, счётчики (`registered`/`checked_in`/`cancelled` + глобальный `all_consent`, W68), строки, готовые строки CSV/JSON; `outcome` = `done` / `error` |
 | step_47 (participants) | `return_response` (`stop`) | `200 {ok:true, title, counters, rows, count, csv, json}` / `403` |
@@ -282,8 +282,10 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   строка по `registered_at` — эталон `fn-find-registration` (с ним сверяется
   чекин, счётчики с ним расходиться не могут); время прихода — самое раннее
   из непустых (IDM-2). Строка чужого `event_id` в выборке отбрасывается кодом.
-- **Имена — из `users`, только подписи** (DAT-1): `first_name + last_name`,
-  затем `@username`, затем сам `telegram_id` (строка не теряется — экспорт
+- **Имена — из `users`, только подписи** (DAT-1): сначала
+  `profile_first_name` + `profile_last_name` (то, что человек ввёл при
+  регистрации), запасной — `first_name + last_name` из Telegram, затем
+  `@username`, затем сам `telegram_id` (строка не теряется — экспорт
   сходится со счётчиками).
 - **Даты — Asia/Tashkent строкой «DD.MM.YYYY HH:mm»** (OWN-3), из частей
   `formatToParts` (разделители не зависят от ICU). Пустой чекин — пустая строка.
@@ -306,7 +308,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 - **Проекции минимальные** ([Q17](../../docs/OPEN-QUESTIONS.md#q17)):
   `registrations` — `event_id` (переотбор в коде), `telegram_id`, `status`,
   `checked_in_at`, `registered_at` (ранняя строка); `users` — `telegram_id`,
-  имя, `username` (без телефона и согласий). `limit: 200` — при росте упрётся
+  имя профиля (`profile_first_name`+`profile_last_name`) плюс запасное имя
+  Telegram (`first_name`+`last_name`), `username` (без телефона и согласий). `limit: 200` — при росте упрётся
   в [Q31](../../docs/OPEN-QUESTIONS.md#q31).
 
 ## Зависимости

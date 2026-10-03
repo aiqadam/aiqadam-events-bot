@@ -22,7 +22,9 @@ W26 закрыт («готов», независимое ревью, три кр
 
 Все PIECE-шаги пинованы на **доступные** версии qadam'ов (перепривязано пакетом
 [W100](../docs/work/W100-telegram-pin-migration.md)): `qadam-telegram-bot`
-`0.9.0`, `qadam-subflows` `0.4.14`/`0.4.15`, `qadam-tables` `0.4.5`,
+`0.9.0`, `qadam-subflows` `0.4.14`/`0.4.15`, `qadam-tables` `0.4.5`
+(на dev `manage-api` — уже `0.5.0`: 22 шага перепривязаны 2026-10-03, на
+0.4.5 там инстанс ругался `qadam_metadata_not_found`),
 `qadam-store` `0.7.0`, `qadam-crypto` `0.0.22`, `qadam-http` `0.12.0`.
 Ушла `qadam-telegram-bot@0.8.0`, которой на инстансе нет: из-за неё шаги
 нельзя было редактировать через MCP.
