@@ -2,7 +2,8 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается из `tg-router`
-  (ветка `reg_profile`): колбэки `ob:*` и свободный ввод на шагах `ob_await_*`
+  (ветка `reg_profile`): колбэки `ob:*` и свободный ввод (шаги `ob_await_*`,
+  а также имя текстом на шаге `ob_name` без кнопки, W133)
   (ADR-0015: одно касание flows, ADR-0016: одинаковые по устройству шаги делят флоу)
 - **Назначение**: онбординг C первого касания (PAR-8, [ADR-0032](../../docs/adr/0032-onboarding-first-touch-profile.md),
   [ADR-0034](../../docs/adr/0034-onboarding-any-first-touch.md),
@@ -23,7 +24,7 @@
 |------|----------------|-----------|
 | trigger | `callableFlow` | `callbackData`, `messageText`, `messageId`, `sessionDraft`, `callbackQueryId`, `firstName`, `lastName`, `chatId`, `telegramId` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack колбэка; текстовый путь (пустой id) — мимо, без останова |
-| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0043: кнопка входной карточки — `ob:agree` (`ob:continue` снят), выбор города ведёт сразу в `finish`, а не в снятый review**; **ADR-0046: город — да/нет: `ob:city:yes` → `finish` с `Ташкент`, `ob:city:no` → `show_ask_city` (ввод текстом), текст на шаге `ob_await_city` → `finish`; W120: алиасы `ob:city:Tashkent/Almaty/write` сняты — такое значение даёт `ignore`**; **W114: `ob:lang:<xx>` на шаге `ob_lang` → `action: 'set_lang'`, `lang` — только `ru\|uz\|en`**; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; чужое — `ignore` |
+| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0043: кнопка входной карточки — `ob:agree` (`ob:continue` снят), выбор города ведёт сразу в `finish`, а не в снятый review**; **ADR-0046: город — да/нет: `ob:city:yes` → `finish` с `Ташкент`, `ob:city:no` → `show_ask_city` (ввод текстом), текст на шаге `ob_await_city` → `finish`; W120: алиасы `ob:city:Tashkent/Almaty/write` сняты — такое значение даёт `ignore`**; **W114: `ob:lang:<xx>` на шаге `ob_lang` → `action: 'set_lang'`, `lang` — только `ru\|uz\|en`**; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; **W133: текст на шаге `ob_name` — тоже `text_name` (кнопка `ob:fixname` необязательна)**; чужое — `ignore` |
 | step_2 | `tables-find-records events` | событие по `id eq eventIdOrNone` (после парсинга — ссылка вперёд невозможна); при онбординге без события (голый `/start`) пустая выборка, а не падение |
 | step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); **ADR-0043: при `ob:agree` пишет согласие (`writeKind consent`) и сразу отдаёт вопрос о работе при чистом имени из Telegram; подозрительное имя — прежний ручной ввод (`onb.suspect`); экранов согласия и «Всё верно?» нет**; **W114: `set_lang` кладёт язык в `draft.profile.lang` и идёт веткой `card` (рисует карточку согласия, `nextStep: 'ob_consent'`)**; тексты — вход `texts` (ADR-0045, `$t`) |
 | step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `finish_no_event` / `Otherwise` |
@@ -88,6 +89,14 @@
   то есть ветка `finish_no_event` была недостижима. Sentinel `__none__` даёт
   пустую выборку — `step_4` выбирает `finish_no_event` как задумано;
   платформенная гоча — `AGENTS.md`.
+- **Текст имени принимается и без кнопки (W133).** Раньше свободный ввод
+  работал только после нажатия «Написать имя» (шаг `ob_await_name`), а текст,
+  написанный сразу на карточке `onb.suspect` (шаг `ob_name`), роутер уводил в
+  `menu`-фолбэк W73 и `step_3` отдавал `ignore` — карточка не менялась,
+  пользователь писал имя повторно. Теперь обе калитки открыты: `tg-router`
+  ведёт текст с `ob_name` в `reg_profile`, `step_3` отдаёт `text_name`;
+  валидация та же, что с кнопки (мусор → переспрос через `profile.err`,
+  а не молчание).
 - **Без атомарности**: между upsert `users` и `registrations` провал оставляет
   профиль без регистрации — повторный `/start` ведёт в `register` (профиль
   заполнен) и дооформляет; между записью и отправкой — IDM-1 в `reg-consent-mkt`.
@@ -108,9 +117,11 @@
   «Подробнее» (`onb.details`, `ob:details` → `ob:understood`).
 - **Чистое имя из Telegram не подтверждается (ADR-0043).** При `ob:agree`
   `step_4` пишет согласие и, если эвристика не сочла имя подозрительным,
-  сразу отдаёт вопрос о работе (`profile` = имя/фамилия из апдейта). Карточка
-  `onb.name_ok` и кнопка «Это я» (`ob:itsme`) сняты. Подозрительное имя —
-  прежний путь: `onb.suspect` → `ob:fixname` → `ob_await_name` → текст руками.
+   сразу отдаёт вопрос о работе (`profile` = имя/фамилия из апдейта). Карточка
+   `onb.name_ok` и кнопка «Это я» (`ob:itsme`) сняты. Подозрительное имя —
+   ручной ввод: `onb.suspect` → текст руками сразу (W133: текст на `ob_name`
+   тоже `text_name`) либо через кнопку «Написать имя» (`ob:fixname` →
+   `ob_await_name`).
   Цена решения — чистое, но неверное имя Telegram не показывается до записи;
   правится в табе «Профиль».
 - **Экрана «Всё верно?» нет (ADR-0043).** Выбор города ведёт прямо в `finish`:
