@@ -34,8 +34,8 @@ SPEC OWN-13).
 |----------|----------|---------|
 | ADR | [0054](../adr/0054-broadcast-register-instead-of-unsubscribe.md) | — |
 | SPEC | OWN-13 переписан | [SPEC.md](../SPEC.md) |
-| flow `bcast-run` | `By03Fpx1pPqJTdaQlhYsQ` (v `358ZAaoHMNh6gppThgfQK`) | [catalog/flows/bcast-run.md](../../catalog/flows/bcast-run.md) |
-| flow `bcast-step` | `uQDds2PUMYH8Kc1mLhN15` (v `vrzJFcrK1mO0jtxMUL1p8`) | [catalog/flows/bcast-step.md](../../catalog/flows/bcast-step.md) |
+| flow `bcast-run` | `By03Fpx1pPqJTdaQlhYsQ` (v `wHIJkUy7uU8VzvogyjO61`) | [catalog/flows/bcast-run.md](../../catalog/flows/bcast-run.md) |
+| flow `bcast-step` | `uQDds2PUMYH8Kc1mLhN15` (v `NsRndSr3YGtNYyRZetpsW`) | [catalog/flows/bcast-step.md](../../catalog/flows/bcast-step.md) |
 | flow `reg-start` | `furNEp5R3KFZ2jdSni2Eu` (v `gTi3MohEeu7fZ9Wcy01zU`) | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
 | flow `tg-router` | `5rpOArwaUifCX6IYF4IEQ` (v `E9QmgGVf18ZwYR5FxZ04S`) | [catalog/flows/tg-router.md](../../catalog/flows/tg-router.md) |
 | flow `bcast-unsub` | удалён (`WVEZojRTZfntv22NA5geM`) | — |
@@ -230,6 +230,95 @@ SPEC OWN-13).
    ключа платформы нет ни в `QADAM_API_KEY`, ни в keychain. Состав манифеста
    сверен вручную, строки `migrations` совпадают; полная сверка
    `publishedVersionId` ↔ инстанс — на приёмке с ключом (как в W132/W134).
+
+### Круг 2 — повторное ревью (2026-10-05)
+
+- **Ревьюер**: review-agent (чистый контекст, deepseek-v4.1-flash) ·
+  **Дата**: 2026-10-05 · **Вердикт**: **замечаний нет**
+  (блокеров и важных нет; остаточные пункты «на будущее» — ниже).
+
+#### Что проверено (живой проект через MCP `app-flow-events-dev` + репозиторий)
+
+- **Замечание 1 (нет прогонов) — закрыто.** `ap_list_runs`/`ap_get_run` по всем
+  четырём флоу, от 2026-10-05:
+  - `bcast-run/TTd2XdXgr7mVoV7Tf0yNV` (05:47) — прогон, поймавший регрессию:
+    `step_28` FAILED, `body.data` содержал только `reply_markup`, Telegram
+    `400 Bad Request: parameter "from_chat_id" is required`, `step_45
+    {sent:0, failed:1}`. Это доказательство, что дефект был реальным, а прогон —
+    различающим.
+  - `bcast-run/zgdjgE4ypD9QzqyFyAZXy` (05:48, после перепубликации) — `step_25`
+    собрал `markup` `reg:go:w135t` (`regOpen:true`), `step_28` `body.data`
+    полный (`chat_id`/`from_chat_id`/`message_id`/`reply_markup`), Telegram
+    `message_id 435`, `step_45 {sent:1, failed:0}`.
+  - `tg-router/OE4sP4TZl0XoRSEdcYj5d` — `step_10 route: reg_go`, ветка `reg_go`
+    (`branchIndex 12`, evaluation true), `step_28` позвал `reg-start`; ожидаемый
+    ack `step_19` упал на фейковом `callbackQueryId` — `continueOnFailure`,
+    прогон SUCCEEDED.
+  - `reg-start/hyzWbGyYeRnfSelI4LowR` — `step_3 outcome: register_direct`
+    (`consentGiven:true`), ветка `register_direct` выбрана, `step_21`→`step_22`
+    позвал `reg-profile`.
+  - `reg-profile/jUfNmOjtb2Vs0Jcczf7o7` — `step_3 finish_lite`, `step_32`
+    msg 437 «You are registered», `step_33` билет msg 438 с
+    `#/ticket?event_id=w135t`; `step_31` упал на отсутствии карточки —
+    сработал фолбэк новым сообщением, прогон SUCCEEDED.
+  - Фикстуры убраны: `events(id=w135t)`, `broadcasts(id=bw135t)`,
+    `registrations(event_id=w135t)`, `broadcast_targets(broadcast_id=bw135t)` —
+    `ap_find_records` пусто.
+- **Регрессия `body.data` закрыта.** В опубликованном экспорте
+  `flows/bcast-run.json` (`step_28` — строки 877-880, `step_36` — 1053-1056) и
+  `flows/bcast-step.json` (`step_30` — 992-995) `body.data` несёт
+  `chat_id`/`from_chat_id`/`message_id`/`reply_markup`; `git show ee78854`
+  подтверждает восстановление. Живым прогоном подтверждён `step_28`;
+  `step_36` и `bcast-step/step_30` — по опубликованному снимку, версия которого
+  совпадает с `migrations` (см. ниже).
+- **Манифест и `migrations` — сверены, совпадают.** `flows/_manifest.json` —
+  30 флоу; `bcast-run` `wHIJkUy7uU8VzvogyjO61`, `bcast-step`
+  `NsRndSr3YGtNYyRZetpsW`, `reg-start` `gTi3MohEeu7fZ9Wcy01zU`, `tg-router`
+  `E9QmgGVf18ZwYR5FxZ04S`. Запрос `ap_find_records` по `migrations` для
+  `package=W135` — 5 строк: `delete flow:bcast-unsub` + 4 `publish` с теми же
+  `version_id`. `bcast-unsub` в `ap_list_flows` отсутствует.
+- **Замечание 2 — закрыто.** `docs/SECURITY.md:210-214` больше не описывает
+  снятую отписку: `consent_marketing` меняется в табе «Профиль» Mini App
+  (PAR-2, W60), кнопки «отписаться» нет, ссылка на ADR-0054; согласовано со
+  SPEC OWN-13.
+- **Замечание 3 — закрыто.** BACKLOG W135 называет существующий ключ
+  `event.card.btn_register` (ru/uz/en — есть), мёртвые
+  `bcast.btn.unsubscribe`/`unsub.*` сняты; цель W111b приведена к
+  «Зарегистрироваться по адресату» (ADR-0054).
+- **Каталог vs проект.** `catalog/flows/{bcast-run,bcast-step,reg-start,tg-router}.md`
+  описывают новые шаги и ветки (`step_25`/`53`/`54`, `step_57`/`58`/`59`,
+  `register_direct`, `reg_go`); карточки `bcast-unsub` нет;
+  `catalog/overview.md` (строка «Рассылки») обновлена.
+- **Логика (повторно, живой код):** `bcast-run/step_25` и `bcast-step/step_59` —
+  чистые функции, без сети и записи в БД; правило «регистрация открыта»
+  совпадает с `reg-start/step_3` (`published`, deadline, места
+  `ceil(capacity·(1+overbook/100))`, дефолт 40); `step_53` читает регистрации с
+  фильтром `event_id` + `status=registered`. `register_direct` требует
+  заполненный профиль и `consent_pdn` (PAR-1), `consent_marketing` не трогается;
+  `telegram_id` — только из апдейта, IDOR нет.
+- **Офлайн (перезапущено ревьюером):** `check-texts.py` — 30 флоу, 301 ссылка,
+  0 расхождений; `check-commands.py` — 30 флоу, 0 нарушений, самопроверка ok;
+  `check-export-secrets.sh` — 0 совпадений. `check-migrations.py` без ключа
+  платформы не прогнан (как и в круге 1) — состав сверен вручную, п. 7 круга 1
+  в силе.
+
+#### Остаточные наблюдения «на будущее» (вердикт не меняют)
+
+- `bcast-step/step_30` и новые `step_57`/`58`/`59` (тест себе) живым прогоном не
+  исполнялись — проверены по опубликованному экспорту (восстановленный
+  `body.data` на месте). На первом же живом тесте себе стоит убедиться, что
+  копия уходит с кнопкой.
+- Отрицательная ветка «получатель уже зарегистрирован / регистрация закрыта →
+  кнопки нет» прогоном не показана: CODE чистый, ветка тривиальна
+  (`regOpen && !regSet[tg]`), но живого различающего прогона на неё нет.
+- Таблица «Что построено» выше (строки 37-38) хранит дорегрессионные версии
+  `358ZAaoHMNh6gppThgfQK`/`vrzJFcrK1mO0jtxMUL1p8`; живой `publishedVersionId`
+  — `wHIJ...`/`NsRn...` (manifest и `migrations`). При закрытии пакета привести
+  таблицу к факту.
+- `docs/STATUS.md` (строка W135) ещё говорит «живые различающие прогоны —
+  хвост» — обновится естественно при переводе пакета в `готов`.
+- Пункты круга 1, оставшиеся «на будущее» (5 — `logOutput`/ПД в логах, 6 —
+  локаль подписи кнопки, 7 — `check-migrations.py` на приёмке), в силе.
 
 ## Хвосты и блокеры
 
