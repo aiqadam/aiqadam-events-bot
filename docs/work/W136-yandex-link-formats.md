@@ -42,7 +42,7 @@
 | SPEC | OWN-1 расширен | [SPEC.md](../SPEC.md) |
 | Mini App `Manage.tsx` | `analyzeYandexLink` / `resolveGeoLink` | [Manage.tsx](../../miniapp/src/routes/Manage.tsx) |
 | Прототип | `analyzeYandexLink` (паритет) | [prototypes/app.js](../../prototypes/app.js) |
-| flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` (v `OajdZfYsM6d7ty0YhyHuf`) | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
+| flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` (v `Auy6i7uMdfL0lx1qPLAFS`) | [catalog/flows/manage-api.md](../../catalog/flows/manage-api.md) |
 | repair `reg-api` | `SmutybV5qJQjQASJGY9vi` (v `NG1QA9OiltCKjissdeK3G`) | [catalog/flows/reg-api.md](../../catalog/flows/reg-api.md) |
 
 `manage-api`: `step_34` — план, `step_35` — ROUTER `oid`/`text`/`coords`/`short`;
@@ -117,17 +117,42 @@
   `invalid`. Перепубликовано (v `NG1QA9OiltCKjissdeK3G`), экспорт и строка
   `migrations` `2026-10-05-w136-00`. Цена: 4 шага подняты `tables` 0.4.5→0.5.0.
   Урок: flowId брать из каталога, а не из `reg-api`-привычки.
-- **2026-10-05** — сервер `manage-api` (id `pFtbgOP3U8sNFvP86Szli`) ещё не
-  перестроен: впереди — `geo plan` + роутер режимов `oid`/`text`/`coords`/`short`.
 - **2026-10-05** — сервер `manage-api` (`pFtbgOP3U8sNFvP86Szli`) перестроен:
   `step_34` → план, `step_35` → ROUTER, ветки `oid`/`text`/`coords`/`short`/`none`;
-  `ap_validate_flow` 72/72, опубликовано (v `OajdZfYsM6d7ty0YhyHuf`), экспорт,
-  строка `migrations` `2026-10-05-w136-01`. Каталог и прототип обновлены;
-  сценарий отписки в прототипе заменён (хвост W135), `check.mjs` зелёный.
+  `ap_validate_flow` 72/72, опубликовано, экспорт и `migrations` `2026-10-05-w136-01`;
+  каталог и прототип обновлены, сценарий отписки заменён (хвост W135).
+- **2026-10-05 — правки по ревью (круг 1).** (1) порядок источников приведён к
+  ADR (`poi[point]>pt>ll>@>q>пара`) в клиенте и `step_34`, формулировка приоритета
+  в ADR/SPEC уточнена (`oid` — триггер Геокодера, не источник координат);
+  (2) голая пара снова принимает десятичную запятую; (3) парсер вынесен в
+  `miniapp/src/lib/yandexLink.mjs` (+`.d.ts`), добавлен реальный тест
+  `yandexLink.test.mjs` (10/10), подключён в pre-commit и CI; `build:dev`,
+  `check.mjs`, `check-texts/commands/secrets` — зелёные; `manage-api`
+  перепубликован (v `Auy6i7uMdfL0lx1qPLAFS`), экспорт и `migrations` обновлены.
 
 ## Ревью
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: агент-ревьюер (opencode, deepseek-v4.1-flash) · **Дата**: 2026-10-05 · **Вердикт**: есть замечания
+
+### Замечания
+
+1. **важно** — заявленный приоритет `poi[point] > pt > oid > ll > @/q/пара` (ADR-0055 п.2, SPEC OWN-1) не совпадает с кодом: и клиент (`analyzeYandexLink`), и сервер (`manage-api/step_34`) проверяют `@` и `q` **раньше** `ll`, поэтому ссылка с одновременными `@` и `ll` берёт `@`, тогда как ADR/SPEC требуют `ll`. Прежний `parseYandexLink` (`git show e232b2c:miniapp/src/routes/Manage.tsx`) искал `pt|ll` первыми, то есть для такой ссылки поведение изменилось. Дополнительно режим сервера выбирается как `short → oid → text → coords`, т.е. `oid`/`text` стоят выше координат: каноническая ссылка владельца (`poi[point]` + `poi[uri]=…oid=`) уходит в Геокодер (mode `oid`), хотя по приоритету должен побеждать `poi[point]`. Видимый результат корректен (клиент точку не затирает, `if (!a.point) setGeo`), но лишний вызов Геокодера случается, а `mapLink` собирается из точки Геокодера, а не из сохранённых координат. Решить: либо привести порядок к ADR/SPEC, либо переписать п.2 ADR и OWN-1 под фактическое правило.
+   - *Исправлено*: порядок приведён к ADR (`poi[point] > pt > ll > @ > q > пара`) в клиенте (`yandexLink.mjs`) и в `step_34`; ADR-0055 п.2 и SPEC OWN-1 уточнены — `oid` не источник координат, а триггер Геокодера (адрес; точка — если точных координат в ссылке нет), поэтому `poi[point]+oid` даёт точку из ссылки и адрес из Геокодера (2026-10-05).
+2. **важно** — регресс: голая пара с десятичной запятой больше не разбирается. Старый `parseYandexLink` (и `prototypes/app.js`) допускал `[.,]` в числах и делал `replace(',', '.')`; новый `N = (-?\d+(?:\.\d+)?)` плюс прямой `parseFloat` отвергают `41,341407 69,335264` (проверено живым запуском реплик: `client=null`, `srv=none`; `41.341407, 69.335264` работает). Затронуты клиент, `step_34` и прототип. Это потеря прежнего поведения из чек-листа пакета («голая пара»).
+   - *Исправлено*: голая пара снова допускает `[.,]` + `replace` в `yandexLink.mjs`, `step_34` и прототипе; тест `yandexLink.test.mjs` покрывает `41,341407 69,335264` (2026-10-05).
+3. **важно** — пункт BACKLOG «клиентский харнесс (все формы, закодированные, короткие, орг-с-`ll`)» не выполнен: тестов парсера в репозитории нет (`analyzeYandexLink` встречается только в `Manage.tsx`/`prototypes/app.js`; `prototypes/check.mjs` парсер не трогает, `npm run build:dev` — только type-check). Именно поэтому регрессы п.1–2 не были пойманы. Живой сквозной `resolve_geo` внутри `manage-api` не гонялся — владелец это признаёт (вебхук гейтится `initData`, как в W42).
+   - *Исправлено*: добавлен реальный харнесс `miniapp/src/lib/yandexLink.test.mjs` (10 кейсов: poi-encoded, приоритет poi>ll, pt/ll, @/q, ll>@, голая пара с запятой, org, short, text, мусор); парсер вынесен в общий `miniapp/src/lib/yandexLink.mjs` (+`.d.ts`), тест гоняет именно его; подключён в pre-commit и CI (2026-10-05).
+4. **на будущее** — доказательные пробники `zz-w136-geo-probe`/`zz-w136-plan-probe` удалены до вердикта (`migrations` `-90`/`-91`), поэтому их прогоны уже не достать `ap_get_run` (AGENTS.md, гоча 11: «доказывающие временные флоу не удалять до вердикта ревью»). Проверка Геокодера `uri`/`geocode` и разворота короткой остаётся только на слово журнала.
+5. **на будущее** — `resolve_geo` не ограничен Яндекс.Картами: `step_34` (и клиентский `GeoLink.yandex`) вычисляет `isYandex`, но нигде его не использует, хостовой проверки нет. Строка `https://evil.example.com/maps/org/x/12345678` даёт mode `oid` и вызов Геокодера — это не SSRF (URL Геокодера фиксирован, короткая ограничена регекспом `yandex.*/maps/-/`), но расходится с ADR-0055 п.7 и тратит квоту. Туда же: отказ разбора org/short не даёт подсказки сразу — `resolveGeoLink` игнорирует не-`ok` ответ, а `linkRecognized` для `oid`/`short` истинно, так что обещанная ADR-0055 п.5 подсказка «скопируйте координаты» всплывает только на публикации как `manage.geo.link_bad` (и лишь если ссылка не парсится как координаты).
+
+### Проверено (живой проект через MCP `app-flow-events-dev` + репозиторий)
+
+- **`manage-api`** (`pFtbgOP3U8sNFvP86Szli`, v `Auy6i7uMdfL0lx1qPLAFS`): `ap_flow_structure` — `step_34` план, `step_35` ROUTER `oid`/`text`/`coords`/`short`/`Otherwise`, ветки `36→37→61`, `62→63→64`, `65→66`, `67→68→69`, `70→71` как заявлено; `ap_validate_flow` — 72/72 valid; `ap_export_flow` вернул `flows[0].id = Auy6i7uMdfL0lx1qPLAFS` = `flows/_manifest.json`. Права и `initData` не тронуты: `step_7` для `resolve_geo` по-прежнему требует валидный `initData` (`step_1`/`step_2`) и строку `staff` (`chapter` scope), событие и таблицы не нужны; `consent`/`PAR-*` не затрагиваются.
+- **AppSec**: в Геокодер уходят только `uri` (собран из `oid`-цифр) и `geocode` (текст ≤300), URL `https://geocode-maps.yandex.ru/1.x/` фиксирован; короткая разворачивается GET'ом по `{{step_34['output'].expandedUrl}}`, а `step_34` пропускает в этот режим только `^https?://…yandex.<tld>/maps/-/` — произвольный URL не проксируется. Секретов в экспорте нет (`check-export-secrets.sh` — ок), `auth` — ссылка `{{connections['Oct3laLPiavfizCJagLcM']}}`, connection ACTIVE; переменная `{{variables['YANDEX_GEOCODER_API_KEY']}}` на проекте есть.
+- **Инцидент `reg-api`** (`SmutybV5qJQjQASJGY9vi`, v `NG1QA9OiltCKjissdeK3G`): живой `ap_flow_structure` совпадает с `flows/reg-api.json`; `delete_account` полон — `registrations` 24→26, `feedback` 27→29, `broadcast_targets` 30→32, `sessions` 33→35, `quiz_answers` 40→42, `quiz_attempts` 43→45, `users` 36→38, ответ 39; восстановленные `step_35` (delete session INSIDE_LOOP `step_34`), `step_36` (read users после `step_44`), `step_37` (loop users), `step_38` (delete user INSIDE_LOOP) на месте; 46 шагов, `ap_validate_flow` — 0 invalid (1 skipped — `step_12` W60, так и задумано); `ap_export_flow` вернул `NG1QA9OiltCKjissdeK3G` = манифест. Удалённые `step_*` восстановлены без потерь.
+- `migrations`: строки `2026-10-05-w136-00` (publish reg-api), `-01` (publish manage-api), `-90`/`-91` (delete пробников) есть; пробных флоу в проекте не осталось.
+- Офлайн: `check-texts.py` — 302 ссылки, 0 расхождений; `check-commands.py` — 0 нарушений; `check-export-secrets.sh` — ок. `check-migrations.py` не гонялся (нет `QADAM_API_KEY`; на Linux keychain недоступен).
+- Отдельно замечено, **не дефект W136**: `ap_validate_flow` по `reg-api` (и `reg-start`, `tg-router` и др.) показывает 21 шаг на «unavailable» `@aiqadam/qadam-tables@0.4.5/0.4.6`, но живые прогоны эти шаги исполняют (`reg-api` 03.10 — `step_6/7/8` на 0.4.5; `tg-router` 05.10 — `step_7` на 0.4.5, SUCCEEDED). Похоже, предупреждение валидатора здесь недостоверно; «чинить» его в рамках W136 не следует.
 
 ## Хвосты и блокеры
 

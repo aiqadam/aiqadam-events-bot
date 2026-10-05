@@ -21,8 +21,9 @@ flows_changed="$(grep -c '^flows/.*\.json$' <<<"$staged")" || flows_changed=0
 i18n_changed="$(grep -c '^i18n/ru\.json$' <<<"$staged")" || i18n_changed=0
 agents_changed="$(grep -cE '^(AGENTS\.md|CLAUDE\.md|opencode\.json|\.mcp\.json|docs/agents/|\.opencode/agent/|\.claude/agents/|tools/check-agents\.py)' <<<"$staged")" || agents_changed=0
 prototypes_changed="$(grep -cE '^prototypes/.*\.(js|mjs)$' <<<"$staged")" || prototypes_changed=0
+miniapp_changed="$(grep -cE '^miniapp/src/' <<<"$staged")" || miniapp_changed=0
 
-if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 && "$agents_changed" -eq 0 && "$prototypes_changed" -eq 0 ]]; then
+if [[ "$flows_changed" -eq 0 && "$i18n_changed" -eq 0 && "$agents_changed" -eq 0 && "$prototypes_changed" -eq 0 && "$miniapp_changed" -eq 0 ]]; then
   exit 0
 fi
 
@@ -44,6 +45,15 @@ if [[ "$prototypes_changed" -ne 0 ]]; then
   echo "pre-commit: изменились prototypes/*.js — синтаксис и сценарии (W118)"
   if command -v node >/dev/null 2>&1; then
     node prototypes/check.mjs || status=1
+  else
+    echo "  node не найден — проверка пропущена (выполнит CI)"
+  fi
+fi
+
+if [[ "$miniapp_changed" -ne 0 ]]; then
+  echo "pre-commit: изменился miniapp/src — тест разбора ссылок Яндекс.Карт (W136)"
+  if command -v node >/dev/null 2>&1; then
+    node miniapp/src/lib/yandexLink.test.mjs || status=1
   else
     echo "  node не найден — проверка пропущена (выполнит CI)"
   fi

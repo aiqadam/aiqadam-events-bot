@@ -32,3 +32,5 @@ jobs:
         run: python3 -m py_compile tools/*.py
       - name: Прототипы — синтаксис всех prototypes/*.js и сценарии (W118)
         run: node prototypes/check.mjs
+      - name: Разбор ссылок Яндекс.Карт (W136)
+        run: node miniapp/src/lib/yandexLink.test.mjs
