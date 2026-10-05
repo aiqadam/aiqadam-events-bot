@@ -3566,7 +3566,8 @@ trigger-output) не ретраится.
 
 **Цель:** заменить cursor+`callFlow`-queue на один durable rate-limited
 `LOOP_ON_ITEMS` (25/s, `WAIT_AND_RETRY`) с collector и structured errors
-(403/429), сохранив сегмент, `test_sent_at`, кнопку «отписаться»,
+(403/429), сохранив сегмент, `test_sent_at`, кнопку «Зарегистрироваться» по
+адресату (W135, [ADR-0054](adr/0054-broadcast-register-instead-of-unsubscribe.md)),
 `broadcast_targets` и **`copyMessage` с `reply_markup`** (W79 — пересланный
 пост/фото, не `send_message`). Режим цикла (`SEQUENTIAL`/`CONCURRENT` +
 `maxConcurrency`) выбрать замером реальной отправки; `keepBodies` — против
@@ -3967,8 +3968,10 @@ trigger-output) не ретраится.
       профиль) и билет по его завершении; согласие ПД не обходится (PAR-1);
 - [ ] кнопка «отписаться» из массовых сообщений снята; маршрут `bcast:unsub:`
       и флоу `bcast-unsub` выведены из эксплуатации и отражены в каталоге;
-- [ ] i18n: ключ `bcast.btn.register` (ru/uz/en); `bcast.btn.unsubscribe`
-      снят или помечен архивным; `check-texts.py`, `check-commands.py`,
+- [ ] i18n: подпись кнопки — существующий ключ `event.card.btn_register`
+      (ru/uz/en; отдельный `bcast.btn.register` не заводился); мёртвые
+      `bcast.btn.unsubscribe`/`unsub.*` сняты из i18n и платформенных
+      переводов; `check-texts.py`, `check-commands.py`,
       `check-export-secrets.sh` зелёные;
 - [ ] SPEC OWN-13 обновлён, ADR-0054; DATA-MODEL и каталог — при изменениях;
 - [ ] `ap_validate_flow`, публикации, экспорт `flows/*.json` и строки
