@@ -46,6 +46,32 @@ dev по всем пакетам, применённым на dev после к�
 - **Mini App prod**: ветка `prod` догнала `main` (W122), собрана `build:prod`
   и задеплоена из репо `aiqadam/aiqadam-events-bot-prod`.
 
+## Хотфиксы prod после W122
+
+- **W134 (2026-10-03)** — W133: имя текстом на шаге `ob_name` (dev→prod).
+- **W137 (2026-10-05)** — W135, [ADR-0054](../docs/adr/0054-broadcast-register-instead-of-unsubscribe.md):
+  кнопка «Зарегистрироваться» вместо «Отписаться». Режим — жёсткий cut.
+  - `reg-start`: ветка `register_direct` (`step_3` + `direct`, `step_21`/`step_22`
+    → `reg-profile`);
+  - `tg-router`: маршрут `bcast_unsub` снят; `reg:go:<eventId>` → ветка `reg_go`
+    (`answer_callback_query` + `callFlow reg-start` c `direct=true`);
+  - `bcast-run`: `step_53`/`step_54` (чтение `registrations`/`events`) → `step_25`
+    строит `reply_markup` по адресату; `step_28`/`step_36` доставляют
+    `{{step_26['output'].item.markup}}`;
+  - `bcast-step`: `step_57`/`step_58`/`step_59` — тест себе показывает ту же
+    кнопку; `step_30` доставляет `{{step_59['output'].markup}}`;
+  - `bcast-unsub` удалён; ключи `bcast.btn.unsubscribe`, `unsub.already`,
+    `unsub.done` сняты.
+  - **Версии qadam'ов на prod отличаются от dev.** В `tg-router` сверялся
+    dev-эталон (смержены W133+W135). Новые tables-шаги `step_53`/`step_54`
+    (`bcast-run`) и `step_57`/`step_58` (`bcast-step`) на prod пин **`0.4.6`**,
+    на dev — `0.5.0`; вход (проекция `columns`, фильтры по имени поля) совместим.
+    `subflows`/`telegram-bot` на prod те же версии, что и в dev-эталоне
+    (`0.4.14`/`0.9.0`).
+
+Хотфиксы правили только инстанс prod через MCP `app-flow-events-prod`;
+`flows/*.json` и `catalog/flows/*.md` не трогали — канон dev (ADR-0042).
+
 ## Копия инсталляции (2026-09-26)
 
 prod поднят восстановлением дампа dev. Две ловушки копии, обе уже пройдены:

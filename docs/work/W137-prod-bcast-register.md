@@ -1,6 +1,6 @@
 # W137. Перенос W135 на prod: кнопка «Зарегистрироваться» вместо «Отписаться»
 
-- **Статус**: в работе
+- **Статус**: на проверке
 - **Владелец**: агент
 - **Волна**: вне волн (хотфикс [ADR-0042](../adr/0042-two-environments-one-repo.md))
 - **Зависит от**: W135 (готов на dev) — ✅
@@ -84,7 +84,37 @@ prod-ids живут только в `catalog/environments.md`.
 
 ## Как проверено
 
-- <заполняется по факту>
+- **Негативный/пред\-условие:** `ap_list_runs` prod по `bcast-run` — нет
+  `running` (последняя рассылка `bm…` завершена 2026-10-05 03:50).
+- **Read\-back живого prod** (`ap_flow_structure includeInput`, `ap_read_step_code`):
+  - `reg-start` — `step_4` ветки … `register_direct`(4), `Otherwise`(5);
+    `step_3` несёт `direct`, `step_21`→`step_22` (`callFlow` `bEd0cSc…`,
+    inline);
+  - `tg-router` — `step_11` без `bcast_unsub`, `reg_go`(11);
+    `step_19` ack → `step_28` `callFlow` `HGX7…` с `direct=true`;
+  - `bcast-run` — `step_53`(`LOG OFF: output`)/`step_54` → `step_25` читает
+    `step_53`/`step_54` и `registerBtnText`; `step_28`/`step_36`
+    `reply_markup={{step_26['output'].item.markup}}`;
+  - `bcast-step` — `step_57`/`step_58`(`LOG OFF: output`)/`step_59`;
+    `step_28` без `bcast.btn.unsubscribe`; `step_30`
+    `reply_markup={{step_59['output'].markup}}`;
+  - `bcast-unsub` удалён (не в `ap_list_flows`).
+- **Версии qadam'ов:** новые tables\-шаги на prod получили пин `tables@0.4.6`
+  (dev-эталон `0.5.0`) — вход совместим (проекция `columns`, фильтры по имени
+  поля), публикация прошла. `subflows@0.4.14`/`telegram-bot@0.9.0` совпали.
+- **`ap_validate_flow` ×4** — `0 invalid` (23/29/55/60 шагов).
+- **Экспорт/снапшот** (`ap_export_flow`): `publishedVersionId` —
+  `reg-start jHj9ZJjUr9dW5ClOntXP1`, `tg-router ZWPehcAjwM1879dtLDYou`,
+  `bcast-run 5SsKz3nTsIq0fZdoOhYR0`, `bcast-step N8KLtU4GwTKBdZNIw1lu1`,
+  `bcast-unsub` (до удаления) `nUxv8R2Rbovz68DNjIMpB`.
+- **Переводы:** `bcast.btn.unsubscribe`/`unsub.already`/`unsub.done` удалены;
+  инструмент не нашёл ссылающихся флоу.
+- **`ap_list_runs` prod после публикаций** — новых `FAILED` нет (последние
+  `FAILED` — 2026-09-24…26).
+- **Строки `migrations` (prod)** — `2026-10-05-w137-01…06`.
+- **Не проверено живьём:** тест себе из prod\-бота (кнопка `reg:go:<eventId>`),
+  реальная рассылка с кнопкой, тап старой кнопки `bcast:unsub:` — на владельца
+  (на prod `ap_test_step/flow` не запускаются, гоча 11).
 
 ## Журнал
 
@@ -99,6 +129,16 @@ prod-ids живут только в `catalog/environments.md`.
   `bmuuplzp77h` (`done`, 2026-10-05 03:48–03:50, 81 sent), ранее
   `bmurvzfksv1` (2026-10-03). running-рассылок нет. Решение владельца — cut,
   grace-окно не заводим.
+- **2026-10-05** — пакет выполнен на prod. Правки флоу только через MCP
+  `app-flow-events-prod`, каждое — с read-back и `ap_validate_flow` (после
+  каждой правки одного флоу публикация, гоча 16). Порядок: `reg-start` →
+  `tg-router` → `bcast-run` → `bcast-step` → удаление `bcast-unsub` →
+  переводы. **Внимание к версиям:** dev-эталон собирался на `tables@0.5.0`, на
+  prod `ap_add_step` пиновал `tables@0.4.6` — входы (`columns`, фильтры по
+  имени поля) совместимы, отличаются только пины (отражено в
+  `catalog/environments.md`). Публикации создали новые версии (см. «Как
+  проверено»); `metadata.externalId` флоу стабилен (callFlow ссылается на
+  него). `flows/*.json`/`catalog/flows/*.md` не трогали (канон dev).
 
 ## Ревью
 
