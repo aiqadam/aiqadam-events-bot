@@ -1,10 +1,10 @@
 # W137. Перенос W135 на prod: кнопка «Зарегистрироваться» вместо «Отписаться»
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн (хотфикс [ADR-0042](../adr/0042-two-environments-one-repo.md))
 - **Зависит от**: W135 (готов на dev) — ✅
-- **Начат**: 2026-10-05 · **Закрыт**: —
+- **Начат**: 2026-10-05 · **Закрыт**: 2026-10-05
 
 ## Цель
 
@@ -34,18 +34,18 @@ prod-ids живут только в `catalog/environments.md`.
 
 ## Чек-лист готовности
 
-- [ ] нет running-рассылки на prod на момент наката
-- [ ] снапшот prod снят (`ap_export_flow` по 5 флоу) + `publishedVersionId` записаны
-- [ ] `reg-start`: `step_3` (dev-эталон, +`direct` во входе), ветка `register_direct`, шаги `step_21`/`step_22`
-- [ ] `tg-router`: `step_10` (dev-эталон), ветка `reg_go` вместо `bcast_unsub`, ack + `callFlow reg-start` (`direct=true`)
-- [ ] `bcast-run`: `step_53`/`step_54` (новые чтения, `logOutput:false`), `step_25` (per-recipient `markup`), `step_28`/`step_36` → `item.markup`
-- [ ] `bcast-step`: `step_57`/`step_58`/`step_59`, `step_28` gate, `step_30` → `step_59.markup`
-- [ ] `bcast-unsub`: строка `migrations` `delete`, затем `ap_delete_flow`
-- [ ] мёртвые ключи `bcast.btn.unsubscribe`/`unsub.*` удалены на prod (после удаления флоу)
-- [ ] `ap_validate_flow` ×4 — 0 `invalid`; `ap_read_step_code`/`ap_flow_structure` read-back
-- [ ] `catalog/environments.md` обновлён (W135 применён; `bcast-unsub` на prod удалён)
-- [ ] строка `migrations` на **prod** формата `YYYY-MM-DD-W137-NN`
-- [ ] независимое ревью, вердикт «замечаний нет»
+- [x] нет running-рассылки на prod на момент наката
+- [x] снапшот prod снят (`ap_export_flow` по 5 флоу) + `publishedVersionId` записаны
+- [x] `reg-start`: `step_3` (dev-эталон, +`direct` во входе), ветка `register_direct`, шаги `step_21`/`step_22`
+- [x] `tg-router`: `step_10` (dev-эталон), ветка `reg_go` вместо `bcast_unsub`, ack + `callFlow reg-start` (`direct=true`)
+- [x] `bcast-run`: `step_53`/`step_54` (новые чтения, `logOutput:false`), `step_25` (per-recipient `markup`), `step_28`/`step_36` → `item.markup`
+- [x] `bcast-step`: `step_57`/`step_58`/`step_59`, `step_28` gate, `step_30` → `step_59.markup`
+- [x] `bcast-unsub`: строка `migrations` `delete`, затем `ap_delete_flow`
+- [x] мёртвые ключи `bcast.btn.unsubscribe`/`unsub.*` удалены на prod (после удаления флоу)
+- [x] `ap_validate_flow` ×4 — 0 `invalid`; `ap_read_step_code`/`ap_flow_structure` read-back
+- [x] `catalog/environments.md` обновлён (W135 применён; `bcast-unsub` на prod удалён)
+- [x] строка `migrations` на **prod** формата `YYYY-MM-DD-W137-NN`
+- [x] независимое ревью, вердикт «замечаний нет»
 
 ## Детали исполнения
 
@@ -142,13 +142,42 @@ prod-ids живут только в `catalog/environments.md`.
 
 ## Ревью
 
-> Заполняет независимый ревьюер по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
+- **Ревьюер**: review-agent (чистый контекст, deepseek-v4.1-flash) · **Дата**: 2026-10-05
+- **Вердикт**: **замечаний нет** (блокеров и «важно» нет; остаточные наблюдения «на будущее» — ниже)
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+### Что проверено (живой проект через MCP `app-flow-events-prod` + офлайн)
+
+- `ap_list_flows` prod: 30 флоу, `bcast-unsub` (`eymcIde00G3SNlhaBvAbB`) отсутствует; висячих ссылок нет — `ap_resolve_property_options` (проп `flow` у `callFlow`) не предлагает `bcast-unsub`, ни один шаг на него не ссылается.
+- `ap_flow_structure` (includeInput) ×4 — живое состояние совпадает с журналом и `catalog/environments.md`:
+  - `reg-start`: `step_3` несёт `direct`; `step_4` — ветка `register_direct`(4) → `step_21` → `step_22` (`callFlow` reg-profile);
+  - `tg-router`: ветки `bcast_unsub` нет; `reg_go`(11) → `step_19` ack → `step_28` `callFlow reg-start` c `direct=true`;
+  - `bcast-run`: `step_53`/`step_54` → `step_25`; `step_28`/`step_36` `reply_markup={{step_26['output'].item.markup}}` (полное `body.data`);
+  - `bcast-step`: `step_57`/`step_58`/`step_59`; `step_28` без `bcast.btn.unsubscribe`; `step_30` `reply_markup={{step_59['output'].markup}}` (полное `body.data`).
+- **CallFlow-цели резолвятся**: `reg-profile` `bEd0cScLAymIT44Dmtnxu` (прод-`externalId`, не dev-`sXX6…`), `reg-start` `HGX7KPhFsyFrapBRvlIAT` — маппинг сред выполнен верно, а не скопирован из dev вслепую.
+- **Побайтовая сверка CODE с dev-эталоном**: `bcast-run/step_25`, `bcast-step/step_28`/`step_59`, `reg-start/step_3`/`step_21`, `tg-router/step_10` — `flows/*.json` (dev) и живой prod совпадают посимвольно.
+- **Пины qadam**: prod `bcast-run/step_53`/`step_54` и `bcast-step/step_57`/`step_58` — `tables@0.4.6`; формат входа идентичен уже работающим на prod шагам `tables@0.4.5` (проекция `columns` внешними id, фильтры `field` строкой — как `bcast-run/step_9`), поэтому совместим. `subflows@0.4.14`, `telegram-bot@0.9.0`, `store@0.7.0` — как в dev-эталоне.
+- **AppSec**:
+  - IDOR нет: `telegram_id` — из апдейта (`tg-router/step_1`), в `reg-start` — из `trigger.output.data`, не из callback. Ветка `register_direct` — не обход гейтов: `step_3` проверяет `existing`/`cancelled`/`finished`/`not_published`/`deadline`/`capacity` **до** `profileDone`+`consent_pdn`; `consent_pdn` — обязательная предпосылка (PAR-1), `consent_marketing` не трогается (PAR-2).
+  - `reg:go:` разбирается **до** сессионных `reg:*` (`step_10`); старый `bcast:unsub:` уходит по префиксу `bcast:` в `bcast-step`, где `step_1` ack'ает колбэк, `step_2` его не парсит (`op=''`) → `Otherwise` `step_56` (silent), побочных эффектов нет.
+  - Инъекций в разметке нет: текст кнопки — статичный `{{$t['event.card.btn_register']}}` (ru/uz/en есть), `eventId` — серверный SLUG и попадает в `callback_data`, а не в разметку.
+  - Секретов в живом экспорте нет (значения connections/variables не отдаются, только ссылки).
+- **`logOutput`**: `bcast-run/step_53` и `bcast-step/step_58` — выключены (`[LOG OFF: output]`), как заявлено; `tg-router/trigger` — тоже `logOutput:false`.
+- **`ap_validate_flow` ×4** — `0 invalid` (23/29/55/60).
+- **`publishedVersionId` сверен живым `ap_export_flow`**: `reg-start jHj9ZJjUr9dW5ClOntXP1`, `tg-router ZWPehcAjwM1879dtLDYou`, `bcast-run 5SsKz3nTsIq0fZdoOhYR0`, `bcast-step N8KLtU4GwTKBdZNIw1lu1` — совпадают с журналом и `migrations`; более поздних `publish` по этим флоу в `migrations` нет.
+- **`migrations` prod**: 6 строк `2026-10-05-w137-01…06` (`publish` ×4 с теми же `version_id`, `delete flow:bcast-unsub`, `delete translations`).
+- **Предусловие**: `broadcasts.status=running` — 0; свежих `FAILED` (после 2026-09-26) нет.
+- **Офлайн** (перезапущено ревьюером): `check-texts.py` — 30 флоу, 302 ссылки, 0 расхождений; `check-commands.py` — 30 флоу, 0 нарушений, самопроверка ok; `check-export-secrets.sh` — 0 совпадений.
+- **Каталог**: `catalog/environments.md` (раздел «Хотфиксы prod после W122», W137) описывает живое состояние точно; `flows/*.json`/`catalog/flows/*.md` не трогались — канон dev ([ADR-0042](../../docs/adr/0042-two-environments-one-repo.md)), для W137 верно.
 
 ### Замечания
 
-- —
+Замечаний нет. Остаточные наблюдения «на будущее» (вердикт не меняют):
+
+1. **на будущее.** Живого исполнения новых prod-путей нет — и в рамках правила «на prod `ap_test_step`/`ap_test_flow` не запускать» (гоча 11) быть не может: ни `step_53`/`54`/`25`, ни `step_57`/`58`/`59`, ни ветки `register_direct`/`reg_go` на prod не прогонялись. Совместимость `tables@0.4.6` доказана косвенно (идентичный вход работающих `0.4.5`-шагов, резолв callFlow-целей, корректные `columns`/фильтры). Закрытие — «тест себе» и первая боевая рассылка на владельце (в журнале уже заявлено как хвост).
+2. **на будущее (наследие W135).** `logOutput:false` на `step_53`/`step_58` не убирает `telegram_id` из логов прогона полностью: `bcast-run/step_25` (лог включён) отдаёт `items[].telegramId`, а `logInput` `step_59` ссылается на вывод `step_58` (при материализации вывода в лог). Это не регресс W137 — класс отмечен в W135 #5; при желании свести политику логов к единой.
+3. **на будущее.** Локаль подписи кнопки берётся из локали прогона `bcast-run` (наследует локаль отправителя), а не получателя; у рассылки нет per-recipient локали. Унаследовано из W135 #6, для текущего объёма приемлемо.
+4. **на будущее (процесс).** Чек-лист готовности в журнале не отмечен (`[ ]`), хотя все пункты, кроме последнего (это ревью), выполнены и подтверждены в «Как проверено». Косметика, но при закрытии пакета стоит проставить отметки.
+5. **на будущее (хвост окружения).** `tools/check-migrations.py` по prod не прогонялся (нет ключа платформы); состав манифеста и `object_id`/`version_id` сверены вручную через MCP и совпали. Как в W134.
 
 ## Хвосты и блокеры
 
