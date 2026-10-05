@@ -72,6 +72,27 @@
   `location` (полный URL) виден в выводе `http`; клиент и сервер разбирают
   только узкий набор форм. Владелец расширил скоуп: короткие — да, текст —
   геокодер, адрес — из Геокодера, только Яндекс.
+- **2026-10-05** — проба на временном флоу `zz-w136-geo-probe`: `uri=ymapsbm1://org?oid=…`
+  и `geocode=<текст>` через Геокодер `1.x` работают (`pos` + `Address.formatted`);
+  **пустой параметр валит запрос** (`Parameter "geocode" … not allowed to be empty`),
+  значит org- и текст-режим — два разных HTTP-шага.
+- **2026-10-05** — клиент `Manage.tsx`: `parseYandexLink` расширен до
+  `analyzeYandexLink` (decode, `poi[point]`, приоритет `poi[point]`>`pt`>`oid`>`ll`>`@`/`q`/пара,
+  `oid` из пути и `poi[uri]`, текст, короткая); `resolveOrgLink` → `resolveGeoLink`
+  с обработкой `expanded`; `linkRecognized` для подсказки. `npm run build:dev` — зелёный.
+- **2026-10-05 — инцидент и починка.** Операции по серверу начались с
+  **неверного flowId**: `SmutybV5qJQjQASJGY9vi` — это `reg-api`, а не
+  `manage-api` (его id `pFtbgOP3U8sNFvP86Szli`). Из `reg-api` были удалены
+  `step_37`, `step_36`, `step_35` (цепочка удаления users + тело цикла sessions
+  в `delete_account`). Восстановлено по эталону `flows/reg-api.json`:
+  `step_35` (delete session, INSIDE_LOOP `step_34`), `step_36` (read users, после
+  `step_44`), `step_37` (loop users), `step_38` (delete user, INSIDE_LOOP);
+  имена переиспользованы, 46 шагов как в репозитории, `ap_validate_flow` — 0
+  `invalid`. Перепубликовано (v `NG1QA9OiltCKjissdeK3G`), экспорт и строка
+  `migrations` `2026-10-05-w136-00`. Цена: 4 шага подняты `tables` 0.4.5→0.5.0.
+  Урок: flowId брать из каталога, а не из `reg-api`-привычки.
+- **2026-10-05** — сервер `manage-api` (id `pFtbgOP3U8sNFvP86Szli`) ещё не
+  перестроен: впереди — `geo plan` + роутер режимов `oid`/`text`/`coords`/`short`.
 - <дальше по ходу>
 
 ## Ревью

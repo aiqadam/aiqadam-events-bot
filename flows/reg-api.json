@@ -605,7 +605,7 @@
                                               },
                                               "propertySettings": {},
                                               "qadamName": "@aiqadam/qadam-tables",
-                                              "qadamVersion": "0.4.5"
+                                              "qadamVersion": "0.5.0"
                                             },
                                             "type": "PIECE",
                                             "valid": true
@@ -676,7 +676,7 @@
                                                   },
                                                   "name": "step_44",
                                                   "nextAction": {
-                                                    "displayName": "del: read user",
+                                                    "displayName": "del: read users",
                                                     "name": "step_36",
                                                     "nextAction": {
                                                       "displayName": "del: loop users",
@@ -701,7 +701,7 @@
                                                           },
                                                           "propertySettings": {},
                                                           "qadamName": "@aiqadam/qadam-tables",
-                                                          "qadamVersion": "0.4.5"
+                                                          "qadamVersion": "0.5.0"
                                                         },
                                                         "type": "PIECE",
                                                         "valid": true
@@ -782,7 +782,7 @@
                                                       },
                                                       "propertySettings": {},
                                                       "qadamName": "@aiqadam/qadam-tables",
-                                                      "qadamVersion": "0.4.5"
+                                                      "qadamVersion": "0.5.0"
                                                     },
                                                     "type": "PIECE",
                                                     "valid": true
