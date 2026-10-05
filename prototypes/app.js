@@ -275,19 +275,21 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     let s = orig;
     try { s = decodeURIComponent(orig); } catch (e) { s = orig; }
     const N = '(-?\\d+(?:\\.\\d+)?)';
+    const NB = '(-?\\d+(?:[.,]\\d+)?)';
+    const num = (v) => parseFloat(String(v).replace(',', '.'));
     const grab = (re, latFirst) => {
       const m = re.exec(s);
       if (!m) return null;
-      const a = parseFloat(m[1]);
-      const b = parseFloat(m[2]);
+      const a = num(m[1]);
+      const b = num(m[2]);
       return latFirst ? { lat: a, lon: b } : { lat: b, lon: a };
     };
     return grab(new RegExp('poi\\[point\\]=' + N + ',' + N, 'i'), false)
       || grab(new RegExp('[?&]pt=' + N + ',' + N, 'i'), false)
+      || grab(new RegExp('[?&]ll=' + N + ',' + N, 'i'), false)
       || grab(new RegExp('@' + N + ',' + N), true)
       || grab(new RegExp('[?&]q=' + N + ',' + N, 'i'), true)
-      || grab(new RegExp('[?&]ll=' + N + ',' + N, 'i'), false)
-      || grab(new RegExp('^' + N + '\\s*[,; ]\\s*' + N + '$'), true);
+      || grab(new RegExp('^' + NB + '\\s*[,; ]\\s*' + NB + '$'), true);
   }
   function parseYandexLink(text) {
     return analyzeYandexLink(text);
