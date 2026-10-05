@@ -267,15 +267,32 @@ var PROTO = globalThis.PROTO || (globalThis.PROTO = {});
     ];
   }
   const seatsLeft = PROTO.seatsLeft;
+  // W136 (ADR-0055): все формы «Поделиться» — декодируем URL, poi[point]
+  // впереди pt/ll/@/q/голой пары. Орг-ссылки (oid) и короткие в моке без
+  // сервера координат не дают — там сработает подсказка «битая ссылка».
+  function analyzeYandexLink(text) {
+    const orig = String(text || '').trim();
+    let s = orig;
+    try { s = decodeURIComponent(orig); } catch (e) { s = orig; }
+    const N = '(-?\\d+(?:\\.\\d+)?)';
+    const NB = '(-?\\d+(?:[.,]\\d+)?)';
+    const num = (v) => parseFloat(String(v).replace(',', '.'));
+    const grab = (re, latFirst) => {
+      const m = re.exec(s);
+      if (!m) return null;
+      const a = num(m[1]);
+      const b = num(m[2]);
+      return latFirst ? { lat: a, lon: b } : { lat: b, lon: a };
+    };
+    return grab(new RegExp('poi\\[point\\]=' + N + ',' + N, 'i'), false)
+      || grab(new RegExp('[?&]pt=' + N + ',' + N, 'i'), false)
+      || grab(new RegExp('[?&]ll=' + N + ',' + N, 'i'), false)
+      || grab(new RegExp('@' + N + ',' + N), true)
+      || grab(new RegExp('[?&]q=' + N + ',' + N, 'i'), true)
+      || grab(new RegExp('^' + NB + '\\s*[,; ]\\s*' + NB + '$'), true);
+  }
   function parseYandexLink(text) {
-    const s = String(text || '');
-    let m = /(?:pt|ll)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
-    if (m) return { lon: parseFloat(m[1]), lat: parseFloat(m[2]) };
-    m = /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
-    if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-    m = /[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
-    if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-    return null;
+    return analyzeYandexLink(text);
   }
   function plateFromLocal(s) {
     if (!s) return null;

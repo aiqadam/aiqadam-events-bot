@@ -2,7 +2,7 @@
 
 - **Статус**: ENABLED (published)
 - **Триггер**: `@aiqadam/qadam-subflows / callableFlow` — зовёт `tg-router`
-  (колбэки `bcast:*`, кроме `bcast:unsub:`); payload
+  (колбэки `bcast:*`); payload
   `{chatId, telegramId, callbackData, callbackQueryId}`
 - **Назначение**: один флоу на последовательность структурно одинаковых
   вопросов рассылки (ADR-0016): выбор события → сегмент → превью → тест →
@@ -19,7 +19,8 @@
   `no_show`) → превью (`bcast.preview.*` + счётчик) с кнопками
   тест/отправка/отмена;
 - `bcast:test:<bid>` — отправка себе **копией исходного поста** (`copyMessage`)
-  с кнопкой отписки (овнер видит ровно то, что уйдёт: фото, жирный, ссылка) →
+  с кнопкой по адресату (овнер видит ровно то, что уйдёт: фото, жирный, ссылка,
+  кнопка «Зарегистрироваться» по тому же правилу, что боевая отправка) →
   штамп `test_sent_at` только при доставке;
 - `bcast:send:<bid>` — гейты (создатель, сегмент задан, `test_sent_at`,
   время `no_show`) → `callFlow bcast-run`; повторный запуск бегущей
@@ -49,9 +50,9 @@
 | step_22 | ROUTER `seg verdict` | `ok` / `locked` / иначе-отказ |
 | step_23→24 | `upsert broadcasts`, `send_text_message` | сохранить сегмент, превью с кнопками |
 | step_25→26 | `send_text_message` ×2 | тексты `locked` / отказа |
-| step_27→28 | `find broadcasts`, CODE «test gate» | ветка `test`: создатель + непустое тело **или** источник `copyMessage` (W79), `unsubMarkup` |
+| step_27→28 | `find broadcast`, `find event` (step_57), `find event regs` (step_58), CODE «test gate», CODE «test register markup» (step_59) | ветка `test`: создатель + непустое тело **или** источник `copyMessage` (W79); `step_57`/`step_58` дают правило «регистрация открыта» и регистрацию овнера, `step_59` строит `markup` — «Зарегистрироваться» по адресату или пусто (W135, ADR-0054) |
 | step_29 | ROUTER `test gate verdict` | |
-| step_30→31 | `custom_api_call /copyMessage` (`continueOnFailure`), CODE «test delivered?» | тест себе копией исходного поста с кнопкой отписки (W79); доставка по отсутствию ошибки |
+| step_30→31 | `custom_api_call /copyMessage` (`continueOnFailure`), CODE «test delivered?» | тест себе копией исходного поста с `reply_markup` = `step_59.markup` (W79/W135); доставка по отсутствию ошибки |
 | step_32 | ROUTER `delivered verdict` | |
 | step_33→34 | `upsert broadcasts`, `send_text_message` | штамп `test_sent_at`, `bcast.test.sent` |
 | step_35→36 | `send_text_message` ×2 | `common.err.generic` (тест не дошёл) / текст отказа гейта |
@@ -94,7 +95,13 @@
   гоча 7a); `exampleData` совпадает с триггером callee.
 - **Тест себе — копия исходного поста (W79, #131).** `step_30` —
   `custom_api_call /copyMessage` (`from_chat_id`/`message_id` из строки
-  рассылки, `reply_markup` — кнопка «Отписаться»). Кнопку `copyMessage` сам не
+  рассылки, `reply_markup` — `step_59.markup`). Кнопку `copyMessage` сам не
   переносит: без явного `reply_markup` её нет (проверено #149). Тело может быть
   пустым, если у поста только фото; гейт `step_28` требует «тело или источник».
   `step_31` читает `{{step_30['error']}}`, как и прежняя отправка.
+- **Тест показывает кнопку по адресату (W135, ADR-0054).** `step_57` читает событие,
+  `step_58` — регистрации события (проекция `telegram_id`, `logOutput: false`),
+  `step_59` решает: «Зарегистрироваться» (`reg:go:<eventId>`) овнеру, если он не
+  зарегистрирован и регистрация открыта, иначе пустой `inline_keyboard`. То же
+  правило, что у боевой отправки, — овнер видит ровно то, что уйдёт. Отдельного
+  `unsubMarkup` и кнопки «Отписаться» больше нет.

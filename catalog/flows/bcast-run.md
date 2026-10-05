@@ -38,14 +38,14 @@
 | step_15→18 | `upsert broadcasts`, `find events`, CODE, `send_text_message` | пустая ветка: `done`/нули, отчёт `bcast.empty_segment` автору (`events.staff_id`) |
 | step_19→21 | `upsert broadcasts`, LOOP, `upsert targets` | `running`/`started_at`/`total`; по одному `pending`-таргету на получателя |
 | step_22→23 | `send_text_message`, `callFlow self` | `bcast.started` инициатору; самовызов `phase='send'` очередью |
-| step_24→25 | `find pending chunk`, CODE «prep chunk» | ≤30 `pending`, `unsubMarkup` + `mediaChatId`/`mediaMessageId` (W79) в каждое сообщение |
+| step_24→25 | `find pending chunk`, `find event regs` (step_53), `find event` (step_54), CODE «prep chunk» | ≤30 `pending`; `step_53` — регистрации события (проекция `telegram_id`, `logOutput: false`), `step_54` — событие ради правила «регистрация открыта»; в каждый item кладётся `markup` — «Зарегистрироваться» (`reg:go:<eventId>`), если получатель не зарегистрирован и регистрация открыта, иначе пустой `inline_keyboard` (W135, ADR-0054); `mediaChatId`/`mediaMessageId` (W79) |
 | step_26 | LOOP `per recipient` | |
-| step_27→29 | `delay 1s`, `custom_api_call /copyMessage` (`continueOnFailure`), CODE «classify send» | темп ~1 msg/s (замер Q13); копия исходного поста с кнопкой отписки (W79); разбор конверта ошибки `{message: <JSON>}` |
+| step_27→29 | `delay 1s`, `custom_api_call /copyMessage` (`continueOnFailure`), CODE «classify send» | темп ~1 msg/s (замер Q13); копия исходного поста с `reply_markup` = `item.markup` — кнопкой «Зарегистрироваться» по адресату (W79/W135); разбор конверта ошибки `{message: <JSON>}` |
 | step_30 | ROUTER `send outcome` | `sent` / `blocked` / `failed` / `retry429` / иначе-`failed` |
 | step_31 | `update-record` | `sent` + `sent_at` |
 | step_32→33 | `upsert users`, `update-record` | `blocked_bot='true'` + таргет `blocked` + текст ошибки |
 | step_34 | `update-record` | таргет `failed` + текст ошибки |
-| step_35→37 | `delay retry_after`, `custom_api_call /copyMessage` (`continueOnFailure`), CODE «classify resend» | `429`: пауза ровно на `retry_after` (кламп 1…300, дефолт 60) + 1 повтор — тоже копией, с кнопкой (W79) |
+| step_35→37 | `delay retry_after`, `custom_api_call /copyMessage` (`continueOnFailure`), CODE «classify resend» | `429`: пауза ровно на `retry_after` (кламп 1…300, дефолт 60) + 1 повтор — тоже копией, с тем же `item.markup` (W79/W135) |
 | step_38 | ROUTER `resend outcome` | `sent2` / `blocked2` / иначе-`failed2` |
 | step_39→42 | `update-record` / `upsert`+`update` / `update-record` | пометки повтора |
 | step_43 | `update-record` | недостижимый фолбэк `Otherwise` (классификатор исчерпывающий) |
@@ -90,11 +90,15 @@
 - **Отчёт автору (`events.staff_id`) — всегда** (Q18, вариант 1): успех
   (`sent/failed`), пустой сегмент, остановка гейтом. Прогресс-карточка не
   редактируется (лишние отправки).
-- **Кнопка отписки — в каждом массовом сообщении** (OWN-13), включая тест:
-  колбэк `bcast:unsub:<bid>` ведёт в `bcast-unsub`.
+- **Кнопка в массовом сообщении — по адресату (W135, ADR-0054).** «Зарегистрироваться»
+  (`reg:go:<eventId>`) ставится получателю, который ещё не зарегистрирован на событие
+  рассылки и на которого регистрация открыта (`published`, `reg_deadline_at` не прошёл,
+  есть места — правило `reg-start/step_3`); иначе `inline_keyboard` пуст, кнопки нет.
+  Условие считается по каждому получателю (не по имени сегмента). Кнопки «Отписаться»
+  больше нет — согласие на рассылку меняется в табе «Профиль» Mini App (PAR-2, W60).
 - **Массовая отправка — копия исходного поста (W79, #131).** `step_28` и
   `step_36` — `custom_api_call /copyMessage` с `from_chat_id`/`message_id` из
-  строки рассылки и **явным** `reply_markup` (кнопка «Отписаться»; без него
-  копия её теряет — #149). Работает и для текста, и для фото с caption.
+  строки рассылки и **явным** `reply_markup` (`{{step_26['output'].item.markup}}`; без него
+  копия кнопку не переносит — #149). Работает и для текста, и для фото с caption.
   Источник пишется в `broadcasts` на этапе черновика; у старых строк без
   источника копирование упадёт и таргет пометится `failed` (видимо, не тихо).

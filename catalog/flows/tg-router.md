@@ -30,12 +30,18 @@
 5. Колбэки `myreg:*` сняты (W43, Q57): «Мои билеты» — экран
    `#/events?tab=mine`, отмена — на экране билета; старые кнопки уходят
    в `Otherwise` молча.
-6. Рассылки (W14): колбэк `bcast:unsub:*` → `bcast-unsub` (без staff-гейта,
-   получатель — гость); любой другой `bcast:*` → `bcast-step`;
-   пересланное сообщение без команды и с непустым текстом/подписью →
-   `bcast-draft` (staff-гейт внутри, не-staff уходит в тишину). С W79 (#131)
-   туда же уходит **фото без подписи** (анонс спикера часто без текста);
-   альбомный апдейт без подписи (`mediaGroupId`) не берётся — Part 2.
+6. Рассылки (W14): колбэк `bcast:*` → `bcast-step` (маршрута `bcast:unsub:`
+   больше нет — кнопки отписки в массовых сообщениях нет, старый колбэк уходит
+   в `bcast-step` и тихо игнорируется); пересланное сообщение без команды и с
+   непустым текстом/подписью → `bcast-draft` (staff-гейт внутри, не-staff
+   уходит в тишину). С W79 (#131) туда же уходит **фото без подписи** (анонс
+   спикера часто без текста); альбомный апдейт без подписи (`mediaGroupId`) не
+   берётся — Part 2.
+6в. Кнопка «Зарегистрироваться» в рассылке (W135, [ADR-0054](../../docs/adr/0054-broadcast-register-instead-of-unsubscribe.md)):
+    колбэк `reg:go:<eventId>` → маршрут `reg_go` → `reg-start` с `direct=true`.
+    `eventId` берётся из колбэка — регистрируем ровно то событие, о котором была
+    рассылка. Проверка стоит до сессионной ветки `reg:*`, иначе при активной
+    сессии онбординга колбэк уходил бы в `none`.
 6a. Колбэк меню (W68, #120; ack — W99): префикс `menu:` (кнопка «Как сделать
     рассылку», `menu:bcast_help`) → `menu_cb` — ветка подтверждает колбэк
     (`answer_callback_query`) и только затем вызывает `menu`. Не команда,
@@ -82,8 +88,8 @@
 | step_7→8 | `tables-find-records sessions` → CODE «pick session» | freshest, не `-`, не старше 24ч |
 | step_27 | CODE «effective lang» | язык прогона: `users.lang` → `draft.profile.lang` (выбор в этом онбординге) → `language_code`; колбэк `ob:lang:<xx>` задаёт локаль этого же прогона; whitelist `ru\|uz\|en` (W114). Вывод — источник `localeSource` флоу |
 | step_9 | `callFlow fn-parse-start` (`inline`, `waitForResponse: true`) | разбор `/start`-payload |
-| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагам `ob_await_*` и `ob_name` (W133) в сессии; колбэки рассылок — по префиксу `bcast:` (`bcast:unsub:` отдельно), пересылка без команды — `bcast_draft` (**W79, #131:** и фото без подписи — `hasPhoto`, если апдейт не альбомный, `mediaGroupId === ''`); **колбэки меню — по префиксу `menu:`** (W68, #120; W99: маршрут `menu_cb`, ack до входа в меню). Проверки рассылок и меню стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод (`ob_await_*`, `ob_name`, W133) перекрывает его (п. 9 контракта) |
-| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`menu`/`menu_cb`/`bcast_draft`/`bcast_step`/`bcast_unsub`/`quiz`/`quiz_answer`/`Otherwise` | |
+| step_10 | CODE «routing decision» | вычисляет `route` по команде/`callbackData`/сессии: `/start` — четыре исхода (deep link / **продолжение онбординга по событию** / меню / молчание), любая другая команда — `menu` (ADR-0025); **голый `/start` при активной сессии `registration` с шагом `ob_*` и непустым `eventId` уходит в `reg_start`, а не в `menu`** — иначе меню перетирает сессию черновиком без `eventId` и онбординг по диплинку теряет событие (ADR-0034 п.4); колбэки регистрации — **по префиксу `reg:pdn:` / `reg:mkt:`**, онбординга — **`ob:`**, свободный ввод — по шагам `ob_await_*` и `ob_name` (W133) в сессии; колбэки рассылок — по префиксу `bcast:` (без отдельного `bcast:unsub:` — маршрут снят W135), кнопка «Зарегистрироваться» — по префиксу `reg:go:` (маршрут `reg_go`, `eventId` из колбэка, W135), пересылка без команды — `bcast_draft` (**W79, #131:** и фото без подписи — `hasPhoto`, если апдейт не альбомный, `mediaGroupId === ''`); **колбэки меню — по префиксу `menu:`** (W68, #120; W99: маршрут `menu_cb`, ack до входа в меню). Проверки рассылок и меню стоят **до** командной цепочки, чтобы не сравнивать `route` ни с чем, кроме `'start'` (`check-commands.py`); **обычный текст вне формы → `menu` с `fallback=true`** (W73, #125), свободный ввод (`ob_await_*`, `ob_name`, W133) перекрывает его (п. 9 контракта) |
+| step_11 | ROUTER по `route`: `reg_start`/`reg_pdn`/`reg_mkt`/`reg_profile`/`reg_go`/`menu`/`menu_cb`/`bcast_draft`/`bcast_step`/`quiz`/`quiz_answer`/`Otherwise` | |
 | step_12→14 | `callFlow reg-start`/`reg-consent-pdn`/`reg-consent-mkt` (`inline`, `waitForResponse: false`) | делегирование обработчику регистрации; все три получают `sessionDraft`; `reg-start` — плюс `firstName`/`lastName` для эвристики (W50) |
 | step_20 | `callFlow reg-profile` (`inline`, `waitForResponse: false`) | онбординг C: `callbackData`/`messageText`/`messageId`/`sessionDraft`/`callbackQueryId` + имена (W50) |
 | step_21 | `callFlow staff-accept` (`inline`, `waitForResponse: false`) | приём инвайта контролёра (W10): `token`/`eventId` из разбора `s`-payload + `chatId`/`telegramId` |
@@ -92,7 +98,8 @@
 | step_26 | `answer_callback_query` (`continueOnFailure`) | ветка `quiz`: ack колбэка `qz:start` **до** вызова `quiz` (W103; тот же приём, что W99 у `menu_cb`) — иначе Telegram держит «часики» на кнопке |
 | step_24 | `callFlow quiz` (`inline`, `waitForResponse: false`) | ветка `quiz`: вход викторины, `qz:start` (W103, ADR-0041) |
 | step_25 | `callFlow quiz-answer` (`inline`, `waitForResponse: false`) | ветка `quiz_answer`: приём свободного ответа викторины (W103, ADR-0041) |
-| step_17→19 | `callFlow bcast-draft`/`bcast-step`/`bcast-unsub` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
+| step_17→18 | `callFlow bcast-draft`/`bcast-step` (`queue`, `waitForResponse: false`) | делегирование рассылкам (W14); payload — обёртка `{"payload": {...}}` |
+| step_19→28 | `answer_callback_query` + `callFlow reg-start` (`inline`) | ветка `reg_go` (W135, ADR-0054): ack колбэка `reg:go:<eventId>` и регистрация с `direct=true`; `eventId` — из `step_10.regEventId` |
 | step_16 | CODE «намерение без обработчика» | лог (`Otherwise` от `step_11`) |
 | step_5 | CODE «апдейт пропущен — почему» | лог (`Otherwise` от `step_4`, гейт) |
 
@@ -100,7 +107,7 @@
 
 - **Таблицы**: `users` (`xHhYjhwqKdONkrYJGcBsz`), `sessions` (`toTKgngMTqDNJWDpQMh4d`, чтение)
 - **Флоу**: `fn-parse-start`, `reg-start`, `reg-consent-pdn`, `reg-consent-mkt`,
-  `menu`, `bcast-draft`, `bcast-step`, `bcast-unsub`, `staff-accept`,
+  `menu`, `bcast-draft`, `bcast-step`, `staff-accept`,
   `quiz`, `quiz-answer` —
   делегирование, не subflow-функции (ADR-0015 п. 4)
 - **Переменные**: —

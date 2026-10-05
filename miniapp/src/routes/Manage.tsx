@@ -7,6 +7,7 @@ import { getTelegram, hapticImpact, hapticNotification, setClosingConfirmation }
 import { useBackButton } from '../lib/useBackButton';
 import { setupThemeListener } from '../lib/theme';
 import { postJson, MANAGE_API, STAFF_EVENTS_API, STAFF_INVITE_API } from '../lib/api';
+import { analyzeYandexLink, parseYandexLink, linkRecognized } from '../lib/yandexLink';
 import { utcToLocalInput, utcToPlate, utcToTime, utcMs } from '../lib/dates';
 
 const FIELDS = ['title', 'description', 'address', 'lat', 'lon', 'starts_at', 'ends_at', 'reg_deadline_at', 'capacity', 'overbook_pct', 'lang', 'online_url', 'format'] as const;
@@ -81,30 +82,12 @@ function genNewId(): string {
   return (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)).slice(0, 12);
 }
 
-// --- гео: ссылка Яндекс.Карт → координаты (Q52: карты в продукте нет) --------
-// Разбираем те же формы, что и прототип: pt/ll (lon,lat), @lat,lon, q=lat,lon,
-// плюс голая пара «широта, долгота» — человек часто копирует её текстом.
-function parseYandexLink(raw: string): { lat: number; lon: number } | null {
-  const s = String(raw || '').trim();
-  let m = /(?:pt|ll)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
-  if (m) return { lon: parseFloat(m[1]), lat: parseFloat(m[2]) };
-  m = /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
-  if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-  m = /[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(s);
-  if (m) return { lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
-  m = /^(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)$/.exec(s);
-  if (m) return { lat: parseFloat(m[1].replace(',', '.')), lon: parseFloat(m[2].replace(',', '.')) };
-  return null;
-}
+// --- гео: ссылка Яндекс.Карт (Q52: карты в продукте нет) ---------------------
+// Разбор всех форм «Поделиться» — lib/yandexLink (W136, ADR-0055).
 
 function coordsInRange(lat: number, lon: number): boolean {
   return isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
 }
-
-// Орг-ссылка (её даёт «Поделиться»): https://yandex.com/maps/org/<slug>/<oid>…
-// Орг-ссылка координат не несёт — её разбирает только сервер через
-// Геокодер (Q55); resolveOrgLink ниже.
-const YANDEX_MAPS_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*yandex\.[a-z.]{2,6}\/maps\//i;
 
 // Эквивалентная ссылка на точку — ею предзаполняем поле правки, когда ссылка
 // неизвестна, а координаты есть (вердикт W49: проверяется сама ссылка).
@@ -781,9 +764,13 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const onLinkChange = useCallback(
     (v: string) => {
       setMapLink(v);
-      const parsed = parseYandexLink(v.trim());
-      if (parsed && coordsInRange(parsed.lat, parsed.lon)) {
-        setGeo(parsed.lat, parsed.lon);
+      // W136 (ADR-0055): точные координаты (poi[point]/pt) ставим сразу;
+      // центр ll/@/q — тоже, но только когда org/oid не заявлен (иначе центр
+      // карты — не та точка). Орг/текст/короткую доберёт сервер на paste.
+      const a = analyzeYandexLink(v.trim());
+      const usable = a.coords && coordsInRange(a.coords.lat, a.coords.lon) && (a.point || !a.oid);
+      if (usable && a.coords) {
+        setGeo(a.coords.lat, a.coords.lon);
       } else {
         // Как в эталоне: битая ссылка сносит координаты, а не оставляет
         // прежнюю точку под чужим текстом.
@@ -794,23 +781,41 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
     [setGeo],
   );
 
-  const resolveOrgLink = useCallback(
+  // W42/W136 (Q55/ADR-0055): сервер достаёт координаты/адрес (Геокодер по
+  // oid/тексту) и разворачивает короткие ссылки. Короткая приходит ответом
+  // `expanded` — её разбираем сами и, если нужен Геокодер, зовём ещё раз.
+  const resolveGeoLink = useCallback(
     async (raw: string) => {
       const reqId = ++geoReqRef.current;
-      const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link: raw });
-      if (geoReqRef.current !== reqId) return;
-      if (res.kind === 'json' && res.data['ok']) {
-        const la = Number(res.data['lat']);
-        const lo = Number(res.data['lon']);
-        if (coordsInRange(la, lo)) {
-          setGeo(la, lo);
-          setMapLink(equivLink(String(lo), String(la)));
-          // Адрес подставляем, только если поле пустое: введённое вручную не трогаем.
-          const addr = typeof res.data['address'] === 'string' ? res.data['address'].trim() : '';
-          if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
+      const apply = (data: Record<string, unknown>): boolean => {
+        const la = Number(data['lat']);
+        const lo = Number(data['lon']);
+        if (!coordsInRange(la, lo)) return false;
+        // Точные координаты из самой ссылки (poi[point]/pt) не затираем — от
+        // Геокодера берём адрес; иначе ставим точку из ответа.
+        const a = analyzeYandexLink(raw);
+        if (!a.point) setGeo(la, lo);
+        setMapLink(equivLink(String(lo), String(la)));
+        // Адрес — только в пустое поле: введённое вручную не трогаем.
+        const addr = typeof data['address'] === 'string' ? data['address'].trim() : '';
+        if (addr) setFields((prev) => (String(prev['address'] || '').trim() ? prev : { ...prev, address: addr }));
+        return true;
+      };
+      const run = async (link: string, depth: number): Promise<void> => {
+        const res = await postJson(MANAGE_API, { initData, action: 'resolve_geo', link });
+        if (geoReqRef.current !== reqId) return;
+        if (!(res.kind === 'json' && res.data['ok'])) return;
+        const expanded = typeof res.data['expanded'] === 'string' ? res.data['expanded'].trim() : '';
+        if (expanded && depth < 2) {
+          const b = analyzeYandexLink(expanded);
+          if (b.point && b.coords) setGeo(b.coords.lat, b.coords.lon);
+          if (b.oid || b.text) { await run(expanded, depth + 1); }
+          else if (b.coords) setMapLink(equivLink(String(b.coords.lon), String(b.coords.lat)));
           return;
         }
-      }
+        apply(res.data);
+      };
+      await run(raw.trim(), 0);
       // Не разобралось даже сервером — поле хранит ввод, статус покажет ошибку.
     },
     [initData, setGeo],
@@ -824,10 +829,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
       const raw = (el ? el.value : mapLink).trim();
       if (!raw) return;
       setMapLink(raw);
-      if (parseYandexLink(raw)) return; // координаты уже встали в onChange
-      if (YANDEX_MAPS_RE.test(raw)) void resolveOrgLink(raw); // орг-ссылка — только сервер
+      const a = analyzeYandexLink(raw);
+      if (a.point && a.coords && coordsInRange(a.coords.lat, a.coords.lon)) setGeo(a.coords.lat, a.coords.lon);
+      // Орг/текст/короткая — только сервер (Геокодер/разворот).
+      if (a.oid || a.text || a.short) void resolveGeoLink(raw);
     }, 0);
-  }, [mapLink, resolveOrgLink]);
+  }, [mapLink, resolveGeoLink, setGeo]);
 
   const setFormat = useCallback(
     (nextOnline: boolean) => {
@@ -1612,8 +1619,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           // Ошибка валидации («Далее»/«Опубликовать») уже
                           // показана строкой ниже — не дублируем.
                           if (fieldError('geo')) return null;
-                          const parsed = parseYandexLink(mapLink.trim());
-                          if (parsed) return null;
+                          if (linkRecognized(mapLink)) return null;
                           if (mapLink.trim()) {
                             return (
                               <p className="helper error" id="e-geolink">

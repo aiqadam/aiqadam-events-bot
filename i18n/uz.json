@@ -13,7 +13,6 @@
   "bcast.btn.seg_registered": "Roʻyxatdan oʻtganlar",
   "bcast.btn.send": "Barchaga yuborish",
   "bcast.btn.test": "Oʻzimga test yuborish",
-  "bcast.btn.unsubscribe": "Obunani bekor qilish",
   "bcast.cancelled": "Xabar yuborish bekor qilindi, hech kimga hech narsa ketmadi.",
   "bcast.cancelled_running": "Xabar yuborish toʻxtatildi. Joriy qism yuborilmoqda, qolgani ketmaydi.",
   "bcast.empty_segment": "Bu kesimda hech kim yoʻq — yuborishga odam qolmadi.",
@@ -487,7 +486,5 @@
   "ticket.retry": "Qayta urinish",
   "ticket.show_at_entrance": "Kirishda shu QRni koʻrsating.",
   "ticket.title": "Kirish uchun QR",
-  "ticket.title_online": "Efiringiz",
-  "unsub.already": "Siz allaqachon eʼlonlarga obuna emassiz.",
-  "unsub.done": "Endi eʼlonlar yubormaymiz. Bu roʻyxatlaringizga taʼsir qilmadi."
+  "ticket.title_online": "Efiringiz"
 }
