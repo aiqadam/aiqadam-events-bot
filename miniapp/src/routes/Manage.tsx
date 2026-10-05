@@ -275,6 +275,12 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   // разбором. Отдельного хранилища нет: онлайн ⟺ пустые lat/lon.
   const [online, setOnline] = useState(false);
   const [mapLink, setMapLink] = useState('');
+  // W136: пока сервер разбирает орг/текст/короткую ссылку (Геокодер/разворот),
+  // показываем «Ищем координаты…», а не молчим.
+  const [geoBusy, setGeoBusy] = useState(false);
+  // Сервер ответил, но координат не дал — показываем ошибку сразу, а не молча
+  // ждём отказа публикации.
+  const [geoFailed, setGeoFailed] = useState(false);
 
   // W36: секция «Контролёры» — только у существующего события (нужен eventId).
   const [staffItems, setStaffItems] = useState<StaffItem[]>([]);
@@ -764,6 +770,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const onLinkChange = useCallback(
     (v: string) => {
       setMapLink(v);
+      setGeoFailed(false);
       // W136 (ADR-0055): точные координаты (poi[point]/pt) ставим сразу;
       // центр ll/@/q — тоже, но только когда org/oid не заявлен (иначе центр
       // карты — не та точка). Орг/текст/короткую доберёт сервер на paste.
@@ -787,6 +794,9 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
   const resolveGeoLink = useCallback(
     async (raw: string) => {
       const reqId = ++geoReqRef.current;
+      setGeoBusy(true);
+      setGeoFailed(false);
+      let applied = false;
       const apply = (data: Record<string, unknown>): boolean => {
         const la = Number(data['lat']);
         const lo = Number(data['lon']);
@@ -808,15 +818,24 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
         const expanded = typeof res.data['expanded'] === 'string' ? res.data['expanded'].trim() : '';
         if (expanded && depth < 2) {
           const b = analyzeYandexLink(expanded);
-          if (b.point && b.coords) setGeo(b.coords.lat, b.coords.lon);
+          if (b.point && b.coords) { setGeo(b.coords.lat, b.coords.lon); applied = true; }
           if (b.oid || b.text) { await run(expanded, depth + 1); }
-          else if (b.coords) setMapLink(equivLink(String(b.coords.lon), String(b.coords.lat)));
+          else if (b.coords) { setMapLink(equivLink(String(b.coords.lon), String(b.coords.lat))); applied = true; }
           return;
         }
-        apply(res.data);
+        if (apply(res.data)) applied = true;
       };
-      await run(raw.trim(), 0);
-      // Не разобралось даже сервером — поле хранит ввод, статус покажет ошибку.
+      try {
+        await run(raw.trim(), 0);
+      } finally {
+        // Ответ устаревшей вставки (reqId перебит новой) гасит свой счётчик, а
+        // не состояние свежего запроса.
+        if (geoReqRef.current === reqId) {
+          setGeoBusy(false);
+          // Сервер ответил, но координат не дал — ошибку показываем сразу.
+          if (!applied) setGeoFailed(true);
+        }
+      }
     },
     [initData, setGeo],
   );
@@ -1610,6 +1629,7 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           type="url"
                           inputMode="url"
                           autoComplete="off"
+                          aria-busy={geoBusy}
                           placeholder={t('manage.geo.link_placeholder')}
                           value={mapLink}
                           onChange={(e) => onLinkChange(e.target.value)}
@@ -1619,6 +1639,27 @@ export default function Manage({ eventId: propEventId }: { eventId: string }) {
                           // Ошибка валидации («Далее»/«Опубликовать») уже
                           // показана строкой ниже — не дублируем.
                           if (fieldError('geo')) return null;
+                          // Сервер разбирает орг/текст/короткую (W136) —
+                          // видимый статус вместо тишины.
+                          if (geoBusy) {
+                            return (
+                              <>
+                                <p className="helper" id="geo-busy" role="status">
+                                  {t('manage.geo.searching')}
+                                </p>
+                                <div className="skeleton" aria-hidden="true" style={{ height: 4, marginTop: 6 }} />
+                              </>
+                            );
+                          }
+                          // Структурно ссылка «наша», но сервер координат не дал —
+                          // не молчим, показываем ошибку сразу.
+                          if (geoFailed) {
+                            return (
+                              <p className="helper error" id="e-geolink">
+                                {t('manage.geo.link_bad')}
+                              </p>
+                            );
+                          }
                           if (linkRecognized(mapLink)) return null;
                           if (mapLink.trim()) {
                             return (
