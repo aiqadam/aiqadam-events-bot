@@ -233,6 +233,52 @@
 - **Прототип**: реплика `analyzeYandexLink` из `prototypes/app.js` — `bare comma → null`,
   `ll+@ → @` (см. замечание 2).
 
+### Круг 3 — повторное ревью (2026-10-05)
+
+- **Ревьюер**: агент-ревьюер (opencode, deepseek-v4.1-flash) · **Вердикт**: замечаний нет
+
+Замечания круга 2 закрыты по существу:
+
+1. **SPEC** — старая цепочка `pt > oid > ll` удалена (`064e5c0`; diff — только удаление
+   фрагмента). В OWN-1 осталась одна норма — `poi[point] > pt > ll > @`/`q`/пара,
+   `oid` — триггер Геокодера; grep по SPEC (`oid`/`pt`/`ll`/`poi[point]`) других
+   цепочек приоритета не находит, формулировка совпадает с ADR-0055 п.2.
+2. **Прототип** — `prototypes/app.js` приведён к общему модулю: `NB` c `[.,]`,
+   `num` c `replace(',', '.')`, `ll` перед `@`/`q`. Реплика функций прототипа против
+   `miniapp/src/lib/yandexLink.mjs` на 10 входах — **паритет 10/10** (poi-encoded,
+   poi>ll, pt/ll, `@`/`q`, `ll`>@, голая пара с десятичной запятой, org, short, текст,
+   мусор); `node prototypes/check.mjs` — зелёный.
+3. **Хвосты** — принятые кругом 1 №4/№5 названы явно в разделе «Хвосты и блокеры»
+   («Принято владельцем хвостами»: пробники удалены до вердикта; нет хостовой проверки
+   Яндекса и ранней подсказки), там же — круга 2 №3 (`text` выше `coords`) и №5 (`mapLink`).
+
+Проверено (живой проект через MCP `app-flow-events-dev` + репозиторий):
+
+- **`manage-api`** (`pFtbgOP3U8sNFvP86Szli`): `ap_export_flow` — `flows[0].id =
+  Auy6i7uMdfL0lx1qPLAFS` = `flows/_manifest.json`; `ap_flow_structure` — `step_34`
+  план, `step_35` ROUTER `oid`/`text`/`coords`/`short`/`Otherwise`, ветки
+  `36→37→61`, `62→63→64`, `65→66`, `67→68→69`, `70→71`; `ap_read_step_code(step_34)` —
+  порядок `poi[point] > pt > ll > @ > q > пара`, `[.,]`+`replace`; совпадает с
+  `flows/manage-api.json`; `ap_validate_flow` — 72/72 valid.
+- **`reg-api`** (`SmutybV5qJQjQASJGY9vi`): `ap_export_flow` — версия
+  `NG1QA9OiltCKjissdeK3G` = манифест; `delete_account` полон (восстановленные
+  `step_35/36/37/38` на месте); `ap_validate_flow` — 46 шагов, 45 valid, 0 invalid,
+  1 skipped (`step_12` W60). Предупреждение о недоступных `tables@0.4.5/0.4.6` —
+  то же, что в круге 1, к W136 не относится (живые прогоны эти шаги исполняют).
+- **`migrations`** — `2026-10-05-w136-00` (`reg-api`, `NG1QA9OiltCKjissdeK3G`),
+  `-01` (`manage-api`, `Auy6i7uMdfL0lx1qPLAFS`), `-90`/`-91` (delete пробников);
+  `ap_list_flows(name=zz-w136)` — 0.
+- **Офлайн** (аргументы как в pre-commit/CI): `node miniapp/src/lib/yandexLink.test.mjs`
+  — 10/10; `node prototypes/check.mjs` — зелёный; `check-texts.py i18n/ru.json flows/*.json`
+  — 302 ссылки, 0 расхождений; `check-commands.py i18n/*.json flows/*.json` — 0 нарушений;
+  `check-export-secrets.sh` — ок (`auth` — ссылки `{{connections['...']}}`).
+- **AppSec W136**: режимы `oid`/`text`/`short` не расширяют поверхность — Геокодер по
+  фиксированному URL, короткая ограничена `^https?://…yandex.<tld>/maps/-/`, `oid` —
+  только цифры, `text` обрезан до 300; точка входа `resolve_geo` по-прежнему за
+  `initData` (окно 300 c) и строкой `staff`; секретов в экспорте нет.
+
+Новых «блокер»/«важно» нет; остаток — только принятые владельцем хвосты.
+
 ## Хвосты и блокеры
 
 - Квота Геокодера (1000/сутки) — с расширением форм расход растёт; цена Q55.
