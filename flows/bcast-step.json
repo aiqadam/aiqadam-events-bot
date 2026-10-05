@@ -989,6 +989,9 @@
                               "input": {
                                 "body": {
                                   "data": {
+                                    "chat_id": "{{trigger['output'].data.chatId}}",
+                                    "from_chat_id": "{{step_28['output'].mediaChatId}}",
+                                    "message_id": "{{step_28['output'].mediaMessageId}}",
                                     "reply_markup": "{{step_59['output'].markup}}"
                                   }
                                 },

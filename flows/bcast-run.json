@@ -874,6 +874,9 @@
                                           "input": {
                                             "body": {
                                               "data": {
+                                                "chat_id": "{{step_26['output'].item.telegramId}}",
+                                                "from_chat_id": "{{step_25['output'].mediaChatId}}",
+                                                "message_id": "{{step_25['output'].mediaMessageId}}",
                                                 "reply_markup": "{{step_26['output'].item.markup}}"
                                               }
                                             },
@@ -1047,6 +1050,9 @@
                                 "input": {
                                   "body": {
                                     "data": {
+                                      "chat_id": "{{step_26['output'].item.telegramId}}",
+                                      "from_chat_id": "{{step_25['output'].mediaChatId}}",
+                                      "message_id": "{{step_25['output'].mediaMessageId}}",
                                       "reply_markup": "{{step_26['output'].item.markup}}"
                                     }
                                   },
@@ -1790,6 +1796,7 @@
       "propertySettings": {},
       "qadamName": "@aiqadam/qadam-subflows",
       "qadamVersion": "0.4.14",
+      "sampleData": {},
       "triggerName": "callableFlow"
     },
     "type": "PIECE_TRIGGER",
