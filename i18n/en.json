@@ -13,7 +13,6 @@
   "bcast.btn.seg_registered": "Registered",
   "bcast.btn.send": "Send to everyone",
   "bcast.btn.test": "Send a test to myself",
-  "bcast.btn.unsubscribe": "Unsubscribe",
   "bcast.cancelled": "Broadcast cancelled, nothing was sent to anyone.",
   "bcast.cancelled_running": "Broadcast interrupted. The current chunk is finishing; the rest will not be sent.",
   "bcast.empty_segment": "This segment is empty — there is nobody to send to.",
@@ -487,7 +486,5 @@
   "ticket.retry": "Retry",
   "ticket.show_at_entrance": "Show this QR at the entrance.",
   "ticket.title": "Your entry QR",
-  "ticket.title_online": "Your stream",
-  "unsub.already": "You are not subscribed to announcements anyway.",
-  "unsub.done": "We will not send announcements any more. Your registrations are unaffected."
+  "ticket.title_online": "Your stream"
 }

@@ -120,8 +120,11 @@ frontmatter прав и указатель на канон, процедур в 
    вызываемые флоу), у вебхук-флоу Mini App — заголовок `ap-parent-run-locale` от
    SPA, своего `localeSource` у них нет. `i18n-sync` не воскрешён, таблица
    `strings` не читается.
-8. **Рассылка: 25 msg/s, `retry_after` на 429, `blocked_bot` на 403,
-   кнопка «отписаться», обязательный тест себе** (OWN-10…OWN-13).
+8. **Рассылка: темп ~1 msg/s, `retry_after` на 429, `blocked_bot` на 403,
+   кнопка «Зарегистрироваться» по адресату, обязательный тест себе**
+   (OWN-10…OWN-13). Кнопки «отписаться» в массовых нет — согласие на рассылку
+   меняется в табе «Профиль» Mini App (PAR-2, W60);
+   [ADR-0054](docs/adr/0054-broadcast-register-instead-of-unsubscribe.md).
 9. **Единственные команды — `/start` и `/start <payload>` из диплинка;
    дальше только карточки и Mini App**
    ([ADR-0025](docs/adr/0025-start-only-commands-ban.md), решение владельца

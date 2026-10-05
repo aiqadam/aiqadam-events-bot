@@ -13,7 +13,6 @@
   "bcast.btn.seg_registered": "Зарегистрированные",
   "bcast.btn.send": "Отправить всем",
   "bcast.btn.test": "Отправить тест себе",
-  "bcast.btn.unsubscribe": "Отписаться",
   "bcast.cancelled": "Рассылка отменена, никому ничего не ушло.",
   "bcast.cancelled_running": "Рассылка прервана. Текущий чанк досылается, остаток не уйдёт.",
   "bcast.empty_segment": "В этом сегменте никого нет — отправлять некому.",
@@ -487,7 +486,5 @@
   "ticket.retry": "Повторить",
   "ticket.show_at_entrance": "Покажите этот QR на входе.",
   "ticket.title": "Ваш QR для входа",
-  "ticket.title_online": "Ваша трансляция",
-  "unsub.already": "Вы и так не подписаны на анонсы.",
-  "unsub.done": "Анонсы больше присылать не будем. Регистрации это не затронуло."
+  "ticket.title_online": "Ваша трансляция"
 }

@@ -523,318 +523,33 @@
                   "displayName": "read pending chunk",
                   "name": "step_24",
                   "nextAction": {
-                    "displayName": "prep chunk",
-                    "name": "step_25",
+                    "displayName": "read event regs",
+                    "logOutput": false,
+                    "name": "step_53",
                     "nextAction": {
-                      "displayName": "per recipient",
-                      "firstLoopAction": {
-                        "displayName": "pace 1s",
-                        "name": "step_27",
+                      "displayName": "read event for reg-open",
+                      "name": "step_54",
+                      "nextAction": {
+                        "displayName": "prep chunk",
+                        "name": "step_25",
                         "nextAction": {
-                          "displayName": "send one",
-                          "name": "step_28",
-                          "nextAction": {
-                            "displayName": "classify send",
-                            "name": "step_29",
+                          "displayName": "per recipient",
+                          "firstLoopAction": {
+                            "displayName": "pace 1s",
+                            "name": "step_27",
                             "nextAction": {
-                              "children": [
-                                {
-                                  "displayName": "mark sent",
-                                  "name": "step_31",
-                                  "settings": {
-                                    "actionName": "tables-update-record",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "only_if": {},
-                                      "record_id": "{{step_26['output'].item.recordId}}",
-                                      "table_id": "PAH81WchbaOixGXSdFBK1",
-                                      "values": {
-                                        "Lb9mpTnwSeth8eDRp0zpU": "sent",
-                                        "OikdhOkKKyoBFkCUCEHkJ": "{{step_29['output'].now}}"
-                                      }
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.4.5"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "stamp blocked_bot",
-                                  "logOutput": false,
-                                  "name": "step_32",
-                                  "nextAction": {
-                                    "displayName": "mark blocked",
-                                    "name": "step_33",
-                                    "settings": {
-                                      "actionName": "tables-update-record",
-                                      "errorHandlingOptions": {
-                                        "continueOnFailure": {
-                                          "value": false
-                                        },
-                                        "retryOnFailure": {
-                                          "value": false
-                                        }
-                                      },
-                                      "input": {
-                                        "only_if": {},
-                                        "record_id": "{{step_26['output'].item.recordId}}",
-                                        "table_id": "PAH81WchbaOixGXSdFBK1",
-                                        "values": {
-                                          "EMpuLvjDfE9xqxnwNzkUK": "{{step_29['output'].errorText}}",
-                                          "Lb9mpTnwSeth8eDRp0zpU": "blocked"
-                                        }
-                                      },
-                                      "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-tables",
-                                      "qadamVersion": "0.4.5"
-                                    },
-                                    "type": "PIECE",
-                                    "valid": true
-                                  },
-                                  "settings": {
-                                    "actionName": "tables-upsert-records",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "key_columns": [
-                                        "JtylZU291K7TuMn9c9F2t"
-                                      ],
-                                      "table_id": "xHhYjhwqKdONkrYJGcBsz",
-                                      "values": {
-                                        "values": [
-                                          {
-                                            "JtylZU291K7TuMn9c9F2t": "{{step_26['output'].item.telegramId}}",
-                                            "ja2S7DwVun5AKs3Jk7jK6": "true"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.4.5"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "mark failed",
-                                  "name": "step_34",
-                                  "settings": {
-                                    "actionName": "tables-update-record",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "only_if": {},
-                                      "record_id": "{{step_26['output'].item.recordId}}",
-                                      "table_id": "PAH81WchbaOixGXSdFBK1",
-                                      "values": {
-                                        "EMpuLvjDfE9xqxnwNzkUK": "{{step_29['output'].errorText}}",
-                                        "Lb9mpTnwSeth8eDRp0zpU": "failed"
-                                      }
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.4.5"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "pause retry_after",
-                                  "name": "step_35",
-                                  "nextAction": {
-                                    "displayName": "resend once",
-                                    "name": "step_36",
-                                    "nextAction": {
-                                      "displayName": "classify resend",
-                                      "name": "step_37",
-                                      "nextAction": {
-                                        "children": [
-                                          {
-                                            "displayName": "mark sent2",
-                                            "name": "step_39",
-                                            "settings": {
-                                              "actionName": "tables-update-record",
-                                              "errorHandlingOptions": {
-                                                "continueOnFailure": {
-                                                  "value": false
-                                                },
-                                                "retryOnFailure": {
-                                                  "value": false
-                                                }
-                                              },
-                                              "input": {
-                                                "only_if": {},
-                                                "record_id": "{{step_26['output'].item.recordId}}",
-                                                "table_id": "PAH81WchbaOixGXSdFBK1",
-                                                "values": {
-                                                  "Lb9mpTnwSeth8eDRp0zpU": "sent",
-                                                  "OikdhOkKKyoBFkCUCEHkJ": "{{step_37['output'].now}}"
-                                                }
-                                              },
-                                              "propertySettings": {},
-                                              "qadamName": "@aiqadam/qadam-tables",
-                                              "qadamVersion": "0.4.5"
-                                            },
-                                            "type": "PIECE",
-                                            "valid": true
-                                          },
-                                          {
-                                            "displayName": "stamp blocked2",
-                                            "logOutput": false,
-                                            "name": "step_40",
-                                            "nextAction": {
-                                              "displayName": "mark blocked2",
-                                              "name": "step_41",
-                                              "settings": {
-                                                "actionName": "tables-update-record",
-                                                "errorHandlingOptions": {
-                                                  "continueOnFailure": {
-                                                    "value": false
-                                                  },
-                                                  "retryOnFailure": {
-                                                    "value": false
-                                                  }
-                                                },
-                                                "input": {
-                                                  "only_if": {},
-                                                  "record_id": "{{step_26['output'].item.recordId}}",
-                                                  "table_id": "PAH81WchbaOixGXSdFBK1",
-                                                  "values": {
-                                                    "EMpuLvjDfE9xqxnwNzkUK": "{{step_37['output'].errorText}}",
-                                                    "Lb9mpTnwSeth8eDRp0zpU": "blocked"
-                                                  }
-                                                },
-                                                "propertySettings": {},
-                                                "qadamName": "@aiqadam/qadam-tables",
-                                                "qadamVersion": "0.4.5"
-                                              },
-                                              "type": "PIECE",
-                                              "valid": true
-                                            },
-                                            "settings": {
-                                              "actionName": "tables-upsert-records",
-                                              "errorHandlingOptions": {
-                                                "continueOnFailure": {
-                                                  "value": false
-                                                },
-                                                "retryOnFailure": {
-                                                  "value": false
-                                                }
-                                              },
-                                              "input": {
-                                                "key_columns": [
-                                                  "JtylZU291K7TuMn9c9F2t"
-                                                ],
-                                                "table_id": "xHhYjhwqKdONkrYJGcBsz",
-                                                "values": {
-                                                  "values": [
-                                                    {
-                                                      "JtylZU291K7TuMn9c9F2t": "{{step_26['output'].item.telegramId}}",
-                                                      "ja2S7DwVun5AKs3Jk7jK6": "true"
-                                                    }
-                                                  ]
-                                                }
-                                              },
-                                              "propertySettings": {},
-                                              "qadamName": "@aiqadam/qadam-tables",
-                                              "qadamVersion": "0.4.5"
-                                            },
-                                            "type": "PIECE",
-                                            "valid": true
-                                          },
-                                          {
-                                            "displayName": "mark failed2",
-                                            "name": "step_42",
-                                            "settings": {
-                                              "actionName": "tables-update-record",
-                                              "errorHandlingOptions": {
-                                                "continueOnFailure": {
-                                                  "value": false
-                                                },
-                                                "retryOnFailure": {
-                                                  "value": false
-                                                }
-                                              },
-                                              "input": {
-                                                "only_if": {},
-                                                "record_id": "{{step_26['output'].item.recordId}}",
-                                                "table_id": "PAH81WchbaOixGXSdFBK1",
-                                                "values": {
-                                                  "EMpuLvjDfE9xqxnwNzkUK": "{{step_37['output'].errorText}}",
-                                                  "Lb9mpTnwSeth8eDRp0zpU": "failed"
-                                                }
-                                              },
-                                              "propertySettings": {},
-                                              "qadamName": "@aiqadam/qadam-tables",
-                                              "qadamVersion": "0.4.5"
-                                            },
-                                            "type": "PIECE",
-                                            "valid": true
-                                          }
-                                        ],
-                                        "displayName": "resend outcome",
-                                        "name": "step_38",
-                                        "settings": {
-                                          "branches": [
-                                            {
-                                              "branchName": "sent2",
-                                              "branchType": "CONDITION",
-                                              "conditions": [
-                                                [
-                                                  {
-                                                    "firstValue": "{{step_37['output'].outcome}}",
-                                                    "operator": "TEXT_EXACTLY_MATCHES",
-                                                    "secondValue": "sent"
-                                                  }
-                                                ]
-                                              ]
-                                            },
-                                            {
-                                              "branchName": "blocked2",
-                                              "branchType": "CONDITION",
-                                              "conditions": [
-                                                [
-                                                  {
-                                                    "firstValue": "{{step_37['output'].outcome}}",
-                                                    "operator": "TEXT_EXACTLY_MATCHES",
-                                                    "secondValue": "blocked"
-                                                  }
-                                                ]
-                                              ]
-                                            },
-                                            {
-                                              "branchName": "Otherwise",
-                                              "branchType": "FALLBACK"
-                                            }
-                                          ],
-                                          "executionType": "EXECUTE_FIRST_MATCH"
-                                        },
-                                        "type": "ROUTER",
-                                        "valid": true
-                                      },
+                              "displayName": "send one",
+                              "name": "step_28",
+                              "nextAction": {
+                                "displayName": "classify send",
+                                "name": "step_29",
+                                "nextAction": {
+                                  "children": [
+                                    {
+                                      "displayName": "mark sent",
+                                      "name": "step_31",
                                       "settings": {
+                                        "actionName": "tables-update-record",
                                         "errorHandlingOptions": {
                                           "continueOnFailure": {
                                             "value": false
@@ -844,318 +559,30 @@
                                           }
                                         },
                                         "input": {
-                                          "sendErr": "{{step_36['error']}}"
-                                        },
-                                        "sourceCode": {
-                                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const now = new Date().toISOString();\n  const err = inputs.sendErr;\n  const hasErr = err !== undefined && err !== null && !(typeof err === 'object' && Object.keys(err).length === 0) && err !== '';\n  const txt = (v) => str(v).slice(0, 200);\n  if (!hasErr) return { outcome: 'sent', errorText: '', now: now };\n  let e = err;\n  if (e && typeof e === 'object' && typeof e.message === 'string' && e.status === undefined) {\n    try { e = JSON.parse(e.message); } catch (ex) { e = { message: e.message }; }\n  }\n  if (typeof e === 'string') { try { e = JSON.parse(e); } catch (ex) { e = { message: err }; } }\n  const status = Number((e && e.status) || (e && e.responseBody && e.responseBody.error_code) || 0);\n  const desc = str((e && e.responseBody && e.responseBody.description) || (e && e.apiMessage) || (e && e.message));\n  if (status === 403 || /bot was blocked|blocked by the user|deactivated|kicked|forbidden/i.test(desc))\n    return { outcome: 'blocked', errorText: txt(desc), now: now };\n  return { outcome: 'failed', errorText: txt(desc || 'resend failed'), now: now };\n};",
-                                          "packageJson": "{}"
-                                        }
-                                      },
-                                      "type": "CODE",
-                                      "valid": true
-                                    },
-                                    "settings": {
-                                      "actionName": "custom_api_call",
-                                      "errorHandlingOptions": {
-                                        "continueOnFailure": {
-                                          "value": true
-                                        },
-                                        "retryOnFailure": {
-                                          "value": false
-                                        }
-                                      },
-                                      "input": {
-                                        "body": {
-                                          "data": {
-                                            "chat_id": "{{step_26['output'].item.telegramId}}",
-                                            "from_chat_id": "{{step_25['output'].mediaChatId}}",
-                                            "message_id": "{{step_25['output'].mediaMessageId}}",
-                                            "reply_markup": "{{step_25['output'].unsubMarkup}}"
+                                          "only_if": {},
+                                          "record_id": "{{step_26['output'].item.recordId}}",
+                                          "table_id": "PAH81WchbaOixGXSdFBK1",
+                                          "values": {
+                                            "Lb9mpTnwSeth8eDRp0zpU": "sent",
+                                            "OikdhOkKKyoBFkCUCEHkJ": "{{step_29['output'].now}}"
                                           }
                                         },
-                                        "body_type": "json",
-                                        "failsafe": false,
-                                        "followRedirects": false,
-                                        "headers": {},
-                                        "method": "POST",
-                                        "queryParams": {},
-                                        "response_is_binary": false,
-                                        "url": {
-                                          "url": "/copyMessage"
-                                        }
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.4.5"
                                       },
-                                      "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-telegram-bot",
-                                      "qadamVersion": "0.9.0"
+                                      "type": "PIECE",
+                                      "valid": true
                                     },
-                                    "type": "PIECE",
-                                    "valid": true
-                                  },
-                                  "settings": {
-                                    "actionName": "delayFor",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "delayFor": "{{step_29['output'].retryAfter}}",
-                                      "unit": "seconds"
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-delay",
-                                    "qadamVersion": "0.3.27"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "mark failed unknown",
-                                  "name": "step_43",
-                                  "settings": {
-                                    "actionName": "tables-update-record",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "only_if": {},
-                                      "record_id": "{{step_26['output'].item.recordId}}",
-                                      "table_id": "PAH81WchbaOixGXSdFBK1",
-                                      "values": {
-                                        "EMpuLvjDfE9xqxnwNzkUK": "unexpected outcome",
-                                        "Lb9mpTnwSeth8eDRp0zpU": "failed"
-                                      }
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.4.5"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                }
-                              ],
-                              "displayName": "send outcome",
-                              "name": "step_30",
-                              "settings": {
-                                "branches": [
-                                  {
-                                    "branchName": "sent",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_29['output'].outcome}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "sent"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "blocked",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_29['output'].outcome}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "blocked"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "failed",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_29['output'].outcome}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "failed"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "retry429",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_29['output'].outcome}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "retry"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "Otherwise",
-                                    "branchType": "FALLBACK"
-                                  }
-                                ],
-                                "executionType": "EXECUTE_FIRST_MATCH"
-                              },
-                              "type": "ROUTER",
-                              "valid": true
-                            },
-                            "settings": {
-                              "errorHandlingOptions": {
-                                "continueOnFailure": {
-                                  "value": false
-                                },
-                                "retryOnFailure": {
-                                  "value": false
-                                }
-                              },
-                              "input": {
-                                "now": "{{step_25['output'].now}}",
-                                "sendErr": "{{step_28['error']}}",
-                                "sendOut": "{{step_28['output']}}"
-                              },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const now = new Date().toISOString();\n  const err = inputs.sendErr;\n  const hasErr = err !== undefined && err !== null && !(typeof err === 'object' && Object.keys(err).length === 0) && err !== '';\n  const txt = (v) => str(v).slice(0, 200);\n  if (!hasErr) {\n    const out = inputs.sendOut;\n    if (out && out.body && out.body.ok === false) return { outcome: 'failed', retryAfter: 0, errorText: txt(out.body.description), now: now };\n    return { outcome: 'sent', retryAfter: 0, errorText: '', now: now };\n  }\n  let e = err;\n  if (e && typeof e === 'object' && typeof e.message === 'string' && e.status === undefined) {\n    try { e = JSON.parse(e.message); } catch (ex) { e = { message: e.message }; }\n  }\n  if (typeof e === 'string') { try { e = JSON.parse(e); } catch (ex) { e = { message: err }; } }\n  const status = Number((e && e.status) || (e && e.responseBody && e.responseBody.error_code) || 0);\n  const desc = str((e && e.responseBody && e.responseBody.description) || (e && e.apiMessage) || (e && e.message));\n  if (status === 429 || /retry after/i.test(desc)) {\n    const m = desc.match(/retry after (\\d+)/i);\n    let sec = m ? parseInt(m[1], 10) : 60;\n    if (!isFinite(sec) || sec < 1) sec = 60;\n    if (sec > 300) sec = 300;\n    return { outcome: 'retry', retryAfter: sec, errorText: txt(desc), now: now };\n  }\n  if (status === 403 || /bot was blocked|blocked by the user|deactivated|kicked|forbidden/i.test(desc))\n    return { outcome: 'blocked', retryAfter: 0, errorText: txt(desc), now: now };\n  return { outcome: 'failed', retryAfter: 0, errorText: txt(desc || 'send failed'), now: now };\n};",
-                                "packageJson": "{}"
-                              }
-                            },
-                            "type": "CODE",
-                            "valid": true
-                          },
-                          "settings": {
-                            "actionName": "custom_api_call",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": true
-                              },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "body": {
-                                "data": {
-                                  "chat_id": "{{step_26['output'].item.telegramId}}",
-                                  "from_chat_id": "{{step_25['output'].mediaChatId}}",
-                                  "message_id": "{{step_25['output'].mediaMessageId}}",
-                                  "reply_markup": "{{step_25['output'].unsubMarkup}}"
-                                }
-                              },
-                              "body_type": "json",
-                              "failsafe": false,
-                              "followRedirects": false,
-                              "headers": {},
-                              "method": "POST",
-                              "queryParams": {},
-                              "response_is_binary": false,
-                              "url": {
-                                "url": "/copyMessage"
-                              }
-                            },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-telegram-bot",
-                            "qadamVersion": "0.9.0"
-                          },
-                          "type": "PIECE",
-                          "valid": true
-                        },
-                        "settings": {
-                          "actionName": "delayFor",
-                          "errorHandlingOptions": {
-                            "continueOnFailure": {
-                              "value": false
-                            },
-                            "retryOnFailure": {
-                              "value": false
-                            }
-                          },
-                          "input": {
-                            "delayFor": 1,
-                            "unit": "seconds"
-                          },
-                          "propertySettings": {},
-                          "qadamName": "@aiqadam/qadam-delay",
-                          "qadamVersion": "0.3.27"
-                        },
-                        "type": "PIECE",
-                        "valid": true
-                      },
-                      "name": "step_26",
-                      "nextAction": {
-                        "displayName": "read all targets",
-                        "name": "step_44",
-                        "nextAction": {
-                          "displayName": "chunk totals",
-                          "name": "step_45",
-                          "nextAction": {
-                            "displayName": "save progress",
-                            "name": "step_46",
-                            "nextAction": {
-                              "children": [
-                                {
-                                  "displayName": "call next chunk",
-                                  "name": "step_48",
-                                  "settings": {
-                                    "actionName": "callFlow",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "executionMode": "queue",
-                                      "flow": {
-                                        "exampleData": {
-                                          "broadcastId": "abc",
-                                          "chatId": "322876545",
-                                          "phase": "start",
-                                          "telegramId": "322876545"
-                                        },
-                                        "externalId": "0yVrF1tXfvdPTqSnCNFL4"
-                                      },
-                                      "flowProps": {
-                                        "payload": {
-                                          "broadcastId": "{{step_4['output'].bid}}",
-                                          "chatId": "{{trigger['output'].data.chatId}}",
-                                          "phase": "send",
-                                          "telegramId": "{{trigger['output'].data.telegramId}}"
-                                        }
-                                      },
-                                      "mode": "simple",
-                                      "waitForResponse": false
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-subflows",
-                                    "qadamVersion": "0.4.14"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "close done",
-                                  "name": "step_49",
-                                  "nextAction": {
-                                    "displayName": "read event for final",
-                                    "name": "step_50",
-                                    "nextAction": {
-                                      "displayName": "final report",
-                                      "name": "step_51",
+                                    {
+                                      "displayName": "stamp blocked_bot",
+                                      "logOutput": false,
+                                      "name": "step_32",
                                       "nextAction": {
-                                        "displayName": "send final report",
-                                        "name": "step_52",
+                                        "displayName": "mark blocked",
+                                        "name": "step_33",
                                         "settings": {
-                                          "actionName": "send_text_message",
+                                          "actionName": "tables-update-record",
                                           "errorHandlingOptions": {
                                             "continueOnFailure": {
                                               "value": false
@@ -1165,21 +592,23 @@
                                             }
                                           },
                                           "input": {
-                                            "chat_id": "{{step_51['output'].authorChat}}",
-                                            "disable_notification": false,
-                                            "format": "None",
-                                            "message": "{{step_51['output'].text}}",
-                                            "protect_content": false,
-                                            "web_page_preview": false
+                                            "only_if": {},
+                                            "record_id": "{{step_26['output'].item.recordId}}",
+                                            "table_id": "PAH81WchbaOixGXSdFBK1",
+                                            "values": {
+                                              "EMpuLvjDfE9xqxnwNzkUK": "{{step_29['output'].errorText}}",
+                                              "Lb9mpTnwSeth8eDRp0zpU": "blocked"
+                                            }
                                           },
                                           "propertySettings": {},
-                                          "qadamName": "@aiqadam/qadam-telegram-bot",
-                                          "qadamVersion": "0.9.0"
+                                          "qadamName": "@aiqadam/qadam-tables",
+                                          "qadamVersion": "0.4.5"
                                         },
                                         "type": "PIECE",
                                         "valid": true
                                       },
                                       "settings": {
+                                        "actionName": "tables-upsert-records",
                                         "errorHandlingOptions": {
                                           "continueOnFailure": {
                                             "value": false
@@ -1189,121 +618,458 @@
                                           }
                                         },
                                         "input": {
-                                          "eventId": "{{step_4['output'].eventId}}",
-                                          "eventRecords": "{{step_50['output']}}",
-                                          "failed": "{{step_45['output'].failed}}",
-                                          "fallbackChat": "{{trigger['output'].data.chatId}}",
-                                          "sent": "{{step_45['output'].sent}}",
-                                          "texts": {
-                                            "bcast.empty_segment": "{{$t['bcast.empty_segment']}}",
-                                            "bcast.finished": "{{$t['bcast.finished']}}"
-                                          },
-                                          "total": "{{step_45['output'].total}}"
+                                          "key_columns": [
+                                            "JtylZU291K7TuMn9c9F2t"
+                                          ],
+                                          "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                                          "values": {
+                                            "values": [
+                                              {
+                                                "JtylZU291K7TuMn9c9F2t": "{{step_26['output'].item.telegramId}}",
+                                                "ja2S7DwVun5AKs3Jk7jK6": "true"
+                                              }
+                                            ]
+                                          }
                                         },
-                                        "sourceCode": {
-                                          "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] || k);\n    if (vars) Object.keys(vars).forEach((key) => { s = s.split('{' + key + '}').join(String(vars[key])); });\n    return s;\n  };\n  const ev = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(inputs.eventId))[0];\n  const authorChat = ev ? str(ev.staff_id) : '';\n  const total = Number(inputs.total) || 0;\n  const text = total === 0\n    ? t('bcast.empty_segment')\n    : t('bcast.finished', { sent: Number(inputs.sent) || 0, failed: Number(inputs.failed) || 0 });\n  return { text: text, authorChat: authorChat !== '' ? authorChat : str(inputs.fallbackChat) };\n};",
-                                          "packageJson": "{}"
-                                        }
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.4.5"
                                       },
-                                      "type": "CODE",
+                                      "type": "PIECE",
                                       "valid": true
                                     },
-                                    "settings": {
-                                      "actionName": "tables-find-records",
-                                      "errorHandlingOptions": {
-                                        "continueOnFailure": {
-                                          "value": false
+                                    {
+                                      "displayName": "mark failed",
+                                      "name": "step_34",
+                                      "settings": {
+                                        "actionName": "tables-update-record",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
                                         },
-                                        "retryOnFailure": {
-                                          "value": false
-                                        }
+                                        "input": {
+                                          "only_if": {},
+                                          "record_id": "{{step_26['output'].item.recordId}}",
+                                          "table_id": "PAH81WchbaOixGXSdFBK1",
+                                          "values": {
+                                            "EMpuLvjDfE9xqxnwNzkUK": "{{step_29['output'].errorText}}",
+                                            "Lb9mpTnwSeth8eDRp0zpU": "failed"
+                                          }
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.4.5"
                                       },
-                                      "input": {
-                                        "columns": [
-                                          "39qJ4o2MYyNYsT2VtxfcK",
-                                          "6KqxIPre6r76ycWhCX8uU"
-                                        ],
-                                        "filters": {
-                                          "filters": [
+                                      "type": "PIECE",
+                                      "valid": true
+                                    },
+                                    {
+                                      "displayName": "pause retry_after",
+                                      "name": "step_35",
+                                      "nextAction": {
+                                        "displayName": "resend once",
+                                        "name": "step_36",
+                                        "nextAction": {
+                                          "displayName": "classify resend",
+                                          "name": "step_37",
+                                          "nextAction": {
+                                            "children": [
+                                              {
+                                                "displayName": "mark sent2",
+                                                "name": "step_39",
+                                                "settings": {
+                                                  "actionName": "tables-update-record",
+                                                  "errorHandlingOptions": {
+                                                    "continueOnFailure": {
+                                                      "value": false
+                                                    },
+                                                    "retryOnFailure": {
+                                                      "value": false
+                                                    }
+                                                  },
+                                                  "input": {
+                                                    "only_if": {},
+                                                    "record_id": "{{step_26['output'].item.recordId}}",
+                                                    "table_id": "PAH81WchbaOixGXSdFBK1",
+                                                    "values": {
+                                                      "Lb9mpTnwSeth8eDRp0zpU": "sent",
+                                                      "OikdhOkKKyoBFkCUCEHkJ": "{{step_37['output'].now}}"
+                                                    }
+                                                  },
+                                                  "propertySettings": {},
+                                                  "qadamName": "@aiqadam/qadam-tables",
+                                                  "qadamVersion": "0.4.5"
+                                                },
+                                                "type": "PIECE",
+                                                "valid": true
+                                              },
+                                              {
+                                                "displayName": "stamp blocked2",
+                                                "logOutput": false,
+                                                "name": "step_40",
+                                                "nextAction": {
+                                                  "displayName": "mark blocked2",
+                                                  "name": "step_41",
+                                                  "settings": {
+                                                    "actionName": "tables-update-record",
+                                                    "errorHandlingOptions": {
+                                                      "continueOnFailure": {
+                                                        "value": false
+                                                      },
+                                                      "retryOnFailure": {
+                                                        "value": false
+                                                      }
+                                                    },
+                                                    "input": {
+                                                      "only_if": {},
+                                                      "record_id": "{{step_26['output'].item.recordId}}",
+                                                      "table_id": "PAH81WchbaOixGXSdFBK1",
+                                                      "values": {
+                                                        "EMpuLvjDfE9xqxnwNzkUK": "{{step_37['output'].errorText}}",
+                                                        "Lb9mpTnwSeth8eDRp0zpU": "blocked"
+                                                      }
+                                                    },
+                                                    "propertySettings": {},
+                                                    "qadamName": "@aiqadam/qadam-tables",
+                                                    "qadamVersion": "0.4.5"
+                                                  },
+                                                  "type": "PIECE",
+                                                  "valid": true
+                                                },
+                                                "settings": {
+                                                  "actionName": "tables-upsert-records",
+                                                  "errorHandlingOptions": {
+                                                    "continueOnFailure": {
+                                                      "value": false
+                                                    },
+                                                    "retryOnFailure": {
+                                                      "value": false
+                                                    }
+                                                  },
+                                                  "input": {
+                                                    "key_columns": [
+                                                      "JtylZU291K7TuMn9c9F2t"
+                                                    ],
+                                                    "table_id": "xHhYjhwqKdONkrYJGcBsz",
+                                                    "values": {
+                                                      "values": [
+                                                        {
+                                                          "JtylZU291K7TuMn9c9F2t": "{{step_26['output'].item.telegramId}}",
+                                                          "ja2S7DwVun5AKs3Jk7jK6": "true"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "propertySettings": {},
+                                                  "qadamName": "@aiqadam/qadam-tables",
+                                                  "qadamVersion": "0.4.5"
+                                                },
+                                                "type": "PIECE",
+                                                "valid": true
+                                              },
+                                              {
+                                                "displayName": "mark failed2",
+                                                "name": "step_42",
+                                                "settings": {
+                                                  "actionName": "tables-update-record",
+                                                  "errorHandlingOptions": {
+                                                    "continueOnFailure": {
+                                                      "value": false
+                                                    },
+                                                    "retryOnFailure": {
+                                                      "value": false
+                                                    }
+                                                  },
+                                                  "input": {
+                                                    "only_if": {},
+                                                    "record_id": "{{step_26['output'].item.recordId}}",
+                                                    "table_id": "PAH81WchbaOixGXSdFBK1",
+                                                    "values": {
+                                                      "EMpuLvjDfE9xqxnwNzkUK": "{{step_37['output'].errorText}}",
+                                                      "Lb9mpTnwSeth8eDRp0zpU": "failed"
+                                                    }
+                                                  },
+                                                  "propertySettings": {},
+                                                  "qadamName": "@aiqadam/qadam-tables",
+                                                  "qadamVersion": "0.4.5"
+                                                },
+                                                "type": "PIECE",
+                                                "valid": true
+                                              }
+                                            ],
+                                            "displayName": "resend outcome",
+                                            "name": "step_38",
+                                            "settings": {
+                                              "branches": [
+                                                {
+                                                  "branchName": "sent2",
+                                                  "branchType": "CONDITION",
+                                                  "conditions": [
+                                                    [
+                                                      {
+                                                        "firstValue": "{{step_37['output'].outcome}}",
+                                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                                        "secondValue": "sent"
+                                                      }
+                                                    ]
+                                                  ]
+                                                },
+                                                {
+                                                  "branchName": "blocked2",
+                                                  "branchType": "CONDITION",
+                                                  "conditions": [
+                                                    [
+                                                      {
+                                                        "firstValue": "{{step_37['output'].outcome}}",
+                                                        "operator": "TEXT_EXACTLY_MATCHES",
+                                                        "secondValue": "blocked"
+                                                      }
+                                                    ]
+                                                  ]
+                                                },
+                                                {
+                                                  "branchName": "Otherwise",
+                                                  "branchType": "FALLBACK"
+                                                }
+                                              ],
+                                              "executionType": "EXECUTE_FIRST_MATCH"
+                                            },
+                                            "type": "ROUTER",
+                                            "valid": true
+                                          },
+                                          "settings": {
+                                            "errorHandlingOptions": {
+                                              "continueOnFailure": {
+                                                "value": false
+                                              },
+                                              "retryOnFailure": {
+                                                "value": false
+                                              }
+                                            },
+                                            "input": {
+                                              "sendErr": "{{step_36['error']}}"
+                                            },
+                                            "sourceCode": {
+                                              "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const now = new Date().toISOString();\n  const err = inputs.sendErr;\n  const hasErr = err !== undefined && err !== null && !(typeof err === 'object' && Object.keys(err).length === 0) && err !== '';\n  const txt = (v) => str(v).slice(0, 200);\n  if (!hasErr) return { outcome: 'sent', errorText: '', now: now };\n  let e = err;\n  if (e && typeof e === 'object' && typeof e.message === 'string' && e.status === undefined) {\n    try { e = JSON.parse(e.message); } catch (ex) { e = { message: e.message }; }\n  }\n  if (typeof e === 'string') { try { e = JSON.parse(e); } catch (ex) { e = { message: err }; } }\n  const status = Number((e && e.status) || (e && e.responseBody && e.responseBody.error_code) || 0);\n  const desc = str((e && e.responseBody && e.responseBody.description) || (e && e.apiMessage) || (e && e.message));\n  if (status === 403 || /bot was blocked|blocked by the user|deactivated|kicked|forbidden/i.test(desc))\n    return { outcome: 'blocked', errorText: txt(desc), now: now };\n  return { outcome: 'failed', errorText: txt(desc || 'resend failed'), now: now };\n};",
+                                              "packageJson": "{}"
+                                            }
+                                          },
+                                          "type": "CODE",
+                                          "valid": true
+                                        },
+                                        "settings": {
+                                          "actionName": "custom_api_call",
+                                          "errorHandlingOptions": {
+                                            "continueOnFailure": {
+                                              "value": true
+                                            },
+                                            "retryOnFailure": {
+                                              "value": false
+                                            }
+                                          },
+                                          "input": {
+                                            "body": {
+                                              "data": {
+                                                "reply_markup": "{{step_26['output'].item.markup}}"
+                                              }
+                                            },
+                                            "body_type": "json",
+                                            "failsafe": false,
+                                            "followRedirects": false,
+                                            "headers": {},
+                                            "method": "POST",
+                                            "queryParams": {},
+                                            "response_is_binary": false,
+                                            "url": {
+                                              "url": "/copyMessage"
+                                            }
+                                          },
+                                          "propertySettings": {},
+                                          "qadamName": "@aiqadam/qadam-telegram-bot",
+                                          "qadamVersion": "0.9.0"
+                                        },
+                                        "type": "PIECE",
+                                        "valid": true
+                                      },
+                                      "settings": {
+                                        "actionName": "delayFor",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
+                                        },
+                                        "input": {
+                                          "delayFor": "{{step_29['output'].retryAfter}}",
+                                          "unit": "seconds"
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-delay",
+                                        "qadamVersion": "0.3.27"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
+                                    },
+                                    {
+                                      "displayName": "mark failed unknown",
+                                      "name": "step_43",
+                                      "settings": {
+                                        "actionName": "tables-update-record",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
+                                        },
+                                        "input": {
+                                          "only_if": {},
+                                          "record_id": "{{step_26['output'].item.recordId}}",
+                                          "table_id": "PAH81WchbaOixGXSdFBK1",
+                                          "values": {
+                                            "EMpuLvjDfE9xqxnwNzkUK": "unexpected outcome",
+                                            "Lb9mpTnwSeth8eDRp0zpU": "failed"
+                                          }
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.4.5"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
+                                    }
+                                  ],
+                                  "displayName": "send outcome",
+                                  "name": "step_30",
+                                  "settings": {
+                                    "branches": [
+                                      {
+                                        "branchName": "sent",
+                                        "branchType": "CONDITION",
+                                        "conditions": [
+                                          [
                                             {
-                                              "field": "id",
-                                              "operator": "eq",
-                                              "value": "{{step_2['output'].eventIdOrNone}}"
+                                              "firstValue": "{{step_29['output'].outcome}}",
+                                              "operator": "TEXT_EXACTLY_MATCHES",
+                                              "secondValue": "sent"
                                             }
                                           ]
-                                        },
-                                        "limit": 1,
-                                        "record_ids": [],
-                                        "table_id": "R4aSQpLZvw7d3u6DVOSjH"
-                                      },
-                                      "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-tables",
-                                      "qadamVersion": "0.4.5"
-                                    },
-                                    "type": "PIECE",
-                                    "valid": true
-                                  },
-                                  "settings": {
-                                    "actionName": "tables-upsert-records",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "key_columns": [
-                                        "AXQRMe7knv8NFDCckziRD"
-                                      ],
-                                      "table_id": "XrygYF5Q4EUOKkaBFallb",
-                                      "values": {
-                                        "values": [
-                                          {
-                                            "6ITY7K1B8OgqL0lm2Idbg": "done",
-                                            "AXQRMe7knv8NFDCckziRD": "{{step_4['output'].bid}}",
-                                            "yevE4jElXPvczO4LTt2Yj": "{{step_25['output'].now}}"
-                                          }
                                         ]
+                                      },
+                                      {
+                                        "branchName": "blocked",
+                                        "branchType": "CONDITION",
+                                        "conditions": [
+                                          [
+                                            {
+                                              "firstValue": "{{step_29['output'].outcome}}",
+                                              "operator": "TEXT_EXACTLY_MATCHES",
+                                              "secondValue": "blocked"
+                                            }
+                                          ]
+                                        ]
+                                      },
+                                      {
+                                        "branchName": "failed",
+                                        "branchType": "CONDITION",
+                                        "conditions": [
+                                          [
+                                            {
+                                              "firstValue": "{{step_29['output'].outcome}}",
+                                              "operator": "TEXT_EXACTLY_MATCHES",
+                                              "secondValue": "failed"
+                                            }
+                                          ]
+                                        ]
+                                      },
+                                      {
+                                        "branchName": "retry429",
+                                        "branchType": "CONDITION",
+                                        "conditions": [
+                                          [
+                                            {
+                                              "firstValue": "{{step_29['output'].outcome}}",
+                                              "operator": "TEXT_EXACTLY_MATCHES",
+                                              "secondValue": "retry"
+                                            }
+                                          ]
+                                        ]
+                                      },
+                                      {
+                                        "branchName": "Otherwise",
+                                        "branchType": "FALLBACK"
                                       }
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.4.5"
+                                    ],
+                                    "executionType": "EXECUTE_FIRST_MATCH"
                                   },
-                                  "type": "PIECE",
+                                  "type": "ROUTER",
                                   "valid": true
-                                }
-                              ],
-                              "displayName": "more pending?",
-                              "name": "step_47",
-                              "settings": {
-                                "branches": [
-                                  {
-                                    "branchName": "more",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_45['output'].more}}",
-                                          "operator": "BOOLEAN_IS_TRUE"
-                                        }
-                                      ]
-                                    ]
+                                },
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
                                   },
-                                  {
-                                    "branchName": "Otherwise",
-                                    "branchType": "FALLBACK"
+                                  "input": {
+                                    "now": "{{step_25['output'].now}}",
+                                    "sendErr": "{{step_28['error']}}",
+                                    "sendOut": "{{step_28['output']}}"
+                                  },
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const now = new Date().toISOString();\n  const err = inputs.sendErr;\n  const hasErr = err !== undefined && err !== null && !(typeof err === 'object' && Object.keys(err).length === 0) && err !== '';\n  const txt = (v) => str(v).slice(0, 200);\n  if (!hasErr) {\n    const out = inputs.sendOut;\n    if (out && out.body && out.body.ok === false) return { outcome: 'failed', retryAfter: 0, errorText: txt(out.body.description), now: now };\n    return { outcome: 'sent', retryAfter: 0, errorText: '', now: now };\n  }\n  let e = err;\n  if (e && typeof e === 'object' && typeof e.message === 'string' && e.status === undefined) {\n    try { e = JSON.parse(e.message); } catch (ex) { e = { message: e.message }; }\n  }\n  if (typeof e === 'string') { try { e = JSON.parse(e); } catch (ex) { e = { message: err }; } }\n  const status = Number((e && e.status) || (e && e.responseBody && e.responseBody.error_code) || 0);\n  const desc = str((e && e.responseBody && e.responseBody.description) || (e && e.apiMessage) || (e && e.message));\n  if (status === 429 || /retry after/i.test(desc)) {\n    const m = desc.match(/retry after (\\d+)/i);\n    let sec = m ? parseInt(m[1], 10) : 60;\n    if (!isFinite(sec) || sec < 1) sec = 60;\n    if (sec > 300) sec = 300;\n    return { outcome: 'retry', retryAfter: sec, errorText: txt(desc), now: now };\n  }\n  if (status === 403 || /bot was blocked|blocked by the user|deactivated|kicked|forbidden/i.test(desc))\n    return { outcome: 'blocked', retryAfter: 0, errorText: txt(desc), now: now };\n  return { outcome: 'failed', retryAfter: 0, errorText: txt(desc || 'send failed'), now: now };\n};",
+                                    "packageJson": "{}"
                                   }
-                                ],
-                                "executionType": "EXECUTE_FIRST_MATCH"
+                                },
+                                "type": "CODE",
+                                "valid": true
                               },
-                              "type": "ROUTER",
+                              "settings": {
+                                "actionName": "custom_api_call",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": true
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "body": {
+                                    "data": {
+                                      "reply_markup": "{{step_26['output'].item.markup}}"
+                                    }
+                                  },
+                                  "body_type": "json",
+                                  "failsafe": false,
+                                  "followRedirects": false,
+                                  "headers": {},
+                                  "method": "POST",
+                                  "queryParams": {},
+                                  "response_is_binary": false,
+                                  "url": {
+                                    "url": "/copyMessage"
+                                  }
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-telegram-bot",
+                                "qadamVersion": "0.9.0"
+                              },
+                              "type": "PIECE",
                               "valid": true
                             },
                             "settings": {
-                              "actionName": "tables-upsert-records",
+                              "actionName": "delayFor",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -1313,20 +1079,310 @@
                                 }
                               },
                               "input": {
-                                "key_columns": [
-                                  "AXQRMe7knv8NFDCckziRD"
-                                ],
-                                "table_id": "XrygYF5Q4EUOKkaBFallb",
-                                "values": {
-                                  "values": [
+                                "delayFor": 1,
+                                "unit": "seconds"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-delay",
+                              "qadamVersion": "0.3.27"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "name": "step_26",
+                          "nextAction": {
+                            "displayName": "read all targets",
+                            "name": "step_44",
+                            "nextAction": {
+                              "displayName": "chunk totals",
+                              "name": "step_45",
+                              "nextAction": {
+                                "displayName": "save progress",
+                                "name": "step_46",
+                                "nextAction": {
+                                  "children": [
                                     {
-                                      "AXQRMe7knv8NFDCckziRD": "{{step_4['output'].bid}}",
-                                      "MNy5oYhMX34dDj5x6JLd7": "{{step_45['output'].cursor}}",
-                                      "ltKozKZzGOMZegnWFHmPU": "{{step_45['output'].sent}}",
-                                      "zSTccFLKPqYSbEqrEL2Gl": "{{step_45['output'].failed}}"
+                                      "displayName": "call next chunk",
+                                      "name": "step_48",
+                                      "settings": {
+                                        "actionName": "callFlow",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
+                                        },
+                                        "input": {
+                                          "executionMode": "queue",
+                                          "flow": {
+                                            "exampleData": {
+                                              "broadcastId": "abc",
+                                              "chatId": "322876545",
+                                              "phase": "start",
+                                              "telegramId": "322876545"
+                                            },
+                                            "externalId": "0yVrF1tXfvdPTqSnCNFL4"
+                                          },
+                                          "flowProps": {
+                                            "payload": {
+                                              "broadcastId": "{{step_4['output'].bid}}",
+                                              "chatId": "{{trigger['output'].data.chatId}}",
+                                              "phase": "send",
+                                              "telegramId": "{{trigger['output'].data.telegramId}}"
+                                            }
+                                          },
+                                          "mode": "simple",
+                                          "waitForResponse": false
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-subflows",
+                                        "qadamVersion": "0.4.14"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
+                                    },
+                                    {
+                                      "displayName": "close done",
+                                      "name": "step_49",
+                                      "nextAction": {
+                                        "displayName": "read event for final",
+                                        "name": "step_50",
+                                        "nextAction": {
+                                          "displayName": "final report",
+                                          "name": "step_51",
+                                          "nextAction": {
+                                            "displayName": "send final report",
+                                            "name": "step_52",
+                                            "settings": {
+                                              "actionName": "send_text_message",
+                                              "errorHandlingOptions": {
+                                                "continueOnFailure": {
+                                                  "value": false
+                                                },
+                                                "retryOnFailure": {
+                                                  "value": false
+                                                }
+                                              },
+                                              "input": {
+                                                "chat_id": "{{step_51['output'].authorChat}}",
+                                                "disable_notification": false,
+                                                "format": "None",
+                                                "message": "{{step_51['output'].text}}",
+                                                "protect_content": false,
+                                                "web_page_preview": false
+                                              },
+                                              "propertySettings": {},
+                                              "qadamName": "@aiqadam/qadam-telegram-bot",
+                                              "qadamVersion": "0.9.0"
+                                            },
+                                            "type": "PIECE",
+                                            "valid": true
+                                          },
+                                          "settings": {
+                                            "errorHandlingOptions": {
+                                              "continueOnFailure": {
+                                                "value": false
+                                              },
+                                              "retryOnFailure": {
+                                                "value": false
+                                              }
+                                            },
+                                            "input": {
+                                              "eventId": "{{step_4['output'].eventId}}",
+                                              "eventRecords": "{{step_50['output']}}",
+                                              "failed": "{{step_45['output'].failed}}",
+                                              "fallbackChat": "{{trigger['output'].data.chatId}}",
+                                              "sent": "{{step_45['output'].sent}}",
+                                              "texts": {
+                                                "bcast.empty_segment": "{{$t['bcast.empty_segment']}}",
+                                                "bcast.finished": "{{$t['bcast.finished']}}"
+                                              },
+                                              "total": "{{step_45['output'].total}}"
+                                            },
+                                            "sourceCode": {
+                                              "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k, vars) => {\n    let s = String(texts[k] || k);\n    if (vars) Object.keys(vars).forEach((key) => { s = s.split('{' + key + '}').join(String(vars[key])); });\n    return s;\n  };\n  const ev = arr(inputs.eventRecords).map(flat).filter((e) => str(e.id) === str(inputs.eventId))[0];\n  const authorChat = ev ? str(ev.staff_id) : '';\n  const total = Number(inputs.total) || 0;\n  const text = total === 0\n    ? t('bcast.empty_segment')\n    : t('bcast.finished', { sent: Number(inputs.sent) || 0, failed: Number(inputs.failed) || 0 });\n  return { text: text, authorChat: authorChat !== '' ? authorChat : str(inputs.fallbackChat) };\n};",
+                                              "packageJson": "{}"
+                                            }
+                                          },
+                                          "type": "CODE",
+                                          "valid": true
+                                        },
+                                        "settings": {
+                                          "actionName": "tables-find-records",
+                                          "errorHandlingOptions": {
+                                            "continueOnFailure": {
+                                              "value": false
+                                            },
+                                            "retryOnFailure": {
+                                              "value": false
+                                            }
+                                          },
+                                          "input": {
+                                            "columns": [
+                                              "39qJ4o2MYyNYsT2VtxfcK",
+                                              "6KqxIPre6r76ycWhCX8uU"
+                                            ],
+                                            "filters": {
+                                              "filters": [
+                                                {
+                                                  "field": "id",
+                                                  "operator": "eq",
+                                                  "value": "{{step_2['output'].eventIdOrNone}}"
+                                                }
+                                              ]
+                                            },
+                                            "limit": 1,
+                                            "record_ids": [],
+                                            "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                                          },
+                                          "propertySettings": {},
+                                          "qadamName": "@aiqadam/qadam-tables",
+                                          "qadamVersion": "0.4.5"
+                                        },
+                                        "type": "PIECE",
+                                        "valid": true
+                                      },
+                                      "settings": {
+                                        "actionName": "tables-upsert-records",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
+                                        },
+                                        "input": {
+                                          "key_columns": [
+                                            "AXQRMe7knv8NFDCckziRD"
+                                          ],
+                                          "table_id": "XrygYF5Q4EUOKkaBFallb",
+                                          "values": {
+                                            "values": [
+                                              {
+                                                "6ITY7K1B8OgqL0lm2Idbg": "done",
+                                                "AXQRMe7knv8NFDCckziRD": "{{step_4['output'].bid}}",
+                                                "yevE4jElXPvczO4LTt2Yj": "{{step_25['output'].now}}"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.4.5"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
+                                    }
+                                  ],
+                                  "displayName": "more pending?",
+                                  "name": "step_47",
+                                  "settings": {
+                                    "branches": [
+                                      {
+                                        "branchName": "more",
+                                        "branchType": "CONDITION",
+                                        "conditions": [
+                                          [
+                                            {
+                                              "firstValue": "{{step_45['output'].more}}",
+                                              "operator": "BOOLEAN_IS_TRUE"
+                                            }
+                                          ]
+                                        ]
+                                      },
+                                      {
+                                        "branchName": "Otherwise",
+                                        "branchType": "FALLBACK"
+                                      }
+                                    ],
+                                    "executionType": "EXECUTE_FIRST_MATCH"
+                                  },
+                                  "type": "ROUTER",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "actionName": "tables-upsert-records",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "key_columns": [
+                                      "AXQRMe7knv8NFDCckziRD"
+                                    ],
+                                    "table_id": "XrygYF5Q4EUOKkaBFallb",
+                                    "values": {
+                                      "values": [
+                                        {
+                                          "AXQRMe7knv8NFDCckziRD": "{{step_4['output'].bid}}",
+                                          "MNy5oYhMX34dDj5x6JLd7": "{{step_45['output'].cursor}}",
+                                          "ltKozKZzGOMZegnWFHmPU": "{{step_45['output'].sent}}",
+                                          "zSTccFLKPqYSbEqrEL2Gl": "{{step_45['output'].failed}}"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.4.5"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "targetRecords": "{{step_44['output']}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  let sent = 0, failed = 0, pending = 0;\n  arr(inputs.targetRecords).map(flat).forEach((r) => {\n    const st = str(r.state);\n    if (st === 'sent') sent += 1;\n    else if (st === 'failed' || st === 'blocked') failed += 1;\n    else if (st === 'pending') pending += 1;\n  });\n  return { sent: sent, failed: failed, pending: pending, total: sent + failed + pending, more: pending > 0, cursor: sent + failed };\n};",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-find-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "columns": [
+                                  "P9k6Pfcwfn67JQHQHQBle",
+                                  "Lb9mpTnwSeth8eDRp0zpU"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": "broadcast_id",
+                                      "operator": "eq",
+                                      "value": "{{step_4['output'].bid}}"
                                     }
                                   ]
-                                }
+                                },
+                                "limit": 500,
+                                "record_ids": [],
+                                "table_id": "PAH81WchbaOixGXSdFBK1"
                               },
                               "propertySettings": {},
                               "qadamName": "@aiqadam/qadam-tables",
@@ -1336,27 +1392,12 @@
                             "valid": true
                           },
                           "settings": {
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
-                              },
-                              "retryOnFailure": {
-                                "value": false
-                              }
-                            },
-                            "input": {
-                              "targetRecords": "{{step_44['output']}}"
-                            },
-                            "sourceCode": {
-                              "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  let sent = 0, failed = 0, pending = 0;\n  arr(inputs.targetRecords).map(flat).forEach((r) => {\n    const st = str(r.state);\n    if (st === 'sent') sent += 1;\n    else if (st === 'failed' || st === 'blocked') failed += 1;\n    else if (st === 'pending') pending += 1;\n  });\n  return { sent: sent, failed: failed, pending: pending, total: sent + failed + pending, more: pending > 0, cursor: sent + failed };\n};",
-                              "packageJson": "{}"
-                            }
+                            "items": "{{step_25['output'].items}}"
                           },
-                          "type": "CODE",
+                          "type": "LOOP_ON_ITEMS",
                           "valid": true
                         },
                         "settings": {
-                          "actionName": "tables-find-records",
                           "errorHandlingOptions": {
                             "continueOnFailure": {
                               "value": false
@@ -1366,37 +1407,64 @@
                             }
                           },
                           "input": {
-                            "columns": [
-                              "P9k6Pfcwfn67JQHQHQBle",
-                              "Lb9mpTnwSeth8eDRp0zpU"
-                            ],
-                            "filters": {
-                              "filters": [
-                                {
-                                  "field": "broadcast_id",
-                                  "operator": "eq",
-                                  "value": "{{step_4['output'].bid}}"
-                                }
-                              ]
-                            },
-                            "limit": 500,
-                            "record_ids": [],
-                            "table_id": "PAH81WchbaOixGXSdFBK1"
+                            "bid": "{{step_4['output'].bid}}",
+                            "body": "{{step_4['output'].body}}",
+                            "eventRecords": "{{step_54['output']}}",
+                            "mediaChatId": "{{step_4['output'].mediaChatId}}",
+                            "mediaMessageId": "{{step_4['output'].mediaMessageId}}",
+                            "regRecords": "{{step_53['output']}}",
+                            "registerBtnText": "{{$t['event.card.btn_register']}}",
+                            "targetRecords": "{{step_24['output']}}",
+                            "texts": {}
                           },
-                          "propertySettings": {},
-                          "qadamName": "@aiqadam/qadam-tables",
-                          "qadamVersion": "0.4.5"
+                          "sourceCode": {
+                            "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const parseIso = (s) => {\n    s = str(s).trim();\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  // W135 (ADR-0054): кнопка — по адресату. «Зарегистрироваться» тому, кто ещё\n  // не зарегистрирован на событие рассылки и на кого регистрация открыта\n  // (published / deadline не прошёл / есть места — то же правило, что\n  // reg-start/step_3 и reg-api/step_9). Иначе reply_markup пуст.\n  const btnText = str(inputs.registerBtnText);\n  const regSet = {};\n  arr(inputs.regRecords).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '') regSet[id] = true;\n  });\n  const ev = arr(inputs.eventRecords).map(flat)[0] || {};\n  const eventId = str(ev.id);\n  const evStatus = str(ev.status);\n  const nowMs = Date.now();\n  const deadlineMs = ev.reg_deadline_at ? parseIso(ev.reg_deadline_at) : NaN;\n  const deadlineOk = !isFinite(deadlineMs) || nowMs <= deadlineMs;\n  const capRaw = str(ev.capacity);\n  const cap = capRaw === '' ? NaN : Number(capRaw);\n  const obRaw = str(ev.overbook_pct);\n  const ob = (obRaw === '' || !isFinite(Number(obRaw))) ? 40 : Number(obRaw);\n  const regCount = Object.keys(regSet).length;\n  const seatsOk = !isFinite(cap) || regCount < Math.ceil(cap * (1 + ob / 100));\n  const regOpen = eventId !== '' && evStatus === 'published' && deadlineOk && seatsOk;\n  const items = arr(inputs.targetRecords).map(flat)\n    .filter((r) => str(r.state) === 'pending' && str(r.telegram_id) !== '' && str(r.__recordId) !== '')\n    .slice(0, 30)\n    .map((r) => {\n      const tg = str(r.telegram_id);\n      const show = regOpen && !regSet[tg];\n      return {\n        recordId: str(r.__recordId),\n        telegramId: tg,\n        markup: show\n          ? { inline_keyboard: [[{ text: btnText, callback_data: 'reg:go:' + eventId }]] }\n          : { inline_keyboard: [] },\n      };\n    });\n  return {\n    items: items, n: items.length, body: str(inputs.body), bid: str(inputs.bid),\n    mediaChatId: str(inputs.mediaChatId),\n    mediaMessageId: Number(str(inputs.mediaMessageId)) || 0,\n    eventId: eventId, regOpen: regOpen,\n    now: new Date().toISOString(),\n  };\n};",
+                            "packageJson": "{}"
+                          }
                         },
-                        "type": "PIECE",
+                        "type": "CODE",
                         "valid": true
                       },
                       "settings": {
-                        "items": "{{step_25['output'].items}}"
+                        "actionName": "tables-find-records",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "columns": [
+                            "39qJ4o2MYyNYsT2VtxfcK",
+                            "iUPI69WFE2B8w3BBHdrak",
+                            "j4BZ0Z6VMwWbHc5RlTBfB",
+                            "tVHurK8WamXGJZNCzWHGE",
+                            "SjLUFfn2RhsADnLE0wWw3"
+                          ],
+                          "filters": {
+                            "filters": [
+                              {
+                                "field": "id",
+                                "operator": "eq",
+                                "value": "{{step_2['output'].eventIdOrNone}}"
+                              }
+                            ]
+                          },
+                          "limit": 1,
+                          "record_ids": [],
+                          "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-tables",
+                        "qadamVersion": "0.5.0"
                       },
-                      "type": "LOOP_ON_ITEMS",
+                      "type": "PIECE",
                       "valid": true
                     },
                     "settings": {
+                      "actionName": "tables-find-records",
                       "errorHandlingOptions": {
                         "continueOnFailure": {
                           "value": false
@@ -1406,21 +1474,32 @@
                         }
                       },
                       "input": {
-                        "bid": "{{step_4['output'].bid}}",
-                        "body": "{{step_4['output'].body}}",
-                        "mediaChatId": "{{step_4['output'].mediaChatId}}",
-                        "mediaMessageId": "{{step_4['output'].mediaMessageId}}",
-                        "targetRecords": "{{step_24['output']}}",
-                        "texts": {
-                          "bcast.btn.unsubscribe": "{{$t['bcast.btn.unsubscribe']}}"
-                        }
+                        "columns": [
+                          "mVfpZFCwAZskWXNT7iCuI"
+                        ],
+                        "filters": {
+                          "filters": [
+                            {
+                              "field": "event_id",
+                              "operator": "eq",
+                              "value": "{{step_2['output'].eventIdOrNone}}"
+                            },
+                            {
+                              "field": "status",
+                              "operator": "eq",
+                              "value": "registered"
+                            }
+                          ]
+                        },
+                        "limit": 500,
+                        "record_ids": [],
+                        "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
                       },
-                      "sourceCode": {
-                        "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: str(rec && rec.id) };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (k) => String(texts[k] || k);\n  const items = arr(inputs.targetRecords).map(flat)\n    .filter((r) => str(r.state) === 'pending' && str(r.telegram_id) !== '' && str(r.__recordId) !== '')\n    .slice(0, 30)\n    .map((r) => ({ recordId: str(r.__recordId), telegramId: str(r.telegram_id) }));\n  return {\n    items: items, n: items.length, body: str(inputs.body), bid: str(inputs.bid),\n    mediaChatId: str(inputs.mediaChatId),\n    mediaMessageId: Number(str(inputs.mediaMessageId)) || 0,\n    unsubMarkup: { inline_keyboard: [[{ text: t('bcast.btn.unsubscribe'), callback_data: 'bcast:unsub:' + str(inputs.bid) }]] },\n    now: new Date().toISOString(),\n  };\n};",
-                        "packageJson": "{}"
-                      }
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.5.0"
                     },
-                    "type": "CODE",
+                    "type": "PIECE",
                     "valid": true
                   },
                   "settings": {

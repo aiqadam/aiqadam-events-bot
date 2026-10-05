@@ -16,7 +16,7 @@
 
 | Step | Piece / Action | Назначение |
 |------|----------------|-----------|
-| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId`, `firstName`, `lastName` (имена — для эвристики онбординга, W50) |
+| trigger | `@aiqadam/qadam-subflows : callableFlow` | вход: `eventId`, `utm`, `telegramId`, `chatId`, `firstName`, `lastName` (имена — для эвристики онбординга, W50), `direct` (W135: вход колбэком из рассылки — без карточки подтверждения) |
 | step_1 | `tables-find-records events` | событие по `id` |
 | step_2 | `tables-find-records registrations` | регистрации события — кормят и подсчёт занятости, и поиск своей строки |
 | step_12 | `tables-find-records users` | строка пользователя: `profile_completed_at`, `consent_pdn`, имя/должность (W50), `lang` (W114) |
@@ -33,6 +33,7 @@
 | step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
 | step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
 | step_18→19 (`onboard`, отказ `step_11`) | CODE текст сбоя → `send_text_message` | запись сессии не удалась — «попробуйте ещё раз» вместо тишины |
+| step_21→22 (`register_direct`, W135) | CODE «draft JSON (direct ob_register)» → `callFlow reg-profile` (`inline`) | колбэк `reg:go:<eventId>` из рассылки при заполненном профиле и данном `consent_pdn`: карточку подтверждения пропускаем — пишем сессию `ob_register` и зовём `reg-profile` (ветка `finish_lite`) — регистрация и билет сразу (ADR-0054) |
 | step_13 (`Otherwise`) | CODE «unexpected outcome» | noop-заглушка, если `outcome` не совпал ни с одной веткой |
 
 ## Зависимости
@@ -106,6 +107,13 @@
   там нечего.
 - **Лимит мест** — `capacity × (1 + overbook_pct/100)`, округление вверх.
   Пустой `overbook_pct` читается как **40**, пустой `capacity` — как «лимита нет».
+- **Вход из рассылки без карточки (`register_direct`, W135, ADR-0054).** Колбэк
+  `reg:go:<eventId>` (кнопка «Зарегистрироваться» в массовом сообщении) зовёт
+  `reg-start` с `direct=true`. При заполненном профиле и данном `consent_pdn`
+  `step_3` отдаёт `register_direct`, а `step_21`/`step_22` пишут сессию
+  `ob_register` и зовут `reg-profile` — та же ветка `finish_lite`, что у
+  повторного касания, без промежуточной карточки. Без профиля или согласия —
+  обычный путь (`onboard`/`register`); согласие ПД один тап не обходит (PAR-1).
 - **Ветка `existing` проверяется раньше состояния события**: у уже
   зарегистрированного участника отменённое или завершённое событие всё равно
   даёт `existing` с кнопкой билета, а не отказ; на онлайне (`format=online`)

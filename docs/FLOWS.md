@@ -228,7 +228,10 @@ qadam-шаги, а Code step только считает, кого брать с
    (исключая `blocked_bot`; для `all_consent` — только `consent_marketing = true`).
 2. **C** отрезает чанк от курсора `broadcasts.cursor` — чистое вычисление списка.
 3. **LOOP** по чанку, на каждой итерации:
-   - **A** `telegram send_text_message` с кнопкой **«Отписаться»** (OWN-13),
+   - **A** `custom_api_call /copyMessage` — копия исходного поста с кнопкой
+     по адресату (W135, [ADR-0054](adr/0054-broadcast-register-instead-of-unsubscribe.md)):
+     «Зарегистрироваться» (`reg:go:<eventId>`), если получатель не зарегистрирован
+     и регистрация открыта, иначе без кнопки;
      шаг помечен `continueOnFailure` — иначе первая же ошибка убьёт весь прогон;
    - ветка **on success** → `tables update-record`: `state = sent` немедленно,
      до перехода к следующему адресату;
@@ -247,10 +250,15 @@ qadam-шаги, а Code step только считает, кого брать с
 > `retry_after` в объекте ошибки шага. Это самое рискованное место проекта —
 > [Q13](OPEN-QUESTIONS.md#q13), измеряется до сборки W14.
 
-### `unsubscribe`
+### `unsubscribe` — снят
 
-Кнопка из массового сообщения → `consent_marketing = false`, `consent_marketing_at = now`,
-подтверждение человеку. Отписка не трогает `consent_pdn` и не отменяет регистрации.
+Кнопки «Отписаться» в массовых сообщениях больше нет (W135,
+[ADR-0054](adr/0054-broadcast-register-instead-of-unsubscribe.md)): она заменена
+контекстной кнопкой «Зарегистрироваться» по адресату
+(`reg:go:<eventId>`, см. `broadcast-runner`). Согласие на рассылку меняется
+переключателем в табе «Профиль» Mini App (PAR-2, W60); `consent_pdn` отписка
+не трогала и не трогает. Маршрут `bcast:unsub:` и флоу `bcast-unsub` выведены
+из эксплуатации.
 
 ---
 
