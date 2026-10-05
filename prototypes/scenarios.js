@@ -242,10 +242,10 @@ PROTO.buildScenarios = function (opts) {
           title: T('owner.event.btn.broadcast'), lines: [],
           body: T('bcast.started', { count: ed.broadcast.total }) + '\n' + T('bcast.progress', { sent: ed.broadcast.sent, total: ed.broadcast.total, failed: 0 }),
         }, trace: ['OWN-11', 'OWN-12'] },
-      { id: 'mass', kind: 'bot', text: (ev.broadcastText || P['proto.broadcast_sample']), trace: ['OWN-13'],
-        buttons: [{ label: T('bcast.btn.unsubscribe'), go: 'unsub-done' }] },
-      { id: 'unsub-done', kind: 'bot', text: T('unsub.done'), trace: ['OWN-13'],
-        buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
+      // W135 (ADR-0054): кнопка в массовом сообщении — по адресату
+      // («Зарегистрироваться» незарегистрированному при открытой регистрации),
+      // иначе её нет. В моке показываем сообщение без кнопки.
+      { id: 'mass', kind: 'bot', text: (ev.broadcastText || P['proto.broadcast_sample']), trace: ['OWN-13'] },
       { id: 'finished', kind: 'bot', text: T('bcast.finished', { sent: ed.broadcast.sent, failed: 0 }), trace: ['OWN-11'],
         buttons: [{ label: T('common.btn.menu'), go: 'menu' }] },
 

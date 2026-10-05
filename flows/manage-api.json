@@ -837,16 +837,75 @@
                         "displayName": "geo link: parse",
                         "name": "step_34",
                         "nextAction": {
-                          "displayName": "geo link: geocoder",
-                          "name": "step_35",
-                          "nextAction": {
-                            "displayName": "geo link: parse response",
-                            "name": "step_36",
-                            "nextAction": {
-                              "displayName": "respond (geo link)",
-                              "name": "step_37",
+                          "children": [
+                            {
+                              "displayName": "geocoder (org uri)",
+                              "name": "step_36",
+                              "nextAction": {
+                                "displayName": "parse geo (org)",
+                                "name": "step_37",
+                                "nextAction": {
+                                  "displayName": "respond geo (org)",
+                                  "name": "step_61",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "address": "{{step_37['output'].address}}",
+                                          "error": "{{step_37['output'].error}}",
+                                          "fields": "{{step_37['output'].fields}}",
+                                          "lat": "{{step_37['output'].lat}}",
+                                          "lon": "{{step_37['output'].lon}}",
+                                          "ok": "{{step_37['output'].ok}}",
+                                          "text": "{{step_37['output'].text}}"
+                                        },
+                                        "headers": {},
+                                        "status": "{{step_37['output'].httpStatus}}"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.38"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "resp": "{{step_36['output']}}",
+                                    "texts": {
+                                      "manage.geo.org_fail": "{{$t['manage.geo.org_fail']}}"
+                                    }
+                                  },
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const fail = () => ({\n    httpStatus: 422, ok: false,\n    lat: '', lon: '', address: '',\n    error: 'validation',\n    text: t('manage.geo.org_fail'),\n    fields: { geo: 'manage.geo.org_fail' },\n  });\n  // Форма вывода http qadam зависит от исхода (ARCHITECTURE): 2xx — плоская\n  // { status, headers, body }, 4xx/5xx при continue_all — { response: { status, body } }.\n  const resp = (inputs.resp && typeof inputs.resp === 'object') ? inputs.resp : {};\n  const flat = (resp.body !== undefined || resp.status !== undefined)\n    ? resp\n    : ((resp.response && typeof resp.response === 'object') ? resp.response : {});\n  let doc = flat.body;\n  if (typeof doc === 'string') {\n    if (!doc) return fail();\n    try { doc = JSON.parse(doc); } catch (e) { return fail(); }\n  }\n  if (!doc || typeof doc !== 'object') return fail();\n  const coll = doc.response && doc.response.GeoObjectCollection ? doc.response.GeoObjectCollection : null;\n  const members = coll && Array.isArray(coll.featureMember) ? coll.featureMember : [];\n  const obj = members.length && members[0] && members[0].GeoObject ? members[0].GeoObject : null;\n  const pos = obj && obj.Point && typeof obj.Point.pos === 'string' ? obj.Point.pos.trim() : '';\n  // Геокодер отдаёт pos как «долгота широта» — порядок фиксирован документацией.\n  const pm = /^(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)$/.exec(pos);\n  if (!pm) return fail();\n  const lon = Number(pm[1]), lat = Number(pm[2]);\n  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return fail();\n  const meta = (obj.metaDataProperty && obj.metaDataProperty.GeocoderMetaData) ? obj.metaDataProperty.GeocoderMetaData : {};\n  const rawAddr = (meta.Address && typeof meta.Address.formatted === 'string' && meta.Address.formatted)\n    ? meta.Address.formatted\n    : (typeof meta.text === 'string' ? meta.text : '');\n  // Яндекс дублирует компоненты («Узбекистан, Ташкент, Ташкент, BeeLab») —\n  // подряд идущие одинаковые куски схлопываем.\n  const parts = String(rawAddr).split(',').map((s) => s.trim()).filter((s) => s !== '');\n  const addr = parts.filter((s, i) => i === 0 || s.toLowerCase() !== parts[i - 1].toLowerCase()).join(', ');\n  return {\n    httpStatus: 200, ok: true,\n    lat: String(Math.round(lat * 1e6) / 1e6),\n    lon: String(Math.round(lon * 1e6) / 1e6),\n    address: String(addr).slice(0, 300),\n    error: '', text: '', fields: {},\n  };\n};\n",
+                                    "packageJson": "{}"
+                                  }
+                                },
+                                "type": "CODE",
+                                "valid": true
+                              },
                               "settings": {
-                                "actionName": "return_response",
+                                "actionName": "send_request",
                                 "errorHandlingOptions": {
                                   "continueOnFailure": {
                                     "value": false
@@ -856,88 +915,416 @@
                                   }
                                 },
                                 "input": {
-                                  "fields": {
-                                    "body": {
-                                      "address": "{{step_36['output'].address}}",
-                                      "error": "{{step_36['output'].error}}",
-                                      "fields": "{{step_36['output'].fields}}",
-                                      "lat": "{{step_36['output'].lat}}",
-                                      "lon": "{{step_36['output'].lon}}",
-                                      "ok": "{{step_36['output'].ok}}",
-                                      "text": "{{step_36['output'].text}}"
-                                    },
-                                    "headers": {},
-                                    "status": "{{step_36['output'].httpStatus}}"
+                                  "authFields": {},
+                                  "authType": "NONE",
+                                  "body": {},
+                                  "failureMode": "continue_all",
+                                  "followRedirects": false,
+                                  "headers": {},
+                                  "method": "GET",
+                                  "proxy_settings": {},
+                                  "queryParams": {
+                                    "apikey": "{{variables['YANDEX_GEOCODER_API_KEY']}}",
+                                    "format": "json",
+                                    "lang": "ru_RU",
+                                    "results": "1",
+                                    "uri": "{{step_34['output'].uri}}"
                                   },
-                                  "respond": "stop",
-                                  "responseType": "json"
+                                  "response_is_binary": false,
+                                  "timeout": 10,
+                                  "url": "https://geocode-maps.yandex.ru/1.x/",
+                                  "use_proxy": false
                                 },
                                 "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-webhook",
-                                "qadamVersion": "0.1.35"
+                                "qadamName": "@aiqadam/qadam-http",
+                                "qadamVersion": "0.13.0"
                               },
                               "type": "PIECE",
                               "valid": true
                             },
-                            "settings": {
-                              "errorHandlingOptions": {
-                                "continueOnFailure": {
-                                  "value": false
+                            {
+                              "displayName": "geocoder (text)",
+                              "name": "step_62",
+                              "nextAction": {
+                                "displayName": "parse geo (text)",
+                                "name": "step_63",
+                                "nextAction": {
+                                  "displayName": "respond geo (text)",
+                                  "name": "step_64",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "address": "{{step_63['output'].address}}",
+                                          "error": "{{step_63['output'].error}}",
+                                          "fields": "{{step_63['output'].fields}}",
+                                          "lat": "{{step_63['output'].lat}}",
+                                          "lon": "{{step_63['output'].lon}}",
+                                          "ok": "{{step_63['output'].ok}}",
+                                          "text": "{{step_63['output'].text}}"
+                                        },
+                                        "headers": {},
+                                        "status": "{{step_63['output'].httpStatus}}"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.38"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
                                 },
-                                "retryOnFailure": {
-                                  "value": false
-                                }
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "resp": "{{step_62['output']}}",
+                                    "texts": {
+                                      "manage.geo.org_fail": "{{$t['manage.geo.org_fail']}}"
+                                    }
+                                  },
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const fail = () => ({\n    httpStatus: 422, ok: false,\n    lat: '', lon: '', address: '',\n    error: 'validation',\n    text: t('manage.geo.org_fail'),\n    fields: { geo: 'manage.geo.org_fail' },\n  });\n  const resp = (inputs.resp && typeof inputs.resp === 'object') ? inputs.resp : {};\n  const flat = (resp.body !== undefined || resp.status !== undefined)\n    ? resp\n    : ((resp.response && typeof resp.response === 'object') ? resp.response : {});\n  let doc = flat.body;\n  if (typeof doc === 'string') {\n    if (!doc) return fail();\n    try { doc = JSON.parse(doc); } catch (e) { return fail(); }\n  }\n  if (!doc || typeof doc !== 'object') return fail();\n  const coll = doc.response && doc.response.GeoObjectCollection ? doc.response.GeoObjectCollection : null;\n  const members = coll && Array.isArray(coll.featureMember) ? coll.featureMember : [];\n  const obj = members.length && members[0] && members[0].GeoObject ? members[0].GeoObject : null;\n  const pos = obj && obj.Point && typeof obj.Point.pos === 'string' ? obj.Point.pos.trim() : '';\n  const pm = /^(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)$/.exec(pos);\n  if (!pm) return fail();\n  const lon = Number(pm[1]), lat = Number(pm[2]);\n  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return fail();\n  const meta = (obj.metaDataProperty && obj.metaDataProperty.GeocoderMetaData) ? obj.metaDataProperty.GeocoderMetaData : {};\n  const rawAddr = (meta.Address && typeof meta.Address.formatted === 'string' && meta.Address.formatted)\n    ? meta.Address.formatted\n    : (typeof meta.text === 'string' ? meta.text : '');\n  const parts = String(rawAddr).split(',').map((s) => s.trim()).filter((s) => s !== '');\n  const addr = parts.filter((s, i) => i === 0 || s.toLowerCase() !== parts[i - 1].toLowerCase()).join(', ');\n  return {\n    httpStatus: 200, ok: true,\n    lat: String(Math.round(lat * 1e6) / 1e6),\n    lon: String(Math.round(lon * 1e6) / 1e6),\n    address: String(addr).slice(0, 300),\n    error: '', text: '', fields: {},\n  };\n};\n",
+                                    "packageJson": "{}"
+                                  }
+                                },
+                                "type": "CODE",
+                                "valid": true
                               },
-                              "input": {
-                                "resp": "{{step_35['output']}}",
-                                "texts": {
-                                  "manage.geo.org_fail": "{{$t['manage.geo.org_fail']}}"
-                                }
+                              "settings": {
+                                "actionName": "send_request",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "authFields": {},
+                                  "authType": "NONE",
+                                  "body": {},
+                                  "failureMode": "continue_all",
+                                  "followRedirects": false,
+                                  "headers": {},
+                                  "method": "GET",
+                                  "proxy_settings": {},
+                                  "queryParams": {
+                                    "apikey": "{{variables['YANDEX_GEOCODER_API_KEY']}}",
+                                    "format": "json",
+                                    "geocode": "{{step_34['output'].geocode}}",
+                                    "lang": "ru_RU",
+                                    "results": "1"
+                                  },
+                                  "response_is_binary": false,
+                                  "timeout": 10,
+                                  "url": "https://geocode-maps.yandex.ru/1.x/",
+                                  "use_proxy": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-http",
+                                "qadamVersion": "0.13.0"
                               },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const fail = () => ({\n    httpStatus: 422, ok: false,\n    lat: '', lon: '', address: '',\n    error: 'validation',\n    text: t('manage.geo.org_fail'),\n    fields: { geo: 'manage.geo.org_fail' },\n  });\n  // Форма вывода http qadam зависит от исхода (ARCHITECTURE): 2xx — плоская\n  // { status, headers, body }, 4xx/5xx при continue_all — { response: { status, body } }.\n  const resp = (inputs.resp && typeof inputs.resp === 'object') ? inputs.resp : {};\n  const flat = (resp.body !== undefined || resp.status !== undefined)\n    ? resp\n    : ((resp.response && typeof resp.response === 'object') ? resp.response : {});\n  let doc = flat.body;\n  if (typeof doc === 'string') {\n    if (!doc) return fail();\n    try { doc = JSON.parse(doc); } catch (e) { return fail(); }\n  }\n  if (!doc || typeof doc !== 'object') return fail();\n  const coll = doc.response && doc.response.GeoObjectCollection ? doc.response.GeoObjectCollection : null;\n  const members = coll && Array.isArray(coll.featureMember) ? coll.featureMember : [];\n  const obj = members.length && members[0] && members[0].GeoObject ? members[0].GeoObject : null;\n  const pos = obj && obj.Point && typeof obj.Point.pos === 'string' ? obj.Point.pos.trim() : '';\n  // Геокодер отдаёт pos как «долгота широта» — порядок фиксирован документацией.\n  const pm = /^(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)$/.exec(pos);\n  if (!pm) return fail();\n  const lon = Number(pm[1]), lat = Number(pm[2]);\n  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return fail();\n  const meta = (obj.metaDataProperty && obj.metaDataProperty.GeocoderMetaData) ? obj.metaDataProperty.GeocoderMetaData : {};\n  const rawAddr = (meta.Address && typeof meta.Address.formatted === 'string' && meta.Address.formatted)\n    ? meta.Address.formatted\n    : (typeof meta.text === 'string' ? meta.text : '');\n  // Яндекс дублирует компоненты («Узбекистан, Ташкент, Ташкент, BeeLab») —\n  // подряд идущие одинаковые куски схлопываем.\n  const parts = String(rawAddr).split(',').map((s) => s.trim()).filter((s) => s !== '');\n  const addr = parts.filter((s, i) => i === 0 || s.toLowerCase() !== parts[i - 1].toLowerCase()).join(', ');\n  return {\n    httpStatus: 200, ok: true,\n    lat: String(Math.round(lat * 1e6) / 1e6),\n    lon: String(Math.round(lon * 1e6) / 1e6),\n    address: String(addr).slice(0, 300),\n    error: '', text: '', fields: {},\n  };\n};\n",
-                                "packageJson": "{}"
-                              }
+                              "type": "PIECE",
+                              "valid": true
                             },
-                            "type": "CODE",
-                            "valid": true
-                          },
+                            {
+                              "displayName": "geo coords result",
+                              "name": "step_65",
+                              "nextAction": {
+                                "displayName": "respond geo (coords)",
+                                "name": "step_66",
+                                "settings": {
+                                  "actionName": "return_response",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "fields": {
+                                      "body": {
+                                        "address": "{{step_65['output'].address}}",
+                                        "error": "{{step_65['output'].error}}",
+                                        "fields": "{{step_65['output'].fields}}",
+                                        "lat": "{{step_65['output'].lat}}",
+                                        "lon": "{{step_65['output'].lon}}",
+                                        "ok": "{{step_65['output'].ok}}",
+                                        "text": "{{step_65['output'].text}}"
+                                      },
+                                      "headers": {},
+                                      "status": "{{step_65['output'].httpStatus}}"
+                                    },
+                                    "respond": "stop",
+                                    "responseType": "json"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-webhook",
+                                  "qadamVersion": "0.1.38"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "lat": "{{step_34['output'].lat}}",
+                                  "lon": "{{step_34['output'].lon}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const lat = Number(str(inputs.lat));\n  const lon = Number(str(inputs.lon));\n  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {\n    return { httpStatus: 400, ok: false, lat: '', lon: '', address: '', error: 'bad_request', text: '', fields: {} };\n  }\n  return {\n    httpStatus: 200, ok: true,\n    lat: String(Math.round(lat * 1e6) / 1e6),\n    lon: String(Math.round(lon * 1e6) / 1e6),\n    address: '', error: '', text: '', fields: {},\n  };\n};\n",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "expand short link",
+                              "name": "step_67",
+                              "nextAction": {
+                                "displayName": "geo expanded",
+                                "name": "step_68",
+                                "nextAction": {
+                                  "displayName": "respond geo (expanded)",
+                                  "name": "step_69",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "error": "{{step_68['output'].error}}",
+                                          "expanded": "{{step_68['output'].expanded}}",
+                                          "fields": "{{step_68['output'].fields}}",
+                                          "ok": "{{step_68['output'].ok}}",
+                                          "text": "{{step_68['output'].text}}"
+                                        },
+                                        "headers": {},
+                                        "status": "{{step_68['output'].httpStatus}}"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.38"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "failText": "{{$t['manage.geo.org_fail']}}",
+                                    "resp": "{{step_67['output']}}",
+                                    "shortUrl": "{{step_34['output'].expandedUrl}}"
+                                  },
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  // Короткая ссылка: читаем заголовок Location (301). Относительный путь\n  // достраиваем до абсолютного по origin короткой ссылки.\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const resp = (inputs.resp && typeof inputs.resp === 'object') ? inputs.resp : {};\n  const flat = (resp.body !== undefined || resp.status !== undefined)\n    ? resp\n    : ((resp.response && typeof resp.response === 'object') ? resp.response : {});\n  const headers = (flat.headers && typeof flat.headers === 'object') ? flat.headers : {};\n  let loc = '';\n  Object.keys(headers).forEach((k) => { if (k.toLowerCase() === 'location') loc = str(headers[k]); });\n  const short = str(inputs.shortUrl);\n  const om = /^(https?:\\/\\/[^/]+)/i.exec(short);\n  const origin = om ? om[1] : '';\n  let expanded = '';\n  if (loc) {\n    if (/^https?:\\/\\//i.test(loc)) expanded = loc;\n    else if (origin) expanded = origin + (loc.charAt(0) === '/' ? '' : '/') + loc;\n  }\n  const ok = expanded !== '';\n  return {\n    httpStatus: ok ? 200 : 422,\n    ok: ok,\n    expanded: expanded,\n    error: ok ? '' : 'validation',\n    text: ok ? '' : str(inputs.failText),\n    fields: ok ? {} : { geo: 'manage.geo.org_fail' },\n  };\n};\n",
+                                    "packageJson": "{}"
+                                  }
+                                },
+                                "type": "CODE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "actionName": "send_request",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "authFields": {},
+                                  "authType": "NONE",
+                                  "body": {},
+                                  "failureMode": "continue_all",
+                                  "followRedirects": false,
+                                  "headers": {},
+                                  "method": "GET",
+                                  "proxy_settings": {},
+                                  "queryParams": {},
+                                  "response_is_binary": false,
+                                  "timeout": 10,
+                                  "url": "{{step_34['output'].expandedUrl}}",
+                                  "use_proxy": false
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-http",
+                                "qadamVersion": "0.13.0"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            {
+                              "displayName": "geo none",
+                              "name": "step_70",
+                              "nextAction": {
+                                "displayName": "respond geo (none)",
+                                "name": "step_71",
+                                "settings": {
+                                  "actionName": "return_response",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "fields": {
+                                      "body": {
+                                        "error": "{{step_70['output'].error}}",
+                                        "expanded": "{{step_70['output'].expanded}}",
+                                        "fields": "{{step_70['output'].fields}}",
+                                        "ok": "{{step_70['output'].ok}}",
+                                        "text": "{{step_70['output'].text}}"
+                                      },
+                                      "headers": {},
+                                      "status": "{{step_70['output'].httpStatus}}"
+                                    },
+                                    "respond": "stop",
+                                    "responseType": "json"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-webhook",
+                                  "qadamVersion": "0.1.38"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "failText": "{{$t['manage.geo.org_fail']}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  return {\n    httpStatus: 422, ok: false,\n    lat: '', lon: '', address: '', expanded: '',\n    error: 'validation',\n    text: str(inputs.failText),\n    fields: { geo: 'manage.geo.org_fail' },\n  };\n};\n",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
+                              "valid": true
+                            }
+                          ],
+                          "displayName": "geo mode",
+                          "name": "step_35",
                           "settings": {
-                            "actionName": "send_request",
-                            "errorHandlingOptions": {
-                              "continueOnFailure": {
-                                "value": false
+                            "branches": [
+                              {
+                                "branchName": "oid",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_34['output'].mode}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "oid"
+                                    }
+                                  ]
+                                ]
                               },
-                              "retryOnFailure": {
-                                "value": false
+                              {
+                                "branchName": "text",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_34['output'].mode}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "text"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "coords",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_34['output'].mode}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "coords"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "short",
+                                "branchType": "CONDITION",
+                                "conditions": [
+                                  [
+                                    {
+                                      "firstValue": "{{step_34['output'].mode}}",
+                                      "operator": "TEXT_EXACTLY_MATCHES",
+                                      "secondValue": "short"
+                                    }
+                                  ]
+                                ]
+                              },
+                              {
+                                "branchName": "Otherwise",
+                                "branchType": "FALLBACK"
                               }
-                            },
-                            "input": {
-                              "authFields": {},
-                              "authType": "NONE",
-                              "body": {},
-                              "failureMode": "continue_all",
-                              "followRedirects": false,
-                              "headers": {},
-                              "method": "GET",
-                              "proxy_settings": {},
-                              "queryParams": {
-                                "apikey": "{{variables['YANDEX_GEOCODER_API_KEY']}}",
-                                "format": "json",
-                                "lang": "ru_RU",
-                                "results": "1",
-                                "uri": "{{step_34['output'].uri}}"
-                              },
-                              "response_is_binary": false,
-                              "timeout": 10,
-                              "url": "https://geocode-maps.yandex.ru/1.x/",
-                              "use_proxy": false
-                            },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-http",
-                            "qadamVersion": "0.12.0"
+                            ],
+                            "executionType": "EXECUTE_FIRST_MATCH"
                           },
-                          "type": "PIECE",
+                          "type": "ROUTER",
                           "valid": true
                         },
                         "settings": {
@@ -953,7 +1340,7 @@
                             "link": "{{step_7['output'].link}}"
                           },
                           "sourceCode": {
-                            "code": "export const code = async (inputs) => {\n  // Орг-ссылка Яндекс.Карт («Поделиться» из приложения): вырезаем только\n  // числовой oid. URL Геокодера фиксирован в http-шаге, из входной строки\n  // в запрос уходит лишь oid — это не прокси для произвольных URL (Q55).\n  // Формы: https://yandex.com/maps/org/beelab/34279609643?si=…\n  //        https://yandex.ru/maps/org/1234567/\n  // Короткие yandex.ru/maps/-/… не поддержаны: в них нет oid (Q55).\n  const link = String(inputs.link === undefined || inputs.link === null ? '' : inputs.link).trim();\n  const m = /^https?:\\/\\/(?:[a-z0-9-]+\\.)*yandex\\.[a-z.]{2,6}\\/maps\\/org\\/(?:[^/?#]+\\/)?(\\d{1,20})(?:[/?#]|$)/i.exec(link);\n  const oid = m ? m[1] : '';\n  return {\n    oid: oid,\n    // Значение, которое принимает Геокодер в параметре uri (форма из\n    // ответа Геосаджеста). Пустой uri даёт 400 — разбор ответа превратит\n    // это в общий отказ `manage.geo.org_fail`.\n    uri: oid ? ('ymapsbm1://org?oid=' + oid) : '',\n    ok: oid !== '',\n  };\n};\n",
+                            "code": "export const code = async (inputs) => {\n  // W136 (ADR-0055): план разбора ссылки Яндекс.Карт. Режимы:\n  // short — короткая yandex.*/maps/-/ (разворачивает http-шаг),\n  // oid   — организация (Геокодер по uri),\n  // text  — адрес без координат (Геокодер по geocode),\n  // coords— координаты в самой ссылке,\n  // none  — не разобрали.\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const raw = str(inputs.link);\n  let s = raw;\n  try { s = decodeURIComponent(raw); } catch (e) { s = raw; }\n  const out = { ok: false, mode: 'none', uri: '', geocode: '', lat: '', lon: '', expandedUrl: '', isYandex: false };\n  const YRE = /^https?:\\/\\/(?:[a-z0-9-]+\\.)*yandex\\.[a-z.]{2,6}\\/maps\\//i;\n  const SHORT = /^https?:\\/\\/(?:[a-z0-9-]+\\.)*yandex\\.[a-z.]{2,6}\\/maps\\/-\\//i;\n  out.isYandex = YRE.test(raw);\n  const N = '(-?\\\\d+(?:\\\\.\\\\d+)?)';\n  let coords = null;\n  let m;\n  m = new RegExp('poi\\\\[point\\\\]=' + N + ',' + N, 'i').exec(s);\n  if (m) coords = { lon: parseFloat(m[1]), lat: parseFloat(m[2]) };\n  if (!coords) { m = new RegExp('(?:[?&])pt=' + N + ',' + N, 'i').exec(s); if (m) coords = { lon: parseFloat(m[1]), lat: parseFloat(m[2]) }; }\n  if (!coords) { m = new RegExp('@' + N + ',' + N).exec(s); if (m) coords = { lat: parseFloat(m[1]), lon: parseFloat(m[2]) }; }\n  if (!coords) { m = new RegExp('[?&]q=' + N + ',' + N, 'i').exec(s); if (m) coords = { lat: parseFloat(m[1]), lon: parseFloat(m[2]) }; }\n  if (!coords) { m = new RegExp('[?&]ll=' + N + ',' + N, 'i').exec(s); if (m) coords = { lon: parseFloat(m[1]), lat: parseFloat(m[2]) }; }\n  if (!coords) { m = new RegExp('^' + N + '\\\\s*[,; ]\\\\s*' + N + '$').exec(s); if (m) coords = { lat: parseFloat(m[1]), lon: parseFloat(m[2]) }; }\n  const oidPath = /\\/maps\\/org\\/(?:[^/?#]+\\/)?(\\d{1,20})(?:[/?#]|$)/i.exec(s);\n  const OID_URI = new RegExp('ymaps' + 'bm1://org\\\\?oid=(\\\\d{1,20})', 'i');\n  const oidUri = OID_URI.exec(s);\n  const oid = oidPath ? oidPath[1] : (oidUri ? oidUri[1] : '');\n  let text = '';\n  const tM = /[?&]text=([^&]+)/i.exec(s);\n  if (tM) text = tM[1].replace(/\\+/g, ' ').trim();\n  else { const qM = /[?&]q=([^&]+)/i.exec(s); if (qM && !/^-?\\d/.test(qM[1].trim())) text = qM[1].replace(/\\+/g, ' ').trim(); }\n\n  if (SHORT.test(raw)) { out.mode = 'short'; out.expandedUrl = raw; out.ok = true; return out; }\n  if (oid) { out.mode = 'oid'; out.uri = 'ymaps' + 'bm1://org?oid=' + oid; out.ok = true; return out; }\n  if (text) { out.mode = 'text'; out.geocode = text.slice(0, 300); out.ok = true; return out; }\n  if (coords && isFinite(coords.lat) && isFinite(coords.lon) && Math.abs(coords.lat) <= 90 && Math.abs(coords.lon) <= 180) {\n    out.mode = 'coords';\n    out.lat = String(Math.round(coords.lat * 1e6) / 1e6);\n    out.lon = String(Math.round(coords.lon * 1e6) / 1e6);\n    out.ok = true;\n    return out;\n  }\n  return out;\n};\n",
                             "packageJson": "{}"
                           }
                         },
