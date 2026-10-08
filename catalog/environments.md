@@ -69,6 +69,21 @@ dev по всем пакетам, применённым на dev после к�
     `subflows`/`telegram-bot` на prod те же версии, что и в dev-эталоне
     (`0.4.14`/`0.9.0`).
 
+- **W140 (2026-10-08)** — W139, имена участников на 200+ пользователях
+  (`users` на prod = 210). `manage-api`: широкие чтения `users`
+  (`step_40`/`step_45`/`step_49`/`step_52`) заменены узким join
+  `telegram_id in <idsCsv>`; добавлены CODE-шаги `name ids`
+  (`step_61`…`step_64`) и чтение `step_65`; ветка feedback перестроена
+  (`step_49` → чтение `registrations`, `step_50.userRows` ← `step_65`).
+  **Имена этих шагов на prod иные, чем в dev:** на prod нет W136, там
+  auto-нумерация дала `step_61…65`, тогда как на dev W136 занял `step_61…71`
+  и W139 добавил `step_72…76` (`catalog/flows/manage-api.md` описывает dev —
+  канон). Правка read-only, Mini App не менялся. published
+  `Yyu3K6X95ccRlFVZDxdri` (первая публикация — `VX2IszoIhTr4DdVcM3rNo`); строки
+  `migrations` `2026-10-08-w140-01`/`-02`. Хвост: живой сквозной прогон Mini App
+  «Участники» — **подтверждён** прогонами `participants`/`feedback_list`/
+  `staff_list` (10:58Z); визуальная проверка владельцем — по желанию.
+
 Хотфиксы правили только инстанс prod через MCP `app-flow-events-prod`;
 `flows/*.json` и `catalog/flows/*.md` не трогали — канон dev (ADR-0042).
 
