@@ -19,7 +19,7 @@ W139**; W136 (гео-ветка `step_61..71`) на prod не тянем — о�
 
 | Артефакт | dev-эталон (canon) | prod (куда переносим) |
 |----------|--------------------|------------------------|
-| flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` (v `jFYwwKlM25d7xBjxIXiH5`) | `CcGPwuW4ws5hkcaOPerEG` (было `8wizdJdhiOYAg0ab23e6e` → стало `<NEW>`) |
+| flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` (v `jFYwwKlM25d7xBjxIXiH5`) | `CcGPwuW4ws5hkcaOPerEG` (было `8wizdJdhiOYAg0ab23e6e` → стало `VX2IszoIhTr4DdVcM3rNo`) |
 | таблица `users` | `gyMqrk23KWlFQweY3qDU0` (внутр.) | те же id, что у dev (таблицы не пересобирались) |
 | таблица `migrations` (prod) | — | `NCZNGuWh6PFs1JZXRPNTE` |
 | connection | — | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) |
@@ -44,14 +44,14 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
 
 ## Чек-лист готовности
 
-- [ ] нет `running`-рассылки на prod (предусловие); снапшот prod снят, `publishedVersionId` записан
-- [ ] `step_45` ← dev-эталон (фильтр `telegram_id in {{step_72['output'].idsCsv}}`, `limit:500`) + новый `step_72` (CODE) после `step_44`
-- [ ] `step_40` ← dev + новый `step_73` (CODE) после `step_39`
-- [ ] `step_52` ← dev + новый `step_74` (CODE) после `step_19`
-- [ ] `step_49` → чтение `registrations` события + `step_75` (CODE) после `step_49` + `step_76` (чтение `users`) после `step_48` + `step_50.userRows = {{step_76['output']}}`
-- [ ] `ap_validate_flow` — 0 `invalid`; read-back живой структуры
-- [ ] publish; строка `migrations` на **prod** формата `YYYY-MM-DD-W140-NN`
-- [ ] `catalog/environments.md` обновлён (W140 применён; prod `publishedVersionId`)
+- [x] нет `running`-рассылки на prod (предусловие); снапшот prod снят, `publishedVersionId` записан (baseline `8wizdJdhiOYAg0ab23e6e`)
+- [x] `step_45` ← dev-эталон (фильтр `telegram_id in {{step_61['output'].idsCsv}}`, `limit:500`) + новый `step_61` (CODE) после `step_44` (имя auto — на prod `step_61`, см. «Дрейф»)
+- [x] `step_40` ← dev + новый `step_62` (CODE) после `step_39`
+- [x] `step_52` ← dev + новый `step_63` (CODE) после `step_19`
+- [x] `step_49` → чтение `registrations` события + `step_64` (CODE) после `step_49` + `step_65` (чтение `users`) после `step_48` + `step_50.userRows = {{step_65['output']}}`
+- [x] `ap_validate_flow` — 0 `invalid` (66/66); read-back живой структуры
+- [x] publish (`VX2IszoIhTr4DdVcM3rNo`); строка `migrations` на **prod** `2026-10-08-w140-01`
+- [x] `catalog/environments.md` обновлён (W140 применён; prod `publishedVersionId`)
 - [ ] независимое ревью, вердикт «замечаний нет»
 
 ## Детали исполнения
@@ -59,6 +59,11 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
 Порядок (правки одного флоу строго последовательны, гоча 16; вложенные
 `input`/`filters` — целиком, гоча 12; вставка `AFTER` на шаг с потомком —
 линейный сплайс, готачи 10/17):
+
+> Имена ниже — dev-эталонные (`step_72…76`). На prod платформа выдаёт имена
+> сама, и они другие: `step_61` (participants), `step_62` (search), `step_63`
+> (staff), `step_64`/`step_65` (feedback); порядок вставки тот же, а ссылки в
+> фильтрах и `step_50` указывают на фактически выданные prod-имена.
 
 1. `step_45` (`ap_update_step`, полный `input` = dev): `filters` =
    `telegram_id in {{step_72['output'].idsCsv}}`, `limit: 500`; затем
@@ -90,7 +95,26 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
 
 ## Как проверено
 
-- <заполняется по ходу>
+- **Предусловие:** `ap_find_records(broadcasts, status eq running)` на prod — 0;
+  снапшот prod `8wizdJdhiOYAg0ab23e6e` снят в
+  `~/qadam-snapshots/w140/`; `users` prod = **210** (>200), `registrations` = 60
+  — баг живой.
+- **Read-back живого prod** (`ap_flow_structure`): цепочки совпали с замыслом —
+  participants `step_44→step_61→step_45→step_60→step_46`, search
+  `step_38→step_39→step_62→step_40→step_41→step_42`, staff
+  `step_19→step_63→step_52→step_20`, feedback
+  `step_49→step_64→step_48→step_65→step_50`. Фильтры `telegram_id in
+  {{step_NN['output'].idsCsv}}` + `limit:500` на `step_45`/`step_40`/`step_52`/
+  `step_65`; `step_50.userRows = {{step_65['output']}}`. CODE-шаги `step_61…64`
+  помечены `[LOG OFF: input, output]`, `step_65` — `[LOG OFF: output]`.
+- **`ap_validate_flow`** — «ready to publish (66 steps, 66 valid)». 66 = 61
+  prod-шагов + 5 новых; разница с dev (77) — 11 шагов гео-ветки W136, которой на
+  prod нет.
+- **Публикация:** `ap_lock_and_publish` → версия `VX2IszoIhTr4DdVcM3rNo`
+  (`ap_export_flow`); свежий экспорт сохранён в `~/qadam-snapshots/w140/`.
+- **migrations (prod):** строка `2026-10-08-w140-01`.
+- **Не проверено живьём:** сквозной прогон Mini App на prod (нужен `initData`) —
+  на владельце; `ap_test_step`/`ap_test_flow` на prod не запускались (гоча 11).
 
 ## Журнал
 
@@ -101,6 +125,15 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
   `registrations` = 60, `events` = 3 — баг воспроизводится на боевых данных.
   `running`-рассылок нет. Снапшот prod снят в
   `~/qadam-snapshots/w140/prod-manage-api-8wizdJdhiOYAg0ab23e6e.json`.
+- **2026-10-08** — пакет применён на prod. Правки через MCP
+  `app-flow-events-prod` строго последовательно, каждый шаг с read-back
+  (`ap_flow_structure`). **Неожиданное:** платформа выдала новым шагам имена
+  `step_61…65`, а не dev-овые `step_72…76` — на prod нет W136, поэтому
+  auto-нумерация идёт с `step_61`. Первая редакция `step_45` ссылалась на
+  `{{step_72…}}` (dev-имя) — поправлена на фактическое `{{step_61…}}` до
+  публикации; дальше имена брались из ответов `ap_add_step`. Публикация →
+  `VX2IszoIhTr4DdVcM3rNo`, экспорт сохранён. `catalog/environments.md`
+  дополнен разделом W140 (в т.ч. про расхождение имён шагов prod↔dev).
 
 ## Ревью
 
