@@ -19,7 +19,7 @@ W139**; W136 (гео-ветка `step_61..71`) на prod не тянем — о�
 
 | Артефакт | dev-эталон (canon) | prod (куда переносим) |
 |----------|--------------------|------------------------|
-| flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` (v `jFYwwKlM25d7xBjxIXiH5`) | `CcGPwuW4ws5hkcaOPerEG` (было `8wizdJdhiOYAg0ab23e6e` → стало `VX2IszoIhTr4DdVcM3rNo`) |
+| flow `manage-api` | `pFtbgOP3U8sNFvP86Szli` (v `jFYwwKlM25d7xBjxIXiH5`) | `CcGPwuW4ws5hkcaOPerEG` (было `8wizdJdhiOYAg0ab23e6e` → стало `Yyu3K6X95ccRlFVZDxdri`; первая публикация W140 — `VX2IszoIhTr4DdVcM3rNo`) |
 | таблица `users` | `gyMqrk23KWlFQweY3qDU0` (внутр.) | те же id, что у dev (таблицы не пересобирались) |
 | таблица `migrations` (prod) | — | `NCZNGuWh6PFs1JZXRPNTE` |
 | connection | — | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) |
@@ -50,7 +50,7 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
 - [x] `step_52` ← dev + новый `step_63` (CODE) после `step_19`
 - [x] `step_49` → чтение `registrations` события + `step_64` (CODE) после `step_49` + `step_65` (чтение `users`) после `step_48` + `step_50.userRows = {{step_65['output']}}`
 - [x] `ap_validate_flow` — 0 `invalid` (66/66); read-back живой структуры
-- [x] publish (`VX2IszoIhTr4DdVcM3rNo`); строка `migrations` на **prod** `2026-10-08-w140-01`
+- [x] publish (`VX2IszoIhTr4DdVcM3rNo`, затем `Yyu3K6X95ccRlFVZDxdri` после правки `logInput`); строки `migrations` на **prod** `2026-10-08-w140-01`, `-02`
 - [x] `catalog/environments.md` обновлён (W140 применён; prod `publishedVersionId`)
 - [ ] независимое ревью, вердикт «замечаний нет»
 
@@ -106,15 +106,23 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
   `step_49→step_64→step_48→step_65→step_50`. Фильтры `telegram_id in
   {{step_NN['output'].idsCsv}}` + `limit:500` на `step_45`/`step_40`/`step_52`/
   `step_65`; `step_50.userRows = {{step_65['output']}}`. CODE-шаги `step_61…64`
-  помечены `[LOG OFF: input, output]`, `step_65` — `[LOG OFF: output]`.
+  и `step_65` помечены `[LOG OFF: input, output]` (после правки по ревью).
 - **`ap_validate_flow`** — «ready to publish (66 steps, 66 valid)». 66 = 61
   prod-шагов + 5 новых; разница с dev (77) — 11 шагов гео-ветки W136, которой на
   prod нет.
 - **Публикация:** `ap_lock_and_publish` → версия `VX2IszoIhTr4DdVcM3rNo`
-  (`ap_export_flow`); свежий экспорт сохранён в `~/qadam-snapshots/w140/`.
-- **migrations (prod):** строка `2026-10-08-w140-01`.
-- **Не проверено живьём:** сквозной прогон Mini App на prod (нужен `initData`) —
-  на владельце; `ap_test_step`/`ap_test_flow` на prod не запускались (гоча 11).
+  (`ap_export_flow`), затем (после правки `logInput` по ревью) повторная
+  публикация → `Yyu3K6X95ccRlFVZDxdri`. Свежие экспорты сохранены в
+  `~/qadam-snapshots/w140/`.
+- **migrations (prod):** строки `2026-10-08-w140-01` (`VX2…`) и `-02` (`Yyu3…`).
+- **Живой сквозной прогон на prod (доказательство основного сценария).**
+  После публикации (`VX2…`, 10:53Z) на prod прошли живые прогоны Mini App
+  (`participants`, `feedback_list`, `load`, `staff_list`; 10:58Z) — все
+  `SUCCEEDED`. `participants` вернул **55 имён**, включая ранее отображавшиеся
+  `telegram_id` свежих регистрантов (`509627989`, `108259963`, `782128795`,
+  `7093788550`); `feedback_list` прошёл цепочку `step_64→step_65→step_50`.
+  Проверено и `get_run` (`staff_list`): имена контролёров на месте, а новый
+  `step_63` в логе — `REDACTED` (log-off работает).
 
 ## Журнал
 
@@ -134,15 +142,107 @@ prod `manage-api` — эпохи W132: в нём **нет W136** (гео-вет�
   публикации; дальше имена брались из ответов `ap_add_step`. Публикация →
   `VX2IszoIhTr4DdVcM3rNo`, экспорт сохранён. `catalog/environments.md`
   дополнен разделом W140 (в т.ч. про расхождение имён шагов prod↔dev).
+- **2026-10-08** — ревью круг 1: одно `важно` — `step_65` не гасил `logInput`
+  (dev-эталон `step_76` гасит оба). Исправлено: `ap_update_step` `logInput:false`
+  на `step_65` → повторная публикация `Yyu3K6X95ccRlFVZDxdri`, строка
+  `migrations` `2026-10-08-w140-02`. Замечание «на будущее» про «не проверено
+  живьём» учтено: в «Как проверено» внесены живые прогоны Mini App на prod
+  (`participants` — 55 имён, ранее «сломанные» тоже), основной сценарий закрыт
+  живьём.
 
 ## Ревью
 
 > Заполняет **независимый ревьюер** по [REVIEW-CHECKLIST.md](REVIEW-CHECKLIST.md).
 
-- **Ревьюер**: <агент> · **Дата**: YYYY-MM-DD · **Вердикт**: —
+- **Ревьюер**: независимый агент-ревьюер (opencode, `deepseek-v4.1-flash`) · **Дата**: 2026-10-08 · **Вердикт**: есть замечания
+
+### Что проверено (живой prod через MCP `app-flow-events-prod` + репозиторий)
+
+- **Структура** `manage-api` (`CcGPwuW4ws5hkcaOPerEG`), `ap_flow_structure(includeInput)` +
+  `ap_read_step_code`: цепочки совпали с замыслом — participants
+  `step_44→step_61→step_45→step_60→step_46`, search
+  `step_38→step_39→step_62→step_40→step_41→step_42`, staff
+  `step_19→step_63→step_52→step_20`, feedback
+  `step_49→step_64→step_48→step_65→step_50`. Фильтры `telegram_id in
+  {{step_NN['output'].idsCsv}}` + `limit:500` — на `step_45`(←`step_61`)/`step_40`(←`step_62`)/
+  `step_52`(←`step_63`)/`step_65`(←`step_64`); `step_50.userRows = {{step_65['output']}}`;
+  `step_49` — чтение `registrations` (колонка `mVfpZFCwAZskWXNT7iCuI`, фильтр `event_id eq
+  {{step_5['output'].eventId}}`, `limit:200`); `step_61…64` — `[LOG OFF: input, output]`,
+  `step_65` — `[LOG OFF: output]`.
+- **CODE-сверка с каноном dev** (`w139-users-join-fix` / `fd8d7ff:flows/manage-api.json`,
+  `step_72…75`): `step_61`↔`step_72`, `step_62`↔`step_73`, `step_63`↔`step_74`, `step_64`↔`step_75` —
+  **побайтово равны** (`sourceCode.code`); `step_65`↔`step_76` — вход равен (mod ref-номер),
+  отличается только пин qadam'а (`tables` 0.4.6 на prod против 0.5.1 на dev — средовая разница,
+  задокументирована). Входы `step_40`/`step_45`/`step_49`/`step_50`/`step_52` равны dev-овым
+  с точностью до номера ссылаемого шага.
+- **Структурный дифф снапшотов** `8wizdJdhiOYAg0ab23e6e` → `VX2IszoIhTr4DdVcM3rNo`:
+  добавлены ровно `step_61…65`, удалённых нет; `settings` изменены **только** у
+  `step_40`/`step_45`/`step_49`/`step_50`/`step_52` (фильтр+`limit`, repurpose `step_49`,
+  `userRows` у `step_50`); `step_48`/`step_50` перевязаны на новые шаги. Ветки
+  `save`/`load`/`events_list`/`geo_link`/`delete` не тронуты.
+- **`ap_validate_flow`** — «ready to publish (66 steps, 66 valid)».
+- **Публикация подтверждена живым `ap_export_flow`**: `flows[0].id = VX2IszoIhTr4DdVcM3rNo`,
+  `flowId = CcGPwuW4ws5hkcaOPerEG`, `state: LOCKED`; вывод **побайтово совпал**
+  (sha256 `b9fb6f66…`) со снятым владельцем `~/qadam-snapshots/w140/prod-manage-api-VX2IszoIhTr4DdVcM3rNo.json`.
+  Секретов нет: 0 токен-подобных строк, 0 коротких `{{VAR}}`, 4 `{{variables[...]}}`,
+  connection-ссылки вычищены экспортом.
+- **`migrations` prod** (`NCZNGuWh6PFs1JZXRPNTE`): ровно одна строка `2026-10-08-w140-01`,
+  `publish`, `object_id CcGPwuW4ws5hkcaOPerEG`, `version_id VX2IszoIhTr4DdVcM3rNo`, `commit ca2f0bf`.
+- **Живые прогоны после публикации** (10:58Z, `PRODUCTION`): `participants`, `feedback_list`,
+  `load` — все `SUCCEEDED`. `participants` (OCSM0ZM0KdPVFVWGdnUfi) вернул **55 имён**, в т.ч.
+  ранее отображавшиеся `telegram_id` свежие регистранты (`509627989`→«Как пройти регистрацию»,
+  `108259963`→«Равиль Хайрулин», `782128795`→«Rustam Talipov», `7093788550`→«Жавохир Мавлонов») —
+  основной дефект W139 на prod закрыт живьём. `feedback_list` прошёл `step_64→step_65→step_50`.
+- **Поведение `in`+`__none__` на prod** (`ap_find_records users`, 210 строк): `in "__none__"` →
+  0 записей **без ошибки**; `in "322876545,5895728710,999999999999"` → 2 (несуществующий id
+  проигнорирован).
+- **Scope/дрейф**: в живом экспорте нет `step_66…71` (W136), гео-ветка — прежняя
+  `step_34→step_35→step_36→step_37`; пять новых шагов — ровно W139.
+- **AppSec**: права/IDOR не менялись (диффом затронуты только выходы join; решающие шаги
+  `step_7`/`step_20`/`step_42`/`step_46`/`step_50` и их входы `hmac`/`staff`/`event` те же);
+  join только сужает выборку имён по `telegram_id`, уже прочитанным для этого события.
+- **Офлайн** (с аргументами, как в хуке): `check-texts.py` — 30 флоу / 302 ссылки / 0 расхождений;
+  `check-commands.py` — 3 файла строк / 0 нарушений; `check-export-secrets.sh` — чисто.
+- **Откат**: снапшот `~/qadam-snapshots/w140/prod-manage-api-8wizdJdhiOYAg0ab23e6e.json`
+  на месте, порядок отката описан в журнале.
+- **Каталог**: `catalog/environments.md` описывает живое prod точно (210 users, `VX2…`,
+  `step_61…64`/`step_65`, расхождение имён prod↔dev); `flows/*.json` и
+  `catalog/flows/*.md` коммитами W140 не трогались (канон dev) — подтверждено `--stat`.
+
+### Замечания
+
+1. **важно** — prod `manage-api/step_65` (`feedback: read users`) **не гасит `logInput`**,
+   тогда как dev-эталон `step_76` гасит **и `logInput`, и `logOutput`** (проверено: в живом
+   экспорте у `step_65` стоит только `"logOutput": false`, `logInput` по умолчанию включён;
+   `ap_flow_structure` показывает `[LOG OFF: output]`). Вход `step_65` несёт
+   `filters[...].value = {{step_64['output'].idsCsv}}`, то есть в лог прогона ложится CSV
+   `telegram_id` регистрантов события. Нового разглашения сверх уже логируемого нет
+   (`step_49` логирует те же `telegram_id` полными строками `registrations`), поэтому это не
+   блокер, но это расхождение с каноном dev и с целью ADR-0005. Либо выставить
+   `logInput:false` на `step_65` (как в dev `step_76`), либо явно записать, что вход
+   `step_65` на prod логируется намеренно. — prod `manage-api/step_65`; dev
+   `flows/manage-api.json`, `step_76`.
+   - *Исправлено*: `logInput:false` выставлен на `step_65`; повторная
+     публикация `Yyu3K6X95ccRlFVZDxdri`, строка `migrations` `2026-10-08-w140-02`
+     (2026-10-08).
+
+2. **на будущее** — журнал в «Не проверено живьём» утверждает, что сквозного прогона Mini App
+   на prod не было; фактически после публикации (`VX2…`, 10:53Z) на prod есть живые прогоны
+   Mini App (`participants`, `feedback_list`, `load`, 10:58Z), и именно `participants` даёт
+   доказательство основного сценария W139 (55 имён, ранее «сломанные» тоже). Стоит перенести
+   это в «Как проверено», а не держать как непроверенное. — журнал W140, раздел «Не проверено живьём».
+   - *Учтено*: живые прогоны (`participants` — 55 имён, `feedback_list`) внесены
+     в «Как проверено» (2026-10-08).
+
+Замечания-хвосты из ревью W139, **унаследованные** переносом (не переоткрываются здесь):
+чтения-источники `step_38`/`step_44`/`step_49` остаются с `limit:200` (событие >200 регистраций
+снова обрежет строки); на `step_40`/`step_45`/`step_52` логи не сняты, и их вход теперь несёт
+`idsCsv` — на dev это уже записано «на будущее» [ревью W139](W139-users-join-limit.md#замечания).
 
 ## Хвосты и блокеры
 
-- живой сквозной прогон Mini App на prod («Участники» с именами) — на владельце;
-- W136 на prod (гео-ветка `step_61..71`) — отдельный хвост, в этот пакет не входит (решение владельца 2026-10-08);
+- живой сквозной прогон Mini App на prod — **подтверждён** прогонами
+  `participants`/`feedback_list`/`staff_list` (10:58Z); визуальная проверка
+  владельцем — по желанию;
+- W136 на prod (гео-ветка) — отдельный хвост, в этот пакет не входит (решение владельца 2026-10-08);
 - `tools/check-migrations.py` по prod — известный хвост (нет ключа платформы), как в W134/W137.

@@ -79,7 +79,8 @@ dev по всем пакетам, применённым на dev после к�
   auto-нумерация дала `step_61…65`, тогда как на dev W136 занял `step_61…71`
   и W139 добавил `step_72…76` (`catalog/flows/manage-api.md` описывает dev —
   канон). Правка read-only, Mini App не менялся. published
-  `VX2IszoIhTr4DdVcM3rNo`; строка `migrations` `2026-10-08-w140-01`.
+  `Yyu3K6X95ccRlFVZDxdri` (первая публикация — `VX2IszoIhTr4DdVcM3rNo`); строки
+  `migrations` `2026-10-08-w140-01`/`-02`.
   Хвост: живой сквозной прогон Mini App «Участники» — на владельце.
 
 Хотфиксы правили только инстанс prod через MCP `app-flow-events-prod`;
