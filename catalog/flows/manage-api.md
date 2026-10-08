@@ -9,7 +9,9 @@
   выдача staff'у событие для правки, приём создания/правки (OWN-1…OWN-5, OWN-15),
   ссылка регистрации, список контролёров события (W55 — ввод по логину Telegram
   инлайн в секции, резолв через `staff_search`, запись тем же `staff_add`),
-  участники и экспорт CSV/JSON (W13 — счётчики, строки, файлы собирает сервер),
+  участники и экспорт CSV/JSON (W13 — счётчики, строки, файлы собирает сервер;
+  имена участников/контролёров/кандидатов/авторов отзывов читаются узко по
+  `telegram_id in` — W139, не всей таблицей `users`),
   недавние места для визарда (W42 — `address`/`lat`/`lon`
   в `list` только у своих событий) и разбор ссылок Яндекс.Карт через
   Геокодер (W42/W136, [ADR-0055](../../docs/adr/0055-yandex-maps-link-formats.md) — `resolve_geo`).
@@ -48,7 +50,8 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_5 (valid) | CODE «normalize request» | `eventId` → slug или `-` (при создании — `newId`); `isNew`; `action` — по белому списку (`load`/`save`/`staff_*`/`staff_search`/`list`/`resolve_geo`/`participants`/`feedback_list`/`delete`, всё прочее → `unknown`, `step_7` ответит 400); `fields` |
 | step_18 (valid) | `tables-find-records staff` | строка `staff` вызывающего по `telegram_id` (`limit: 1`) |
 | step_19 (staff) | `tables-find-records event_staff` | строки события (`event_id`, проекция, `limit: 200`) — список и поиск активной строки |
-| step_52 (staff) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+имя+`username`) — join имён для строк списка; при росте упрётся в Q31, как и широкое чтение на `/start` |
+| step_74 (staff) | CODE «staff: name ids» | `telegram_id` строк `event_staff` из `step_19` (дедуп) → `idsCsv` (`__none__`, если пусто) — ключ узкого чтения имён (W139) |
+| step_52 (staff) | `tables-find-records users` | `telegram_id in {{step_74['output'].idsCsv}}` (`limit: 500`, проекция `telegram_id`+имя+`username`) — join имён контролёров события (W139, вместо широкого чтения всей таблицы) |
 | step_20 (staff) | CODE «staff: decide» | права повторно по полям, валидация `telegram_id`, идемпотентность add/remove, тексты и строки списка; `outcome` = `list` / `add` / `remove` / `error` |
 | step_21 (staff) | ROUTER: `add` / `remove` / `Otherwise` | по `{{step_20['output'].outcome}}` |
 | step_22 (add) | `tables-create-records event_staff` | `event_id`, `telegram_id`, `granted_by`, `granted_at` |
@@ -62,15 +65,23 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
 | step_30 (Otherwise) | `return_response` (`stop`) | `200` список / `422` валидация / `400` |
 | step_38 (search) | `tables-find-records registrations` | участники события (`event_id`, проекция `event_id`+`telegram_id`, `limit: 200`) — половина пула кандидатов |
 | step_39 (search) | `tables-find-records staff` | весь `staff` без фильтра (таблица организаторов — единицы строк; глобальные `chapter_id=''` фильтром `eq` не ловятся), проекция `telegram_id`+`chapter_id` — вторая половина пула |
-| step_40 (search) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+имя+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
+| step_73 (search) | CODE «search: name ids» | `telegram_id` пула кандидатов (`step_38` участники + `step_39` staff, дедуп) → `idsCsv` (`__none__`, если пусто) — ключ узкого чтения имён (W139) |
+| step_40 (search) | `tables-find-records users` | `telegram_id in {{step_73['output'].idsCsv}}` (`limit: 500`, проекция `telegram_id`+имя+`username`) — join имён пула кандидатов (W139) |
 | step_41 (search) | `tables-find-records event_staff` | контролёры события (`event_id`, проекция +`revoked_at`, `limit: 200`) — исключение действующих |
 | step_42 (search) | CODE «staff: search candidates» | права повторно по полям (Q25), запрос <2 символов → пустой список, пул = участники + staff чаптера (+глобальные), минус активные; совпадение по имени/`@username` регистронезависимо, топ-20; `outcome` = `done` / `error` |
 | step_43 (search) | `return_response` (`stop`) | `200 {ok:true, candidates:[{telegram_id,name,username}], count}` / `403` |
 | step_44 (participants) | `tables-find-records registrations` | участники события (`event_id`, проекция `event_id`+`telegram_id`+`status`+`checked_in_at`+`registered_at`, `limit: 200`) |
-| step_45 (participants) | `tables-find-records users` | все `users` без фильтра (`limit: 200`, проекция `telegram_id`+`profile_first_name`+`profile_last_name`+`first_name`+`last_name`+`username`) — join имён; при росте упрётся в Q31, как и широкое чтение на `/start` |
+| step_72 (participants) | CODE «participants: name ids» | `telegram_id` регистраций из `step_44` (дедуп) → `idsCsv` (`__none__`, если пусто) — ключ узкого чтения имён (W139) |
+| step_45 (participants) | `tables-find-records users` | `telegram_id in {{step_72['output'].idsCsv}}` (`limit: 500`, проекция `telegram_id`+`profile_first_name`+`profile_last_name`+`first_name`+`last_name`+`username`) — join имён только по участникам события (W139, вместо широкого чтения всей таблицы) |
 | step_60 (participants) | `tables-find-records users` | база подписчиков анонсов: фильтр `consent_marketing eq true`, проекция `telegram_id`+`consent_marketing`+`blocked_bot`, `limit: 500` — счётчик `all_consent` для таба «Рассылка» (W68, #120); то же правило, что в `bcast-step`/`bcast-run` |
 | step_46 (participants) | CODE «participants: shape + export» | гейт повторно по полям (Q25), схлопывание дублей по `telegram_id`, счётчики (`registered`/`checked_in`/`cancelled` + глобальный `all_consent`, W68), строки, готовые строки CSV/JSON; `outcome` = `done` / `error` |
 | step_47 (participants) | `return_response` (`stop`) | `200 {ok:true, title, counters, rows, count, csv, json}` / `403` |
+| step_49 (feedback) | `tables-find-records registrations` | `telegram_id` регистрантов события (`event_id eq {{step_5['output'].eventId}}`, проекция `telegram_id`, `limit: 200`) — источник имён для узкого чтения; авторы отзыва — подмножество регистрантов (W139) |
+| step_75 (feedback) | CODE «feedback: name ids» | `telegram_id` из `step_49` (дедуп) → `idsCsv` (`__none__`, если пусто) — ключ узкого чтения имён (W139) |
+| step_48 (feedback) | `tables-find-records feedback` | отзывы события (`event_id eq {{step_5['output'].eventId}}`, проекция `feedback`-полей, `limit: 200`) |
+| step_76 (feedback) | `tables-find-records users` | `telegram_id in {{step_75['output'].idsCsv}}` (`limit: 500`, проекция `telegram_id`+имя+`username`, `logInput`/`logOutput: false`) — join имён авторов отзыва (W139) |
+| step_50 (feedback) | CODE «feedback: shape» | гейт повторно по полям (Q25), join имён авторов из `step_76`, строки и средний балл; `outcome` = `done` / `error` (W45) |
+| step_51 (feedback) | `return_response` (`stop`) | `200 {ok:true, title, rows, count, average}` / `403` (W45) |
 | step_6 (valid) | `tables-find-records events` | событие по `id`, `limit: 1` |
 | step_7 (valid) | CODE «decide: staff, validate, diff» | права по `staff`+чаптеру, `list` — сразу `outcome='events_list'` с чаптером; валидация, конвертация дат, `id` нового события, значения записи, diff `notify-on-change`, тексты, `inviteLink`; исход `outcome` = `list`→`events_list` / `load` / `save` / `staff` / `participants` / `feedback` / `delete` / `error` |
 | step_8 (valid) | ROUTER: `save` / `load` / `staff` / `events_list` / `geo_link` / `search` / `participants` / `feedback` / `delete` / `Otherwise` (=error) | по `{{step_7['output'].outcome}}` |
@@ -293,6 +304,11 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   регистрации), запасной — `first_name + last_name` из Telegram, затем
   `@username`, затем сам `telegram_id` (строка не теряется — экспорт
   сходится со счётчиками).
+- **Чтение `users` — узкое, по `telegram_id in <idsCsv>`** (W139): список
+  нужных id строит CODE-шаг из уже прочитанных строк-источников (регистрации
+  события / `staff` / `event_staff`), пустой список — сентинел `__none__`.
+  Имена не зависят от размера таблицы `users` (широкое чтение `limit: 200`
+  молча теряло всё, что за порогом).
 - **Даты — Asia/Tashkent строкой «DD.MM.YYYY HH:mm»** (OWN-3), из частей
   `formatToParts` (разделители не зависят от ICU). Пустой чекин — пустая строка.
 - **Файл собирает сервер, а не SPA**: экранирование и даты в одном месте,
@@ -315,8 +331,11 @@ ROUTER сразу после проверки `initData` (`step_2`) — тот �
   `registrations` — `event_id` (переотбор в коде), `telegram_id`, `status`,
   `checked_in_at`, `registered_at` (ранняя строка); `users` — `telegram_id`,
   имя профиля (`profile_first_name`+`profile_last_name`) плюс запасное имя
-  Telegram (`first_name`+`last_name`), `username` (без телефона и согласий). `limit: 200` — при росте упрётся
-  в [Q31](../../docs/OPEN-QUESTIONS.md#q31).
+  Telegram (`first_name`+`last_name`), `username` (без телефона и согласий).
+  `users` читается **узко, по `telegram_id in <idsCsv>`** (W139), `limit: 500` —
+  потолок не мешает: строк не больше, чем id в списке. Широкое чтение всей
+  таблицы (`limit: 200`, [Q31](../../docs/OPEN-QUESTIONS.md#q31)) убрано — оно
+  молча теряло имена за порогом.
 
 ## Зависимости
 
