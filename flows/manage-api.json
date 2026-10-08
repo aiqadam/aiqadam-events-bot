@@ -297,64 +297,98 @@
                         "displayName": "read event staff",
                         "name": "step_19",
                         "nextAction": {
-                          "displayName": "read staff names",
-                          "name": "step_52",
+                          "displayName": "staff: name ids",
+                          "logInput": false,
+                          "logOutput": false,
+                          "name": "step_74",
                           "nextAction": {
-                            "displayName": "staff: decide",
-                            "name": "step_20",
+                            "displayName": "read staff names",
+                            "name": "step_52",
                             "nextAction": {
-                              "children": [
-                                {
-                                  "displayName": "create staff row",
-                                  "name": "step_22",
-                                  "nextAction": {
-                                    "displayName": "respond (staff added) and continue",
-                                    "name": "step_23",
+                              "displayName": "staff: decide",
+                              "name": "step_20",
+                              "nextAction": {
+                                "children": [
+                                  {
+                                    "displayName": "create staff row",
+                                    "name": "step_22",
                                     "nextAction": {
-                                      "displayName": "read new controller in users",
-                                      "name": "step_24",
+                                      "displayName": "respond (staff added) and continue",
+                                      "name": "step_23",
                                       "nextAction": {
-                                        "displayName": "staff: notify targets",
-                                        "name": "step_25",
+                                        "displayName": "read new controller in users",
+                                        "name": "step_24",
                                         "nextAction": {
-                                          "displayName": "staff notify loop",
-                                          "firstLoopAction": {
-                                            "displayName": "notify new controller",
-                                            "name": "step_27",
-                                            "settings": {
-                                              "actionName": "send_text_message",
-                                              "errorHandlingOptions": {
-                                                "continueOnFailure": {
-                                                  "value": true
+                                          "displayName": "staff: notify targets",
+                                          "name": "step_25",
+                                          "nextAction": {
+                                            "displayName": "staff notify loop",
+                                            "firstLoopAction": {
+                                              "displayName": "notify new controller",
+                                              "name": "step_27",
+                                              "settings": {
+                                                "actionName": "send_text_message",
+                                                "errorHandlingOptions": {
+                                                  "continueOnFailure": {
+                                                    "value": true
+                                                  },
+                                                  "retryOnFailure": {
+                                                    "value": false
+                                                  }
                                                 },
-                                                "retryOnFailure": {
-                                                  "value": false
-                                                }
+                                                "input": {
+                                                  "chat_id": "{{step_26['output'].item}}",
+                                                  "disable_notification": false,
+                                                  "format": "None",
+                                                  "message": "{{step_25['output'].text}}",
+                                                  "protect_content": false,
+                                                  "reply_markup": "{{step_25['output'].reply_markup}}",
+                                                  "web_page_preview": false
+                                                },
+                                                "propertySettings": {},
+                                                "qadamName": "@aiqadam/qadam-telegram-bot",
+                                                "qadamVersion": "0.9.0"
                                               },
-                                              "input": {
-                                                "chat_id": "{{step_26['output'].item}}",
-                                                "disable_notification": false,
-                                                "format": "None",
-                                                "message": "{{step_25['output'].text}}",
-                                                "protect_content": false,
-                                                "reply_markup": "{{step_25['output'].reply_markup}}",
-                                                "web_page_preview": false
-                                              },
-                                              "propertySettings": {},
-                                              "qadamName": "@aiqadam/qadam-telegram-bot",
-                                              "qadamVersion": "0.9.0"
+                                              "type": "PIECE",
+                                              "valid": true
                                             },
-                                            "type": "PIECE",
+                                            "name": "step_26",
+                                            "settings": {
+                                              "items": "{{step_25['output'].targets}}"
+                                            },
+                                            "type": "LOOP_ON_ITEMS",
                                             "valid": true
                                           },
-                                          "name": "step_26",
                                           "settings": {
-                                            "items": "{{step_25['output'].targets}}"
+                                            "errorHandlingOptions": {
+                                              "continueOnFailure": {
+                                                "value": false
+                                              },
+                                              "retryOnFailure": {
+                                                "value": false
+                                              }
+                                            },
+                                            "input": {
+                                              "eventId": "{{step_20['output'].eventId}}",
+                                              "miniappUrl": "{{variables['MINIAPP_URL']}}",
+                                              "staffTelegramId": "{{step_20['output'].newStaffId}}",
+                                              "texts": {
+                                                "manage.staff.notify": "{{$t['manage.staff.notify']}}",
+                                                "staff.accept.btn.scanner": "{{$t['staff.accept.btn.scanner']}}"
+                                              },
+                                              "title": "{{step_20['output'].title}}",
+                                              "userRows": "{{step_24['output']}}"
+                                            },
+                                            "sourceCode": {
+                                              "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n\n  const title = str(inputs.title);\n  const eventId = str(inputs.eventId);\n  const staffTelegramId = str(inputs.staffTelegramId);\n  // Список целей — 0 или 1 элемент. Уведомляем только тех, кого бот уже видел\n  // (строка в users, DAT-1): отправка в неизвестный chat_id — заведомо\n  // провальный вызов. Цикл по пустому списку не делает ни одной отправки,\n  // поэтому ветка «человека нет в users» не требует отдельного ROUTER'а.\n  const targets = (arr(inputs.userRows).length > 0 && staffTelegramId !== '') ? [staffTelegramId] : [];\n\n  // Вердикт W49 (W50): кнопка — «Открыть сканер» на конкретное событие.\n  // Исключение из «чекина нет в чате»: событие здесь известно.\n  const base = str(inputs.miniappUrl).replace(/\\/+$/, '');\n  const scanUrl = eventId !== '' ? base + '/#/scan?event_id=' + encodeURIComponent(eventId) : '';\n\n  return {\n    targets: targets,\n    text: t('manage.staff.notify', { title: title }),\n    reply_markup: scanUrl !== '' ? { inline_keyboard: [[{ text: t('staff.accept.btn.scanner'), web_app: { url: scanUrl } }]] } : {}\n  };\n};",
+                                              "packageJson": "{}"
+                                            }
                                           },
-                                          "type": "LOOP_ON_ITEMS",
+                                          "type": "CODE",
                                           "valid": true
                                         },
                                         "settings": {
+                                          "actionName": "tables-find-records",
                                           "errorHandlingOptions": {
                                             "continueOnFailure": {
                                               "value": false
@@ -364,26 +398,35 @@
                                             }
                                           },
                                           "input": {
-                                            "eventId": "{{step_20['output'].eventId}}",
-                                            "miniappUrl": "{{variables['MINIAPP_URL']}}",
-                                            "staffTelegramId": "{{step_20['output'].newStaffId}}",
-                                            "texts": {
-                                              "manage.staff.notify": "{{$t['manage.staff.notify']}}",
-                                              "staff.accept.btn.scanner": "{{$t['staff.accept.btn.scanner']}}"
+                                            "columns": [
+                                              "JtylZU291K7TuMn9c9F2t"
+                                            ],
+                                            "filters": {
+                                              "filters": [
+                                                {
+                                                  "field": {
+                                                    "id": "JtylZU291K7TuMn9c9F2t",
+                                                    "name": "telegram_id",
+                                                    "type": "TEXT"
+                                                  },
+                                                  "operator": "eq",
+                                                  "value": "{{step_20['output'].newStaffId}}"
+                                                }
+                                              ]
                                             },
-                                            "title": "{{step_20['output'].title}}",
-                                            "userRows": "{{step_24['output']}}"
+                                            "limit": 1,
+                                            "record_ids": [],
+                                            "table_id": "xHhYjhwqKdONkrYJGcBsz"
                                           },
-                                          "sourceCode": {
-                                            "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n\n  const title = str(inputs.title);\n  const eventId = str(inputs.eventId);\n  const staffTelegramId = str(inputs.staffTelegramId);\n  // Список целей — 0 или 1 элемент. Уведомляем только тех, кого бот уже видел\n  // (строка в users, DAT-1): отправка в неизвестный chat_id — заведомо\n  // провальный вызов. Цикл по пустому списку не делает ни одной отправки,\n  // поэтому ветка «человека нет в users» не требует отдельного ROUTER'а.\n  const targets = (arr(inputs.userRows).length > 0 && staffTelegramId !== '') ? [staffTelegramId] : [];\n\n  // Вердикт W49 (W50): кнопка — «Открыть сканер» на конкретное событие.\n  // Исключение из «чекина нет в чате»: событие здесь известно.\n  const base = str(inputs.miniappUrl).replace(/\\/+$/, '');\n  const scanUrl = eventId !== '' ? base + '/#/scan?event_id=' + encodeURIComponent(eventId) : '';\n\n  return {\n    targets: targets,\n    text: t('manage.staff.notify', { title: title }),\n    reply_markup: scanUrl !== '' ? { inline_keyboard: [[{ text: t('staff.accept.btn.scanner'), web_app: { url: scanUrl } }]] } : {}\n  };\n};",
-                                            "packageJson": "{}"
-                                          }
+                                          "propertySettings": {},
+                                          "qadamName": "@aiqadam/qadam-tables",
+                                          "qadamVersion": "0.5.0"
                                         },
-                                        "type": "CODE",
+                                        "type": "PIECE",
                                         "valid": true
                                       },
                                       "settings": {
-                                        "actionName": "tables-find-records",
+                                        "actionName": "return_response",
                                         "errorHandlingOptions": {
                                           "continueOnFailure": {
                                             "value": false
@@ -393,35 +436,31 @@
                                           }
                                         },
                                         "input": {
-                                          "columns": [
-                                            "JtylZU291K7TuMn9c9F2t"
-                                          ],
-                                          "filters": {
-                                            "filters": [
-                                              {
-                                                "field": {
-                                                  "id": "JtylZU291K7TuMn9c9F2t",
-                                                  "name": "telegram_id",
-                                                  "type": "TEXT"
-                                                },
-                                                "operator": "eq",
-                                                "value": "{{step_20['output'].newStaffId}}"
-                                              }
-                                            ]
+                                          "fields": {
+                                            "body": {
+                                              "error": "{{step_20['output'].error}}",
+                                              "event": "{{step_20['output'].event}}",
+                                              "eventId": "{{step_20['output'].eventId}}",
+                                              "fields": "{{step_20['output'].fields}}",
+                                              "ok": "{{step_20['output'].ok}}",
+                                              "staff": "{{step_20['output'].staff}}",
+                                              "text": "{{step_20['output'].text}}"
+                                            },
+                                            "headers": {},
+                                            "status": "{{step_20['output'].httpStatus}}"
                                           },
-                                          "limit": 1,
-                                          "record_ids": [],
-                                          "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                                          "respond": "respond",
+                                          "responseType": "json"
                                         },
                                         "propertySettings": {},
-                                        "qadamName": "@aiqadam/qadam-tables",
-                                        "qadamVersion": "0.5.0"
+                                        "qadamName": "@aiqadam/qadam-webhook",
+                                        "qadamVersion": "0.1.35"
                                       },
                                       "type": "PIECE",
                                       "valid": true
                                     },
                                     "settings": {
-                                      "actionName": "return_response",
+                                      "actionName": "tables-create-records",
                                       "errorHandlingOptions": {
                                         "continueOnFailure": {
                                           "value": false
@@ -431,65 +470,93 @@
                                         }
                                       },
                                       "input": {
-                                        "fields": {
-                                          "body": {
-                                            "error": "{{step_20['output'].error}}",
-                                            "event": "{{step_20['output'].event}}",
-                                            "eventId": "{{step_20['output'].eventId}}",
-                                            "fields": "{{step_20['output'].fields}}",
-                                            "ok": "{{step_20['output'].ok}}",
-                                            "staff": "{{step_20['output'].staff}}",
-                                            "text": "{{step_20['output'].text}}"
-                                          },
-                                          "headers": {},
-                                          "status": "{{step_20['output'].httpStatus}}"
-                                        },
-                                        "respond": "respond",
-                                        "responseType": "json"
+                                        "table_id": "t1g8Vae3iEoDk93D6Rle7",
+                                        "values": {
+                                          "values": [
+                                            {
+                                              "0wfqdr7vveoyWxJqjymZP": "{{step_20['output'].grantedBy}}",
+                                              "QaIIhE43IKDzM34FDP8VP": "{{step_20['output'].grantedAt}}",
+                                              "Rs62LH1YLr1QBsnpIrJzH": "{{step_20['output'].newStaffId}}",
+                                              "r5WohfFLBagrxVrPDgB9s": "{{step_20['output'].eventId}}"
+                                            }
+                                          ]
+                                        }
                                       },
                                       "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-webhook",
-                                      "qadamVersion": "0.1.35"
+                                      "qadamName": "@aiqadam/qadam-tables",
+                                      "qadamVersion": "0.5.0"
                                     },
                                     "type": "PIECE",
                                     "valid": true
                                   },
-                                  "settings": {
-                                    "actionName": "tables-create-records",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "table_id": "t1g8Vae3iEoDk93D6Rle7",
-                                      "values": {
-                                        "values": [
-                                          {
-                                            "0wfqdr7vveoyWxJqjymZP": "{{step_20['output'].grantedBy}}",
-                                            "QaIIhE43IKDzM34FDP8VP": "{{step_20['output'].grantedAt}}",
-                                            "Rs62LH1YLr1QBsnpIrJzH": "{{step_20['output'].newStaffId}}",
-                                            "r5WohfFLBagrxVrPDgB9s": "{{step_20['output'].eventId}}"
+                                  {
+                                    "displayName": "revoke staff row",
+                                    "name": "step_28",
+                                    "nextAction": {
+                                      "displayName": "respond (staff removed)",
+                                      "name": "step_29",
+                                      "settings": {
+                                        "actionName": "return_response",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
                                           }
-                                        ]
-                                      }
+                                        },
+                                        "input": {
+                                          "fields": {
+                                            "body": {
+                                              "error": "{{step_20['output'].error}}",
+                                              "event": "{{step_20['output'].event}}",
+                                              "eventId": "{{step_20['output'].eventId}}",
+                                              "fields": "{{step_20['output'].fields}}",
+                                              "ok": "{{step_20['output'].ok}}",
+                                              "staff": "{{step_20['output'].staff}}",
+                                              "text": "{{step_20['output'].text}}"
+                                            },
+                                            "headers": {},
+                                            "status": "{{step_20['output'].httpStatus}}"
+                                          },
+                                          "respond": "stop",
+                                          "responseType": "json"
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-webhook",
+                                        "qadamVersion": "0.1.35"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
                                     },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.5.0"
+                                    "settings": {
+                                      "actionName": "tables-update-record",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "only_if": {},
+                                        "record_id": "{{step_20['output'].recordId}}",
+                                        "table_id": "t1g8Vae3iEoDk93D6Rle7",
+                                        "values": {
+                                          "zX2FO3bZZJuAZcVyZHiRw": "{{step_20['output'].revokedAt}}"
+                                        }
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-tables",
+                                      "qadamVersion": "0.5.0"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
                                   },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "revoke staff row",
-                                  "name": "step_28",
-                                  "nextAction": {
-                                    "displayName": "respond (staff removed)",
-                                    "name": "step_29",
+                                  {
+                                    "displayName": "respond (staff list or error)",
+                                    "name": "step_30",
                                     "settings": {
                                       "actionName": "return_response",
                                       "errorHandlingOptions": {
@@ -523,111 +590,87 @@
                                     },
                                     "type": "PIECE",
                                     "valid": true
-                                  },
-                                  "settings": {
-                                    "actionName": "tables-update-record",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "only_if": {},
-                                      "record_id": "{{step_20['output'].recordId}}",
-                                      "table_id": "t1g8Vae3iEoDk93D6Rle7",
-                                      "values": {
-                                        "zX2FO3bZZJuAZcVyZHiRw": "{{step_20['output'].revokedAt}}"
-                                      }
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-tables",
-                                    "qadamVersion": "0.5.0"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                },
-                                {
-                                  "displayName": "respond (staff list or error)",
-                                  "name": "step_30",
-                                  "settings": {
-                                    "actionName": "return_response",
-                                    "errorHandlingOptions": {
-                                      "continueOnFailure": {
-                                        "value": false
-                                      },
-                                      "retryOnFailure": {
-                                        "value": false
-                                      }
-                                    },
-                                    "input": {
-                                      "fields": {
-                                        "body": {
-                                          "error": "{{step_20['output'].error}}",
-                                          "event": "{{step_20['output'].event}}",
-                                          "eventId": "{{step_20['output'].eventId}}",
-                                          "fields": "{{step_20['output'].fields}}",
-                                          "ok": "{{step_20['output'].ok}}",
-                                          "staff": "{{step_20['output'].staff}}",
-                                          "text": "{{step_20['output'].text}}"
-                                        },
-                                        "headers": {},
-                                        "status": "{{step_20['output'].httpStatus}}"
-                                      },
-                                      "respond": "stop",
-                                      "responseType": "json"
-                                    },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-webhook",
-                                    "qadamVersion": "0.1.35"
-                                  },
-                                  "type": "PIECE",
-                                  "valid": true
-                                }
-                              ],
-                              "displayName": "staff outcome",
-                              "name": "step_21",
-                              "settings": {
-                                "branches": [
-                                  {
-                                    "branchName": "add",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_20['output'].outcome}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "add"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "remove",
-                                    "branchType": "CONDITION",
-                                    "conditions": [
-                                      [
-                                        {
-                                          "firstValue": "{{step_20['output'].outcome}}",
-                                          "operator": "TEXT_EXACTLY_MATCHES",
-                                          "secondValue": "remove"
-                                        }
-                                      ]
-                                    ]
-                                  },
-                                  {
-                                    "branchName": "Otherwise",
-                                    "branchType": "FALLBACK"
                                   }
                                 ],
-                                "executionType": "EXECUTE_FIRST_MATCH"
+                                "displayName": "staff outcome",
+                                "name": "step_21",
+                                "settings": {
+                                  "branches": [
+                                    {
+                                      "branchName": "add",
+                                      "branchType": "CONDITION",
+                                      "conditions": [
+                                        [
+                                          {
+                                            "firstValue": "{{step_20['output'].outcome}}",
+                                            "operator": "TEXT_EXACTLY_MATCHES",
+                                            "secondValue": "add"
+                                          }
+                                        ]
+                                      ]
+                                    },
+                                    {
+                                      "branchName": "remove",
+                                      "branchType": "CONDITION",
+                                      "conditions": [
+                                        [
+                                          {
+                                            "firstValue": "{{step_20['output'].outcome}}",
+                                            "operator": "TEXT_EXACTLY_MATCHES",
+                                            "secondValue": "remove"
+                                          }
+                                        ]
+                                      ]
+                                    },
+                                    {
+                                      "branchName": "Otherwise",
+                                      "branchType": "FALLBACK"
+                                    }
+                                  ],
+                                  "executionType": "EXECUTE_FIRST_MATCH"
+                                },
+                                "type": "ROUTER",
+                                "valid": true
                               },
-                              "type": "ROUTER",
+                              "settings": {
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "event": "{{step_6['output']}}",
+                                  "hmac": "{{step_1['output'].data}}",
+                                  "req": "{{step_5['output']}}",
+                                  "staff": "{{step_18['output']}}",
+                                  "staffRecords": "{{step_19['output']}}",
+                                  "texts": {
+                                    "manage.err.bad_telegram_id": "{{$t['manage.err.bad_telegram_id']}}",
+                                    "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                                    "manage.err.server": "{{$t['manage.err.server']}}",
+                                    "manage.err.validation": "{{$t['manage.err.validation']}}",
+                                    "manage.staff.added": "{{$t['manage.staff.added']}}",
+                                    "manage.staff.already": "{{$t['manage.staff.already']}}",
+                                    "manage.staff.gone": "{{$t['manage.staff.gone']}}",
+                                    "manage.staff.item": "{{$t['manage.staff.item']}}",
+                                    "manage.staff.revoked": "{{$t['manage.staff.revoked']}}",
+                                    "manage.staff.since": "{{$t['manage.staff.since']}}"
+                                  },
+                                  "userRows": "{{step_52['output']}}"
+                                },
+                                "sourceCode": {
+                                  "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const eventId = str(req.eventId);\n  const staffTelegramId = str(req.staffTelegramId);\n  const nowIso = new Date().toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в step_7).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', staff: [],\n    recordId: '-', newStaffId: '', grantedBy: '', grantedAt: '', revokedAt: ''\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7 -------------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи (Q25):\n  // «не staff», «чужой чаптер» и «нет события» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- текущий список: активные строки по полям, а не по позиции выборки ------\n  const rows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.event_id) === eventId);\n  const active = rows.filter((r) => str(r.revoked_at) === '');\n  const isActive = (id) => active.some((r) => str(r.telegram_id) === id);\n\n  // Строку списка собирает сервер и отдаёт готовой: в словаре SPA интерполяции\n  // нет, а дата нужна ташкентская (OWN-3). Имена — join с users по telegram_id\n  // (W54: отмена решения W36 «имён нет намеренно»; как participants/search);\n  // кого нет в users — fallback на item без имени.\n  const DATE_FMT = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    const s = str(iso);\n    if (s === '') return '—';\n    const ms = Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n    return isFinite(ms) ? DATE_FMT.format(new Date(ms)) : '—';\n  };\n  const item = (id, grantedAt) => t('manage.staff.item', { id: id, when: fmt(grantedAt) });\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((u) => {\n    const id = str(u.telegram_id);\n    if (id !== '' && usersById[id] === undefined) {\n      const nm = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n      usersById[id] = { name: nm, username: str(u.username) };\n    }\n  });\n  const shape = (id, grantedAt) => {\n    const w = usersById[id] || { name: '', username: '' };\n    const since = fmt(grantedAt);\n    return {\n      telegram_id: id,\n      item: item(id, grantedAt),\n      name: w.name,\n      username: w.username,\n      sub: w.username !== '' ? w.username + ' · ' + t('manage.staff.since', { when: since }) : ''\n    };\n  };\n  const listOut = (extraIds) => active\n    .map((r) => shape(str(r.telegram_id), r.granted_at))\n    .concat((extraIds || []).map((id) => shape(id, nowIso)));\n\n  if (action === 'staff_list') {\n    return respond('list', 200, { ok: true, title: title, staff: listOut() });\n  }\n\n  // --- валидация telegram_id --------------------------------------------------\n  // Только цифры 8–16: telegram_id — единственный ключ (DAT-1), username не годится.\n  if (!/^[0-9]{8,16}$/.test(staffTelegramId)) {\n    return respond('error', 422, {\n      error: 'validation', text: t('manage.err.validation'),\n      fields: { telegram_id: 'manage.err.bad_telegram_id' },\n      title: title, staff: listOut()\n    });\n  }\n\n  if (action === 'staff_add') {\n    // Идемпотентность добавления (ADR-0003): активная строка уже есть — вторую\n    // не создаём, отвечаем тем же списком. Гонка двух одновременных добавлений\n    // остаётся возможной ценой ADR-0003: уникальности в БД нет.\n    if (isActive(staffTelegramId)) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.already'), title: title, staff: listOut() });\n    }\n    return respond('add', 200, {\n      ok: true,\n      text: t('manage.staff.added'),\n      newStaffId: staffTelegramId,\n      grantedBy: telegramId,\n      grantedAt: nowIso,\n      title: title,\n      staff: listOut([staffTelegramId])\n    });\n  }\n\n  if (action === 'staff_remove') {\n    const row = active.filter((r) => str(r.telegram_id) === staffTelegramId)[0] || null;\n    // Отзывать нечего — не ошибка: повторный отзыв идемпотентен (ADR-0003),\n    // отвечаем текущим списком и текстом «активных прав нет».\n    if (!row) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.gone'), title: title, staff: listOut() });\n    }\n    const recordId = str(row.__recordId);\n    if (recordId === '') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n    return respond('remove', 200, {\n      ok: true,\n      text: t('manage.staff.revoked'),\n      recordId: recordId,\n      revokedAt: nowIso,\n      title: title,\n      staff: listOut().filter((r) => r.telegram_id !== staffTelegramId)\n    });\n  }\n\n  return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n};",
+                                  "packageJson": "{}"
+                                }
+                              },
+                              "type": "CODE",
                               "valid": true
                             },
                             "settings": {
+                              "actionName": "tables-find-records",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -637,35 +680,37 @@
                                 }
                               },
                               "input": {
-                                "event": "{{step_6['output']}}",
-                                "hmac": "{{step_1['output'].data}}",
-                                "req": "{{step_5['output']}}",
-                                "staff": "{{step_18['output']}}",
-                                "staffRecords": "{{step_19['output']}}",
-                                "texts": {
-                                  "manage.err.bad_telegram_id": "{{$t['manage.err.bad_telegram_id']}}",
-                                  "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
-                                  "manage.err.server": "{{$t['manage.err.server']}}",
-                                  "manage.err.validation": "{{$t['manage.err.validation']}}",
-                                  "manage.staff.added": "{{$t['manage.staff.added']}}",
-                                  "manage.staff.already": "{{$t['manage.staff.already']}}",
-                                  "manage.staff.gone": "{{$t['manage.staff.gone']}}",
-                                  "manage.staff.item": "{{$t['manage.staff.item']}}",
-                                  "manage.staff.revoked": "{{$t['manage.staff.revoked']}}",
-                                  "manage.staff.since": "{{$t['manage.staff.since']}}"
+                                "columns": [
+                                  "JtylZU291K7TuMn9c9F2t",
+                                  "nWPJjEcVpqMUaMwdEpPX5",
+                                  "yd5CbkPctz2GXmBabZeVV",
+                                  "QCFLn2jRQPxB4RpMKxAKH"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": {
+                                        "id": "JtylZU291K7TuMn9c9F2t",
+                                        "name": "telegram_id",
+                                        "type": "TEXT"
+                                      },
+                                      "operator": "in",
+                                      "value": "{{step_74['output'].idsCsv}}"
+                                    }
+                                  ]
                                 },
-                                "userRows": "{{step_52['output']}}"
+                                "limit": 500,
+                                "record_ids": [],
+                                "table_id": "xHhYjhwqKdONkrYJGcBsz"
                               },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = { __recordId: String(rec && rec.id ? rec.id : '') };\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const action = str(req.action);\n  const eventId = str(req.eventId);\n  const staffTelegramId = str(req.staffTelegramId);\n  const nowIso = new Date().toISOString();\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в step_7).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', staff: [],\n    recordId: '-', newStaffId: '', grantedBy: '', grantedAt: '', revokedAt: ''\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7 -------------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи (Q25):\n  // «не staff», «чужой чаптер» и «нет события» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- текущий список: активные строки по полям, а не по позиции выборки ------\n  const rows = arr(inputs.staffRecords).map(flat).filter((r) => str(r.event_id) === eventId);\n  const active = rows.filter((r) => str(r.revoked_at) === '');\n  const isActive = (id) => active.some((r) => str(r.telegram_id) === id);\n\n  // Строку списка собирает сервер и отдаёт готовой: в словаре SPA интерполяции\n  // нет, а дата нужна ташкентская (OWN-3). Имена — join с users по telegram_id\n  // (W54: отмена решения W36 «имён нет намеренно»; как participants/search);\n  // кого нет в users — fallback на item без имени.\n  const DATE_FMT = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmt = (iso) => {\n    const s = str(iso);\n    if (s === '') return '—';\n    const ms = Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n    return isFinite(ms) ? DATE_FMT.format(new Date(ms)) : '—';\n  };\n  const item = (id, grantedAt) => t('manage.staff.item', { id: id, when: fmt(grantedAt) });\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((u) => {\n    const id = str(u.telegram_id);\n    if (id !== '' && usersById[id] === undefined) {\n      const nm = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n      usersById[id] = { name: nm, username: str(u.username) };\n    }\n  });\n  const shape = (id, grantedAt) => {\n    const w = usersById[id] || { name: '', username: '' };\n    const since = fmt(grantedAt);\n    return {\n      telegram_id: id,\n      item: item(id, grantedAt),\n      name: w.name,\n      username: w.username,\n      sub: w.username !== '' ? w.username + ' · ' + t('manage.staff.since', { when: since }) : ''\n    };\n  };\n  const listOut = (extraIds) => active\n    .map((r) => shape(str(r.telegram_id), r.granted_at))\n    .concat((extraIds || []).map((id) => shape(id, nowIso)));\n\n  if (action === 'staff_list') {\n    return respond('list', 200, { ok: true, title: title, staff: listOut() });\n  }\n\n  // --- валидация telegram_id --------------------------------------------------\n  // Только цифры 8–16: telegram_id — единственный ключ (DAT-1), username не годится.\n  if (!/^[0-9]{8,16}$/.test(staffTelegramId)) {\n    return respond('error', 422, {\n      error: 'validation', text: t('manage.err.validation'),\n      fields: { telegram_id: 'manage.err.bad_telegram_id' },\n      title: title, staff: listOut()\n    });\n  }\n\n  if (action === 'staff_add') {\n    // Идемпотентность добавления (ADR-0003): активная строка уже есть — вторую\n    // не создаём, отвечаем тем же списком. Гонка двух одновременных добавлений\n    // остаётся возможной ценой ADR-0003: уникальности в БД нет.\n    if (isActive(staffTelegramId)) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.already'), title: title, staff: listOut() });\n    }\n    return respond('add', 200, {\n      ok: true,\n      text: t('manage.staff.added'),\n      newStaffId: staffTelegramId,\n      grantedBy: telegramId,\n      grantedAt: nowIso,\n      title: title,\n      staff: listOut([staffTelegramId])\n    });\n  }\n\n  if (action === 'staff_remove') {\n    const row = active.filter((r) => str(r.telegram_id) === staffTelegramId)[0] || null;\n    // Отзывать нечего — не ошибка: повторный отзыв идемпотентен (ADR-0003),\n    // отвечаем текущим списком и текстом «активных прав нет».\n    if (!row) {\n      return respond('list', 200, { ok: true, text: t('manage.staff.gone'), title: title, staff: listOut() });\n    }\n    const recordId = str(row.__recordId);\n    if (recordId === '') return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n    return respond('remove', 200, {\n      ok: true,\n      text: t('manage.staff.revoked'),\n      recordId: recordId,\n      revokedAt: nowIso,\n      title: title,\n      staff: listOut().filter((r) => r.telegram_id !== staffTelegramId)\n    });\n  }\n\n  return respond('error', 400, { error: 'bad_request', text: t('manage.err.server'), title: title, staff: listOut() });\n};",
-                                "packageJson": "{}"
-                              }
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.5.0"
                             },
-                            "type": "CODE",
+                            "type": "PIECE",
                             "valid": true
                           },
                           "settings": {
-                            "actionName": "tables-find-records",
                             "errorHandlingOptions": {
                               "continueOnFailure": {
                                 "value": false
@@ -675,22 +720,14 @@
                               }
                             },
                             "input": {
-                              "columns": [
-                                "JtylZU291K7TuMn9c9F2t",
-                                "nWPJjEcVpqMUaMwdEpPX5",
-                                "yd5CbkPctz2GXmBabZeVV",
-                                "QCFLn2jRQPxB4RpMKxAKH"
-                              ],
-                              "filters": {},
-                              "limit": 200,
-                              "record_ids": [],
-                              "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                              "staffRows": "{{step_19['output']}}"
                             },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.5.0"
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  // W139: telegram_id контролёров события для узкого чтения `users` вместо\n  // широкого `limit: 200`.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const seen = {};\n  const ids = [];\n  const take = (src) => {\n    arr(src).map(flat).forEach((r) => {\n      const id = str(r.telegram_id).trim();\n      if (id === '' || id === '__none__' || seen[id]) return;\n      seen[id] = true;\n      ids.push(id);\n    });\n  };\n  take(inputs.regRows);\n  take(inputs.staffRows);\n  return { idsCsv: ids.length ? ids.join(',') : '__none__' };\n};\n",
+                              "packageJson": "{}"
+                            }
                           },
-                          "type": "PIECE",
+                          "type": "CODE",
                           "valid": true
                         },
                         "settings": {
@@ -1354,19 +1391,58 @@
                           "displayName": "search: read staff",
                           "name": "step_39",
                           "nextAction": {
-                            "displayName": "search: read users",
-                            "name": "step_40",
+                            "displayName": "search: name ids",
+                            "logInput": false,
+                            "logOutput": false,
+                            "name": "step_73",
                             "nextAction": {
-                              "displayName": "search: read controllers",
-                              "name": "step_41",
+                              "displayName": "search: read users",
+                              "name": "step_40",
                               "nextAction": {
-                                "displayName": "staff: search candidates",
-                                "name": "step_42",
+                                "displayName": "search: read controllers",
+                                "name": "step_41",
                                 "nextAction": {
-                                  "displayName": "respond (staff search)",
-                                  "name": "step_43",
+                                  "displayName": "staff: search candidates",
+                                  "name": "step_42",
+                                  "nextAction": {
+                                    "displayName": "respond (staff search)",
+                                    "name": "step_43",
+                                    "settings": {
+                                      "actionName": "return_response",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "fields": {
+                                          "body": {
+                                            "candidates": "{{step_42['output'].candidates}}",
+                                            "count": "{{step_42['output'].count}}",
+                                            "error": "{{step_42['output'].error}}",
+                                            "eventId": "{{step_42['output'].eventId}}",
+                                            "fields": "{{step_42['output'].fields}}",
+                                            "ok": "{{step_42['output'].ok}}",
+                                            "text": "{{step_42['output'].text}}",
+                                            "title": "{{step_42['output'].title}}"
+                                          },
+                                          "headers": {},
+                                          "status": "{{step_42['output'].httpStatus}}"
+                                        },
+                                        "respond": "stop",
+                                        "responseType": "json"
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-webhook",
+                                      "qadamVersion": "0.1.35"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  },
                                   "settings": {
-                                    "actionName": "return_response",
                                     "errorHandlingOptions": {
                                       "continueOnFailure": {
                                         "value": false
@@ -1376,31 +1452,29 @@
                                       }
                                     },
                                     "input": {
-                                      "fields": {
-                                        "body": {
-                                          "candidates": "{{step_42['output'].candidates}}",
-                                          "count": "{{step_42['output'].count}}",
-                                          "error": "{{step_42['output'].error}}",
-                                          "eventId": "{{step_42['output'].eventId}}",
-                                          "fields": "{{step_42['output'].fields}}",
-                                          "ok": "{{step_42['output'].ok}}",
-                                          "text": "{{step_42['output'].text}}",
-                                          "title": "{{step_42['output'].title}}"
-                                        },
-                                        "headers": {},
-                                        "status": "{{step_42['output'].httpStatus}}"
+                                      "controllerRows": "{{step_41['output']}}",
+                                      "event": "{{step_6['output']}}",
+                                      "hmac": "{{step_1['output'].data}}",
+                                      "regRows": "{{step_38['output']}}",
+                                      "req": "{{step_5['output']}}",
+                                      "staff": "{{step_18['output']}}",
+                                      "staffRows": "{{step_39['output']}}",
+                                      "texts": {
+                                        "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                                        "manage.err.server": "{{$t['manage.err.server']}}"
                                       },
-                                      "respond": "stop",
-                                      "responseType": "json"
+                                      "userRows": "{{step_40['output']}}"
                                     },
-                                    "propertySettings": {},
-                                    "qadamName": "@aiqadam/qadam-webhook",
-                                    "qadamVersion": "0.1.35"
+                                    "sourceCode": {
+                                      "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', candidates: [], count: 0\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7/step_20 (Q25) -----------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи:\n  // «не staff», «чужой чаптер» и «нет события» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- запрос: минимум 2 символа (решение W44) --------------------------------\n  // Короткий/пустой запрос — пустой список, а не вся база: без запроса базу\n  // не светим. Фильтры Tables по подстроке не умеют (Q15), поэтому сравнение\n  // здесь, в коде, а не в чтении.\n  const q = str(req.query).replace(/^@/, '').toLowerCase();\n  if (q.length < 2) return respond('done', 200, { ok: true, title: title, candidates: [], count: 0 });\n\n  // --- кандидаты: участники события + staff чаптера (Q51) ----------------------\n  // Участники — все telegram_id из registrations события (включая отменённые:\n  // человек остался известен боту, как в прототипе data.js). Staff — строки\n  // staff этого чаптера плюс глобальные (chapter_id=''). Действующие\n  // контролёры события исключаются (их добавлять не надо — они уже).\n  const pool = {};\n  arr(inputs.regRows).map(flat).forEach((r) => {\n    if (str(r.event_id) === eventId && str(r.telegram_id) !== '') pool[str(r.telegram_id)] = true;\n  });\n  const chapterId = str(ev.chapter_id);\n  arr(inputs.staffRows).map(flat).forEach((r) => {\n    const c = str(r.chapter_id);\n    if ((c === '' || chapterId === '' || c === chapterId) && str(r.telegram_id) !== '') pool[str(r.telegram_id)] = true;\n  });\n  const active = {};\n  arr(inputs.controllerRows).map(flat).forEach((r) => {\n    if (str(r.event_id) === eventId && str(r.revoked_at) === '' && str(r.telegram_id) !== '') active[str(r.telegram_id)] = true;\n  });\n\n  // --- join к users и совпадение ----------------------------------------------\n  // Имя и username — только подписи для поиска (DAT-1): решение и запись идут\n  // по telegram_id, username ключом не становится. Кого нет в users — показать\n  // нечего: такого человека добавить нельзя (W55: ввод по ID убран), он должен\n  // хотя бы раз открыть бота.\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const out = [];\n  Object.keys(pool).forEach((id) => {\n    if (active[id]) return;\n    const u = usersById[id];\n    if (!u) return;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    const username = str(u.username).replace(/^@/, '');\n    if (name === '' && username === '') return;\n    const hay = (name + ' ' + username).toLowerCase();\n    if (hay.indexOf(q) < 0) return;\n    out.push({ telegram_id: id, name: name, username: username });\n  });\n  out.sort((a, b) => (a.name || a.username) < (b.name || b.username) ? -1 : 1);\n  const top = out.slice(0, 20);\n  return respond('done', 200, { ok: true, title: title, candidates: top, count: top.length });\n};",
+                                      "packageJson": "{}"
+                                    }
                                   },
-                                  "type": "PIECE",
+                                  "type": "CODE",
                                   "valid": true
                                 },
                                 "settings": {
+                                  "actionName": "tables-find-records",
                                   "errorHandlingOptions": {
                                     "continueOnFailure": {
                                       "value": false
@@ -1410,25 +1484,33 @@
                                     }
                                   },
                                   "input": {
-                                    "controllerRows": "{{step_41['output']}}",
-                                    "event": "{{step_6['output']}}",
-                                    "hmac": "{{step_1['output'].data}}",
-                                    "regRows": "{{step_38['output']}}",
-                                    "req": "{{step_5['output']}}",
-                                    "staff": "{{step_18['output']}}",
-                                    "staffRows": "{{step_39['output']}}",
-                                    "texts": {
-                                      "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
-                                      "manage.err.server": "{{$t['manage.err.server']}}"
+                                    "columns": [
+                                      "r5WohfFLBagrxVrPDgB9s",
+                                      "Rs62LH1YLr1QBsnpIrJzH",
+                                      "zX2FO3bZZJuAZcVyZHiRw"
+                                    ],
+                                    "filters": {
+                                      "filters": [
+                                        {
+                                          "field": {
+                                            "id": "r5WohfFLBagrxVrPDgB9s",
+                                            "name": "event_id",
+                                            "type": "TEXT"
+                                          },
+                                          "operator": "eq",
+                                          "value": "{{step_5['output'].eventId}}"
+                                        }
+                                      ]
                                     },
-                                    "userRows": "{{step_40['output']}}"
+                                    "limit": 200,
+                                    "record_ids": [],
+                                    "table_id": "t1g8Vae3iEoDk93D6Rle7"
                                   },
-                                  "sourceCode": {
-                                    "code": "export const code = async (inputs) => {\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', candidates: [], count: 0\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: те же проверки, что в step_7/step_20 (Q25) -----------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи:\n  // «не staff», «чужой чаптер» и «нет события» отвечают одинаково.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- запрос: минимум 2 символа (решение W44) --------------------------------\n  // Короткий/пустой запрос — пустой список, а не вся база: без запроса базу\n  // не светим. Фильтры Tables по подстроке не умеют (Q15), поэтому сравнение\n  // здесь, в коде, а не в чтении.\n  const q = str(req.query).replace(/^@/, '').toLowerCase();\n  if (q.length < 2) return respond('done', 200, { ok: true, title: title, candidates: [], count: 0 });\n\n  // --- кандидаты: участники события + staff чаптера (Q51) ----------------------\n  // Участники — все telegram_id из registrations события (включая отменённые:\n  // человек остался известен боту, как в прототипе data.js). Staff — строки\n  // staff этого чаптера плюс глобальные (chapter_id=''). Действующие\n  // контролёры события исключаются (их добавлять не надо — они уже).\n  const pool = {};\n  arr(inputs.regRows).map(flat).forEach((r) => {\n    if (str(r.event_id) === eventId && str(r.telegram_id) !== '') pool[str(r.telegram_id)] = true;\n  });\n  const chapterId = str(ev.chapter_id);\n  arr(inputs.staffRows).map(flat).forEach((r) => {\n    const c = str(r.chapter_id);\n    if ((c === '' || chapterId === '' || c === chapterId) && str(r.telegram_id) !== '') pool[str(r.telegram_id)] = true;\n  });\n  const active = {};\n  arr(inputs.controllerRows).map(flat).forEach((r) => {\n    if (str(r.event_id) === eventId && str(r.revoked_at) === '' && str(r.telegram_id) !== '') active[str(r.telegram_id)] = true;\n  });\n\n  // --- join к users и совпадение ----------------------------------------------\n  // Имя и username — только подписи для поиска (DAT-1): решение и запись идут\n  // по telegram_id, username ключом не становится. Кого нет в users — показать\n  // нечего: такого человека добавить нельзя (W55: ввод по ID убран), он должен\n  // хотя бы раз открыть бота.\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const out = [];\n  Object.keys(pool).forEach((id) => {\n    if (active[id]) return;\n    const u = usersById[id];\n    if (!u) return;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    const username = str(u.username).replace(/^@/, '');\n    if (name === '' && username === '') return;\n    const hay = (name + ' ' + username).toLowerCase();\n    if (hay.indexOf(q) < 0) return;\n    out.push({ telegram_id: id, name: name, username: username });\n  });\n  out.sort((a, b) => (a.name || a.username) < (b.name || b.username) ? -1 : 1);\n  const top = out.slice(0, 20);\n  return respond('done', 200, { ok: true, title: title, candidates: top, count: top.length });\n};",
-                                    "packageJson": "{}"
-                                  }
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.5.0"
                                 },
-                                "type": "CODE",
+                                "type": "PIECE",
                                 "valid": true
                               },
                               "settings": {
@@ -1443,26 +1525,27 @@
                                 },
                                 "input": {
                                   "columns": [
-                                    "r5WohfFLBagrxVrPDgB9s",
-                                    "Rs62LH1YLr1QBsnpIrJzH",
-                                    "zX2FO3bZZJuAZcVyZHiRw"
+                                    "JtylZU291K7TuMn9c9F2t",
+                                    "nWPJjEcVpqMUaMwdEpPX5",
+                                    "yd5CbkPctz2GXmBabZeVV",
+                                    "QCFLn2jRQPxB4RpMKxAKH"
                                   ],
                                   "filters": {
                                     "filters": [
                                       {
                                         "field": {
-                                          "id": "r5WohfFLBagrxVrPDgB9s",
-                                          "name": "event_id",
+                                          "id": "JtylZU291K7TuMn9c9F2t",
+                                          "name": "telegram_id",
                                           "type": "TEXT"
                                         },
-                                        "operator": "eq",
-                                        "value": "{{step_5['output'].eventId}}"
+                                        "operator": "in",
+                                        "value": "{{step_73['output'].idsCsv}}"
                                       }
                                     ]
                                   },
-                                  "limit": 200,
+                                  "limit": 500,
                                   "record_ids": [],
-                                  "table_id": "t1g8Vae3iEoDk93D6Rle7"
+                                  "table_id": "xHhYjhwqKdONkrYJGcBsz"
                                 },
                                 "propertySettings": {},
                                 "qadamName": "@aiqadam/qadam-tables",
@@ -1472,7 +1555,6 @@
                               "valid": true
                             },
                             "settings": {
-                              "actionName": "tables-find-records",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -1482,22 +1564,15 @@
                                 }
                               },
                               "input": {
-                                "columns": [
-                                  "JtylZU291K7TuMn9c9F2t",
-                                  "nWPJjEcVpqMUaMwdEpPX5",
-                                  "yd5CbkPctz2GXmBabZeVV",
-                                  "QCFLn2jRQPxB4RpMKxAKH"
-                                ],
-                                "filters": {},
-                                "limit": 200,
-                                "record_ids": [],
-                                "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                                "regRows": "{{step_38['output']}}",
+                                "staffRows": "{{step_39['output']}}"
                               },
-                              "propertySettings": {},
-                              "qadamName": "@aiqadam/qadam-tables",
-                              "qadamVersion": "0.5.0"
+                              "sourceCode": {
+                                "code": "export const code = async (inputs) => {\n  // W139: telegram_id кандидатов (участники события + staff) для узкого чтения\n  // `users` вместо широкого `limit: 200`.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const seen = {};\n  const ids = [];\n  const take = (src) => {\n    arr(src).map(flat).forEach((r) => {\n      const id = str(r.telegram_id).trim();\n      if (id === '' || id === '__none__' || seen[id]) return;\n      seen[id] = true;\n      ids.push(id);\n    });\n  };\n  take(inputs.regRows);\n  take(inputs.staffRows);\n  return { idsCsv: ids.length ? ids.join(',') : '__none__' };\n};\n",
+                                "packageJson": "{}"
+                              }
                             },
-                            "type": "PIECE",
+                            "type": "CODE",
                             "valid": true
                           },
                           "settings": {
@@ -1570,19 +1645,61 @@
                         "displayName": "read participants rows",
                         "name": "step_44",
                         "nextAction": {
-                          "displayName": "read participants names",
-                          "name": "step_45",
+                          "displayName": "participants: name ids",
+                          "logInput": false,
+                          "logOutput": false,
+                          "name": "step_72",
                           "nextAction": {
-                            "displayName": "read consent users",
-                            "name": "step_60",
+                            "displayName": "read participants names",
+                            "name": "step_45",
                             "nextAction": {
-                              "displayName": "participants: shape + export",
-                              "name": "step_46",
+                              "displayName": "read consent users",
+                              "name": "step_60",
                               "nextAction": {
-                                "displayName": "respond (participants)",
-                                "name": "step_47",
+                                "displayName": "participants: shape + export",
+                                "name": "step_46",
+                                "nextAction": {
+                                  "displayName": "respond (participants)",
+                                  "name": "step_47",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "count": "{{step_46['output'].count}}",
+                                          "counters": "{{step_46['output'].counters}}",
+                                          "csv": "{{step_46['output'].csv}}",
+                                          "error": "{{step_46['output'].error}}",
+                                          "eventId": "{{step_46['output'].eventId}}",
+                                          "fields": "{{step_46['output'].fields}}",
+                                          "json": "{{step_46['output'].json}}",
+                                          "ok": "{{step_46['output'].ok}}",
+                                          "rows": "{{step_46['output'].rows}}",
+                                          "text": "{{step_46['output'].text}}",
+                                          "title": "{{step_46['output'].title}}"
+                                        },
+                                        "headers": {},
+                                        "status": "{{step_46['output'].httpStatus}}"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.35"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
                                 "settings": {
-                                  "actionName": "return_response",
                                   "errorHandlingOptions": {
                                     "continueOnFailure": {
                                       "value": false
@@ -1592,34 +1709,34 @@
                                     }
                                   },
                                   "input": {
-                                    "fields": {
-                                      "body": {
-                                        "count": "{{step_46['output'].count}}",
-                                        "counters": "{{step_46['output'].counters}}",
-                                        "csv": "{{step_46['output'].csv}}",
-                                        "error": "{{step_46['output'].error}}",
-                                        "eventId": "{{step_46['output'].eventId}}",
-                                        "fields": "{{step_46['output'].fields}}",
-                                        "json": "{{step_46['output'].json}}",
-                                        "ok": "{{step_46['output'].ok}}",
-                                        "rows": "{{step_46['output'].rows}}",
-                                        "text": "{{step_46['output'].text}}",
-                                        "title": "{{step_46['output'].title}}"
-                                      },
-                                      "headers": {},
-                                      "status": "{{step_46['output'].httpStatus}}"
+                                    "consentRows": "{{step_60['output']}}",
+                                    "event": "{{step_6['output']}}",
+                                    "hmac": "{{step_1['output'].data}}",
+                                    "regRows": "{{step_44['output']}}",
+                                    "req": "{{step_5['output']}}",
+                                    "staff": "{{step_18['output']}}",
+                                    "texts": {
+                                      "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
+                                      "manage.parts.col_checked_in": "{{$t['manage.parts.col_checked_in']}}",
+                                      "manage.parts.col_name": "{{$t['manage.parts.col_name']}}",
+                                      "manage.parts.col_status": "{{$t['manage.parts.col_status']}}",
+                                      "manage.parts.col_telegram_id": "{{$t['manage.parts.col_telegram_id']}}",
+                                      "myreg.status.cancelled": "{{$t['myreg.status.cancelled']}}",
+                                      "myreg.status.checked_in": "{{$t['myreg.status.checked_in']}}",
+                                      "myreg.status.registered": "{{$t['myreg.status.registered']}}"
                                     },
-                                    "respond": "stop",
-                                    "responseType": "json"
+                                    "userRows": "{{step_45['output']}}"
                                   },
-                                  "propertySettings": {},
-                                  "qadamName": "@aiqadam/qadam-webhook",
-                                  "qadamVersion": "0.1.35"
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  // W13: участники события (OWN-7) + строки CSV/JSON для экспорта (OWN-8).\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20/step_42).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', counters: { registered: 0, checked_in: 0, cancelled: 0, all_consent: 0 },\n    rows: [], count: 0, csv: '', json: '[]'\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load` (Q25) ----------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи, а не как\n  // непустота выборки: «не staff», «чужой чаптер» и «нет события» отвечают\n  // одинаково — одним 403.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- схлопывание дублей по telegram_id (DATA-MODEL, IDM-1/IDM-2) ------------\n  // Уникальности в БД нет (ADR-0003): одна пара (event_id, telegram_id) может\n  // дать несколько строк. Статус берёт самая ранняя строка по registered_at —\n  // эталон fn-find-registration (с ним же сверяется чекин, расходиться нельзя);\n  // пришёл = непустой checked_in_at хоть в одной строке (IDM-2), показывается\n  // самое раннее время.\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const rows = arr(inputs.regRows).map(flat)\n    .filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  const ratMs = (r) => parseIso(str(r.registered_at));\n  rows.sort((a, b) => {\n    const x = ratMs(a), y = ratMs(b);\n    if (isFinite(x) && isFinite(y)) return x - y;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const byId = {};\n  rows.forEach((r) => {\n    const id = str(r.telegram_id);\n    if (!byId[id]) byId[id] = { status: 'registered', checked_in_at: '', seen: false };\n    const cur = byId[id];\n    if (!cur.seen) {\n      cur.status = str(r.status) === 'cancelled' ? 'cancelled' : 'registered';\n      cur.seen = true;\n    }\n    const cin = str(r.checked_in_at);\n    if (cin !== '') {\n      const ms = parseIso(cin), curMs = parseIso(cur.checked_in_at);\n      if (cur.checked_in_at === '' || (isFinite(ms) && (!isFinite(curMs) || ms < curMs))) cur.checked_in_at = cin;\n    }\n  });\n\n  // --- имена из users (DAT-1: только подписи, решение — по telegram_id) -------\n  // Профиль первым (profile_first_name/profile_last_name — то, что человек\n  // ввёл при регистрации), запасной — имя из Telegram, затем @username.\n  // Кого нет в users — показать нечего: имя заменяет сам telegram_id, строка\n  // не теряется (экспорт обязан сходиться со счётчиками).\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const profile = (str(u.profile_first_name) + ' ' + str(u.profile_last_name)).trim();\n    if (profile !== '') return profile;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  // --- даты — Asia/Tashkent словами (OWN-3) -----------------------------------\n  // Формат фиксирован строкой «DD.MM.YYYY HH:mm»: читается в RU-Excel как\n  // дата, в JSON — однозначен. Строится из частей (formatToParts), а не\n  // готовой строкой Intl — разделители не зависят от версии ICU.\n  const dtf = new Intl.DateTimeFormat('ru-RU', {\n    timeZone: 'Asia/Tashkent',\n    day: '2-digit', month: '2-digit', year: 'numeric',\n    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'\n  });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: сначала пришедшие, затем зарегистрированные, затем отмены -----\n  // Внутри группы — по имени (простое сравнение строк, без localeCompare:\n  // его порядок зависит от ICU рантайма). Тот же порядок — в CSV и JSON.\n  const groupOf = (p) => (p.checked_in_at !== '' ? 0 : (p.status === 'registered' ? 1 : 2));\n  const shaped = Object.keys(byId).map((id) => ({\n    telegram_id: id,\n    name: personName(id),\n    status: byId[id].status,\n    checked_in_at: fmtTashkent(byId[id].checked_in_at)\n  }));\n  shaped.sort((a, b) => {\n    const g = groupOf(a) - groupOf(b);\n    if (g !== 0) return g;\n    if (a.name < b.name) return -1;\n    if (a.name > b.name) return 1;\n    return a.telegram_id < b.telegram_id ? -1 : 1;\n  });\n\n  // --- счётчики — по УНИКАЛЬНЫМ telegram_id, не строкам (DATA-MODEL) ----------\n  // registered включает пришедших (статус у них registered) — как в эталоне\n  // (48 ≥ 31) и формулах DATA-MODEL: зарегистрировано = status=registered;\n  // пришло = checked_in_at непусто; отменило = status=cancelled.\n  const counters = { registered: 0, checked_in: 0, cancelled: 0, all_consent: 0 };\n  shaped.forEach((p) => {\n    if (p.status === 'registered') counters.registered += 1;\n    else counters.cancelled += 1;\n    if (p.checked_in_at !== '') counters.checked_in += 1;\n  });\n\n  // --- W68 (#120): «подписчики анонсов» (all_consent) -------------------------\n  // Глобальный сегмент, не по событию: те же правила, что в bcast-step/bcast-run\n  // (consent_marketing = true, кроме заблокировавших бота), по уникальным\n  // telegram_id. Счётчик для таба «Рассылка» в Mini App; событие ему не нужно.\n  const allConsent = {};\n  arr(inputs.consentRows).map(flat).forEach((u) => {\n    const id = str(u.telegram_id);\n    if (id === '' || str(u.consent_marketing) !== 'true' || str(u.blocked_bot) === 'true') return;\n    allConsent[id] = true;\n  });\n  counters.all_consent = Object.keys(allConsent).length;\n\n  // --- экспорт: собирает сервер одной строкой (OWN-8) -------------------------\n  // Файл строит сервер, а не SPA: экранирование и даты в одном месте, рядом\n  // со счётчиками — расхождения «на экране одно, в файле другое» нет.\n  // Статус — русским текстом (тот же словарь, что экран: myreg.status.*);\n  // пришедший показывается «был на событии», как в эталоне.\n  const statusText = (p) => {\n    if (p.checked_in_at !== '') return t('myreg.status.checked_in');\n    if (p.status === 'cancelled') return t('myreg.status.cancelled');\n    return t('myreg.status.registered');\n  };\n  // CSV-инъекция: значение, начинающееся с = + - @, получает префикс '\n  // (запятая не входит: разделитель — ';' под RU-Excel). Кавычки удваиваются,\n  // каждое поле — в кавычках: один инвариант на все поля, без исключений.\n  const csvEsc = (v) => {\n    let s = String(v);\n    if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n    return '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  };\n  const header = [t('manage.parts.col_telegram_id'), t('manage.parts.col_name'), t('manage.parts.col_status'), t('manage.parts.col_checked_in')].map(csvEsc).join(';');\n  const csvBody = shaped.map((p) => [p.telegram_id, p.name, statusText(p), p.checked_in_at].map(csvEsc).join(';')).join('\\n');\n  // BOM — первый символ строки: любой потребитель, сохранивший её как есть,\n  // получает файл с целой кириллицей в Excel. JSON — без BOM (валидность).\n  const csv = '﻿' + header + (csvBody ? '\\n' + csvBody : '');\n  const json = JSON.stringify({\n    event: { id: eventId, title: title },\n    exported_at: fmtTashkent(new Date(Date.now()).toISOString()),\n    counters: counters,\n    rows: shaped.map((p) => ({ telegram_id: p.telegram_id, name: p.name, status: statusText(p), checked_in_at: p.checked_in_at }))\n  }, null, 2);\n\n  return respond('done', 200, {\n    ok: true, title: title,\n    counters: counters, rows: shaped, count: shaped.length,\n    csv: csv, json: json\n  });\n};",
+                                    "packageJson": "{}"
+                                  }
                                 },
-                                "type": "PIECE",
+                                "type": "CODE",
                                 "valid": true
                               },
                               "settings": {
+                                "actionName": "tables-find-records",
                                 "errorHandlingOptions": {
                                   "continueOnFailure": {
                                     "value": false
@@ -1629,30 +1746,29 @@
                                   }
                                 },
                                 "input": {
-                                  "consentRows": "{{step_60['output']}}",
-                                  "event": "{{step_6['output']}}",
-                                  "hmac": "{{step_1['output'].data}}",
-                                  "regRows": "{{step_44['output']}}",
-                                  "req": "{{step_5['output']}}",
-                                  "staff": "{{step_18['output']}}",
-                                  "texts": {
-                                    "manage.err.forbidden": "{{$t['manage.err.forbidden']}}",
-                                    "manage.parts.col_checked_in": "{{$t['manage.parts.col_checked_in']}}",
-                                    "manage.parts.col_name": "{{$t['manage.parts.col_name']}}",
-                                    "manage.parts.col_status": "{{$t['manage.parts.col_status']}}",
-                                    "manage.parts.col_telegram_id": "{{$t['manage.parts.col_telegram_id']}}",
-                                    "myreg.status.cancelled": "{{$t['myreg.status.cancelled']}}",
-                                    "myreg.status.checked_in": "{{$t['myreg.status.checked_in']}}",
-                                    "myreg.status.registered": "{{$t['myreg.status.registered']}}"
+                                  "columns": [
+                                    "JtylZU291K7TuMn9c9F2t",
+                                    "FpWznk9Fgl8wUXXUKolRu",
+                                    "ja2S7DwVun5AKs3Jk7jK6"
+                                  ],
+                                  "filters": {
+                                    "filters": [
+                                      {
+                                        "field": "consent_marketing",
+                                        "operator": "eq",
+                                        "value": "true"
+                                      }
+                                    ]
                                   },
-                                  "userRows": "{{step_45['output']}}"
+                                  "limit": 500,
+                                  "record_ids": [],
+                                  "table_id": "xHhYjhwqKdONkrYJGcBsz"
                                 },
-                                "sourceCode": {
-                                  "code": "export const code = async (inputs) => {\n  // W13: участники события (OWN-7) + строки CSV/JSON для экспорта (OWN-8).\n  // Тексты — во входе `texts` (ADR-0014), источник — i18n/ru.json.\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key, vars) => {\n    let s = String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n    if (vars) Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(String(vars[k])); });\n    return s;\n  };\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  // Пустой ответ по умолчанию — все поля тела всегда присутствуют, чтобы\n  // return_response не ссылался на несуществующее (тот же приём, что в\n  // step_7/step_20/step_42).\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', fields: {}, event: {}, eventId: eventId,\n    title: '', counters: { registered: 0, checked_in: 0, cancelled: 0, all_consent: 0 },\n    rows: [], count: 0, csv: '', json: '[]'\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load` (Q25) ----------------------\n  // Гейт уже пройден step_7, но отбор повторяется по полям записи, а не как\n  // непустота выборки: «не staff», «чужой чаптер» и «нет события» отвечают\n  // одинаково — одним 403.\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- схлопывание дублей по telegram_id (DATA-MODEL, IDM-1/IDM-2) ------------\n  // Уникальности в БД нет (ADR-0003): одна пара (event_id, telegram_id) может\n  // дать несколько строк. Статус берёт самая ранняя строка по registered_at —\n  // эталон fn-find-registration (с ним же сверяется чекин, расходиться нельзя);\n  // пришёл = непустой checked_in_at хоть в одной строке (IDM-2), показывается\n  // самое раннее время.\n  const parseIso = (s) => {\n    if (!s) return NaN;\n    return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z');\n  };\n  const rows = arr(inputs.regRows).map(flat)\n    .filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  const ratMs = (r) => parseIso(str(r.registered_at));\n  rows.sort((a, b) => {\n    const x = ratMs(a), y = ratMs(b);\n    if (isFinite(x) && isFinite(y)) return x - y;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const byId = {};\n  rows.forEach((r) => {\n    const id = str(r.telegram_id);\n    if (!byId[id]) byId[id] = { status: 'registered', checked_in_at: '', seen: false };\n    const cur = byId[id];\n    if (!cur.seen) {\n      cur.status = str(r.status) === 'cancelled' ? 'cancelled' : 'registered';\n      cur.seen = true;\n    }\n    const cin = str(r.checked_in_at);\n    if (cin !== '') {\n      const ms = parseIso(cin), curMs = parseIso(cur.checked_in_at);\n      if (cur.checked_in_at === '' || (isFinite(ms) && (!isFinite(curMs) || ms < curMs))) cur.checked_in_at = cin;\n    }\n  });\n\n  // --- имена из users (DAT-1: только подписи, решение — по telegram_id) -------\n  // Профиль первым (profile_first_name/profile_last_name — то, что человек\n  // ввёл при регистрации), запасной — имя из Telegram, затем @username.\n  // Кого нет в users — показать нечего: имя заменяет сам telegram_id, строка\n  // не теряется (экспорт обязан сходиться со счётчиками).\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const profile = (str(u.profile_first_name) + ' ' + str(u.profile_last_name)).trim();\n    if (profile !== '') return profile;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  // --- даты — Asia/Tashkent словами (OWN-3) -----------------------------------\n  // Формат фиксирован строкой «DD.MM.YYYY HH:mm»: читается в RU-Excel как\n  // дата, в JSON — однозначен. Строится из частей (formatToParts), а не\n  // готовой строкой Intl — разделители не зависят от версии ICU.\n  const dtf = new Intl.DateTimeFormat('ru-RU', {\n    timeZone: 'Asia/Tashkent',\n    day: '2-digit', month: '2-digit', year: 'numeric',\n    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'\n  });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: сначала пришедшие, затем зарегистрированные, затем отмены -----\n  // Внутри группы — по имени (простое сравнение строк, без localeCompare:\n  // его порядок зависит от ICU рантайма). Тот же порядок — в CSV и JSON.\n  const groupOf = (p) => (p.checked_in_at !== '' ? 0 : (p.status === 'registered' ? 1 : 2));\n  const shaped = Object.keys(byId).map((id) => ({\n    telegram_id: id,\n    name: personName(id),\n    status: byId[id].status,\n    checked_in_at: fmtTashkent(byId[id].checked_in_at)\n  }));\n  shaped.sort((a, b) => {\n    const g = groupOf(a) - groupOf(b);\n    if (g !== 0) return g;\n    if (a.name < b.name) return -1;\n    if (a.name > b.name) return 1;\n    return a.telegram_id < b.telegram_id ? -1 : 1;\n  });\n\n  // --- счётчики — по УНИКАЛЬНЫМ telegram_id, не строкам (DATA-MODEL) ----------\n  // registered включает пришедших (статус у них registered) — как в эталоне\n  // (48 ≥ 31) и формулах DATA-MODEL: зарегистрировано = status=registered;\n  // пришло = checked_in_at непусто; отменило = status=cancelled.\n  const counters = { registered: 0, checked_in: 0, cancelled: 0, all_consent: 0 };\n  shaped.forEach((p) => {\n    if (p.status === 'registered') counters.registered += 1;\n    else counters.cancelled += 1;\n    if (p.checked_in_at !== '') counters.checked_in += 1;\n  });\n\n  // --- W68 (#120): «подписчики анонсов» (all_consent) -------------------------\n  // Глобальный сегмент, не по событию: те же правила, что в bcast-step/bcast-run\n  // (consent_marketing = true, кроме заблокировавших бота), по уникальным\n  // telegram_id. Счётчик для таба «Рассылка» в Mini App; событие ему не нужно.\n  const allConsent = {};\n  arr(inputs.consentRows).map(flat).forEach((u) => {\n    const id = str(u.telegram_id);\n    if (id === '' || str(u.consent_marketing) !== 'true' || str(u.blocked_bot) === 'true') return;\n    allConsent[id] = true;\n  });\n  counters.all_consent = Object.keys(allConsent).length;\n\n  // --- экспорт: собирает сервер одной строкой (OWN-8) -------------------------\n  // Файл строит сервер, а не SPA: экранирование и даты в одном месте, рядом\n  // со счётчиками — расхождения «на экране одно, в файле другое» нет.\n  // Статус — русским текстом (тот же словарь, что экран: myreg.status.*);\n  // пришедший показывается «был на событии», как в эталоне.\n  const statusText = (p) => {\n    if (p.checked_in_at !== '') return t('myreg.status.checked_in');\n    if (p.status === 'cancelled') return t('myreg.status.cancelled');\n    return t('myreg.status.registered');\n  };\n  // CSV-инъекция: значение, начинающееся с = + - @, получает префикс '\n  // (запятая не входит: разделитель — ';' под RU-Excel). Кавычки удваиваются,\n  // каждое поле — в кавычках: один инвариант на все поля, без исключений.\n  const csvEsc = (v) => {\n    let s = String(v);\n    if (/^[=+\\-@]/.test(s)) s = \"'\" + s;\n    return '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  };\n  const header = [t('manage.parts.col_telegram_id'), t('manage.parts.col_name'), t('manage.parts.col_status'), t('manage.parts.col_checked_in')].map(csvEsc).join(';');\n  const csvBody = shaped.map((p) => [p.telegram_id, p.name, statusText(p), p.checked_in_at].map(csvEsc).join(';')).join('\\n');\n  // BOM — первый символ строки: любой потребитель, сохранивший её как есть,\n  // получает файл с целой кириллицей в Excel. JSON — без BOM (валидность).\n  const csv = '﻿' + header + (csvBody ? '\\n' + csvBody : '');\n  const json = JSON.stringify({\n    event: { id: eventId, title: title },\n    exported_at: fmtTashkent(new Date(Date.now()).toISOString()),\n    counters: counters,\n    rows: shaped.map((p) => ({ telegram_id: p.telegram_id, name: p.name, status: statusText(p), checked_in_at: p.checked_in_at }))\n  }, null, 2);\n\n  return respond('done', 200, {\n    ok: true, title: title,\n    counters: counters, rows: shaped, count: shaped.length,\n    csv: csv, json: json\n  });\n};",
-                                  "packageJson": "{}"
-                                }
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.5.0"
                               },
-                              "type": "CODE",
+                              "type": "PIECE",
                               "valid": true
                             },
                             "settings": {
@@ -1668,15 +1784,22 @@
                               "input": {
                                 "columns": [
                                   "JtylZU291K7TuMn9c9F2t",
-                                  "FpWznk9Fgl8wUXXUKolRu",
-                                  "ja2S7DwVun5AKs3Jk7jK6"
+                                  "SVQHL3bEpU9x9mMe5vuwV",
+                                  "B0bP8keR2vuyH0G4p1HYv",
+                                  "nWPJjEcVpqMUaMwdEpPX5",
+                                  "yd5CbkPctz2GXmBabZeVV",
+                                  "QCFLn2jRQPxB4RpMKxAKH"
                                 ],
                                 "filters": {
                                   "filters": [
                                     {
-                                      "field": "consent_marketing",
-                                      "operator": "eq",
-                                      "value": "true"
+                                      "field": {
+                                        "id": "JtylZU291K7TuMn9c9F2t",
+                                        "name": "telegram_id",
+                                        "type": "TEXT"
+                                      },
+                                      "operator": "in",
+                                      "value": "{{step_72['output'].idsCsv}}"
                                     }
                                   ]
                                 },
@@ -1692,7 +1815,6 @@
                             "valid": true
                           },
                           "settings": {
-                            "actionName": "tables-find-records",
                             "errorHandlingOptions": {
                               "continueOnFailure": {
                                 "value": false
@@ -1702,24 +1824,14 @@
                               }
                             },
                             "input": {
-                              "columns": [
-                                "JtylZU291K7TuMn9c9F2t",
-                                "SVQHL3bEpU9x9mMe5vuwV",
-                                "B0bP8keR2vuyH0G4p1HYv",
-                                "nWPJjEcVpqMUaMwdEpPX5",
-                                "yd5CbkPctz2GXmBabZeVV",
-                                "QCFLn2jRQPxB4RpMKxAKH"
-                              ],
-                              "filters": {},
-                              "limit": 200,
-                              "record_ids": [],
-                              "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                              "regRows": "{{step_44['output']}}"
                             },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.5.0"
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  // W139: собирает список telegram_id для узкого чтения `users` (вместо широкого\n  // `limit: 200`): join имён не должен зависеть от размера таблицы.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const seen = {};\n  const ids = [];\n  const take = (src) => {\n    arr(src).map(flat).forEach((r) => {\n      const id = str(r.telegram_id).trim();\n      if (id === '' || id === '__none__' || seen[id]) return;\n      seen[id] = true;\n      ids.push(id);\n    });\n  };\n  take(inputs.regRows);\n  take(inputs.staffRows);\n  return { idsCsv: ids.length ? ids.join(',') : '__none__' };\n};\n",
+                              "packageJson": "{}"
+                            }
                           },
-                          "type": "PIECE",
+                          "type": "CODE",
                           "valid": true
                         },
                         "settings": {
@@ -1765,19 +1877,92 @@
                         "valid": true
                       },
                       {
-                        "displayName": "read feedback authors' names",
+                        "displayName": "feedback: read event registrations",
                         "name": "step_49",
                         "nextAction": {
-                          "displayName": "read feedback rows",
-                          "name": "step_48",
+                          "displayName": "feedback: name ids",
+                          "logInput": false,
+                          "logOutput": false,
+                          "name": "step_75",
                           "nextAction": {
-                            "displayName": "feedback: shape",
-                            "name": "step_50",
+                            "displayName": "read feedback rows",
+                            "name": "step_48",
                             "nextAction": {
-                              "displayName": "respond (feedback)",
-                              "name": "step_51",
+                              "displayName": "feedback: read users",
+                              "logInput": false,
+                              "logOutput": false,
+                              "name": "step_76",
+                              "nextAction": {
+                                "displayName": "feedback: shape",
+                                "name": "step_50",
+                                "nextAction": {
+                                  "displayName": "respond (feedback)",
+                                  "name": "step_51",
+                                  "settings": {
+                                    "actionName": "return_response",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "fields": {
+                                        "body": {
+                                          "average": "{{step_50['output'].average}}",
+                                          "count": "{{step_50['output'].count}}",
+                                          "error": "{{step_50['output'].error}}",
+                                          "eventId": "{{step_50['output'].eventId}}",
+                                          "ok": "{{step_50['output'].ok}}",
+                                          "rows": "{{step_50['output'].rows}}",
+                                          "text": "{{step_50['output'].text}}",
+                                          "title": "{{step_50['output'].title}}"
+                                        },
+                                        "headers": {},
+                                        "status": "{{step_50['output'].httpStatus}}"
+                                      },
+                                      "respond": "stop",
+                                      "responseType": "json"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-webhook",
+                                    "qadamVersion": "0.1.35"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "event": "{{step_6['output']}}",
+                                    "fbRows": "{{step_48['output']}}",
+                                    "hmac": "{{step_1['output'].data}}",
+                                    "req": "{{step_5['output']}}",
+                                    "staff": "{{step_18['output']}}",
+                                    "texts": {
+                                      "manage.err.forbidden": "{{$t['manage.err.forbidden']}}"
+                                    },
+                                    "userRows": "{{step_76['output']}}"
+                                  },
+                                  "sourceCode": {
+                                    "code": "export const code = async (inputs) => {\n  // W45 (Q53): отзывы участников по событию — доступ автору/staff события,\n  // та же граница прав, что у `participants` (Q25, defense in depth).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', eventId: eventId,\n    title: '', average: 0, count: 0, rows: []\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load`/`participants` (Q25) -----\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- имена из users (DAT-1: только подписи) ---------------------------------\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  const parseIso = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n  const dtf = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: новые сверху ----------------------------------------------------\n  const rowsRaw = arr(inputs.fbRows).map(flat).filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  rowsRaw.sort((a, b) => {\n    const x = parseIso(str(a.submitted_at)), y = parseIso(str(b.submitted_at));\n    if (isFinite(x) && isFinite(y)) return y - x;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const shaped = rowsRaw.map((r) => ({\n    telegram_id: str(r.telegram_id),\n    name: personName(str(r.telegram_id)),\n    rating: Number(r.rating) || 0,\n    comment: str(r.comment),\n    submitted_at: fmtTashkent(str(r.submitted_at))\n  }));\n  const sum = shaped.reduce((s, p) => s + p.rating, 0);\n  const average = shaped.length ? Math.round((sum / shaped.length) * 10) / 10 : 0;\n\n  return respond('done', 200, { ok: true, title: title, average: average, count: shaped.length, rows: shaped });\n};",
+                                    "packageJson": "{}"
+                                  }
+                                },
+                                "type": "CODE",
+                                "valid": true
+                              },
                               "settings": {
-                                "actionName": "return_response",
+                                "actionName": "tables-find-records",
                                 "errorHandlingOptions": {
                                   "continueOnFailure": {
                                     "value": false
@@ -1787,31 +1972,38 @@
                                   }
                                 },
                                 "input": {
-                                  "fields": {
-                                    "body": {
-                                      "average": "{{step_50['output'].average}}",
-                                      "count": "{{step_50['output'].count}}",
-                                      "error": "{{step_50['output'].error}}",
-                                      "eventId": "{{step_50['output'].eventId}}",
-                                      "ok": "{{step_50['output'].ok}}",
-                                      "rows": "{{step_50['output'].rows}}",
-                                      "text": "{{step_50['output'].text}}",
-                                      "title": "{{step_50['output'].title}}"
-                                    },
-                                    "headers": {},
-                                    "status": "{{step_50['output'].httpStatus}}"
+                                  "columns": [
+                                    "JtylZU291K7TuMn9c9F2t",
+                                    "nWPJjEcVpqMUaMwdEpPX5",
+                                    "yd5CbkPctz2GXmBabZeVV",
+                                    "QCFLn2jRQPxB4RpMKxAKH"
+                                  ],
+                                  "filters": {
+                                    "filters": [
+                                      {
+                                        "field": {
+                                          "id": "JtylZU291K7TuMn9c9F2t",
+                                          "name": "telegram_id",
+                                          "type": "TEXT"
+                                        },
+                                        "operator": "in",
+                                        "value": "{{step_75['output'].idsCsv}}"
+                                      }
+                                    ]
                                   },
-                                  "respond": "stop",
-                                  "responseType": "json"
+                                  "limit": 500,
+                                  "record_ids": [],
+                                  "table_id": "xHhYjhwqKdONkrYJGcBsz"
                                 },
                                 "propertySettings": {},
-                                "qadamName": "@aiqadam/qadam-webhook",
-                                "qadamVersion": "0.1.35"
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.5.1"
                               },
                               "type": "PIECE",
                               "valid": true
                             },
                             "settings": {
+                              "actionName": "tables-find-records",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -1821,26 +2013,38 @@
                                 }
                               },
                               "input": {
-                                "event": "{{step_6['output']}}",
-                                "fbRows": "{{step_48['output']}}",
-                                "hmac": "{{step_1['output'].data}}",
-                                "req": "{{step_5['output']}}",
-                                "staff": "{{step_18['output']}}",
-                                "texts": {
-                                  "manage.err.forbidden": "{{$t['manage.err.forbidden']}}"
+                                "columns": [
+                                  "A5njEy7i4BUwpG0kh5omn",
+                                  "Due6SRYplDMqO1qZzcy0N",
+                                  "cnYI6knHrlgOfdBKC5vxO",
+                                  "RmCFLTUyhfGDOCA4Wawu6",
+                                  "KUEqEFHPtKa4ebT1k1ESj"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": {
+                                        "id": "A5njEy7i4BUwpG0kh5omn",
+                                        "name": "event_id",
+                                        "type": "TEXT"
+                                      },
+                                      "operator": "eq",
+                                      "value": "{{step_5['output'].eventId}}"
+                                    }
+                                  ]
                                 },
-                                "userRows": "{{step_49['output']}}"
+                                "limit": 200,
+                                "record_ids": [],
+                                "table_id": "GgGUQEHp6g076nDb2XddP"
                               },
-                              "sourceCode": {
-                                "code": "export const code = async (inputs) => {\n  // W45 (Q53): отзывы участников по событию — доступ автору/staff события,\n  // та же граница прав, что у `participants` (Q25, defense in depth).\n  const texts = (inputs.texts && typeof inputs.texts === 'object') ? inputs.texts : {};\n  const t = (key) => String(texts[key] === undefined || texts[key] === null ? key : texts[key]);\n  const str = (v) => String(v === undefined || v === null ? '' : v).trim();\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n\n  const hmac = inputs.hmac || {};\n  const telegramId = str(hmac.telegramId);\n  const req = inputs.req || {};\n  const eventId = str(req.eventId);\n\n  const respond = (outcome, httpStatus, body) => Object.assign({\n    outcome: outcome, httpStatus: httpStatus,\n    ok: false, error: '', text: '', eventId: eventId,\n    title: '', average: 0, count: 0, rows: []\n  }, body);\n\n  const forbidden = () => respond('error', 403, { error: 'forbidden', text: t('manage.err.forbidden') });\n\n  // --- defense in depth: та же граница, что `load`/`participants` (Q25) -----\n  const staffRow = arr(inputs.staff).map(flat).filter((r) => str(r.telegram_id) === telegramId)[0] || null;\n  if (!telegramId || !staffRow) return forbidden();\n  const staffChapter = str(staffRow.chapter_id);\n  const canAccess = (chapterId) => staffChapter === '' || staffChapter === str(chapterId);\n  const ev = arr(inputs.event).map(flat).filter((r) => str(r.id) === eventId)[0] || null;\n  if (eventId === '-' || eventId === '' || !ev || !canAccess(ev.chapter_id)) return forbidden();\n  const title = str(ev.title);\n\n  // --- имена из users (DAT-1: только подписи) ---------------------------------\n  const usersById = {};\n  arr(inputs.userRows).map(flat).forEach((r) => {\n    const id = str(r.telegram_id);\n    if (id !== '' && !usersById[id]) usersById[id] = r;\n  });\n  const personName = (id) => {\n    const u = usersById[id];\n    if (!u) return id;\n    const name = (str(u.first_name) + ' ' + str(u.last_name)).trim();\n    if (name !== '') return name;\n    const username = str(u.username).replace(/^@/, '');\n    if (username !== '') return '@' + username;\n    return id;\n  };\n\n  const parseIso = (s) => { if (!s) return NaN; return Date.parse(/[Zz]$/.test(s) || /[+-][0-9]{2}:?[0-9]{2}$/.test(s) ? s : s + 'Z'); };\n  const dtf = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });\n  const fmtTashkent = (iso) => {\n    const ms = parseIso(iso);\n    if (!isFinite(ms)) return '';\n    const parts = {};\n    dtf.formatToParts(new Date(ms)).forEach((p) => { parts[p.type] = p.value; });\n    return parts.day + '.' + parts.month + '.' + parts.year + ' ' + parts.hour + ':' + parts.minute;\n  };\n\n  // --- строки: новые сверху ----------------------------------------------------\n  const rowsRaw = arr(inputs.fbRows).map(flat).filter((r) => str(r.event_id) === eventId && str(r.telegram_id) !== '');\n  rowsRaw.sort((a, b) => {\n    const x = parseIso(str(a.submitted_at)), y = parseIso(str(b.submitted_at));\n    if (isFinite(x) && isFinite(y)) return y - x;\n    if (isFinite(x)) return -1;\n    if (isFinite(y)) return 1;\n    return 0;\n  });\n  const shaped = rowsRaw.map((r) => ({\n    telegram_id: str(r.telegram_id),\n    name: personName(str(r.telegram_id)),\n    rating: Number(r.rating) || 0,\n    comment: str(r.comment),\n    submitted_at: fmtTashkent(str(r.submitted_at))\n  }));\n  const sum = shaped.reduce((s, p) => s + p.rating, 0);\n  const average = shaped.length ? Math.round((sum / shaped.length) * 10) / 10 : 0;\n\n  return respond('done', 200, { ok: true, title: title, average: average, count: shaped.length, rows: shaped });\n};",
-                                "packageJson": "{}"
-                              }
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.5.0"
                             },
-                            "type": "CODE",
+                            "type": "PIECE",
                             "valid": true
                           },
                           "settings": {
-                            "actionName": "tables-find-records",
                             "errorHandlingOptions": {
                               "continueOnFailure": {
                                 "value": false
@@ -1850,35 +2054,14 @@
                               }
                             },
                             "input": {
-                              "columns": [
-                                "A5njEy7i4BUwpG0kh5omn",
-                                "Due6SRYplDMqO1qZzcy0N",
-                                "cnYI6knHrlgOfdBKC5vxO",
-                                "RmCFLTUyhfGDOCA4Wawu6",
-                                "KUEqEFHPtKa4ebT1k1ESj"
-                              ],
-                              "filters": {
-                                "filters": [
-                                  {
-                                    "field": {
-                                      "id": "A5njEy7i4BUwpG0kh5omn",
-                                      "name": "event_id",
-                                      "type": "TEXT"
-                                    },
-                                    "operator": "eq",
-                                    "value": "{{step_5['output'].eventId}}"
-                                  }
-                                ]
-                              },
-                              "limit": 200,
-                              "record_ids": [],
-                              "table_id": "GgGUQEHp6g076nDb2XddP"
+                              "regRows": "{{step_49['output']}}"
                             },
-                            "propertySettings": {},
-                            "qadamName": "@aiqadam/qadam-tables",
-                            "qadamVersion": "0.5.0"
+                            "sourceCode": {
+                              "code": "export const code = async (inputs) => {\n  // W139: telegram_id регистрантов события (авторы отзыва — их подмножество)\n  // для узкого чтения `users` вместо широкого `limit: 200`.\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  const arr = (src) => Array.isArray(src) ? src : (src && Array.isArray(src.records) ? src.records : []);\n  const flat = (rec) => {\n    const out = {};\n    const cells = (rec && rec.cells) || {};\n    Object.keys(cells).forEach((fid) => {\n      const c = cells[fid];\n      if (c && typeof c === 'object' && typeof c.fieldName === 'string') out[c.fieldName] = c.value === undefined || c.value === null ? '' : String(c.value);\n    });\n    return out;\n  };\n  const seen = {};\n  const ids = [];\n  const take = (src) => {\n    arr(src).map(flat).forEach((r) => {\n      const id = str(r.telegram_id).trim();\n      if (id === '' || id === '__none__' || seen[id]) return;\n      seen[id] = true;\n      ids.push(id);\n    });\n  };\n  take(inputs.regRows);\n  take(inputs.staffRows);\n  return { idsCsv: ids.length ? ids.join(',') : '__none__' };\n};\n",
+                              "packageJson": "{}"
+                            }
                           },
-                          "type": "PIECE",
+                          "type": "CODE",
                           "valid": true
                         },
                         "settings": {
@@ -1893,15 +2076,24 @@
                           },
                           "input": {
                             "columns": [
-                              "JtylZU291K7TuMn9c9F2t",
-                              "nWPJjEcVpqMUaMwdEpPX5",
-                              "yd5CbkPctz2GXmBabZeVV",
-                              "QCFLn2jRQPxB4RpMKxAKH"
+                              "mVfpZFCwAZskWXNT7iCuI"
                             ],
-                            "filters": {},
+                            "filters": {
+                              "filters": [
+                                {
+                                  "field": {
+                                    "id": "qQPYl9c0ew6n8w2CGYZII",
+                                    "name": "event_id",
+                                    "type": "TEXT"
+                                  },
+                                  "operator": "eq",
+                                  "value": "{{step_5['output'].eventId}}"
+                                }
+                              ]
+                            },
                             "limit": 200,
                             "record_ids": [],
-                            "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                            "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
                           },
                           "propertySettings": {},
                           "qadamName": "@aiqadam/qadam-tables",
