@@ -319,7 +319,7 @@
                       "sessionStep": "{{step_4['output'].sessionStep}}"
                     },
                     "sourceCode": {
-                      "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // W114: шаг сессии приходит из step_4 — ob_lang (язык ещё не выбран) или\n  // ob_consent (прежняя карточка согласия).\n  const cardMessageId = Number(inputs.cardMessageId);\n  const step = str(inputs.sessionStep) === 'ob_lang' ? 'ob_lang' : 'ob_consent';\n  const draft = {\n    eventId: '',\n    utm: '',\n    cardMessageId: isFinite(cardMessageId) && cardMessageId > 0 ? cardMessageId : 0,\n    step: step\n  };\n  return { draft: JSON.stringify(draft), cardMessageId: draft.cardMessageId };\n};\n",
+                      "code": "export const code = async (inputs) => {\n  const str = (v) => String(v === undefined || v === null ? '' : v);\n  // ADR-0056: cardMessageId не нужен (карточка не редактируется). Шаг сессии\n  // приходит из step_4 — ob_lang (язык ещё не выбран, W114) или ob_consent.\n  const step = str(inputs.sessionStep) === 'ob_lang' ? 'ob_lang' : 'ob_consent';\n  const draft = { eventId: '', utm: '', step: step };\n  return { draft: JSON.stringify(draft) };\n};\n",
                       "packageJson": "{}"
                     }
                   },

@@ -7,11 +7,13 @@
   (ADR-0015: одно касание flows, ADR-0016: одинаковые по устройству шаги делят флоу)
 - **Назначение**: онбординг C первого касания (PAR-8, [ADR-0032](../../docs/adr/0032-onboarding-first-touch-profile.md),
   [ADR-0034](../../docs/adr/0034-onboarding-any-first-touch.md),
-  [ADR-0043](../../docs/adr/0043-shorter-onboarding.md)):
+  [ADR-0043](../../docs/adr/0043-shorter-onboarding.md),
+  [ADR-0056](../../docs/adr/0056-onboarding-separate-messages.md)):
   входная карточка (зачем + согласие) → имя (эвристика) → работа → город
   («Вы из Ташкента?», «Нет» — ввод текстом) → запись (там же вопрос о
-  рассылке). Экрана «Всё верно?» нет (ADR-0043):
-  выбор города ведёт прямо в `finish`.
+  рассылке). **Каждый вопрос — отдельное сообщение (ADR-0056): карточка не
+  редактируется, факты события показаны один раз — во входной карточке.**
+  Экрана «Всё верно?» нет (ADR-0043): выбор города ведёт прямо в `finish`.
   Диалог общий для входа по диплинку события (`draft.eventId` заполнен —
   запись создаёт регистрацию) и для голого `/start` (`eventId` пуст — пишется
   только профиль, регистрировать не на что). Повторное касание (`ob:register`)
@@ -24,17 +26,17 @@
 |------|----------------|-----------|
 | trigger | `callableFlow` | `callbackData`, `messageText`, `messageId`, `sessionDraft`, `callbackQueryId`, `firstName`, `lastName`, `chatId`, `telegramId` |
 | step_1 | `answer_callback_query` (`continueOnFailure`) | ack колбэка; текстовый путь (пустой id) — мимо, без останова |
-| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0043: кнопка входной карточки — `ob:agree` (`ob:continue` снят), выбор города ведёт сразу в `finish`, а не в снятый review**; **ADR-0046: город — да/нет: `ob:city:yes` → `finish` с `Ташкент`, `ob:city:no` → `show_ask_city` (ввод текстом), текст на шаге `ob_await_city` → `finish`; W120: алиасы `ob:city:Tashkent/Almaty/write` сняты — такое значение даёт `ignore`**; **W114: `ob:lang:<xx>` на шаге `ob_lang` → `action: 'set_lang'`, `lang` — только `ru\|uz\|en`**; `ob:decline` — только на шагах `ob_consent`/`ob_details`, иначе `ignore`; **W133: текст на шаге `ob_name` — тоже `text_name` (кнопка `ob:fixname` необязательна)**; чужое — `ignore` |
-| step_2 | `tables-find-records events` | событие по `id eq eventIdOrNone` (после парсинга — ссылка вперёд невозможна); при онбординге без события (голый `/start`) пустая выборка, а не падение |
-| step_4 | CODE «render ob card» | текст + кнопки + план записи (`writeKind`, `draftJson`, `profile`); **ADR-0043: при `ob:agree` пишет согласие (`writeKind consent`) и сразу отдаёт вопрос о работе при чистом имени из Telegram; подозрительное имя — прежний ручной ввод (`onb.suspect`); экранов согласия и «Всё верно?» нет**; **W114: `set_lang` кладёт язык в `draft.profile.lang` и идёт веткой `card` (рисует карточку согласия, `nextStep: 'ob_consent'`)**; тексты — вход `texts` (ADR-0045, `$t`) |
+| step_3 | CODE «ob step: parse + route» | разбор draft/входа, эвристика имени (порядок ADR-0032), `action` + `regId`; `eventIdOrNone = eventId \|\| '__none__'` — непустое значение для фильтра `step_2` (пустой `eq` валит шаг); **ADR-0056: `cardMessageId` не читается**; ADR-0043: `ob:agree`, выбор города ведёт сразу в `finish`; ADR-0046: город да/нет; W114: `ob:lang:<xx>`; W133: текст на `ob_name` — тоже `text_name`; чужое — `ignore` |
+| step_2 | `tables-find-records events` | событие по `id eq eventIdOrNone`; при онбординге без события — пустая выборка, не падение |
+| step_4 | CODE «render ob card» | **ADR-0056: каждый вопрос — КОРОТКОЕ сообщение** (`q(text)` — только экранирование, без карточки события; факты события — один раз, в первой карточке `reg-start`/`menu`); `writeKind`/`draftJson`/`profile`; тексты — вход `texts` (`$t`) |
 | step_5 | ROUTER по `writeKind` | `ignore` / `card` / `consent` / `declined` / `finish` / `finish_lite` / `finish_no_event` / `Otherwise` |
-| step_6 (`ignore`), step_7 (`Otherwise`) | CODE noop | чужой вход — тишина |
-| step_8→12 (`card`) | upsert сессии → `edit card` (+ фолбэк новым сообщением с перепиской draft) | обычные шаги диалога (вопрос о работе, ручной ввод имени, вопрос о городе — «Вы из Ташкента?», «Нет» — ввод текстом, ADR-0046) |
-| step_13→18 (`consent`) | upsert `consent_pdn` → upsert сессии → `edit card` (+ фолбэк) | согласие пишется до вопросов профиля (PAR-1) и вместе с ним рисуется следующий вопрос — работа или ручной ввод имени (ADR-0043) |
-| step_19→21 (`declined`) | clear сессии → `edit card` (+ фолбэк) | отказ без согласия |
-| step_22→28 (`finish`) | upsert `users` (профиль + consent + `lang`) → upsert `registrations` (`__clear` `cancelled_at`, W109) → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | финал с событием — регистрация первого касания; город домешивается из колбэка `ob:city:yes`/текста (ADR-0046); `users.lang` — из `profile.lang` (W114) |
-| step_29→33 (`finish_lite`) | upsert `registrations` (`__clear` `cancelled_at`, W109) → сессия закрыта сентинелом `-` → `edit done` (+ фолбэк) → `send ticket` | повторное касание (W60): `users` не трогаем (профиль не затираем пустым); согласие на рассылку уже дано/отклонено при первом заполнении профиля — вопрос не повторяем, билет уходит сразу вторым сообщением |
-| step_35→40 (`finish_no_event`) | upsert `users` (профиль + consent + `lang`) → сессия `await_marketing` → `edit done+mkt` (+ фолбэк) | ADR-0034: финал без события (голый `/start`) — регистрацию создавать не на что, `registrations` не трогаем; хвост `await_marketing` тот же, `reg-consent-mkt` сам решает по пустому `eventId`, что показать; `users.lang` — из `profile.lang` (W114) |
+| step_6, step_7 | CODE noop | чужой вход (`ignore`) и недостижимый `Otherwise` — тишина |
+| step_8→9 (`card`) | upsert сессии → `send_text_message` | вопрос отдельным сообщением (работа, ручной ввод имени, город, «Нет» — ввод текстом, ADR-0046) |
+| step_13→14→10 (`consent`) | upsert `consent_pdn` → upsert сессии → `send_text_message` | согласие пишется до вопросов профиля (PAR-1); следующим сообщением — вопрос (работа или ручной ввод имени) |
+| step_19→11 (`declined`) | clear сессии → `send_text_message` | отказ без согласия, отдельным сообщением |
+| step_22→23→24→12 (`finish`) | upsert `users` → upsert `registrations` (`__clear` `cancelled_at`, W109) → сессия `await_marketing` → `send_text_message` | финал с событием; **msg4 короткое** (финал + вопрос о рассылке, без фактов события) |
+| step_29→30→15→33 (`finish_lite`) | upsert `registrations` (`__clear` `cancelled_at`) → сессия закрыта `-` → `send_text_message` → `send_text_message` (билет) | повторное касание: `users` не трогаем; «done» и билет — двумя отдельными сообщениями |
+| step_35→36→16 (`finish_no_event`) | upsert `users` → сессия `await_marketing` → `send_text_message` | ADR-0034: финал без события; msg4 короткое |
 
 ## Зависимости
 
@@ -45,11 +47,17 @@
 
 ## Заметки
 
+- **Карточка не редактируется; каждый вопрос — отдельным сообщением (ADR-0056).**
+  `step_4` строит короткий текст (`q(text)`) без карточки события; ветки шлют
+  его `send_text_message`, а не `edit_message_text`. Прежние ветки-фолбэки
+  «не отредактировалось → новое сообщение» и поле `cardMessageId` сняты.
+  `step` сессии по-прежнему живёт в JSON `sessions.draft` (`ob_consent`/
+  `ob_await_work`/`ob_city`/… ) — по нему роутит `tg-router`.
 - **`step_3` парсит шаг диалога из `draft.step` внутри JSON `sessions.draft`,
-  а не из колонки `sessions.step`.** `draftOf`/фолбэк-шаги (`step_11/17/27/33`)
-  обязаны класть `step` в этот JSON при каждой записи — раньше параметр
-  принимался, но не попадал в объект, поэтому каждый колбэк видел пустой шаг
-  и уходил в `ignore`.
+  а не из колонки `sessions.step`.** `draftJson` строит `step_4` (функция
+  `draftOf`), а в сессию его кладут upsert-шаги веток (`step_8/14/24/36`).
+  Раньше параметр принимался, но не попадал в объект — каждый колбэк видел
+  пустой шаг и уходил в `ignore`.
 - **`writeKind` эвристики имени — `'consent'`, не `'card'`.** Ветка ROUTER
   `consent` (запись `users.consent_pdn` сразу по «Согласен», до вопросов
   профиля — PAR-1) была недостижима: код никогда не выставлял это
@@ -141,16 +149,15 @@
   профиля в любом из путей (`finish`/`finish_no_event`/`registered_profile`
   в `reg-api`) невозможно без прохождения `await_marketing` хотя бы раз —
   ответ на вопрос о рассылке уже есть. `step_4` для `finish_lite` строит
-  финальную карточку без кнопок и без строки-вопроса и сразу же тексты
-  билета (`ticketText`/`ticketReplyMarkup`, та же форма, что в
-  `reg-consent-mkt/step_5`); `step_31` (`continueOnFailure`) ведёт на
-  `step_33` («send ticket») тем же приёмом, что `reg-consent-mkt/step_7→9`
-  (продолжение исполняется независимо от ветки отказа, CLAUDE.md гоча №15).
+  короткое «done»-сообщение без кнопок и тексты билета
+  (`ticketText`/`ticketReplyMarkup`, та же форма, что в
+  `reg-consent-mkt/step_5`); `step_15` шлёт «done», `step_33` — билет
+  отдельным сообщением (ADR-0056).
   Текст билета на онлайне (`format=online`) — `ticket.hint_online` вместо
   `ticket.hint`, слова QR там нет ([ADR-0053](../../docs/adr/0053-online-event-no-qr-wording.md), W131).
-  Сессия закрывается сентинелом `-` до отправки карточки (`step_30`), а не
-  после: следующего колбэка не предполагается, обновлять `cardMessageId`
-  незачем — тот же приём, что в ветке `declined`.
+  Сессия закрывается сентинелом `-` до отправки «done» (`step_30`), а не
+  после: следующего колбэка не предполагается — тот же приём, что в ветке
+  `declined`.
   Изменить решение (снова спрашивать) пользователь может табом «Профиль»
   Mini App — переключатель пишет `consent_marketing` напрямую через `reg-api`.
   Кнопка билета — ключ `ticket.btn.open` (эталон, не литерал: круг ревью
