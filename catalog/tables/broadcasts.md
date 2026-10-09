@@ -9,7 +9,7 @@
 |-------|------|-----------|----------|-----------|
 | id | TEXT | `AXQRMe7knv8NFDCckziRD` | `8XG5IRicIHlg8a9Up2Fgd` | |
 | event_id | TEXT | `vGB2xSw6CWfuMilj0wAlH` | `0beSoF4qBuW2kb7cyrXnQ` | пусто для сегмента «все с consent» |
-| segment | STATIC_DROPDOWN | `6rmHz7Lc1djdjFpjAmO5V` | `VLW4nkzkcUnS5hRoCUuxu` | `all_consent` / `registered` / `attended` / `no_show` |
+| segment | STATIC_DROPDOWN | `TwQYOml3ytGeQ5Mw1uGxg` | `epycnKJbADZ2aMxJ87zGA` | `all_consent` / `registered` / `attended` / `no_show` / `no_reg` |
 | body | TEXT | `YF9ryxUV0d3RK74xPjZkq` | `GxrPGLmTZd5hFC8KMPaVx` | текст сообщения |
 | parse_mode | TEXT | `bU9nqeQ2wZo2bMr2kBnNj` | `hsG8r74WOjNE9W6FPYN0l` | |
 | created_by | TEXT | `AQs7BEfN0hZ3OjPZXZNsc` | `1ETU0y7eoYD0uNvs8WMUX` | |

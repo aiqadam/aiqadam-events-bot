@@ -74,7 +74,7 @@
 | `users` | `blocked_bot` | `["true", "false"]` |
 | `events` | `status` | `["draft", "published", "cancelled", "finished"]` |
 | `registrations` | `status` | `["registered", "cancelled"]` |
-| `broadcasts` | `segment` | `["all_consent", "registered", "attended", "no_show"]` |
+| `broadcasts` | `segment` | `["all_consent", "registered", "attended", "no_show", "no_reg"]` |
 | `broadcasts` | `status` | `["draft", "running", "done", "failed"]` |
 | `broadcast_targets` | `state` | `["pending", "sent", "blocked", "failed"]` |
 | `quiz_answers` | `late` | `["true", "false"]` |
