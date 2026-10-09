@@ -21,7 +21,7 @@
 | step_2 | CODE «gate» | `needsOnboard` (пусто → true); `needsLang` — `users.lang` пуст (W114) |
 | step_3 | ROUTER по `needsOnboard` | `has_profile` / `needs_onboard` / `Otherwise` (недостижим, оба условия исчерпывающие) |
 | step_8→12 (`has_profile`) | `tables-find-records staff` → `event_staff` → `events` → CODE «render menu» → `send_text_message` | прежнее меню-хаб без изменений (см. ниже) |
-| step_4→7 (`needs_onboard`) | CODE «build onboarding entry card (no event)» → `send_text_message` → CODE «draft JSON» → `tables-upsert-records sessions` | входная карточка онбординга без события: `onb.why` + `onb.consent` **одним экраном**, кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`, ADR-0043), сессия `ob_consent` с `eventId: ''`; **при `needsLang` — вместо согласия `lang.ask` с кнопками `ob:lang:ru\|uz\|en`, сессия `ob_lang` (W114)**; `step_4` выводит `sessionStep`, `step_6`/`step_7` его пишут. Дальше колбэки `ob:*` подхватывает `reg-profile` |
+| step_4→7 (`needs_onboard`) | CODE «build onboarding entry card (no event)» → `send_text_message` → CODE «draft JSON» → `tables-upsert-records sessions` | входная карточка онбординга без события: `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`); сессия `ob_consent` с `eventId: ''`; **при `needsLang` — вместо согласия `lang.ask` с кнопками `ob:lang:ru\|uz\|en`, сессия `ob_lang` (W114)**; `step_4` выводит `sessionStep`, `step_6`/`step_7` его пишут; **ADR-0056: `cardMessageId` в черновик не кладётся, дальше вопросы идут отдельными сообщениями из `reg-profile`** |
 | step_13 (`Otherwise`) | CODE noop | недостижимая ветка, нужна платформе как непустой fallback |
 
 ### `has_profile` — прежнее меню (без изменений)

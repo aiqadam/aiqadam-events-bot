@@ -19,36 +19,43 @@
 
 ## Что построено
 
-| Артефакт | ID / имя | Каталог |
-|----------|----------|---------|
-| flow `reg-start` | — | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
-| flow `reg-profile` | — | [catalog/flows/reg-profile.md](../../catalog/flows/reg-profile.md) |
-| flow `reg-consent-pdn` | — | [catalog/flows/reg-consent-pdn.md](../../catalog/flows/reg-consent-pdn.md) |
-| flow `reg-consent-mkt` | — | [catalog/flows/reg-consent-mkt.md](../../catalog/flows/reg-consent-mkt.md) |
+| Артефакт | published-версия (dev) | Каталог |
+|----------|------------------------|---------|
+| flow `reg-start` | `faQVizhUDxo3DpBtuQ0KL` | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
+| flow `reg-profile` | `VC1ksOajzwPKqrwjmybAa` | [catalog/flows/reg-profile.md](../../catalog/flows/reg-profile.md) |
+| flow `reg-consent-pdn` | `u0DUMOL2NdjPCgEDfaml8` | [catalog/flows/reg-consent-pdn.md](../../catalog/flows/reg-consent-pdn.md) |
+| flow `reg-consent-mkt` | `5oSHw4eFWx6WwW8kqbcQK` | [catalog/flows/reg-consent-mkt.md](../../catalog/flows/reg-consent-mkt.md) |
+| flow `menu` | `ihojUyxk94TwRLzMAXujY` | [catalog/flows/menu.md](../../catalog/flows/menu.md) |
 
-> Заполняется по мере сборки на `events-dev`. Prod не трогается.
+> Собрано и опубликовано на `events-dev` (2026-10-09). Prod не трогается.
 
 ## Чек-лист готовности
 
 > Пакет owner-directed; чек-лист собран по смыслу ADR-0056 (BACKLOG-записи нет).
 
-- [ ] ADR-0056 написан и внесён в реестр `docs/adr/README.md`
-- [ ] Гостевой диалог: факты события показываются один раз (сообщение согласия)
-- [ ] Работа / город / финал+рассылка / билет — каждое отдельным сообщением
-- [ ] Редактирование карточки в `reg-start`/`reg-profile`/`reg-consent-*` снято
-- [ ] PAR-1: согласие пишется до первого поля профиля
+- [x] ADR-0056 написан и внесён в реестр `docs/adr/README.md`
+- [x] Гостевой диалог: факты события показываются один раз (сообщение согласия)
+- [x] Работа / город / финал+рассылка / билет — каждое отдельным сообщением
+- [x] Редактирование карточки в `reg-start`/`reg-profile`/`reg-consent-*` снято
+- [x] PAR-1: согласие пишется до первого поля профиля (ветка `consent` не тронута)
 - [ ] Все ветки пройдены: диплинк, голый `/start`, повторное касание, вход из
-      рассылки (`register_direct`), отказ, выбор языка
-- [ ] Замер числа отправок и латентности (тёплый прогон) против ADR-0009
+      рассылки (`register_direct`), отказ, выбор языка — **живой e2e за владельцем**
+- [ ] Замер числа отправок и латентности (тёплый прогон) против ADR-0009 — за владельцем после публикации
 - [ ] `catalog/` совпадает с живым проектом
-- [ ] `flows/*.json` и `migrations` обновлены
+- [x] `flows/*.json` обновлены (MCP-экспорт после публикации); `migrations` — см. журнал
 - [ ] Независимое ревью
 
 ## Как проверено
 
 > Заполняется по ходу. Чем именно, а не «протестировано».
 
-- —
+- **Структура:** `ap_validate_flow` на все пять флоу — 0 invalid (остаются
+  только предупреждения о пинах `tables`, см. журнал).
+- **Офлайн:** `tools/check-texts.py` (30 флоу, 302 ссылки `$t`, 0 расхождений),
+  `tools/check-commands.py` (0 нарушений), `tools/check-export-secrets.sh`
+  (чисто) — все rc=0.
+- **Экспорт:** MCP `ap_export_flow` ×5 после публикации, нормализация
+  `tools/export-flow-mcp.py`; `flows/*.json` совпадают с dev.
 
 ## Журнал
 
@@ -85,6 +92,29 @@
   - Затронуты `reg-start`, `reg-profile`, `reg-consent-pdn`, `reg-consent-mkt`,
     `menu` (вход без события) и переприбивка `tg-router`; организаторские и
     staff-поверхности, билет, напоминания, рассылки, Mini App — вне решения.
+- **2026-10-09** — сборка на dev.
+  - **`reg-profile/step_4`**: вопросы больше не оборачиваются в `eventCard(...)`
+    (он вклеивал всю карточку события) — введён `q(text)` (только экранирование).
+    Факты события остались только в `reg-start/step_9` и `menu/step_4`. Убраны
+    `cardMessageId` и мёртвые помощники (`eventFacts`/`eventCard`).
+  - **edit→send без грязных ключей.** `ap_update_step` **мёржит** input, поэтому
+    смена `actionName` с `edit_message_text` на `send_text_message` оставляла
+    мёртвые `text`/`message_id`/`disable_web_page_preview`. Правильный приём —
+    `ap_delete_step` + `ap_add_step`: так в `reg-profile` заменены все 6
+    edit-шагов и сняты 14 фолбэк-шагов; в `reg-consent-mkt`/`-pdn` — 2 edit-шага
+    и их фолбэки. Имя нового шага — **низший свободный `step_N`, не прежнее**
+    (переезд имён учтён в каталоге).
+  - **Найдена и предотвращена поломка:** `reg-consent-pdn/step_9` читает
+    `{{step_2['output'].draftJson}}` и кладёт его в сессию `await_marketing`;
+    `reg-consent-mkt` берёт оттуда `eventId`, чтобы решить «билет или каталог».
+    При чистке `step_2` от `cardMessageId` `draftJson` был убран целиком — поймано
+    чтением структуры; `draftJson` (без `cardMessageId`) возвращён.
+  - **Прогон `ap_test_step` в TESTING не сохраняет эффектов и не гейтит ROUTER**
+    (прогон `vpYOd3mXcG0sa51j5tnR1` прошёл «по всем веткам», записей в
+    `registrations`/`users` для тест-ввода не появилось). Живой e2e — только в
+    Telegram, за владельцем; `ap_test_step` для этой проверки не годится.
+  - **Публикация** 5 флоу на dev (версии — в таблице «Что построено»),
+    MCP-экспорт, офлайн-проверки. Prod не трогался.
 
 ## Ревью
 

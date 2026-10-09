@@ -24,13 +24,13 @@
 | step_4 | ROUTER по `outcome` | `declined` / `existing` / `onboard` / `register` / `Otherwise` |
 | step_5→6 (`declined`) | CODE текст по причине → `send_text_message` | вежливый отказ, регистрация не создаётся |
 | step_7→8 (`existing`) | CODE `reg.already`/`reg.already_online` → `send_text_message` + кнопка `web_app` | второе подтверждение не шлём (IDM-1); формат из `step_3.format` — онлайн получает текст и кнопку «Открыть билет» без QR (W131) |
-| step_9 (`onboard`) | CODE «build ob entry card» | карточка события + `onb.why` + `onb.consent` **одним экраном** (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`) — нажатие «Согласен» и есть согласие; согласие переспрашиваем: старый объём покрывал регистрацию, а не поля профиля; ссылка «Открыть на карте» — только при непустых координатах (W72); в фактах — язык контента (`event.card.lang`, W125/OWN-17). **При `needsLang` — вместо согласия вопрос `lang.ask` с тремя кнопками `ob:lang:ru\|uz\|en` (W114)**; выводит `sessionStep` (`ob_lang`/`ob_consent`) |
+| step_9 (`onboard`) | CODE «build ob entry card» | **единственная карточка с фактами события** (ADR-0056): событие + `onb.why` + `onb.consent` одним экраном (ADR-0043), кнопки «Согласен» (`ob:agree`) и «Подробнее» (`ob:details`); ссылка «Открыть на карте» — только при непустых координатах (W72); в фактах — язык контента (`event.card.lang`, W125/OWN-17). **При `needsLang` — вместо согласия вопрос `lang.ask` с тремя кнопками `ob:lang:ru\|uz\|en` (W114)**; выводит `sessionStep` (`ob_lang`/`ob_consent`) |
 | step_10 (`onboard`) | `send_text_message` | отправка входной карточки |
-| step_15 (`onboard`) | CODE «draft JSON + cardMessageId» | черновик сессии; `step` — из `step_9.sessionStep` (`ob_lang`/`ob_consent`, W114) |
+| step_15 (`onboard`) | CODE «draft JSON» | черновик сессии; `step` — из `step_9.sessionStep` (`ob_lang`/`ob_consent`, W114); ADR-0056: без `cardMessageId` |
 | step_11 (`onboard`) | `tables-upsert-records sessions` | `scenario=registration`, `step` — из `step_9.sessionStep` |
 | step_14 (`register`) | CODE «build card: событие + профиль + регистрация» | факты + строка «Имя · должность» + `Зарегистрироваться` (`ob:register`); ссылка на карту — та же проверка, что в `step_9` (W72); язык контента — в фактах (`event.card.lang`, W125/OWN-17) |
 | step_16 (`register`) | `send_text_message` | отправка карточки повторного касания |
-| step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии |
+| step_17 (`register`) | CODE «draft JSON (ob_register)» | черновик сессии; ADR-0056: без `cardMessageId` |
 | step_20 (`register`) | `tables-upsert-records sessions` | `scenario=registration`, `step=ob_register` |
 | step_18→19 (`onboard`, отказ `step_11`) | CODE текст сбоя → `send_text_message` | запись сессии не удалась — «попробуйте ещё раз» вместо тишины |
 | step_21→22 (`register_direct`, W135) | CODE «draft JSON (direct ob_register)» → `callFlow reg-profile` (`inline`) | колбэк `reg:go:<eventId>` из рассылки при заполненном профиле и данном `consent_pdn`: карточку подтверждения пропускаем — пишем сессию `ob_register` и зовём `reg-profile` (ветка `finish_lite`) — регистрация и билет сразу (ADR-0054) |
@@ -85,14 +85,14 @@
   старые регистрации) и `register` с готовой строкой профиля. Старые сессии
   `await_pdn` дорабатывают прежние `reg-consent-pdn`/`reg-consent-mkt` — флоу
   оставлены намеренно, новые касания туда не попадают.
-- **`cardMessageId` живёт в JSON внутри `sessions.draft`, а не отдельной колонкой.**
-  Схема таблиц заморожена с W1, а срок жизни поля равен сроку жизни сессии.
-  Читают его `reg-consent-pdn`, `reg-consent-mkt` — каждый через
-  `sessionDraft`, который прокидывает `tg-router`.
-- **Порядок «состояние раньше экрана» здесь нарушен намеренно и единственный раз**:
-  `cardMessageId` невозможно записать до отправки карточки, потому что его
-  выдаёт сам Telegram. Во всех остальных флоу гостевого среза сначала пишется
-  состояние, потом рисуется экран.
+- **`cardMessageId` снят (ADR-0056).** Карточка не редактируется, поэтому
+  `step_15`/`step_17`/`step_21` кладут в `draft` только `eventId`/`utm`/`step`
+  (и `profile` у `reg-profile`); «состояние раньше экрана» сохраняется, но
+  единственная причина прежнего исключения (id сообщения узнаётся лишь после
+  отправки) ушла.
+- **Единственная карточка с фактами события — входная (`step_9`, ADR-0056).**
+  Все следующие вопросы идут короткими сообщениями из `reg-profile`; факты в
+  них не повторяются.
 - **Афиша временно выведена из OWN-1** ([Q46](../../docs/OPEN-QUESTIONS.md#q46),
   [Q50](../../docs/OPEN-QUESTIONS.md#q50)): шаг `send_media` удалён из флоу,
   карточка текстовая. `step_3` по-прежнему отдаёт `photoFileId`, разбор фото в
