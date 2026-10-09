@@ -1,6 +1,6 @@
 # W142. Рассылка: сегмент «согласие без регистрации» (`no_reg`) — обкатка на dev
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн (расширение OWN-9; [ADR-0057](../adr/0057-broadcast-no-registration-segment.md))
 - **Зависит от**: W135/[ADR-0054](../adr/0054-broadcast-register-instead-of-unsubscribe.md) — учтено
@@ -48,7 +48,7 @@ consent-база (`consent_marketing = true`) минус те, у кого ес�
 - [x] различающий прогон на dev (см. «Как проверено»);
 - [x] `ap_validate_flow`, публикация, `flows/*.json` и `migrations` тем же PR;
 - [x] `catalog/` совпадает; офлайн-проверки чисты;
-- [ ] независимое ревью, вердикт «замечаний нет».
+- [x] независимое ревью: круг 1 — 1 «важно» + 1 «на будущее» (закрыты), круг 2 — «замечаний нет». `zz-w142-diag` можно удалить.
 
 ## Как проверено
 
@@ -221,3 +221,57 @@ consent-база (`consent_marketing = true`) минус те, у кого ес�
    дрейф с W14/W22), но именно он читается как «как устроена рассылка», поэтому
    при следующей правке раздела его стоит либо переписать под `bcast-step`/
    `bcast-run`, либо отправить в архив. Не чинить в этом пакете.
+
+### Ревью (круг 2)
+
+- **Ревьюер**: независимый агент-ревьюер (opencode, `deepseek-v4.1-flash`) ·
+  **Дата**: 2026-10-09 · **Вердикт**: замечаний нет
+
+#### Что проверено (живой dev через MCP `app-flow-events-dev` + репозиторий)
+
+- **Дельта.** `git diff 959dac3 4f3078d --stat` — ровно четыре файла:
+  `catalog/snippets/resolve-segment.md`, `catalog/snippets/README.md`,
+  `docs/FLOWS.md`, `docs/work/W142-bcast-no-registration-segment.md` (секция
+  круга 1). `flows/*.json`, `catalog/flows/`, `catalog/tables/`, `i18n/` и код
+  шагов дельтой **не тронуты**; правка только документационная.
+- **Замечание 1 закрыто.** `catalog/snippets/resolve-segment.md`: ложная таблица
+  «Встраивают» удалена, вместо неё — «**Реализация правила (НЕ байтовая копия)**»:
+  названы живые `bcast-step/step_21` (превью) и `bcast-run/step_13`
+  (материализация) с входами `consentRecords`/`regRecords`/`usersByIdsRecords`,
+  файл объявлен исходным шестишаговым дизайном W2, а правила 1–3 README —
+  прямо не действующими, «пока копии не сведут к байтовому совпадению».
+  `catalog/snippets/README.md`: строка про `resolve-segment` больше не
+  противоречит — говорит про инлайн-реализацию с W142 и что это не байтокопия,
+  правила 1–3 не действуют. Каталог больше **не обещает невозможного**
+  побайтового совпадения; побайтовая сверка (блок 2a) к этому эталону
+  обоснованно не применяется.
+- **Замечание 2 закрыто.** `docs/FLOWS.md` §«broadcast-runner», шаг 1: вместо
+  `call-flow fn-resolve-segment` описан `bcast-run/step_13` (материализация
+  `broadcast_targets`), упомянут `no_reg` (OWN-9 п. 5,
+  [ADR-0057](../../docs/adr/0057-broadcast-no-registration-segment.md)); о
+  `fn-resolve-segment` сказано ровно как о выведенном в W22. `call-flow
+  fn-resolve-segment` в документе больше нет.
+- **Живой dev не менялся.** `ap_export_flow` ×2: `bcast-step` published
+  `6w7wT7y3zsuP8qM7JMA6p`, `bcast-run` published `uW3697fl9VtqGdecmMYUv`,
+  `state: LOCKED` — те же, что до круга 1. `ap_validate_flow` ×2: `bcast-step`
+  60/60 valid, `bcast-run` 55/55 valid, **0 invalid** (только известные
+  предупреждения «PINNED VERSION UNAVAILABLE» по `tables@0.4.5`, гоча 24).
+  Ветки `no_reg` в `step_21`/`step_13` на месте, логика совпадает с ADR-0057.
+- **migrations (dev `NCZNGuWh6PFs1JZXRPNTE`).** Ровно 3 строки
+  `2026-10-09-w142-01…03`, `commit 959dac3`: `-01` `publish` `flow:bcast-step`
+  `6w7w…`, `-02` `publish` `flow:bcast-run` `uW36…`, `-03` `update`
+  `table:broadcasts`. Версии совпали с живыми публикациями; строк с
+  `applied_at` позже круга 1 и строк `package=W142` иных нет. Сверка
+  манифест↔инстанс↔`migrations` сделана через MCP напрямую (у
+  `tools/check-migrations.py` на этой машине нет ключа платформы, rc=2 —
+  не замечание пакету).
+- **Офлайн.** `check-texts.py i18n/ru.json flows/*.json` — 305 ссылок, 0
+  расхождений (rc=0); `check-commands.py i18n/*.json flows/*.json` — 0 (rc=0);
+  `check-export-secrets.sh` — чисто (rc=0); `check-agents.py` — 0 (rc=0).
+- **Не проверено живьём:** e2e в Telegram dev-бота — **за владельцем** (гейт
+  перед `готов`), замечанием не считается.
+
+#### Замечания
+
+Нет. Оба замечания круга 1 закрыты; новых не возникло. Единственный оставшийся
+гейт — живой e2e в Telegram dev-бота за владельцем, как и заявлено в журнале.
