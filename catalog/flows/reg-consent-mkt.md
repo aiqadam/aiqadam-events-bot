@@ -40,7 +40,9 @@
 - **Только билет, без карточки-подтверждения (ADR-0056).** Прежний `edit_message_text` «итог диалога» и его фолбэк сняты вместе с `cardMessageId`: финал и вопрос о рассылке шлёт `reg-profile`/`reg-consent-pdn` отдельным сообщением, а этот флоу отвечает на уже нажатый `reg:mkt:*` — остаётся один `send_text_message` с билетом.
 - **Тексты — во входе `texts`** (ADR-0045, `$t`); ссылки `$t` сверены с
   `i18n/ru.json`: `ticket.header`, `ticket.hint` (онлайн — `ticket.hint_online`,
-  W131), `events.catalog.hint`, `menu.btn.events`, `menu.btn.quiz`.
+  W131), `ticket.btn.open` (кнопка билета; прежде был литерал `'Открыть билет'` —
+  заменён на ключ, ADR-0056), `events.catalog.hint`, `menu.btn.events`,
+  `menu.btn.quiz`, `event.card.btn_calendar`, `common.err.generic`.
 - **Без диплинка (ADR-0034) второе сообщение — кнопка каталога**, не билет:
   `eventId` в черновике сессии пуст, регистрации не было, «Открыть билет» не
   имеет смысла ни при каких данных — она заменена кнопкой `#/events` тем же

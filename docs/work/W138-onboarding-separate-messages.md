@@ -24,7 +24,7 @@
 | flow `reg-start` | `faQVizhUDxo3DpBtuQ0KL` | [catalog/flows/reg-start.md](../../catalog/flows/reg-start.md) |
 | flow `reg-profile` | `VC1ksOajzwPKqrwjmybAa` | [catalog/flows/reg-profile.md](../../catalog/flows/reg-profile.md) |
 | flow `reg-consent-pdn` | `u0DUMOL2NdjPCgEDfaml8` | [catalog/flows/reg-consent-pdn.md](../../catalog/flows/reg-consent-pdn.md) |
-| flow `reg-consent-mkt` | `5oSHw4eFWx6WwW8kqbcQK` | [catalog/flows/reg-consent-mkt.md](../../catalog/flows/reg-consent-mkt.md) |
+| flow `reg-consent-mkt` | `YG3INhH3R5VWPLTHQfz49` | [catalog/flows/reg-consent-mkt.md](../../catalog/flows/reg-consent-mkt.md) |
 | flow `menu` | `ihojUyxk94TwRLzMAXujY` | [catalog/flows/menu.md](../../catalog/flows/menu.md) |
 
 > Собрано и опубликовано на `events-dev` (2026-10-09). Prod не трогается.
@@ -130,6 +130,18 @@
     клавиатуры) — **оставлены осознанно**: удалить ключ из входа можно только
     `ap_delete_step`+`ap_add_step`, а это тянет перенумерацию и новую публикацию
     ради косметики; дублирования билета нет (сессия уже очищена). Записаны в хвосты.
+- **2026-10-09** — живой e2e владельца нашёл регресс: в билете кнопка показывала
+  `ticket.btn.open` вместо «Открыть билет». Причина — в `reg-consent-mkt/step_5`
+  я заменил литерал `'Открыть билет'` на ключ `t('ticket.btn.open')`, но **не
+  добавил этот ключ во вход `texts`** (а `t()` возвращает ключ, если его нет).
+  Первая попытка добавить ключ частичным `input` **затёрла всю карту `texts`**
+  (гоча `ap_update_step`: вложенный объект заменяется целиком, не мержится, —
+  AGENTS.md п.12) — поймано чтением экспорта; повторно отправлена полная карта
+  + `ticket.btn.open`. `reg-consent-mkt` перепубликован: `YG3INhH3R5VWPLTHQfz49`
+  (`LOCKED`, `texts` 13 ключей), экспорт/манифест/каталог/`migrations`
+  (`w138-06`) обновлены. Урок: `check-texts.py` сверяет только ссылки во входе,
+  но не то, что ключ, используемый в коде, есть в `texts`, — такие пропуски
+  ловит только живой прогон или ручная сверка код↔вход.
 
 ## Ревью
 
@@ -164,7 +176,7 @@
   `blocked_bot=false` (`ja2S7DwVun5AKs3Jk7jK6`), не согласие.
 - **Публикация:** `ap_export_flow` ×5 — `flows[0].id` совпал с журналом и
   `flows/_manifest.json` (`faQVizhUDxo3DpBtuQ0KL`, `VC1ksOajzwPKqrwjmybAa`,
-  `ihojUyxk94TwRLzMAXujY`, `5oSHw4eFWx6WwW8kqbcQK`, `u0DUMOL2NdjPCgEDfaml8`),
+  `ihojUyxk94TwRLzMAXujY`, `YG3INhH3R5VWPLTHQfz49`, `u0DUMOL2NdjPCgEDfaml8`),
   у всех `state: LOCKED`, `valid: true`. `ap_validate_flow` ×5 — 0 invalid
   (только «PINNED VERSION UNAVAILABLE» на старых пинах `tables` — предупреждение,
   [AGENTS.md](../../AGENTS.md) п. 24; журнал подтверждает рантайм-фолбэк).

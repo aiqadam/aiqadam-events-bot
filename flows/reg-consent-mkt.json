@@ -91,6 +91,7 @@
                         "reg.consent_marketing.saved_no": "{{$t['reg.consent_marketing.saved_no']}}",
                         "reg.consent_marketing.saved_yes": "{{$t['reg.consent_marketing.saved_yes']}}",
                         "reg.done.header": "{{$t['reg.done.header']}}",
+                        "ticket.btn.open": "{{$t['ticket.btn.open']}}",
                         "ticket.header": "{{$t['ticket.header']}}",
                         "ticket.hint": "{{$t['ticket.hint']}}",
                         "ticket.hint_online": "{{$t['ticket.hint_online']}}"
