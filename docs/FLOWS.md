@@ -224,8 +224,13 @@ PAR-3/4/5 живут экраном каталога, чат-путь `myreg` в
 Поэтому цикл рассылки — это **`LOOP_ON_ITEMS` по чанку**, внутри которого работают
 qadam-шаги, а Code step только считает, кого брать следующим.
 
-1. **A** `call-flow fn-resolve-segment` → снимок получателей в `broadcast_targets`
-   (исключая `blocked_bot`; для `all_consent` — только `consent_marketing = true`).
+1. **C** `bcast-run/step_13` собирает получателей сегмента в `broadcast_targets`:
+   consent-база (`consent_marketing = true`) минус `blocked_bot`; для `no_reg`
+   (OWN-9 п. 5, [ADR-0057](adr/0057-broadcast-no-registration-segment.md)) — ещё
+   и минус зарегистрированные на событие; для `registered`/`attended`/`no_show` —
+   по `registrations` события. `fn-resolve-segment` выведен ещё в W22
+   ([ADR-0012](adr/0012-end-to-end-flows-instead-of-subflow-functions.md)); правило
+   живёт инлайн в `bcast-run/step_13` и `bcast-step/step_21`.
 2. **C** отрезает чанк от курсора `broadcasts.cursor` — чистое вычисление списка.
 3. **LOOP** по чанку, на каждой итерации:
    - **A** `custom_api_call /copyMessage` — копия исходного поста с кнопкой
