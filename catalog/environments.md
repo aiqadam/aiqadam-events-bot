@@ -98,6 +98,21 @@ dev по всем пакетам, применённым на dev после к�
   - **Имена шагов совпали с dev** (разъезда, как в W140, нет). `tg-router` и
     Mini App не менялись. `0 invalid` ×5, строки `migrations` `w141-01…05`.
 
+- **W143 (2026-10-09)** — W142, [ADR-0057](../docs/adr/0057-broadcast-no-registration-segment.md):
+  пятый сегмент рассылки `no_reg` (OWN-9 п. 5). Перенос **без UI**, только MCP
+  (решение владельца). Поле `broadcasts.segment` на prod **пересоздано** с 5-й
+  опцией: internal `VLW4nkzkcUnS5hRoCUuxu` → `h4TOLRsureQXgr0yIzlea`,
+  externalId `6rmHz7Lc1djdjFpjAmO5V` → **`cNZjcArfDnRwLIR7F1h6w`** (10 строк
+  `segment` восстановлены из снапшота). Шаги — как в dev-эталоне (имена совпали):
+  - `bcast-step` `Sr1e3imXkI8sN0lXyROtA` → **`x5ibzsxeuXo3q0fRw673P`**
+    (`step_7` клавиатура+текст, `step_14` `segValid`, `step_21` выборка;
+    `step_9`/`step_23` перепривязаны на новый externalId);
+  - `bcast-run` `ABjmnym2NRGldfGeHoGbN` → **`6tcOI2Wd96byeIg86VbHI`**
+    (`step_4` `segValid`, `step_13` выборка).
+  - Пины prod доступны (`0 invalid` ×2), `ap_update_step` правил шаги **на
+    месте** — delete+add не потребовался. `migrations` `w143-01…03`.
+    Хвост: живой e2e prod-бота — за владельцем.
+
 Хотфиксы правили только инстанс prod через MCP `app-flow-events-prod`;
 `flows/*.json` и `catalog/flows/*.md` не трогали — канон dev (ADR-0042).
 
