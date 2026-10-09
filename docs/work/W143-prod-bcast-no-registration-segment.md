@@ -126,7 +126,93 @@
 
 > Заполняет **независимый ревьюер**. Владелец пакета сюда не пишет.
 
-- **Ревьюер**: — · **Дата**: — · **Вердикт**: —
+- **Ревьюер**: review-agent (opencode-go/deepseek-v4.1-flash) · **Дата**: 2026-10-10 · **Вердикт**: замечаний нет
+
+Проверено по живому prod через MCP `app-flow-events-prod` (все чтения — только
+`ap_export_flow` / `ap_flow_structure` / `ap_read_step_code` / `ap_validate_flow` /
+`ap_find_records` / `ap_list_tables` / `ap_list_flows`), плюс офлайн-проверки
+репозитория. Ничего в проекте и репозитории не менялось.
+
+**Флоу.** `ap_export_flow`: `bcast-step` — `flowId Sr1e3imXkI8sN0lXyROtA`,
+`flows[0].id x5ibzsxeuXo3q0fRw673P`, `state LOCKED`, `valid true`; `bcast-run` —
+`flowId ABjmnym2NRGldfGeHoGbN`, `flows[0].id 6tcOI2Wd96byeIg86VbHI`, `state LOCKED`,
+`valid true` — совпадают с `migrations.w143-01/02`. `ap_validate_flow` ×2 →
+«ready to publish», 60/60 и 55/55, `invalid` нет.
+
+**Сверка с dev-эталоном.** Полное сравнение деревьев prod-экспорта и
+`flows/bcast-step.json` / `flows/bcast-run.json`: набор шагов и **топология**
+(родитель/ветка/порядок) совпадают побайтово-структурно (60/60 и 55/55;
+`bcast-step` шаги `step_7/14/21/9/23`, `bcast-run` `step_4/13`). Все
+`sourceCode.code` CODE-шагов идентичны эталону. Единственные различия —
+средовые id: значение `broadcasts.segment` в `step_9`/`step_23`
+(prod `cNZjcArfDnRwLIR7F1h6w` ↔ dev `TwQYOml3ytGeQ5Mw1uGxg`) и
+`flow.externalId` у `callFlow` (`step_44/45` в `bcast-step`, `step_23/48` в
+`bcast-run`). `logInput`/`logOutput`/`skip` — различий с dev нет. Шаги **не
+пересоздавались**: их пины `step_9/23` = `tables@0.4.5` (на dev после W142 —
+`0.5.1` именно потому, что там пересоздавали), `bcast-run step_53/54` = `0.4.6`
+(dev `0.5.0`).
+
+**Поле и данные.** `broadcasts` prod (`DrFrwV10gtJzCP02ifz0I`): поле `segment`
+внутр. `h4TOLRsureQXgr0yIzlea`, 5 опций `all_consent/registered/attended/no_show/no_reg`;
+старого `6rmHz7Lc1djdjFpjAmO5V` нет **нигде** (ни в prod-экспортах, ни в
+репозитории), новый `cNZjcArfDnRwLIR7F1h6w` — ровно 2 вхождения, оба в
+`bcast-step` (`step_9`/`step_23`). `ap_find_records`: 10 исходных строк с
+`segment` (`registered`×3, `all_consent`×7) и `status` (`draft`×4, `failed`×4,
+`done`×2) на месте, пустых `segment` нет; плюс 2 строки `no_reg`, созданные
+`2026-10-09 19:17Z` (после публикации `19:09Z`) — более поздняя активность, не
+искажающая восстановление снапшота.
+
+**Кросс-флоу.** Структурно (dev-эталон) таблицу `broadcasts` трогают только
+`bcast-step` и `bcast-run`; поле `segment` по `externalId` упоминает только
+`bcast-step`. Живой `bcast-draft` (`2AUeMeakjrrjUqZ0RuGpL`,
+`ap_flow_structure(includeInput=true)`) ни `segment`, ни `broadcasts` не читает.
+Набор флоу prod (30) совпадает с `flows/_manifest.json` (30), лишних/пропавших нет.
+
+**i18n.** Оба ключа (`bcast.btn.seg_no_reg`, `bcast.segment.no_reg`) есть в
+`i18n/{ru,uz,en}.json` (источник правды), а в prod-экспорте `step_7.texts`
+ссылаются на них через `{{$t[...]}}`. Прямого листинга платформенных переводов
+инструментарий не даёт (MCP-тула `ap_list_translations` в этой сессии нет, REST
+без ключа недоступен), но ключи **проверены поведенчески**: обе `no_reg`-строки
+созданы после публикации, включая одну с `test_sent_at`, — а отсутствующий ключ
+валит `step_7`/`step_21` (`TranslationKeyNotFoundError`), значит `$t` на prod
+резолвится.
+
+**Migrations (prod, `NCZNGuWh6PFs1JZXRPNTE`) по `package=W143`.** 3 строки:
+`2026-10-09-w143-01` (`flow:bcast-step`, `object_id Sr1e3imXkI8sN0lXyROtA`,
+`version_id x5ibzsxeuXo3q0fRw673P`, `publish`), `-02` (`flow:bcast-run`,
+`ABjmnym2NRGldfGeHoGbN`, `6tcOI2Wd96byeIg86VbHI`, `publish`), `-03`
+(`table:broadcasts`, `XrygYF5Q4EUOKkaBFallb`, `update`, `version_id` пуст —
+таблицы версией не обладают); `commit 768b877` у всех, как заявлено.
+
+**Офлайн.** `check-export-secrets.sh` — чисто; `check-texts.py i18n/ru.json
+flows/*.json` — 305 ссылок, 0 расхождений; `check-commands.py i18n/*.json
+flows/*.json` — 0 нарушений. `code/texts/commands` не менялись пакетом:
+`git show --stat 768b877` — только `catalog/environments.md`, `docs/STATUS.md`,
+журнал (ADR-0042, dev-канон). `flows/*.json` и `catalog/flows/*.md` не тронуты.
+
+**AppSec.** Права сохранены: создатель рассылки проверяется по
+`broadcasts.created_by` (`step_7`, `step_21`, `step_4` в `bcast-run`), staff
+ивента — по `staff.telegram_id` + сверке `chapter_id` (`step_7`/`step_21`);
+`no_reg` — строго **подмножество** `all_consent` (`consent_marketing = true`),
+без расширения доступа. Ветки fail-closed: невалидный `segment` даёт `deny`
+(`step_14`/`step_21` whitelist из 5 значений, `bcast-run step_4` — то же).
+`blocked_bot` исключается и в `step_21`, и в `bcast-run step_13`
+(OWN-12). Инъекций нет: `format: "None"` (plain), CSV/`parse_mode` в
+пакете не задействованы; новые ветки — чистые функции без сети/записи.
+Счётчик превью (`step_21`) и материализация (`step_13`) считаются одним
+правилом — как требует ADR-0057 п. 6. Секретов в шагах нет.
+
+**Наблюдения (не замечания).**
+1. Хвост, заявленный в журнале: формального подтверждения владельцем живого
+   e2e prod-бота в журнале нет. При этом найденные в таблице 2 строки `no_reg`
+   (`test_sent_at 2026-10-09T19:17:49Z`) — фактическое свидетельство, что
+   сегмент на prod отработал; стоит зафиксировать прогон в журнале.
+2. `step_14` (`bcast-step`) вычисляет `creatorOk`/`segValid`, но ни один
+   downstream-шаг их не читает (гейт прав стоит в `step_7`/`step_21`). Вредa
+   нет, код побайтово совпадает с dev-эталоном и W142 — вне рамок этого переноса.
+3. `check-migrations.py` офлайн прогнать не удалось: ключа платформы на этой
+   машине нет (Keychain — macOS). Сверка манифест↔инстанс↔`migrations` для prod
+   выполнена вручную (п. Migrations выше) и сошлась.
 
 ## Хвосты и блокеры
 
