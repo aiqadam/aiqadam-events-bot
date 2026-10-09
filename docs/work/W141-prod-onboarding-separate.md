@@ -19,11 +19,11 @@ dev ([ADR-0042](../adr/0042-two-environments-one-repo.md)). `flows/*.json` и
 
 | Артефакт (prod) | flowId | published до | published после |
 |-----------------|--------|--------------|-----------------|
-| flow `reg-start` | `FkxtgayOK5QubyqqMd9q4` | — | `OtJL5GaiPObHTfcCVt4gm` |
-| flow `reg-profile` | `5U3Kv0cSrnvDTrbictA4L` | — | `MEf7vkJI69mLNLPQHLJeP` |
-| flow `menu` | `1DORFhP9F3W00KpKz5wDw` | — | `vJ13RIrbCiHVQUPgMneVY` |
+| flow `reg-start` | `FkxtgayOK5QubyqqMd9q4` | `jHj9ZJjUr9dW5ClOntXP1` | `OtJL5GaiPObHTfcCVt4gm` |
+| flow `reg-profile` | `5U3Kv0cSrnvDTrbictA4L` | `WLYauRql1cnoNrNFHTduo` | `MEf7vkJI69mLNLPQHLJeP` |
+| flow `menu` | `1DORFhP9F3W00KpKz5wDw` | `OwMQZLxQV7k4dVtWR52iE` | `vJ13RIrbCiHVQUPgMneVY` |
 | flow `reg-consent-mkt` | `3gLF6TcbpFObHONATQ64N` | `umKDENNz63nFu5S4K6aNd` | `Gu1dt6jQqC0aoV2ssneHq` |
-| flow `reg-consent-pdn` | `vQJDQ8NecB1PleIFrq07O` | — | `kCjJ2GQejHHScsVxSJrAj` |
+| flow `reg-consent-pdn` | `vQJDQ8NecB1PleIFrq07O` | `daAur8CQujShx9vad7kr5` | `kCjJ2GQejHHScsVxSJrAj` |
 | таблица `migrations` (prod) | — | — | `NCZNGuWh6PFs1JZXRPNTE` |
 | connection | — | — | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) |
 
@@ -105,14 +105,21 @@ dev ([ADR-0042](../adr/0042-two-environments-one-repo.md)). `flows/*.json` и
 
 ## Откат
 
-MCP не умеет revert по версии. Откат — по канону dev-pre-W138
-(`git show d2718ae^1:flows/<flow>.json`) с картой средовых id
-([`catalog/environments.md`](../../catalog/environments.md)): вернуть прежние
-`input`/`sourceCode` изменённых шагов, восстановить удалённые шаги
-(`reg-start`/`menu` — только CODE; удалённые шаги — `reg-profile` 14 шт.,
-`reg-consent-pdn` 4 шт., `reg-consent-mkt` 2 шт.), затем повторная публикация.
-Входы `auth` в git-версиях вычищены экспортом — при восстановлении шагать с
+MCP не умеет revert по версии. **Дорелизные версии** (последние публикации до
+W141, из `migrations` prod) — в таблице «Что построено»; канон содержимого —
+dev-pre-W138 `git show d2718ae^1:flows/<flow>.json` + карта средовых id
+([`catalog/environments.md`](../../catalog/environments.md)). Чтобы откатить:
+вернуть прежние `input`/`sourceCode` изменённых шагов, восстановить удалённые
+шаги (`reg-start`/`menu` — только CODE; удалённые: `reg-profile` 14 шт.,
+`reg-consent-pdn` 4 шт., `reg-consent-mkt` 2 шт.), затем повторная публикация
+(пошагово довести до содержимого dev-pre). Входы `auth` в git-версиях вычищены
+экспортом — при восстановлении шагать с
 `auth={{connections['KIbxO5kYo3RsU5PNGPz9l']}}`.
+
+**Пробел процесса:** полный `ap_export_flow`-снапшот prod до первой правки **не
+снимался** (`~/qadam-snapshots/w141/` пуст) — откат опирается на dev-канон, а не
+на побайтовый слепок prod. Для будущих хотфиксов prod снапшот — обязательный шаг
+до первой правки (как в W140).
 
 ## Как проверено
 
@@ -145,6 +152,14 @@ MCP не умеет revert по версии. Откат — по канону d
   `ticketText`/`ticketReplyMarkup` (finish_lite), поэтому все send-шаги веток
   читают `{{step_4['output'].cardText}}` — контракт сохранён.
 
+- **2026-10-09** — ревью круг 1: одно `важно` (дорелизные версии не записаны,
+  снапшот prod не снят) и одно «на будущее» (мёртвые ключи
+  `reg.consent_marketing.saved_yes`/`saved_no` в `texts` шага `reg-consent-mkt/step_5`).
+  Владелец закрыл `важно`: дорелизные `publishedVersionId` подняты из `migrations`
+  prod (последние публикации до W141) и внесены в таблицу; в «Откат» добавлен
+  пробел процесса (снапшот обязателен для будущих хотфиксов). «На будущее» —
+  в хвосты.
+
 ## Ревью
 
 > Заполняет **независимый ревьюер**. Владелец пакета сюда не пишет.
@@ -155,4 +170,36 @@ MCP не умеет revert по версии. Откат — по канону d
   (эффектов не сохраняет, ROUTER не гейтит);
 - `tools/check-migrations.py` по prod — известный хвост (нет ключа платформы),
   как в W134/W137/W140;
-- W136 (гео-ветка `manage-api`) и прочие dev-хвосты на prod — вне этого пакета.
+- W136 (гео-ветка `manage-api`) и прочие dev-хвосты на prod — вне этого пакета;
+- «на будущее» (ревью круг 1): `reg-consent-mkt/step_5` (prod и dev-эталон)
+  держит в `texts` мёртвые ключи `reg.consent_marketing.saved_yes`/`saved_no`,
+  которые код после ADR-0056 не читает (финал шлёт `reg-profile`); снять
+  отдельной правкой на dev, затем перенести.
+
+### Ревью (круг 1)
+
+- **Ревьюер**: независимый агент-ревьюер (opencode, `deepseek-v4.1-flash`) · **Дата**: 2026-10-09 · **Вердикт**: есть замечания (1 `важно`, 1 `на будущее`)
+
+#### Что проверено (живой prod через MCP `app-flow-events-prod` + репозиторий)
+
+- **Версии публикаций живьём.** `ap_export_flow` ×5: `flows[0].id` (published), `state: LOCKED`, `valid: true`, `flowId` совпал, `connectionIds = [KIbxO5kYo3RsU5PNGPz9l]`. Живые версии совпали с таблицей журнала и `migrations`:
+  - `reg-start` `FkxtgayOK5QubyqqMd9q4` → `OtJL5GaiPObHTfcCVt4gm`
+  - `reg-profile` `5U3Kv0cSrnvDTrbictA4L` → `MEf7vkJI69mLNLPQHLJeP`
+  - `menu` `1DORFhP9F3W00KpKz5wDw` → `vJ13RIrbCiHVQUPgMneVY`
+  - `reg-consent-mkt` `3gLF6TcbpFObHONATQ64N` → `Gu1dt6jQqC0aoV2ssneHq`
+  - `reg-consent-pdn` `vQJDQ8NecB1PleIFrq07O` → `kCjJ2GQejHHScsVxSJrAj`
+- **Структура** `ap_flow_structure` ×5: набор и цепочки шагов **совпали с dev-эталоном** `flows/*.json` (число шагов 23/26/15/9/14 совпало с деревом dev и с `ap_validate_flow`), `ap_validate_flow` ×5 → «ready to publish», 0 `invalid`. `edit_message_text` не осталось ни в одном из пяти (проверено экспортом `reg-start`/`reg-profile` и по структуре `menu`/`reg-consent-pdn`/`reg-consent-mkt`); все ветки — `send_text_message`. Цепочки: `reg-profile` finish_lite `step_30 → step_15 (send done) → step_33 (send ticket)`; `reg-consent-pdn` `step_7 → step_8 (done+mkt)`, `step_12 → step_10 (declined)`; `reg-consent-mkt` `step_5 → step_9` (только билет).
+- **CODE-шаги** `ap_read_step_code` ×10 (все изменённые): `reg-start/step_15/17/21`, `menu/step_6`, `reg-profile/step_3/4`, `reg-consent-mkt/step_2/5`, `reg-consent-pdn/step_2/7` — **побайтово совпали** с dev-эталоном `flows/*.json` (сверка по полному тексту; `cardMessageId` нигде не читается — только мёртвый вход, как на dev). `esc` во всех шагах побайтово равен эталону `catalog/snippets/markdown-v2.md`.
+- **Инварианты.** PAR-1: `reg-profile` пишет `consent_pdn=true` (поле `KtdV8plfevjdnKlLko08q`) в ветке `consent` (`step_13`) **до** вопроса (`step_10`) и до полей профиля; в `finish`/`finish_no_event` — в одной строке с профилем (`step_22`/`step_35`), причём согласие уже записано на шаге согласия. PAR-2: `consent_marketing` (ext `FpWznk9Fgl8wUXXUKolRu`) пишется **только** `reg-consent-mkt/step_3` по явному колбэку `reg:mkt:yes/no`; в `reg-profile`/`reg-start`/`menu`/`reg-consent-pdn` вхождения поля нет (grep по живым экспортам — 0). `reg-profile/step_4` отдаёт `cardText`/`replyMarkup` (короткий вопрос) и `ticketText`/`ticketReplyMarkup` (finish_lite); факты события в вопросах не повторяются.
+- **migrations (prod)** `NCZNGuWh6PFs1JZXRPNTE`: ровно 5 строк `2026-10-09-w141-01…05`, все `action publish`, `object_id`/`version_id` совпали с живыми версиями, `commit 4413515` (= HEAD ветки); строк после них нет.
+- **AppSec.** В экспортах нет фактических секретов (поля `auth` вычищены; `check-export-secrets.sh` rc=0; grep по сохранённым экспортам — ни `connections`, ни токен-подобных строк). Авторизация/IDOR не затронуты: пакет меняет только тексты и способ отправки, решающие шаги прав те же. Нового класса логирования ПД не появилось: изменённые CODE-шаги сохраняют дефолтные `logInput`/`logOutput`, как их pre-W138-версии.
+- **Репозиторий.** `git diff main --stat` — ровно 3 файла (`catalog/environments.md`, `docs/STATUS.md`, `docs/work/W141-…md`); `flows/*.json` и `catalog/flows/*.md` коммитом W141 не трогались (канон dev). `catalog/environments.md` описывает живой prod точно.
+- **Офлайн** (с аргументами, как в хуке): `check-texts.py i18n/ru.json flows/*.json` — 30 флоу/303 ссылки/0; `check-commands.py` — 0 нарушений; `check-export-secrets.sh` — rc=0; `check-agents.py` — 0.
+- **i18n.** `ap_list_translations` в моём наборе MCP-инструментов **не экспонирован**, прямой прод-запрос перевода повторить не удалось. Косвенно: W138 не менял `i18n/` (`git diff d2718ae^1 d2718ae -- i18n/` пуст), а набор `$t`-ключей изменённых шагов — подмножество тех, что эти же флоу уже использовали до W141 (напр. `ticket.btn.open` читается `reg-start/step_7`), поэтому новых ключей к импорту нет; все ссылки проходят `check-texts.py`.
+- **Откат.** Источник (`git show d2718ae^1:flows/<flow>.json`) существует и содержит прежние edit-шаги (проверено: `reg-profile` 6, `reg-consent-pdn` 2, `reg-consent-mkt` 1 `edit_message_text`); маппинг env-id есть в `catalog/environments.md`. Оценка достаточности — замечание 1.
+- **Не проверено живьём:** e2e в Telegram prod-бота (диплинк, голый `/start`, повторное касание, `register_direct`, отказ, выбор языка) — за владельцем; остаётся гейтом перед `готов`.
+
+#### Замечания
+
+1. **важно** — путь отката правдоподобен, но недоказуем побайтово: снапшот prod **не снят** (`~/qadam-snapshots/w141/` пуст), а в таблице «Что построено» дорелизный `publishedVersionId` записан только для `reg-consent-mkt` (`umKDENNz63nFu5S4K6aNd`); у `reg-start`/`reg-profile`/`menu`/`reg-consent-pdn` в колонке «published до» — `—`. Откат опирается на dev-канон `d2718ae^1` + ручное возвращение `auth={{connections['KIbxO5kYo3RsU5PNGPz9l']}}` (в git-экспортах `auth` вычищен). Источник корректен и существует (проверено), но результат отката нельзя сверить с тем, что реально было на prod, а средовые отличия (`auth`, три поля `events`) восстанавливаются вручную. W140 для этого снимал `ap_export_flow`-снапшоты. — журнал, разделы «Что построено» (колонка «published до») и «Откат»; `~/qadam-snapshots/w141/`. Рекомендация: дозаписать дорелизные `publishedVersionId` (история версий платформы) и сделать `ap_export_flow`-снапшот обязательным шагом хотфикса — впредь **до** первой правки.
+2. **на будущее** — `reg-consent-mkt/step_5` (prod и dev-эталон) несёт в `texts` ключи `reg.consent_marketing.saved_yes`/`saved_no`, которые его код не читает: после ADR-0056 финальную карточку с этими текстами шлёт `reg-profile`, а `step_5` строит только билет. Мёртвые ключи ничему не мешают, но карта текстов обещает больше, чем экран. — prod `reg-consent-mkt/step_5`; `flows/reg-consent-mkt.json`. Убрать при следующей правке карточки в dev-каноне.
