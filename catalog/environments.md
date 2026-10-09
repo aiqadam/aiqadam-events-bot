@@ -84,6 +84,20 @@ dev по всем пакетам, применённым на dev после к�
   «Участники» — **подтверждён** прогонами `participants`/`feedback_list`/
   `staff_list` (10:58Z); визуальная проверка владельцем — по желанию.
 
+- **W141 (2026-10-09)** — W138, [ADR-0056](../docs/adr/0056-onboarding-separate-messages.md):
+  онбординг и регистрация — отдельными сообщениями (жёсткий cut). Пять флоу:
+  - `reg-start` `FkxtgayOK5QubyqqMd9q4` → `OtJL5GaiPObHTfcCVt4gm` (`step_15/17/21`);
+  - `reg-profile` `5U3Kv0cSrnvDTrbictA4L` → `MEf7vkJI69mLNLPQHLJeP` (`step_3/4` +
+    ветки `card/consent/declined/finish/finish_lite/finish_no_event`: edit→send,
+    снято 14 фолбэк-шагов, send `step_9/10/11/12/15/16`);
+  - `menu` `1DORFhP9F3W00KpKz5wDw` → `vJ13RIrbCiHVQUPgMneVY` (`step_6`);
+  - `reg-consent-mkt` `3gLF6TcbpFObHONATQ64N` → `Gu1dt6jQqC0aoV2ssneHq`
+    (`step_2/5` + `ticket.btn.open`; снято `step_7/8`; было `umKDENNz63nFu5S4K6aNd`);
+  - `reg-consent-pdn` `vQJDQ8NecB1PleIFrq07O` → `kCjJ2GQejHHScsVxSJrAj`
+    (`step_2/7`; перестройка веток, снято `step_11/15/16/17`).
+  - **Имена шагов совпали с dev** (разъезда, как в W140, нет). `tg-router` и
+    Mini App не менялись. `0 invalid` ×5, строки `migrations` `w141-01…05`.
+
 Хотфиксы правили только инстанс prod через MCP `app-flow-events-prod`;
 `flows/*.json` и `catalog/flows/*.md` не трогали — канон dev (ADR-0042).
 
