@@ -1,6 +1,6 @@
 # W141. Перенос W138 на prod: онбординг и регистрация отдельными сообщениями (хотфикс ADR-0042)
 
-- **Статус**: на проверке
+- **Статус**: готов
 - **Владелец**: агент
 - **Волна**: вне волн (хотфикс [ADR-0042](../adr/0042-two-environments-one-repo.md))
 - **Зависит от**: W138 (готов на dev) — ✅
@@ -203,3 +203,22 @@ dev-pre-W138 `git show d2718ae^1:flows/<flow>.json` + карта средовы�
 
 1. **важно** — путь отката правдоподобен, но недоказуем побайтово: снапшот prod **не снят** (`~/qadam-snapshots/w141/` пуст), а в таблице «Что построено» дорелизный `publishedVersionId` записан только для `reg-consent-mkt` (`umKDENNz63nFu5S4K6aNd`); у `reg-start`/`reg-profile`/`menu`/`reg-consent-pdn` в колонке «published до» — `—`. Откат опирается на dev-канон `d2718ae^1` + ручное возвращение `auth={{connections['KIbxO5kYo3RsU5PNGPz9l']}}` (в git-экспортах `auth` вычищен). Источник корректен и существует (проверено), но результат отката нельзя сверить с тем, что реально было на prod, а средовые отличия (`auth`, три поля `events`) восстанавливаются вручную. W140 для этого снимал `ap_export_flow`-снапшоты. — журнал, разделы «Что построено» (колонка «published до») и «Откат»; `~/qadam-snapshots/w141/`. Рекомендация: дозаписать дорелизные `publishedVersionId` (история версий платформы) и сделать `ap_export_flow`-снапшот обязательным шагом хотфикса — впредь **до** первой правки.
 2. **на будущее** — `reg-consent-mkt/step_5` (prod и dev-эталон) несёт в `texts` ключи `reg.consent_marketing.saved_yes`/`saved_no`, которые его код не читает: после ADR-0056 финальную карточку с этими текстами шлёт `reg-profile`, а `step_5` строит только билет. Мёртвые ключи ничему не мешают, но карта текстов обещает больше, чем экран. — prod `reg-consent-mkt/step_5`; `flows/reg-consent-mkt.json`. Убрать при следующей правке карточки в dev-каноне.
+
+### Ревью (круг 2)
+
+- **Ревьюер**: независимый агент-ревьюер (opencode, `deepseek-v4.1-flash`) · **Дата**: 2026-10-09 · **Вердикт**: замечаний нет
+
+#### Что проверено (живой prod через MCP `app-flow-events-prod` + репозиторий)
+
+- **Замечание 1 (`важно`) закрыто по существу.** Колонка «published до» заполнена для всех пяти флоу; значения сверены с живой таблицей `migrations` prod `NCZNGuWh6PFs1JZXRPNTE` — взята последняя строка `publish` по каждому `object` до `2026-10-09-w141-*`:
+  - `reg-start` `jHj9ZJjUr9dW5ClOntXP1` (W137, `2026-10-05-w137-01`);
+  - `reg-profile` `WLYauRql1cnoNrNFHTduo` (W132, `2026-09-29-w132-10`);
+  - `menu` `OwMQZLxQV7k4dVtWR52iE` (W126, `2026-09-28-w126-05`);
+  - `reg-consent-mkt` `umKDENNz63nFu5S4K6aNd` (W132, `2026-09-29-w132-11`);
+  - `reg-consent-pdn` `daAur8CQujShx9vad7kr5` (W122, `2026-09-28-w122-38`).
+  Все пять совпали с журналом. В «Откат» добавлен явный «Пробел процесса»: снапшот prod до первой правки не снимался, для будущих хотфиксов — обязательный шаг до первой правки.
+- **Замечание 2 («на будущее») не потеряно.** Перенесено в «Хвосты и блокеры» (мёртвые ключи `reg.consent_marketing.saved_yes`/`saved_no` в `texts` prod и dev-эталона `reg-consent-mkt/step_5`); правки кода сейчас не требует, снимать при следующей правке карточки в dev-каноне.
+- **Дельта с круга 1 — только docs.** `git diff 4413515 b728056 --stat` — ровно `docs/work/W141-prod-onboarding-separate.md` (+59/−12); `flows/*.json`, `catalog/flows/*.md`, `i18n/` коммитом не тронуты.
+- **Живой prod не менялся с круга 1.** `ap_export_flow` ×5: `flows[0].id` = `OtJL5GaiPObHTfcCVt4gm` / `MEf7vkJI69mLNLPQHLJeP` / `vJ13RIrbCiHVQUPgMneVY` / `Gu1dt6jQqC0aoV2ssneHq` / `kCjJ2GQejHHScsVxSJrAj`, `state: LOCKED`, `valid: true`, `connectionIds = [KIbxO5kYo3RsU5PNGPz9l]` — те же, что в круге 1. `ap_validate_flow` ×5 → `ready to publish`, 0 `invalid` (23/26/15/9/14 шагов). `migrations` prod: ровно 5 строк `2026-10-09-w141-01…05`, все `action publish`, `commit 4413515`, `version_id` совпали с живыми.
+- **Офлайн** (с аргументами, как в хуке): `check-texts.py i18n/ru.json flows/*.json` — 30 флоу/303 ссылки/0; `check-commands.py i18n/*.json flows/*.json` — 0 нарушений; `check-export-secrets.sh` — rc=0; `check-agents.py` — 0.
+- **Не проверено живьём:** e2e в Telegram prod-бота — остаётся за владельцем, гейтом перед `готов` (замечанием не считается).
