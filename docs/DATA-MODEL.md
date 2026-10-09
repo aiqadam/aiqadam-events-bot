@@ -203,7 +203,7 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 | --- | --- | --- |
 | `id` | text, PK | |
 | `event_id` | text | пусто для сегмента «все с consent» |
-| `segment` | enum | `all_consent` \| `registered` \| `attended` \| `no_show` (OWN-9) |
+| `segment` | enum | `all_consent` \| `registered` \| `attended` \| `no_show` \| `no_reg` (OWN-9) |
 | `body`, `parse_mode` | text | |
 | `media_chat_id`, `media_message_id` | text | источник `copyMessage` (чат и `message_id` пересланного поста) для фото-рассылок; пусто у текстовых/старых (W79, #131) |
 | `created_by` | text | |

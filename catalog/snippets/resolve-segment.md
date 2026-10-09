@@ -1,21 +1,22 @@
 # Эталон: получатели рассылки по сегменту (OWN-9)
 
-**Инвариант:** OWN-9, OWN-12, PAR-2, ADR-0003. Сегмент разворачивается в список
-уникальных `telegram_id`; заблокировавшие бота исключаются; `no_show` закрыт
-до `ends_at` события.
+**Инвариант:** OWN-9, OWN-12, PAR-2, ADR-0003, ADR-0057. Сегмент разворачивается
+в список уникальных `telegram_id`; заблокировавшие бота исключаются; `no_show`
+закрыт до `ends_at` события; `no_reg` — consent-база минус зарегистрированные.
 
-**Встраивают:**
-
-| Флоу | Шаги | Сверено |
-|---|---|---|
-| — (пока никто) | — | — |
+**Реализация правила (НЕ байтовая копия):** живые сегменты считают
+`bcast-step/step_21` (превью) и `bcast-run/step_13` (материализация) — по одному
+CODE-шагу с входами `consentRecords` / `regRecords` / `usersByIdsRecords` (W142).
+Этот файл — исходный **шестишаговый дизайн W2** (входы `consentUsers` /
+`registrations` / `blockedUsers`), сохранённый как эталон **правила**, а не
+побайтовая копия; правила 1–3 из [README](README.md) на него не действуют, пока
+копии не сведут к байтовому совпадению.
 
 > Сохранён в W22 при удалении флоу `fn-resolve-segment` (`eJ41KArb4vGQYhWSMzUgh`).
-> Логика была построена в W2, ни разу не вызвана: рассылки (W14) ещё не собраны.
-> Флоу удалён по [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md)
-> (subflow-функции больше не рабочая практика), а код перенесён сюда, потому что
-> иначе он был бы потерян. **Тот, кто будет делать W14, встраивает его в тело
-> флоу рассылки**, а не заводит subflow заново.
+> Логика была построена в W2, ни разу не вызвана на момент удаления
+> (subflow-функции выведены [ADR-0012](../../docs/adr/0012-end-to-end-flows-instead-of-subflow-functions.md));
+> код перенесён сюда, чтобы не потерять правило. Рассылка (W14 → `bcast-step`/
+> `bcast-run`) считает сегменты инлайн по тому же правилу, но своим кодом.
 
 ## Как встраивается
 
@@ -34,7 +35,7 @@
 
 ```js
 export const code = async (inputs) => {
-  const SEGMENTS = ['all_consent', 'registered', 'attended', 'no_show'];
+  const SEGMENTS = ['all_consent', 'registered', 'attended', 'no_show', 'no_reg'];
   const SLUG = /^[A-Za-z0-9_]{1,12}$/;
   const str = (v) => String(v === undefined || v === null ? '' : v).trim();
 
@@ -132,6 +133,15 @@ export const code = async (inputs) => {
       .filter((u) => (u.consent_marketing || '') === 'true')
       .map((u) => u.telegram_id || '')
       .filter((id) => id !== '');
+  } else if (segment === 'no_reg') {
+    // OWN-9 п.5 (ADR-0057): consent-база минус зарегистрированные на событие.
+    const registered = {};
+    arr(inputs.registrations).map(flat)
+      .filter((r) => (r.event_id || '') === eventId && (r.status || '') === 'registered')
+      .forEach((r) => { const id = r.telegram_id || ''; if (id !== '') registered[id] = true; });
+    candidates = arr(inputs.consentUsers).map(flat)
+      .filter((u) => (u.consent_marketing || '') === 'true' && (u.telegram_id || '') !== '' && registered[u.telegram_id] !== true)
+      .map((u) => u.telegram_id || '');
   } else {
     const regs = arr(inputs.registrations).map(flat).filter((r) => (r.event_id || '') === eventId);
     let picked = [];

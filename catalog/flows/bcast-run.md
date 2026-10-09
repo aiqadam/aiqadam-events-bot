@@ -33,7 +33,7 @@
 | step_5 | ROUTER `by action` | `materialize` / `send` / `Otherwise` |
 | step_6→8 | ROUTER + `send_text_message` + CODE | ветка `stop`: уведомление или тихий лог |
 | step_9→12 | `find` ×3 + CODE | ветка `materialize`: регистрации, consent-база, `memberCsv`, `users in-csv` |
-| step_13 | CODE «assemble members» | список по правилу превью (`attended`-множество, дедуп, минус `blocked_bot`); `startedText`, `nowIso` |
+| step_13 | CODE «assemble members» | список по правилу превью (`attended`-множество, дедуп, минус `blocked_bot`); `startedText`, `nowIso`; сегмент `no_reg` (OWN-9 п.5, [ADR-0057](../../docs/adr/0057-broadcast-no-registration-segment.md)) — consent-база минус зарегистрированные |
 | step_14 | ROUTER `empty segment?` | |
 | step_15→18 | `upsert broadcasts`, `find events`, CODE, `send_text_message` | пустая ветка: `done`/нули, отчёт `bcast.empty_segment` автору (`events.staff_id`) |
 | step_19→21 | `upsert broadcasts`, LOOP, `upsert targets` | `running`/`started_at`/`total`; по одному `pending`-таргету на получателя |
@@ -77,6 +77,9 @@
   молча дропает из записи (без ошибки валидации и прогона): так были потеряны
   `status`/`total`/`sent`/`error` до живого различающего прогона. Проверяется
   чтением строки после записи, а не `ap_validate_flow`.
+- **Сегмент `no_reg` (OWN-9 п.5, [ADR-0057](../../docs/adr/0057-broadcast-no-registration-segment.md)).**
+  `step_4` (гейт фазы) знает `no_reg`; `step_13` материализует consent-базу минус
+  зарегистрированные — правило то же, что в превью `bcast-step/step_21`.
 - **Параллельные правки одного флоу через MCP гонят**: два одновременных
   `ap_update_step` на один флоу теряют одну из правок (проверено на `step_34`).
   Править один флоу строго последовательно.
