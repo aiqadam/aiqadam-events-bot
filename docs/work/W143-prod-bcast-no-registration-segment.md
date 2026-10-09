@@ -19,14 +19,21 @@
 
 ## Что построено
 
-| Артефакт (prod) | id | до | после |
-|-----------------|----|----|-------|
-| flow `bcast-step` | `Sr1e3imXkI8sN0lXyROtA` | — | — |
-| flow `bcast-run` | `ABjmnym2NRGldfGeHoGbN` | — | — |
-| поле `broadcasts.segment` | int `VLW4nkzkcUnS5hRoCUuxu` / ext `6rmHz7Lc1djdjFpjAmO5V` | 4 опции | + `no_reg` |
-| connection | `KIbxO5kYo3RsU5PNGPz9l` (`Events-Prod`) | — | — |
+| Артефакт (prod) | id | published до | published после |
+|-----------------|----|--------------|-----------------|
+| flow `bcast-step` | `Sr1e3imXkI8sN0lXyROtA` | `N8KLtU4GwTKBdZNIw1lu1` | **`x5ibzsxeuXo3q0fRw673P`** |
+| flow `bcast-run` | `ABjmnym2NRGldfGeHoGbN` | `5SsKz3nTsIq0fZdoOhYR0` | **`6tcOI2Wd96byeIg86VbHI`** |
 
-Строки `published до/после` и новый `externalId` поля — заполняются по ходу.
+| Поле prod | было | стало |
+|-----------|------|-------|
+| `broadcasts.segment` | int `VLW4nkzkcUnS5hRoCUuxu` / ext `6rmHz7Lc1djdjFpjAmO5V`, 4 опции | int `h4TOLRsureQXgr0yIzlea` / ext **`cNZjcArfDnRwLIR7F1h6w`**, 5 опций |
+
+Правки шагов (имена совпали с dev-эталоном): `bcast-step` `step_7` (клавиатура
++ текст, +2 ключа `texts`), `step_14` (`segValid` + `no_reg`), `step_21`
+(`segValid` + ветка `no_reg`), `step_9`/`step_23` (перепривязка на
+`cNZjcArfDnRwLIR7F1h6w`); `bcast-run` `step_4` (`segValid` + `no_reg`),
+`step_13` (ветка `no_reg`). i18n `bcast.btn.seg_no_reg`, `bcast.segment.no_reg`
+(ru/uz/en) импортированы. Connection `KIbxO5kYo3RsU5PNGPz9l` — без изменений.
 
 ## Предусловия (сняты 2026-10-09)
 
@@ -74,24 +81,46 @@
 
 ## Чек-лист готовности
 
-- [ ] снапшот prod-строк и экспортов снят и записан;
-- [ ] нет `running`-рассылки на момент правки;
-- [ ] найдены все шаги, пишущие `segment` (по старому `externalId`);
-- [ ] i18n-ключи импортированы на prod;
-- [ ] поле `segment` пересоздано с опцией `no_reg`; 10 строк восстановлены;
-- [ ] шаги перепривязаны на новый `externalId`; `0 invalid` ×2; publish ×2;
-- [ ] `migrations` (prod) `w143-01…`; `catalog/environments.md` обновлён;
+- [x] снапшот prod-строк (10 × id/segment/status) и экспортов ×2 снят и записан;
+- [x] нет `running`-рассылки на момент правки (проверено дважды: до и в начале);
+- [x] найдены все шаги, пишущие `segment` (только `bcast-step/step_9`/`step_23`; `bcast-draft` поля не читает);
+- [x] i18n-ключи импортированы на prod;
+- [x] поле `segment` пересоздано с опцией `no_reg`; 10 строк восстановлены (сверено со снапшотом, 10/10);
+- [x] шаги перепривязаны на новый `externalId`; `0 invalid` ×2; publish ×2;
+- [x] `migrations` (prod) `w143-01…03`; `catalog/environments.md` обновлён;
 - [ ] живой e2e prod-бота подтверждён владельцем;
 - [ ] независимое ревью, вердикт «замечаний нет».
 
 ## Как проверено
 
-> Заполняется по ходу.
+- **Снапшот (до правки).** `broadcasts` prod — 10 строк, `status` ∈ {draft×4,
+  failed×4, done×2}, ни одной `running`. `segment`: `registered`×3,
+  `all_consent`×7. Экспорты `bcast-step`/`bcast-run`/`bcast-draft` сняты.
+- **Дельта prod→dev — ровно W142.** Скриптом сверил деревья prod-экспорта и
+  dev-эталона `flows/*.json`: отличия только в `step_7` (клавиатура/текст +
+  2 ключа `texts`), `step_14`/`step_21` (`segValid`/ветка `no_reg`),
+  `step_4`/`step_13` (`bcast-run`), и ключе-`externalId` в `step_9`/`step_23`;
+  всё прочее — `IDENTICAL`. `bcast-draft` поля `segment` не читает/не пишет.
+- **Валидация/публикация.** `ap_validate_flow` ×2 → «ready to publish», 0
+  `invalid` (60/60 и 55/55). `ap_lock_and_publish` ×2. `ap_export_flow` ×2 →
+  `flows[0].id` = `x5ibzsxeuXo3q0fRw673P` / `6tcOI2Wd96byeIg86VbHI`.
+- **Структура.** `ap_flow_structure` `bcast-step`: `step_7.texts` несёт
+  `bcast.btn.seg_no_reg`/`bcast.segment.no_reg`, `step_9`/`step_23` — ключ
+  `cNZjcArfDnRwLIR7F1h6w`.
+- **Данные.** `ap_find_records` после правки: `segment` 10/10 совпал со
+  снапшотом (`registered`×3, `all_consent`×7), `status` не изменился.
+- **Хвост.** Живой e2e prod-бота (кнопка «Не записались» в карточке рассылки)
+  — за владельцем; независимое ревью — после.
 
 ## Журнал
 
 - **2026-10-09** — пакет заведён по решению владельца: перенос W142 на prod **без UI**.
   Сняты предусловия (пины prod доступны, 10 строк, ни одной `running`).
+- **2026-10-09** — реализация на prod: i18n ×2 ключа; поле `segment`
+  пересоздано (ext `6rm…` → `cNZjcArfDnRwLIR7F1h6w`); 7 шагов обновлены
+  последовательно; 10 строк восстановлены; `0 invalid` ×2; publish ×2;
+  `ap_export_flow` ×2 (version id сняты). Окно пустого `segment` — секунды,
+  `running`-рассылок не было.
 
 ## Ревью
 
