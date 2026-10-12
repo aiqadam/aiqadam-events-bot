@@ -20,14 +20,14 @@ W26 закрыт («готов», независимое ревью, три кр
 | Connections | 1 на среду — dev `Events-QA-Bot`, prod `Events-Prod` | [connections.md](connections.md) · [environments.md](environments.md) |
 | Variables | 5 — `QR_SIGNING_KEY`, `BOT_TOKEN`, `BOT_USERNAME`, `MINIAPP_URL`, `YANDEX_GEOCODER_API_KEY` | [variables.md](variables.md) |
 
-Все PIECE-шаги пинованы на **доступные** версии qadam'ов (перепривязано пакетом
-[W100](../docs/work/W100-telegram-pin-migration.md)): `qadam-telegram-bot`
-`0.9.0`, `qadam-subflows` `0.4.14`/`0.4.15`, `qadam-tables` `0.4.5`
-(на dev `manage-api` — уже `0.5.0`: 22 шага перепривязаны 2026-10-03, на
-0.4.5 там инстанс ругался `qadam_metadata_not_found`),
-`qadam-store` `0.7.0`, `qadam-crypto` `0.0.22`, `qadam-http` `0.12.0`.
-Ушла `qadam-telegram-bot@0.8.0`, которой на инстансе нет: из-за неё шаги
-нельзя было редактировать через MCP.
+Все PIECE-шаги пинованы на **доступные** версии qadam'ов: `qadam-tables`
+`0.5.1` (в `manage-api` — `0.5.0`/`0.5.1`), `qadam-telegram-bot`
+`0.9.0`/`0.9.1`, `qadam-subflows` `0.4.14`/`0.4.15`/`0.4.17`, `qadam-webhook`
+`0.1.34`–`0.1.38`, `qadam-store` `0.7.0`, `qadam-crypto` `0.0.22`,
+`qadam-http` `0.13.0`, `qadam-delay` `0.3.27`, `qadam-schedule` `0.1.17`.
+`qadam-tables` `0.4.5`/`0.4.6` инстанс больше не отдаёт: шаг на них нельзя
+править, а отключённый флоу — включить (гоча 24); все такие шаги
+перепривязаны `ap_delete_step`+`ap_add_step`.
 
 ## Flows
 

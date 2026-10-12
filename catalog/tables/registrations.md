@@ -28,7 +28,7 @@
 ## `cancelled_at` согласован со `status` (W109, 2026-09-28)
 
 Реактивация строки очищает `cancelled_at` явным per-row `__clear: [OlFAWgVQmrqhqxlraOPOZ]`
-(`@aiqadam/qadam-tables` 0.4.6) в создающих/реактивирующих шагах:
+(`@aiqadam/qadam-tables` 0.5.1) в создающих/реактивирующих шагах:
 `reg-consent-pdn/step_5`, `reg-api/step_11`/`step_18`,
 `reg-profile/step_23`/`step_29`. Инвариант: `status = registered` — пустой
 `cancelled_at`, `status = cancelled` — непустой.
