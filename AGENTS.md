@@ -426,7 +426,9 @@ URL, cron-выражения, таймзоны, `parse_mode` и порядок �
 - `docs/work/` — журналы пакетов работ, `docs/STATUS.md` — индекс;
 - `i18n/{ru,uz,en}.json` — строки; таблица `strings` на инстансе — рабочая копия,
   репозиторий — источник правды;
-- `miniapp/` — статическая страница сканера (GitHub Pages).
+- `miniapp/` — статическая страница сканера (GitHub Pages);
+- [docs/aiqadam-meetup3-bot-platform-facts.md](docs/aiqadam-meetup3-bot-platform-facts.md) —
+  факты и цифры бота и платформы для доклада на Meetup #3 (цифры — срез прода).
 
 Секретов в репозитории нет и не будет: bot token — connection платформы,
 `QR_SIGNING_KEY` — project Variable, оба задаются в UI.
