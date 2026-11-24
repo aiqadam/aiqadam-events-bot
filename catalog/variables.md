@@ -15,6 +15,12 @@
 | `BOT_USERNAME` | username бота **без `@`** — для сборки deep link'ов | UI: Settings → Variables | `aiqadam_events_qa_bot` (dev) |
 | `BOT_TOKEN` | токен бота **своей среды** — **дубликат специально для HMAC** ([ADR-0008](../docs/adr/0008-bot-token-as-variable-not-connection-template.md)) | UI: Settings → Variables | — |
 | `YANDEX_GEOCODER_API_KEY` | ключ Геокодера Яндекс.Карт — разбор орг-ссылок в визарде (Q55) | UI: Settings → Variables | — |
+| `migration_key` | ключ HMAC переноса в AI Qadam ID, равен ID-шному; не модульный ключ ([ADR-0058](../docs/adr/0058-id-migrate-users-to-id.md)) | MCP (QA, риск принят владельцем) / UI (prod) | — |
+| `migration_open_until` | окно переноса, ISO UTC, не дальше 4 ч вперёд | MCP / UI | — |
+| `migration_mode` | `off` (покой) / `dry-test` / `dry-real` / `test` / `real` | MCP / UI | `off` |
+| `migration_run` | имя прогона, `[A-Za-z0-9_-]{1,40}` | MCP / UI | — |
+| `id_migrate_import_url` | вебхук ID `migrate-import` (`/sync`) | MCP / UI | — |
+| `id_migrate_verify_url` | вебхук ID `migrate-verify` (`/sync`) | MCP / UI | — |
 
 > Значения переменных — **на среду** (у dev и prod свои боты/ключи/адреса). Карта
 > сред и требования — [environments.md](environments.md). В таблице выше — dev.

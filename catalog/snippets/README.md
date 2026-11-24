@@ -59,3 +59,10 @@ subflow'ах — она **встраивается** в тела флоу CODE-�
   удалён), держим его как эталон правила. Правила 1–3 на него пока не действуют.
 - [i18n-resolve](i18n-resolve.md) — по-прежнему история для воскрешения i18n,
   не текущая спека.
+
+## Тесты
+
+Эталон с разделом «Тесты» гоняется офлайн: `for f in catalog/snippets/tests/*.test.mjs; do node $f; done`
+(загрузчик берёт блок кода из самого `.md`). Пока — `id-migrate-preflight`, `id-migrate-send`,
+`id-migrate-verify` ([W144](../../docs/work/W144-id-migrate.md)).
+
