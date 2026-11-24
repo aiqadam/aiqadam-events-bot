@@ -1,6 +1,6 @@
 # 0058. Перенос `users` в AI Qadam ID — флоу `id-migrate` в `events-dev`
 
-**Статус:** черновик (на принятие владельцем), 2026-11-24. Исполняет на стороне бота
+**Статус:** принято, 2026-11-24, решением владельца. Исполняет на стороне бота
 [ID ADR-0030](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0030-users-migration-mechanics.md)
 (принят владельцем) и [ID ADR-0031](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0031-events-dev-is-qa-rehearsal-on-its-data.md).
 Расширяет [ADR-0010](0010-unsandboxed-code-step-for-crypto.md): ещё одно узкое место для `node:crypto`.
@@ -50,7 +50,7 @@ ID ADR-0031: `events-dev` — QA-среда (переход на `events-prod` �
 
 ## Следствия
 
-- Реальный прогон — после принятия этого ADR владельцем, с ожидаемыми числами в журнале W144.
+- Реальный прогон — по отдельной команде владельца, с ожидаемыми числами в журнале W144.
 - `mig_test_users` — выдуманные люди тестового диапазона; удаляется вместе с тестовыми строками в ID после
   приёмки.
 - Ошибка батча видна в прогоне как `batch_failed: <статус> <код>` — без id и без тела.
