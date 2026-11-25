@@ -1,7 +1,7 @@
 # W145. Подготовка к переключению на AI Qadam ID: удаление человека, `bot_contacts`, приёмник удалений ID
 
-- **Статус**: в работе (шаги 1–2 порядка ADR-0059 собраны на `events-dev` 2026-11-25; шаг 3 — приёмник —
-  не начат)
+- **Статус**: в работе (шаги 1–3 порядка ADR-0059 собраны на `events-dev` 2026-11-25; ждёт проверки
+  `delete_account` из Mini App и ворот)
 - **Владелец**: агент (сессия AI Qadam ID)
 - **Волна**: вне волн
 - **Зависит от**: [ADR-0059](../adr/0059-id-switch-prep-deletion-and-delivery-state.md) (принят 2026-11-25),
@@ -23,6 +23,8 @@ ADR-0039), место для состояния доставки вместо `u
 | переменная `id_module_key` | секрет, равна ID QA `module_key_events`; значение не выводилось | [catalog/variables.md](../../catalog/variables.md) |
 | перевод `profile.delete.author` | ru / uz / en | [i18n/](../../i18n/) |
 | эталон `delete-person-plan` + 25 тестов | шаг `plan` (`step_19`) | [catalog/snippets/delete-person-plan.md](../../catalog/snippets/delete-person-plan.md) |
+| flow `id-member-deleted` (приёмник ID) | `DnYhfp9irbV993MtLbIsh`, версия `tJo8vdCZqHUkktyN0Ekoa`; в ID QA не подключён | [catalog/flows/id-member-deleted.md](../../catalog/flows/id-member-deleted.md) |
+| эталон `id-event-verify` + 30 тестов | шаг `verify` (`step_1`) приёмника | [catalog/snippets/id-event-verify.md](../../catalog/snippets/id-event-verify.md) |
 
 ## Чек-лист готовности
 
@@ -33,7 +35,7 @@ ADR-0039), место для состояния доставки вместо `u
 - [x] Шаг 2: `bot_contacts` создана, пустая
 - [ ] Сквозная проверка `reg-api` → `delete_account` из Mini App (нужен `initData`, подписанный токеном
       бота: аккаунт тестировщика)
-- [ ] Шаг 3: приёмник `id-member-deleted`
+- [x] Шаг 3: приёмник `id-member-deleted` — подпись, повтор, окно, тип, тело, ответы, время ≤ 15 с
 - [ ] Ворота: шаги 1–3 приняты владельцем; затем `module_delete_url_events` в ID QA → приёмник
 - [ ] Независимое ревью
 - [ ] `catalog/` совпадает с живым проектом
@@ -61,6 +63,29 @@ ADR-0039), место для состояния доставки вместо `u
 `reg-api`: `ap_validate_flow` 0 invalid, опубликован. Сквозной прогон не делался: вход требует
 валидного `initData`.
 
+### Приёмник `id-member-deleted`
+
+Настоящие POST на `/sync`, подписанные QA-ключом (`module_key_events` ID QA = `id_module_key`), по
+выдуманным людям: 904 (регистрация и `bot_contacts`) и 905 (автор черновика события и `staff`).
+
+| # | Запрос | Ответ | Время |
+|---|---|---|---|
+| 1 | верный, 904 | `200 {done: true}`; строки 904 удалены (`registrations` 1, `bot_contacts` 1) | 5,3 с |
+| 2 | тот же конверт ещё раз | `409 {reason: replay}` | 0,4 с |
+| 3 | 904, новый `request_id` | `200 {done: true}` (идемпотентно) | 1,5 с |
+| 4 | чужая подпись | `401 bad_signature` | 0,9 с |
+| 5 | подпись без тега направления (форма модуль→ID) | `401 bad_signature` | 0,4 с |
+| 6 | `ts` старше 400 с | `401 expired` | 0,3 с |
+| 7 | тип `id.member-updated.v1` | `401 bad_type` | 0,4 с |
+| 8 | подпись верна, `telegram_id` числом | `400 bad_body` | 0,6 с |
+| 9 | 905, автор события | `200 {done: false, reason: author_of_events}`; `staff` удалён, событие на месте | 2,9 с |
+
+Лог прогона 1 (`lNW91p1OYk5cjAURiK65Q`): триггер и `verify` — `**REDACTED**`, в остальных шагах только
+маршрут, `stored` и счётчики. После проверки событие 905 удалено; строк тестового диапазона нет.
+
+Не проверена ветка `500` (подфлоу упал): без правки подфлоу её не вызвать — вход приёмника и подфлоу
+проверяются одним и тем же шаблоном id.
+
 ## Находки
 
 - **Старые поиски в `reg-api` шли с `limit 200`:** у человека с большим числом строк часть оставалась
@@ -78,3 +103,5 @@ ADR-0039), место для состояния доставки вместо `u
   `fn-delete-person`; `reg-api` переведён на подфлоу (старые шаги удаления `step_24…38`, `step_40…45`
   сняты), опубликован; перевод `profile.delete.author`. Тестовые строки удалены, проверка чистая.
   Строки `migrations` `2026-11-25-w145-01…05`.
+- 2026-11-25 — собран, проверен (9 подписанных запросов) и опубликован приёмник `id-member-deleted`; в ID QA
+  не подключён до ворот. Строка `migrations` `2026-11-25-w145-06`.
