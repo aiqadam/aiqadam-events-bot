@@ -59,3 +59,4 @@
 | [0056](0056-onboarding-separate-messages.md) | Онбординг и регистрация — отдельными сообщениями (сужает 0017 для гостевого среза; обкатка W138) | Принято |
 | [0057](0057-broadcast-no-registration-segment.md) | Рассылка: пятый сегмент — согласие без регистрации `no_reg` (расширяет SPEC OWN-9; обкатка на dev) | **Черновик** (обкатка на dev) |
 | [0058](0058-id-migrate-users-to-id.md) | Перенос `users` в AI Qadam ID — флоу `id-migrate` в `events-dev` (исполняет ID ADR-0030; расширяет 0010) | Принято |
+| [0059](0059-id-switch-prep-deletion-and-delivery-state.md) | Подготовка к переключению на AI Qadam ID: подфлоу `fn-delete-person` (закрывает Part 2 0039), таблица `bot_contacts`, приёмник `id-member-deleted` (исполняет ID ADR-0032 §7 шаг 2; расширяет 0010) | **Предложено** |
