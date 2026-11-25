@@ -21,6 +21,7 @@
 | `migration_run` | имя прогона, `[A-Za-z0-9_-]{1,40}` | MCP / UI | — |
 | `id_migrate_import_url` | вебхук ID `migrate-import` (`/sync`) | MCP / UI | — |
 | `id_migrate_verify_url` | вебхук ID `migrate-verify` (`/sync`) | MCP / UI | — |
+| `id_module_key` | модульный ключ бота в AI Qadam ID, равен `module_key_events` в ID; проверка подписи событий ID, `id.member-deleted.v1` ([ADR-0059](../docs/adr/0059-id-switch-prep-deletion-and-delivery-state.md) §5) | MCP (QA, риск принят владельцем) / UI (prod, другое значение) | — |
 
 > Значения переменных — **на среду** (у dev и prod свои боты/ключи/адреса). Карта
 > сред и требования — [environments.md](environments.md). В таблице выше — dev.

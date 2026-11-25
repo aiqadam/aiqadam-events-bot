@@ -259,17 +259,23 @@ Payload обязан укладываться в эти рамки — см. [SE
 
 **PAR-10. Удаление аккаунта (GDPR).** В табе «Профиль» каталога `#/events` —
 кнопка «Удалить аккаунт» с подтверждением. По подтверждению сервер удаляет
-**все** строки, касающиеся `telegram_id` вызывающего, из пользовательских
-таблиц: `users`, `registrations`, `feedback`, `broadcast_targets`,
-`sessions`, `quiz_answers`, `quiz_attempts` (викторина —
-[ADR-0041](adr/0041-quiz-in-chat-not-a-page.md), W103). `telegram_id` берётся
+**все** строки, касающиеся `telegram_id` вызывающего, одним подфлоу
+`fn-delete-person` ([ADR-0059](adr/0059-id-switch-prep-deletion-and-delivery-state.md), W145):
+`users`, `registrations`, `feedback`, `broadcast_targets`, `sessions`,
+`quiz_answers`, `quiz_attempts` (викторина —
+[ADR-0041](adr/0041-quiz-in-chat-not-a-page.md), W103), `reports`, `event_staff`,
+`staff`, `bot_contacts`. В чужих строках, где он записан исполнителем
+(`registrations.checked_in_by`, `event_staff.granted_by`,
+`staff_invites.created_by`/`used_by`, `broadcasts.created_by`), поле
+очищается, строка остаётся. Автор событий (`events.staff_id`) не удаляется:
+отказ `409 author_of_events` и текст `profile.delete.author`, пока владелец не
+передаст события другому организатору. `telegram_id` берётся
 только из проверенного `initData`; чужой
 `telegram_id` в теле запроса — отказ `403` (IDOR). Повторное удаление
 безвредно. Удаление жёсткое: строки исчезают, а не помечаются отменёнными.
-Права и организационные касания (`event_staff`, `staff`, `staff_invites`,
-`events.staff_id`) — Part 2 пакета [W73](work/W73-plain-text-reply.md).
 Решение владельца 2026-09-23 (вариант B, самообслуживание),
-[ADR-0039](adr/0039-account-self-deletion-gdpr.md).
+[ADR-0039](adr/0039-account-self-deletion-gdpr.md); Part 2 — решения владельца 2026-11-25,
+ADR-0059.
 
 **PAR-11. Викторина в боте.** Гость проходит викторину целиком в чате: вход —
 кнопка «Викторина» в меню, вопросы приходят сообщениями, ответ — **свободный

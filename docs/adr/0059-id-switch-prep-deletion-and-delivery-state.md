@@ -2,7 +2,7 @@
 
 **Статус:** принято, 2026-11-25, решением владельца. Исполняет на стороне бота шаг 2 порядка
 [ID ADR-0032](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0032-events-bot-switch-to-id-api.md) §7
-(принят владельцем 2026-11-24). Закрывает Part 2 [ADR-0039](0039-account-self-deletion.md) решениями
+(принят владельцем 2026-11-24). Закрывает Part 2 [ADR-0039](0039-account-self-deletion-gdpr.md) решениями
 владельца от 2026-11-25. Расширяет [ADR-0010](0010-unsandboxed-code-step-for-crypto.md): ещё одно узкое
 место для `node:crypto`, проверка подписи ID. Само переключение флоу на ID API в этот ADR не входит,
 у него будет свой ADR (ID ADR-0032 §7, шаг 3).

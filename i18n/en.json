@@ -344,6 +344,7 @@
   "profile.city": "City",
   "profile.company": "Company",
   "profile.company_hint": "Can be skipped — freelance, student.",
+  "profile.delete.author": "You are the author of events, so the account can't be deleted yet. Ask the bot owner to hand your events over to another organizer, then delete the account.",
   "profile.delete.btn": "Delete account",
   "profile.delete.cancel": "Don't delete",
   "profile.delete.confirm": "Delete your account and all data? This is irreversible: your profile, registrations and feedback will be gone.",

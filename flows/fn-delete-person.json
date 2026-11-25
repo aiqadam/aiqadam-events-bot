@@ -1,0 +1,1030 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "fn-delete-person",
+  "localeSource": null,
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "logOutput": false,
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "input",
+      "logInput": false,
+      "logOutput": false,
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "find author",
+        "logInput": false,
+        "logOutput": false,
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "find registrations",
+          "logInput": false,
+          "logOutput": false,
+          "name": "step_3",
+          "nextAction": {
+            "displayName": "find feedback",
+            "logInput": false,
+            "logOutput": false,
+            "name": "step_4",
+            "nextAction": {
+              "displayName": "find broadcast_targets",
+              "logInput": false,
+              "logOutput": false,
+              "name": "step_5",
+              "nextAction": {
+                "displayName": "find sessions",
+                "logInput": false,
+                "logOutput": false,
+                "name": "step_6",
+                "nextAction": {
+                  "displayName": "find quiz_answers",
+                  "logInput": false,
+                  "logOutput": false,
+                  "name": "step_7",
+                  "nextAction": {
+                    "displayName": "find quiz_attempts",
+                    "logInput": false,
+                    "logOutput": false,
+                    "name": "step_8",
+                    "nextAction": {
+                      "displayName": "find reports",
+                      "logInput": false,
+                      "logOutput": false,
+                      "name": "step_9",
+                      "nextAction": {
+                        "displayName": "find event_staff",
+                        "logInput": false,
+                        "logOutput": false,
+                        "name": "step_10",
+                        "nextAction": {
+                          "displayName": "find staff",
+                          "logInput": false,
+                          "logOutput": false,
+                          "name": "step_11",
+                          "nextAction": {
+                            "displayName": "find bot_contacts",
+                            "logInput": false,
+                            "logOutput": false,
+                            "name": "step_12",
+                            "nextAction": {
+                              "displayName": "find users",
+                              "logInput": false,
+                              "logOutput": false,
+                              "name": "step_13",
+                              "nextAction": {
+                                "displayName": "find checked_in_by",
+                                "logInput": false,
+                                "logOutput": false,
+                                "name": "step_14",
+                                "nextAction": {
+                                  "displayName": "find granted_by",
+                                  "logInput": false,
+                                  "logOutput": false,
+                                  "name": "step_15",
+                                  "nextAction": {
+                                    "displayName": "find invites created_by",
+                                    "logInput": false,
+                                    "logOutput": false,
+                                    "name": "step_16",
+                                    "nextAction": {
+                                      "displayName": "find invites used_by",
+                                      "logInput": false,
+                                      "logOutput": false,
+                                      "name": "step_17",
+                                      "nextAction": {
+                                        "displayName": "find broadcasts created_by",
+                                        "logInput": false,
+                                        "logOutput": false,
+                                        "name": "step_18",
+                                        "nextAction": {
+                                          "displayName": "plan",
+                                          "logInput": false,
+                                          "logOutput": false,
+                                          "name": "step_19",
+                                          "nextAction": {
+                                            "displayName": "loop deletes",
+                                            "firstLoopAction": {
+                                              "displayName": "delete rows",
+                                              "logInput": false,
+                                              "logOutput": false,
+                                              "name": "step_21",
+                                              "settings": {
+                                                "actionName": "tables-delete-record",
+                                                "errorHandlingOptions": {
+                                                  "continueOnFailure": {
+                                                    "value": false
+                                                  },
+                                                  "retryOnFailure": {
+                                                    "value": false
+                                                  }
+                                                },
+                                                "input": {
+                                                  "records_ids": "{{step_20['output'].item.ids}}",
+                                                  "table_id": "{{step_20['output'].item.table}}"
+                                                },
+                                                "propertySettings": {},
+                                                "qadamName": "@aiqadam/qadam-tables",
+                                                "qadamVersion": "0.5.1"
+                                              },
+                                              "type": "PIECE",
+                                              "valid": true
+                                            },
+                                            "name": "step_20",
+                                            "nextAction": {
+                                              "displayName": "loop clears",
+                                              "firstLoopAction": {
+                                                "displayName": "clear actor",
+                                                "logInput": false,
+                                                "logOutput": false,
+                                                "name": "step_23",
+                                                "settings": {
+                                                  "actionName": "tables-update-record",
+                                                  "errorHandlingOptions": {
+                                                    "continueOnFailure": {
+                                                      "value": false
+                                                    },
+                                                    "retryOnFailure": {
+                                                      "value": false
+                                                    }
+                                                  },
+                                                  "input": {
+                                                    "clear_columns": [
+                                                      "{{step_22['output'].item.column}}"
+                                                    ],
+                                                    "columns": [
+                                                      "{{step_22['output'].item.column}}"
+                                                    ],
+                                                    "record_id": "{{step_22['output'].item.id}}",
+                                                    "table_id": "{{step_22['output'].item.table}}",
+                                                    "values": {}
+                                                  },
+                                                  "propertySettings": {},
+                                                  "qadamName": "@aiqadam/qadam-tables",
+                                                  "qadamVersion": "0.5.1"
+                                                },
+                                                "type": "PIECE",
+                                                "valid": true
+                                              },
+                                              "name": "step_22",
+                                              "nextAction": {
+                                                "displayName": "loop reminder events",
+                                                "firstLoopAction": {
+                                                  "displayName": "remove reminder key 24h",
+                                                  "logInput": false,
+                                                  "logOutput": false,
+                                                  "name": "step_25",
+                                                  "nextAction": {
+                                                    "displayName": "remove reminder key 2h",
+                                                    "logInput": false,
+                                                    "logOutput": false,
+                                                    "name": "step_28",
+                                                    "settings": {
+                                                      "actionName": "remove_value",
+                                                      "errorHandlingOptions": {
+                                                        "continueOnFailure": {
+                                                          "value": false
+                                                        },
+                                                        "retryOnFailure": {
+                                                          "value": false
+                                                        }
+                                                      },
+                                                      "input": {
+                                                        "key": "rm:{{step_24['output'].item}}:2h:{{step_1['output'].telegramId}}",
+                                                        "store_scope": "COLLECTION"
+                                                      },
+                                                      "propertySettings": {},
+                                                      "qadamName": "@aiqadam/qadam-store",
+                                                      "qadamVersion": "0.7.0"
+                                                    },
+                                                    "type": "PIECE",
+                                                    "valid": true
+                                                  },
+                                                  "settings": {
+                                                    "actionName": "remove_value",
+                                                    "errorHandlingOptions": {
+                                                      "continueOnFailure": {
+                                                        "value": false
+                                                      },
+                                                      "retryOnFailure": {
+                                                        "value": false
+                                                      }
+                                                    },
+                                                    "input": {
+                                                      "key": "rm:{{step_24['output'].item}}:24h:{{step_1['output'].telegramId}}",
+                                                      "store_scope": "COLLECTION"
+                                                    },
+                                                    "propertySettings": {},
+                                                    "qadamName": "@aiqadam/qadam-store",
+                                                    "qadamVersion": "0.7.0"
+                                                  },
+                                                  "type": "PIECE",
+                                                  "valid": true
+                                                },
+                                                "name": "step_24",
+                                                "nextAction": {
+                                                  "displayName": "result",
+                                                  "name": "step_26",
+                                                  "nextAction": {
+                                                    "displayName": "return",
+                                                    "name": "step_27",
+                                                    "settings": {
+                                                      "actionName": "returnResponse",
+                                                      "errorHandlingOptions": {
+                                                        "continueOnFailure": {
+                                                          "value": false
+                                                        },
+                                                        "retryOnFailure": {
+                                                          "value": false
+                                                        }
+                                                      },
+                                                      "input": {
+                                                        "mode": "simple",
+                                                        "response": {
+                                                          "response": {
+                                                            "counts": "{{step_26['output'].counts}}",
+                                                            "deleted": "{{step_26['output'].deleted}}",
+                                                            "done": "{{step_26['output'].done}}",
+                                                            "reason": "{{step_26['output'].reason}}"
+                                                          }
+                                                        }
+                                                      },
+                                                      "propertySettings": {},
+                                                      "qadamName": "@aiqadam/qadam-subflows",
+                                                      "qadamVersion": "0.4.17"
+                                                    },
+                                                    "type": "PIECE",
+                                                    "valid": true
+                                                  },
+                                                  "settings": {
+                                                    "errorHandlingOptions": {
+                                                      "continueOnFailure": {
+                                                        "value": false
+                                                      },
+                                                      "retryOnFailure": {
+                                                        "value": false
+                                                      }
+                                                    },
+                                                    "input": {
+                                                      "author": "{{step_19['output'].author}}",
+                                                      "counts": "{{step_19['output'].counts}}",
+                                                      "refused": "{{step_19['output'].refused}}"
+                                                    },
+                                                    "sourceCode": {
+                                                      "code": "// fn-delete-person result (ADR-0059 §1, §4): done only without authored events. Numbers only.\nexport const code = async (inputs) => {\n  const author = inputs.author === true || inputs.author === 'true';\n  const refused = inputs.refused === true || inputs.refused === 'true';\n  return { done: !author, deleted: !refused, reason: author ? 'author_of_events' : 'ok', counts: inputs.counts || {} };\n};",
+                                                      "packageJson": "{}"
+                                                    }
+                                                  },
+                                                  "type": "CODE",
+                                                  "valid": true
+                                                },
+                                                "settings": {
+                                                  "execution": {
+                                                    "maxConcurrency": 6,
+                                                    "mode": "CONCURRENT"
+                                                  },
+                                                  "items": "{{step_19['output'].rm_events}}",
+                                                  "keepBodies": "FAILED_ONLY"
+                                                },
+                                                "type": "LOOP_ON_ITEMS",
+                                                "valid": true
+                                              },
+                                              "settings": {
+                                                "execution": {
+                                                  "maxConcurrency": 6,
+                                                  "mode": "CONCURRENT"
+                                                },
+                                                "items": "{{step_19['output'].clears}}",
+                                                "keepBodies": "FAILED_ONLY"
+                                              },
+                                              "type": "LOOP_ON_ITEMS",
+                                              "valid": true
+                                            },
+                                            "settings": {
+                                              "execution": {
+                                                "maxConcurrency": 6,
+                                                "mode": "CONCURRENT"
+                                              },
+                                              "items": "{{step_19['output'].deletes}}",
+                                              "keepBodies": "FAILED_ONLY"
+                                            },
+                                            "type": "LOOP_ON_ITEMS",
+                                            "valid": true
+                                          },
+                                          "settings": {
+                                            "errorHandlingOptions": {
+                                              "continueOnFailure": {
+                                                "value": false
+                                              },
+                                              "retryOnFailure": {
+                                                "value": false
+                                              }
+                                            },
+                                            "input": {
+                                              "actor": {
+                                                "broadcasts.created_by": "{{step_18['output']}}",
+                                                "event_staff.granted_by": "{{step_15['output']}}",
+                                                "registrations.checked_in_by": "{{step_14['output']}}",
+                                                "staff_invites.created_by": "{{step_16['output']}}",
+                                                "staff_invites.used_by": "{{step_17['output']}}"
+                                              },
+                                              "author": "{{step_2['output']}}",
+                                              "own": {
+                                                "bot_contacts": "{{step_12['output']}}",
+                                                "broadcast_targets": "{{step_5['output']}}",
+                                                "event_staff": "{{step_10['output']}}",
+                                                "feedback": "{{step_4['output']}}",
+                                                "quiz_answers": "{{step_7['output']}}",
+                                                "quiz_attempts": "{{step_8['output']}}",
+                                                "registrations": "{{step_3['output']}}",
+                                                "reports": "{{step_9['output']}}",
+                                                "sessions": "{{step_6['output']}}",
+                                                "staff": "{{step_11['output']}}",
+                                                "users": "{{step_13['output']}}"
+                                              },
+                                              "refuse_if_author": "{{trigger['output'].data.refuseIfAuthor}}",
+                                              "telegram_id": "{{step_1['output'].telegramId}}"
+                                            },
+                                            "sourceCode": {
+                                              "code": "// delete-person-plan (ADR-0059 §1). logInput/logOutput OFF: id и строки людей.\nexport const code = async (inputs) => {\n  const tid = inputs.telegram_id;\n  if (typeof tid !== 'string' || !/^[1-9][0-9]{0,15}$/.test(tid)) throw new Error('bad_telegram_id');\n  const OWN = {\n    registrations: ['SM8tMxfQuQCHRDdAiNJyQ', 'telegram_id'], feedback: ['GgGUQEHp6g076nDb2XddP', 'telegram_id'],\n    broadcast_targets: ['PAH81WchbaOixGXSdFBK1', 'telegram_id'], sessions: ['toTKgngMTqDNJWDpQMh4d', 'telegram_id'],\n    quiz_answers: ['tcwKTQH8W1EG4SHeHdoRr', 'telegram_id'], quiz_attempts: ['JPo7yK4N9lxN8HxBwpmRs', 'telegram_id'],\n    reports: ['LKEqlq1X7RuWz5WC4zkov', 'telegram_id'], event_staff: ['t1g8Vae3iEoDk93D6Rle7', 'telegram_id'],\n    staff: ['PnDy6gw9tlLUqTGk2EOUn', 'telegram_id'], bot_contacts: ['JLPfHt5KW4PpanBBWX4V6', 'telegram_id'],\n    users: ['xHhYjhwqKdONkrYJGcBsz', 'telegram_id'],\n  };\n  const ACTOR = {\n    'registrations.checked_in_by': ['SM8tMxfQuQCHRDdAiNJyQ', 'checked_in_by', 'atmJzUFotSzE9G0akUU2M'],\n    'event_staff.granted_by': ['t1g8Vae3iEoDk93D6Rle7', 'granted_by', '0wfqdr7vveoyWxJqjymZP'],\n    'staff_invites.created_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'created_by', 'fKQAjYvMBW5ZbGWX8AYgx'],\n    'staff_invites.used_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'used_by', 'wSLuGfXNArBIdIUlIXenV'],\n    'broadcasts.created_by': ['XrygYF5Q4EUOKkaBFallb', 'created_by', 'AQs7BEfN0hZ3OjPZXZNsc'],\n  };\n  const rows = (x, name) => {\n    if (Array.isArray(x)) return x;\n    if (x && Array.isArray(x.records)) return x.records;\n    throw new Error('bad_input:' + name);\n  };\n  const field = (r, n) => { const c = (r && r.cells) || {}; for (const k of Object.keys(c)) if (c[k] && c[k].fieldName === n) return c[k].value; return undefined; };\n  const checked = (x, name, f) => rows(x, name).map((r) => {\n    if (String(field(r, f)) !== tid) throw new Error('mismatch:' + name);\n    if (r.id == null || String(r.id) === '') throw new Error('no_record_id:' + name);\n    return r;\n  });\n  const author = checked(inputs.author, 'events.staff_id', 'staff_id').length > 0;\n  const own = inputs.own || {}, actor = inputs.actor || {};\n  const deletes = [], clears = [], counts = {}, rm_events = [];\n  for (const name of Object.keys(OWN)) {\n    const [table, f] = OWN[name];\n    const rs = checked(own[name], name, f);\n    counts[name] = rs.length;\n    if (rs.length) deletes.push({ table, ids: Array.from(new Set(rs.map((r) => String(r.id)))) });\n    if (name === 'registrations') {\n      for (const r of rs) {\n        const ev = field(r, 'event_id');\n        if (ev == null || String(ev) === '') continue;\n        rm_events.push(String(ev));\n      }\n    }\n  }\n  for (const name of Object.keys(ACTOR)) {\n    const [table, f, column] = ACTOR[name];\n    const rs = checked(actor[name], name, f);\n    counts[name] = rs.length;\n    for (const r of rs) clears.push({ table, column, id: String(r.id) });\n  }\n  const refuse = inputs.refuse_if_author === true || inputs.refuse_if_author === 'true';\n  if (author && refuse) return { author, refused: true, deletes: [], clears: [], rm_events: [], counts };\n  return { author, refused: false, deletes, clears, rm_events: Array.from(new Set(rm_events)), counts };\n};",
+                                              "packageJson": "{}"
+                                            }
+                                          },
+                                          "type": "CODE",
+                                          "valid": true
+                                        },
+                                        "settings": {
+                                          "actionName": "tables-find-records",
+                                          "errorHandlingOptions": {
+                                            "continueOnFailure": {
+                                              "value": false
+                                            },
+                                            "retryOnFailure": {
+                                              "value": false
+                                            }
+                                          },
+                                          "input": {
+                                            "columns": [
+                                              "AQs7BEfN0hZ3OjPZXZNsc"
+                                            ],
+                                            "filters": {
+                                              "filters": [
+                                                {
+                                                  "field": {
+                                                    "id": "AQs7BEfN0hZ3OjPZXZNsc",
+                                                    "name": "created_by",
+                                                    "type": "TEXT"
+                                                  },
+                                                  "operator": "eq",
+                                                  "value": "{{step_1['output'].telegramId}}"
+                                                }
+                                              ]
+                                            },
+                                            "record_ids": [],
+                                            "table_id": "XrygYF5Q4EUOKkaBFallb"
+                                          },
+                                          "propertySettings": {},
+                                          "qadamName": "@aiqadam/qadam-tables",
+                                          "qadamVersion": "0.5.1"
+                                        },
+                                        "type": "PIECE",
+                                        "valid": true
+                                      },
+                                      "settings": {
+                                        "actionName": "tables-find-records",
+                                        "errorHandlingOptions": {
+                                          "continueOnFailure": {
+                                            "value": false
+                                          },
+                                          "retryOnFailure": {
+                                            "value": false
+                                          }
+                                        },
+                                        "input": {
+                                          "columns": [
+                                            "wSLuGfXNArBIdIUlIXenV"
+                                          ],
+                                          "filters": {
+                                            "filters": [
+                                              {
+                                                "field": {
+                                                  "id": "wSLuGfXNArBIdIUlIXenV",
+                                                  "name": "used_by",
+                                                  "type": "TEXT"
+                                                },
+                                                "operator": "eq",
+                                                "value": "{{step_1['output'].telegramId}}"
+                                              }
+                                            ]
+                                          },
+                                          "record_ids": [],
+                                          "table_id": "JIjKkDu3Im2ylBmkkH5Fu"
+                                        },
+                                        "propertySettings": {},
+                                        "qadamName": "@aiqadam/qadam-tables",
+                                        "qadamVersion": "0.5.1"
+                                      },
+                                      "type": "PIECE",
+                                      "valid": true
+                                    },
+                                    "settings": {
+                                      "actionName": "tables-find-records",
+                                      "errorHandlingOptions": {
+                                        "continueOnFailure": {
+                                          "value": false
+                                        },
+                                        "retryOnFailure": {
+                                          "value": false
+                                        }
+                                      },
+                                      "input": {
+                                        "columns": [
+                                          "fKQAjYvMBW5ZbGWX8AYgx"
+                                        ],
+                                        "filters": {
+                                          "filters": [
+                                            {
+                                              "field": {
+                                                "id": "fKQAjYvMBW5ZbGWX8AYgx",
+                                                "name": "created_by",
+                                                "type": "TEXT"
+                                              },
+                                              "operator": "eq",
+                                              "value": "{{step_1['output'].telegramId}}"
+                                            }
+                                          ]
+                                        },
+                                        "record_ids": [],
+                                        "table_id": "JIjKkDu3Im2ylBmkkH5Fu"
+                                      },
+                                      "propertySettings": {},
+                                      "qadamName": "@aiqadam/qadam-tables",
+                                      "qadamVersion": "0.5.1"
+                                    },
+                                    "type": "PIECE",
+                                    "valid": true
+                                  },
+                                  "settings": {
+                                    "actionName": "tables-find-records",
+                                    "errorHandlingOptions": {
+                                      "continueOnFailure": {
+                                        "value": false
+                                      },
+                                      "retryOnFailure": {
+                                        "value": false
+                                      }
+                                    },
+                                    "input": {
+                                      "columns": [
+                                        "0wfqdr7vveoyWxJqjymZP"
+                                      ],
+                                      "filters": {
+                                        "filters": [
+                                          {
+                                            "field": {
+                                              "id": "0wfqdr7vveoyWxJqjymZP",
+                                              "name": "granted_by",
+                                              "type": "TEXT"
+                                            },
+                                            "operator": "eq",
+                                            "value": "{{step_1['output'].telegramId}}"
+                                          }
+                                        ]
+                                      },
+                                      "record_ids": [],
+                                      "table_id": "t1g8Vae3iEoDk93D6Rle7"
+                                    },
+                                    "propertySettings": {},
+                                    "qadamName": "@aiqadam/qadam-tables",
+                                    "qadamVersion": "0.5.1"
+                                  },
+                                  "type": "PIECE",
+                                  "valid": true
+                                },
+                                "settings": {
+                                  "actionName": "tables-find-records",
+                                  "errorHandlingOptions": {
+                                    "continueOnFailure": {
+                                      "value": false
+                                    },
+                                    "retryOnFailure": {
+                                      "value": false
+                                    }
+                                  },
+                                  "input": {
+                                    "columns": [
+                                      "atmJzUFotSzE9G0akUU2M"
+                                    ],
+                                    "filters": {
+                                      "filters": [
+                                        {
+                                          "field": {
+                                            "id": "atmJzUFotSzE9G0akUU2M",
+                                            "name": "checked_in_by",
+                                            "type": "TEXT"
+                                          },
+                                          "operator": "eq",
+                                          "value": "{{step_1['output'].telegramId}}"
+                                        }
+                                      ]
+                                    },
+                                    "record_ids": [],
+                                    "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                                  },
+                                  "propertySettings": {},
+                                  "qadamName": "@aiqadam/qadam-tables",
+                                  "qadamVersion": "0.5.1"
+                                },
+                                "type": "PIECE",
+                                "valid": true
+                              },
+                              "settings": {
+                                "actionName": "tables-find-records",
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "columns": [
+                                    "JtylZU291K7TuMn9c9F2t"
+                                  ],
+                                  "filters": {
+                                    "filters": [
+                                      {
+                                        "field": {
+                                          "id": "JtylZU291K7TuMn9c9F2t",
+                                          "name": "telegram_id",
+                                          "type": "TEXT"
+                                        },
+                                        "operator": "eq",
+                                        "value": "{{step_1['output'].telegramId}}"
+                                      }
+                                    ]
+                                  },
+                                  "record_ids": [],
+                                  "table_id": "xHhYjhwqKdONkrYJGcBsz"
+                                },
+                                "propertySettings": {},
+                                "qadamName": "@aiqadam/qadam-tables",
+                                "qadamVersion": "0.5.1"
+                              },
+                              "type": "PIECE",
+                              "valid": true
+                            },
+                            "settings": {
+                              "actionName": "tables-find-records",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "columns": [
+                                  "rN5Cjn1XGBsHvUKzeACwQ"
+                                ],
+                                "filters": {
+                                  "filters": [
+                                    {
+                                      "field": {
+                                        "id": "rN5Cjn1XGBsHvUKzeACwQ",
+                                        "name": "telegram_id",
+                                        "type": "TEXT"
+                                      },
+                                      "operator": "eq",
+                                      "value": "{{step_1['output'].telegramId}}"
+                                    }
+                                  ]
+                                },
+                                "record_ids": [],
+                                "table_id": "JLPfHt5KW4PpanBBWX4V6"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-tables",
+                              "qadamVersion": "0.5.1"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          "settings": {
+                            "actionName": "tables-find-records",
+                            "errorHandlingOptions": {
+                              "continueOnFailure": {
+                                "value": false
+                              },
+                              "retryOnFailure": {
+                                "value": false
+                              }
+                            },
+                            "input": {
+                              "columns": [
+                                "ecOXPzqTqu2ktJ2Uj330k"
+                              ],
+                              "filters": {
+                                "filters": [
+                                  {
+                                    "field": {
+                                      "id": "ecOXPzqTqu2ktJ2Uj330k",
+                                      "name": "telegram_id",
+                                      "type": "TEXT"
+                                    },
+                                    "operator": "eq",
+                                    "value": "{{step_1['output'].telegramId}}"
+                                  }
+                                ]
+                              },
+                              "record_ids": [],
+                              "table_id": "PnDy6gw9tlLUqTGk2EOUn"
+                            },
+                            "propertySettings": {},
+                            "qadamName": "@aiqadam/qadam-tables",
+                            "qadamVersion": "0.5.1"
+                          },
+                          "type": "PIECE",
+                          "valid": true
+                        },
+                        "settings": {
+                          "actionName": "tables-find-records",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "columns": [
+                              "Rs62LH1YLr1QBsnpIrJzH"
+                            ],
+                            "filters": {
+                              "filters": [
+                                {
+                                  "field": {
+                                    "id": "Rs62LH1YLr1QBsnpIrJzH",
+                                    "name": "telegram_id",
+                                    "type": "TEXT"
+                                  },
+                                  "operator": "eq",
+                                  "value": "{{step_1['output'].telegramId}}"
+                                }
+                              ]
+                            },
+                            "record_ids": [],
+                            "table_id": "t1g8Vae3iEoDk93D6Rle7"
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-tables",
+                          "qadamVersion": "0.5.1"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "settings": {
+                        "actionName": "tables-find-records",
+                        "errorHandlingOptions": {
+                          "continueOnFailure": {
+                            "value": false
+                          },
+                          "retryOnFailure": {
+                            "value": false
+                          }
+                        },
+                        "input": {
+                          "columns": [
+                            "wiYzzqiHQP9vfWgDgQ9ki"
+                          ],
+                          "filters": {
+                            "filters": [
+                              {
+                                "field": {
+                                  "id": "wiYzzqiHQP9vfWgDgQ9ki",
+                                  "name": "telegram_id",
+                                  "type": "TEXT"
+                                },
+                                "operator": "eq",
+                                "value": "{{step_1['output'].telegramId}}"
+                              }
+                            ]
+                          },
+                          "record_ids": [],
+                          "table_id": "LKEqlq1X7RuWz5WC4zkov"
+                        },
+                        "propertySettings": {},
+                        "qadamName": "@aiqadam/qadam-tables",
+                        "qadamVersion": "0.5.1"
+                      },
+                      "type": "PIECE",
+                      "valid": true
+                    },
+                    "settings": {
+                      "actionName": "tables-find-records",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "columns": [
+                          "YCln1HsH5h0pN0DQ6VzU5"
+                        ],
+                        "filters": {
+                          "filters": [
+                            {
+                              "field": {
+                                "id": "YCln1HsH5h0pN0DQ6VzU5",
+                                "name": "telegram_id",
+                                "type": "TEXT"
+                              },
+                              "operator": "eq",
+                              "value": "{{step_1['output'].telegramId}}"
+                            }
+                          ]
+                        },
+                        "record_ids": [],
+                        "table_id": "JPo7yK4N9lxN8HxBwpmRs"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-tables",
+                      "qadamVersion": "0.5.1"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  "settings": {
+                    "actionName": "tables-find-records",
+                    "errorHandlingOptions": {
+                      "continueOnFailure": {
+                        "value": false
+                      },
+                      "retryOnFailure": {
+                        "value": false
+                      }
+                    },
+                    "input": {
+                      "columns": [
+                        "2BAq301w1b6cMrkFhi6wN"
+                      ],
+                      "filters": {
+                        "filters": [
+                          {
+                            "field": {
+                              "id": "2BAq301w1b6cMrkFhi6wN",
+                              "name": "telegram_id",
+                              "type": "TEXT"
+                            },
+                            "operator": "eq",
+                            "value": "{{step_1['output'].telegramId}}"
+                          }
+                        ]
+                      },
+                      "record_ids": [],
+                      "table_id": "tcwKTQH8W1EG4SHeHdoRr"
+                    },
+                    "propertySettings": {},
+                    "qadamName": "@aiqadam/qadam-tables",
+                    "qadamVersion": "0.5.1"
+                  },
+                  "type": "PIECE",
+                  "valid": true
+                },
+                "settings": {
+                  "actionName": "tables-find-records",
+                  "errorHandlingOptions": {
+                    "continueOnFailure": {
+                      "value": false
+                    },
+                    "retryOnFailure": {
+                      "value": false
+                    }
+                  },
+                  "input": {
+                    "columns": [
+                      "N8CdPxcdxLX9vFCINvZbL"
+                    ],
+                    "filters": {
+                      "filters": [
+                        {
+                          "field": {
+                            "id": "N8CdPxcdxLX9vFCINvZbL",
+                            "name": "telegram_id",
+                            "type": "TEXT"
+                          },
+                          "operator": "eq",
+                          "value": "{{step_1['output'].telegramId}}"
+                        }
+                      ]
+                    },
+                    "record_ids": [],
+                    "table_id": "toTKgngMTqDNJWDpQMh4d"
+                  },
+                  "propertySettings": {},
+                  "qadamName": "@aiqadam/qadam-tables",
+                  "qadamVersion": "0.5.1"
+                },
+                "type": "PIECE",
+                "valid": true
+              },
+              "settings": {
+                "actionName": "tables-find-records",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "columns": [
+                    "vzeXDhJwTFpXrbt04g5HY"
+                  ],
+                  "filters": {
+                    "filters": [
+                      {
+                        "field": {
+                          "id": "vzeXDhJwTFpXrbt04g5HY",
+                          "name": "telegram_id",
+                          "type": "TEXT"
+                        },
+                        "operator": "eq",
+                        "value": "{{step_1['output'].telegramId}}"
+                      }
+                    ]
+                  },
+                  "record_ids": [],
+                  "table_id": "PAH81WchbaOixGXSdFBK1"
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-tables",
+                "qadamVersion": "0.5.1"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "tables-find-records",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "columns": [
+                  "Due6SRYplDMqO1qZzcy0N"
+                ],
+                "filters": {
+                  "filters": [
+                    {
+                      "field": {
+                        "id": "Due6SRYplDMqO1qZzcy0N",
+                        "name": "telegram_id",
+                        "type": "TEXT"
+                      },
+                      "operator": "eq",
+                      "value": "{{step_1['output'].telegramId}}"
+                    }
+                  ]
+                },
+                "record_ids": [],
+                "table_id": "GgGUQEHp6g076nDb2XddP"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-tables",
+              "qadamVersion": "0.5.1"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "actionName": "tables-find-records",
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "columns": [
+                "mVfpZFCwAZskWXNT7iCuI",
+                "qQPYl9c0ew6n8w2CGYZII"
+              ],
+              "filters": {
+                "filters": [
+                  {
+                    "field": {
+                      "id": "mVfpZFCwAZskWXNT7iCuI",
+                      "name": "telegram_id",
+                      "type": "TEXT"
+                    },
+                    "operator": "eq",
+                    "value": "{{step_1['output'].telegramId}}"
+                  }
+                ]
+              },
+              "record_ids": [],
+              "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+            },
+            "propertySettings": {},
+            "qadamName": "@aiqadam/qadam-tables",
+            "qadamVersion": "0.5.1"
+          },
+          "type": "PIECE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "tables-find-records",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "columns": [
+              "6KqxIPre6r76ycWhCX8uU"
+            ],
+            "filters": {
+              "filters": [
+                {
+                  "field": {
+                    "id": "6KqxIPre6r76ycWhCX8uU",
+                    "name": "staff_id",
+                    "type": "TEXT"
+                  },
+                  "operator": "eq",
+                  "value": "{{step_1['output'].telegramId}}"
+                }
+              ]
+            },
+            "limit": 1,
+            "record_ids": [],
+            "table_id": "R4aSQpLZvw7d3u6DVOSjH"
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-tables",
+          "qadamVersion": "0.5.1"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "telegram_id": "{{trigger['output'].data.telegramId}}"
+        },
+        "sourceCode": {
+          "code": "// fn-delete-person input (ADR-0059 §1). Fail closed on a bad id. logInput/logOutput OFF.\nexport const code = async (inputs) => {\n  const tid = inputs.telegram_id;\n  if (typeof tid !== 'string' || !/^[1-9][0-9]{0,15}$/.test(tid)) throw new Error('bad_telegram_id');\n  return { telegramId: tid };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "sampleData": {
+            "telegramId": "9000000000000901"
+          }
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.17",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}
