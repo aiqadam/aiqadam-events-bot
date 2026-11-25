@@ -1,0 +1,498 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "id-member-deleted",
+  "localeSource": null,
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "catch_webhook",
+    "logOutput": false,
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "verify",
+      "logInput": false,
+      "logOutput": false,
+      "name": "step_1",
+      "nextAction": {
+        "children": [
+          {
+            "displayName": "claim request_id",
+            "name": "step_3",
+            "nextAction": {
+              "displayName": "gate",
+              "name": "step_4",
+              "nextAction": {
+                "children": [
+                  {
+                    "continueOnFailureBranches": {
+                      "onFailure": {
+                        "displayName": "respond 500 error",
+                        "name": "step_7",
+                        "settings": {
+                          "actionName": "return_response",
+                          "errorHandlingOptions": {
+                            "continueOnFailure": {
+                              "value": false
+                            },
+                            "retryOnFailure": {
+                              "value": false
+                            }
+                          },
+                          "input": {
+                            "fields": {
+                              "body": {
+                                "done": false,
+                                "reason": "error"
+                              },
+                              "headers": {},
+                              "status": "500"
+                            },
+                            "respond": "stop",
+                            "responseType": "json"
+                          },
+                          "propertySettings": {},
+                          "qadamName": "@aiqadam/qadam-webhook",
+                          "qadamVersion": "0.1.38"
+                        },
+                        "type": "PIECE",
+                        "valid": true
+                      },
+                      "onSuccess": {
+                        "children": [
+                          {
+                            "displayName": "respond 200 done",
+                            "name": "step_9",
+                            "settings": {
+                              "actionName": "return_response",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "fields": {
+                                  "body": {
+                                    "done": true
+                                  },
+                                  "headers": {},
+                                  "status": "200"
+                                },
+                                "respond": "stop",
+                                "responseType": "json"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-webhook",
+                              "qadamVersion": "0.1.38"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          {
+                            "displayName": "respond 200 author",
+                            "name": "step_10",
+                            "settings": {
+                              "actionName": "return_response",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "fields": {
+                                  "body": {
+                                    "done": false,
+                                    "reason": "author_of_events"
+                                  },
+                                  "headers": {},
+                                  "status": "200"
+                                },
+                                "respond": "stop",
+                                "responseType": "json"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-webhook",
+                              "qadamVersion": "0.1.38"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          },
+                          {
+                            "displayName": "respond 500 incomplete",
+                            "name": "step_11",
+                            "settings": {
+                              "actionName": "return_response",
+                              "errorHandlingOptions": {
+                                "continueOnFailure": {
+                                  "value": false
+                                },
+                                "retryOnFailure": {
+                                  "value": false
+                                }
+                              },
+                              "input": {
+                                "fields": {
+                                  "body": {
+                                    "done": false,
+                                    "reason": "error"
+                                  },
+                                  "headers": {},
+                                  "status": "500"
+                                },
+                                "respond": "stop",
+                                "responseType": "json"
+                              },
+                              "propertySettings": {},
+                              "qadamName": "@aiqadam/qadam-webhook",
+                              "qadamVersion": "0.1.38"
+                            },
+                            "type": "PIECE",
+                            "valid": true
+                          }
+                        ],
+                        "displayName": "outcome",
+                        "name": "step_8",
+                        "settings": {
+                          "branches": [
+                            {
+                              "branchName": "done",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "firstValue": "{{step_6['output'].data.done}}",
+                                    "operator": "BOOLEAN_IS_TRUE"
+                                  },
+                                  {
+                                    "firstValue": "{{step_6['output'].data.deleted}}",
+                                    "operator": "BOOLEAN_IS_TRUE"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "author",
+                              "branchType": "CONDITION",
+                              "conditions": [
+                                [
+                                  {
+                                    "caseSensitive": true,
+                                    "firstValue": "{{step_6['output'].data.reason}}",
+                                    "operator": "TEXT_EXACTLY_MATCHES",
+                                    "secondValue": "author_of_events"
+                                  },
+                                  {
+                                    "firstValue": "{{step_6['output'].data.deleted}}",
+                                    "operator": "BOOLEAN_IS_TRUE"
+                                  },
+                                  {
+                                    "firstValue": "{{step_6['output'].data.done}}",
+                                    "operator": "BOOLEAN_IS_FALSE"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "branchName": "Otherwise",
+                              "branchType": "FALLBACK"
+                            }
+                          ],
+                          "executionType": "EXECUTE_FIRST_MATCH"
+                        },
+                        "type": "ROUTER",
+                        "valid": true
+                      }
+                    },
+                    "displayName": "delete person",
+                    "logInput": false,
+                    "name": "step_6",
+                    "settings": {
+                      "actionName": "callFlow",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": true
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "executionMode": "inline",
+                        "flow": {
+                          "externalId": "fw93HfqLHPLC5gpllve1r"
+                        },
+                        "flowProps": {
+                          "payload": {
+                            "refuseIfAuthor": false,
+                            "telegramId": "{{step_1['output'].telegramId}}"
+                          }
+                        },
+                        "mode": "simple",
+                        "waitForResponse": true
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-subflows",
+                      "qadamVersion": "0.4.17"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  {
+                    "displayName": "respond 409 replay",
+                    "name": "step_12",
+                    "settings": {
+                      "actionName": "return_response",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "fields": {
+                          "body": {
+                            "done": false,
+                            "reason": "replay"
+                          },
+                          "headers": {},
+                          "status": "409"
+                        },
+                        "respond": "stop",
+                        "responseType": "json"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-webhook",
+                      "qadamVersion": "0.1.38"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  },
+                  {
+                    "displayName": "respond 400 bad body",
+                    "name": "step_13",
+                    "settings": {
+                      "actionName": "return_response",
+                      "errorHandlingOptions": {
+                        "continueOnFailure": {
+                          "value": false
+                        },
+                        "retryOnFailure": {
+                          "value": false
+                        }
+                      },
+                      "input": {
+                        "fields": {
+                          "body": {
+                            "done": false,
+                            "reason": "bad_body"
+                          },
+                          "headers": {},
+                          "status": "400"
+                        },
+                        "respond": "stop",
+                        "responseType": "json"
+                      },
+                      "propertySettings": {},
+                      "qadamName": "@aiqadam/qadam-webhook",
+                      "qadamVersion": "0.1.38"
+                    },
+                    "type": "PIECE",
+                    "valid": true
+                  }
+                ],
+                "displayName": "route",
+                "name": "step_5",
+                "settings": {
+                  "branches": [
+                    {
+                      "branchName": "delete",
+                      "branchType": "CONDITION",
+                      "conditions": [
+                        [
+                          {
+                            "caseSensitive": true,
+                            "firstValue": "{{step_4['output'].route}}",
+                            "operator": "TEXT_EXACTLY_MATCHES",
+                            "secondValue": "delete"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "branchName": "replay",
+                      "branchType": "CONDITION",
+                      "conditions": [
+                        [
+                          {
+                            "caseSensitive": true,
+                            "firstValue": "{{step_4['output'].route}}",
+                            "operator": "TEXT_EXACTLY_MATCHES",
+                            "secondValue": "replay"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "branchName": "Otherwise",
+                      "branchType": "FALLBACK"
+                    }
+                  ],
+                  "executionType": "EXECUTE_FIRST_MATCH"
+                },
+                "type": "ROUTER",
+                "valid": true
+              },
+              "settings": {
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "body_ok": "{{step_1['output'].bodyOk}}",
+                  "stored": "{{step_3['output'].stored}}"
+                },
+                "sourceCode": {
+                  "code": "// id-member-deleted gate (ADR-0059 §3): replay → 409, bad body → 400, else delete. No PD in or out.\nexport const code = async (inputs) => {\n  const yes = (v) => v === true || v === 'true';\n  if (!yes(inputs.stored)) return { route: 'replay' };\n  if (!yes(inputs.body_ok)) return { route: 'bad_body' };\n  return { route: 'delete' };\n};",
+                  "packageJson": "{}"
+                }
+              },
+              "type": "CODE",
+              "valid": true
+            },
+            "settings": {
+              "actionName": "put_if_absent",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "key": "idrq:{{step_1['output'].requestId}}",
+                "store_scope": "COLLECTION",
+                "ttl_seconds": 360,
+                "value": "1"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-store",
+              "qadamVersion": "0.7.0"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          {
+            "displayName": "respond 401 reject",
+            "name": "step_14",
+            "settings": {
+              "actionName": "return_response",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "fields": {
+                  "body": {
+                    "done": false,
+                    "reason": "{{step_1['output'].reason}}"
+                  },
+                  "headers": {},
+                  "status": "401"
+                },
+                "respond": "stop",
+                "responseType": "json"
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-webhook",
+              "qadamVersion": "0.1.38"
+            },
+            "type": "PIECE",
+            "valid": true
+          }
+        ],
+        "displayName": "signature",
+        "name": "step_2",
+        "settings": {
+          "branches": [
+            {
+              "branchName": "verified",
+              "branchType": "CONDITION",
+              "conditions": [
+                [
+                  {
+                    "firstValue": "{{step_1['output'].ok}}",
+                    "operator": "BOOLEAN_IS_TRUE"
+                  }
+                ]
+              ]
+            },
+            {
+              "branchName": "Otherwise",
+              "branchType": "FALLBACK"
+            }
+          ],
+          "executionType": "EXECUTE_FIRST_MATCH"
+        },
+        "type": "ROUTER",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "body": "{{trigger['output'].body.body}}",
+          "key": "{{variables['id_module_key']}}",
+          "module": "{{trigger['output'].body.module}}",
+          "request_id": "{{trigger['output'].body.request_id}}",
+          "signature": "{{trigger['output'].body.signature}}",
+          "ts": "{{trigger['output'].body.ts}}",
+          "type": "{{trigger['output'].body.type}}"
+        },
+        "sourceCode": {
+          "code": "// id-event-verify (ADR-0059 §3, ID ADR-0018). logInput/logOutput OFF: the key and telegram_id.\nexport const code = async (inputs) => {\n  const crypto = require('node:crypto');\n  const s = (v) => (v === undefined || v === null ? '' : String(v));\n  const reject = (reason) => ({ ok: false, reason, requestId: '', bodyOk: false, telegramId: '' });\n  const key = inputs.key;\n  if (typeof key !== 'string' || key.length < 32 || key.includes('{{')) return reject('not_configured');\n  if (s(inputs.type) !== 'id.member-deleted.v1') return reject('bad_type');\n  const module = s(inputs.module);\n  if (module !== 'events') return reject('unknown_module');\n  const ts = s(inputs.ts), requestId = s(inputs.request_id), signature = s(inputs.signature);\n  if (!/^[0-9]{1,12}$/.test(ts) || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) || !/^[0-9a-f]{64}$/.test(signature)) return reject('malformed');\n  const now = Math.floor((Number.isFinite(inputs.now_ms) ? inputs.now_ms : Date.now()) / 1000);\n  const tsNum = Number(ts);\n  if (now - tsNum > 300) return reject('expired');\n  if (tsNum - now > 60) return reject('skew');\n  const canon = (v) => {\n    if (v === null || v === undefined) return 'null';\n    if (typeof v !== 'object') return JSON.stringify(v);\n    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';\n    return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';\n  };\n  const bodyHash = crypto.createHash('sha256').update(canon(inputs.body), 'utf8').digest('hex');\n  const canonical = 'id.member-deleted.v1\\n' + module + '\\n' + ts + '\\n' + requestId + '\\n' + bodyHash;\n  const expected = Buffer.from(crypto.createHmac('sha256', key).update(canonical, 'utf8').digest('hex'), 'utf8');\n  const got = Buffer.from(signature, 'utf8');\n  if (expected.length !== got.length || !crypto.timingSafeEqual(expected, got)) return reject('bad_signature');\n  const b = inputs.body;\n  const tid = b && typeof b === 'object' && !Array.isArray(b) && typeof b.telegram_id === 'string' ? b.telegram_id : '';\n  const bodyOk = /^[1-9][0-9]{0,15}$/.test(tid);\n  return { ok: true, reason: 'ok', requestId, bodyOk, telegramId: bodyOk ? tid : '' };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "authFields": {},
+        "authType": "none"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-webhook",
+      "qadamVersion": "0.1.38",
+      "triggerName": "catch_webhook"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

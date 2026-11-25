@@ -344,6 +344,7 @@
   "profile.city": "Shahar",
   "profile.company": "Kompaniya",
   "profile.company_hint": "Tashlab ketish mumkin — frilanser, talaba.",
+  "profile.delete.author": "Siz tadbirlar muallifisiz, shuning uchun akkauntni hozircha oʻchirib boʻlmaydi. Bot egasidan tadbirlaringizni boshqa tashkilotchiga oʻtkazishni soʻrang, soʻng akkauntni oʻchiring.",
   "profile.delete.btn": "Akkauntni oʻchirish",
   "profile.delete.cancel": "Oʻchirmaslik",
   "profile.delete.confirm": "Akkaunt va barcha maʼlumotlar oʻchirilsinmi? Buni qaytarib boʻlmaydi: profil, roʻyxatlar va fikrlar yoʻqoladi.",

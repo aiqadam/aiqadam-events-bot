@@ -9,38 +9,53 @@
   "state": "LOCKED",
   "trigger": {
     "displayName": "catch_webhook",
+    "logOutput": false,
     "name": "trigger",
     "nextAction": {
       "displayName": "verify initData",
+      "logInput": false,
+      "logOutput": false,
       "name": "step_1",
       "nextAction": {
         "displayName": "normalize request",
+        "logInput": false,
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "children": [
             {
               "displayName": "read my registrations",
+              "logInput": false,
+              "logOutput": false,
               "name": "step_6",
               "nextAction": {
                 "displayName": "read event registrations",
+                "logOutput": false,
                 "name": "step_7",
                 "nextAction": {
                   "displayName": "read event",
+                  "logOutput": false,
                   "name": "step_8",
                   "nextAction": {
                     "displayName": "read user profile",
+                    "logInput": false,
+                    "logOutput": false,
                     "name": "step_17",
                     "nextAction": {
                       "displayName": "decide",
+                      "logInput": false,
+                      "logOutput": false,
                       "name": "step_9",
                       "nextAction": {
                         "children": [
                           {
                             "displayName": "create or reactivate registration",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_11",
                             "nextAction": {
                               "displayName": "save consents (skipped, W60 — profileDone уже несёт согласия)",
+                              "logInput": false,
                               "logOutput": false,
                               "name": "step_12",
                               "nextAction": {
@@ -155,6 +170,7 @@
                           },
                           {
                             "displayName": "cancel registration",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_14",
                             "nextAction": {
@@ -230,14 +246,18 @@
                           },
                           {
                             "displayName": "create registration (with profile)",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_18",
                             "nextAction": {
                               "displayName": "save consents + profile",
+                              "logInput": false,
                               "logOutput": false,
                               "name": "step_19",
                               "nextAction": {
                                 "displayName": "respond (registered with profile)",
+                                "logInput": false,
+                                "logOutput": false,
                                 "name": "step_20",
                                 "settings": {
                                   "actionName": "return_response",
@@ -356,6 +376,8 @@
                           },
                           {
                             "displayName": "respond (profile)",
+                            "logInput": false,
+                            "logOutput": false,
                             "name": "step_21",
                             "settings": {
                               "actionName": "return_response",
@@ -397,10 +419,13 @@
                           },
                           {
                             "displayName": "save profile (tab)",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_22",
                             "nextAction": {
                               "displayName": "respond (profile saved)",
+                              "logInput": false,
+                              "logOutput": false,
                               "name": "step_23",
                               "settings": {
                                 "actionName": "return_response",
@@ -484,493 +509,17 @@
                             "valid": true
                           },
                           {
-                            "displayName": "del: read registrations",
-                            "name": "step_24",
+                            "displayName": "del: fn-delete-person",
+                            "logInput": false,
+                            "name": "step_46",
                             "nextAction": {
-                              "displayName": "del: loop registrations",
-                              "firstLoopAction": {
-                                "displayName": "del: delete registration",
-                                "name": "step_26",
-                                "settings": {
-                                  "actionName": "tables-delete-record",
-                                  "errorHandlingOptions": {
-                                    "continueOnFailure": {
-                                      "value": false
-                                    },
-                                    "retryOnFailure": {
-                                      "value": false
-                                    }
-                                  },
-                                  "input": {
-                                    "records_ids": [
-                                      "{{step_25['output'].item.id}}"
-                                    ],
-                                    "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
-                                  },
-                                  "propertySettings": {},
-                                  "qadamName": "@aiqadam/qadam-tables",
-                                  "qadamVersion": "0.5.1"
-                                },
-                                "type": "PIECE",
-                                "valid": true
-                              },
-                              "name": "step_25",
+                              "displayName": "del: outcome",
+                              "name": "step_47",
                               "nextAction": {
-                                "displayName": "del: read feedback",
-                                "name": "step_27",
-                                "nextAction": {
-                                  "displayName": "del: loop feedback",
-                                  "firstLoopAction": {
-                                    "displayName": "del: delete feedback",
-                                    "name": "step_29",
-                                    "settings": {
-                                      "actionName": "tables-delete-record",
-                                      "errorHandlingOptions": {
-                                        "continueOnFailure": {
-                                          "value": false
-                                        },
-                                        "retryOnFailure": {
-                                          "value": false
-                                        }
-                                      },
-                                      "input": {
-                                        "records_ids": [
-                                          "{{step_28['output'].item.id}}"
-                                        ],
-                                        "table_id": "GgGUQEHp6g076nDb2XddP"
-                                      },
-                                      "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-tables",
-                                      "qadamVersion": "0.5.1"
-                                    },
-                                    "type": "PIECE",
-                                    "valid": true
-                                  },
-                                  "name": "step_28",
-                                  "nextAction": {
-                                    "displayName": "del: read broadcast targets",
-                                    "name": "step_30",
-                                    "nextAction": {
-                                      "displayName": "del: loop broadcast targets",
-                                      "firstLoopAction": {
-                                        "displayName": "del: delete broadcast target",
-                                        "name": "step_32",
-                                        "settings": {
-                                          "actionName": "tables-delete-record",
-                                          "errorHandlingOptions": {
-                                            "continueOnFailure": {
-                                              "value": false
-                                            },
-                                            "retryOnFailure": {
-                                              "value": false
-                                            }
-                                          },
-                                          "input": {
-                                            "records_ids": [
-                                              "{{step_31['output'].item.id}}"
-                                            ],
-                                            "table_id": "PAH81WchbaOixGXSdFBK1"
-                                          },
-                                          "propertySettings": {},
-                                          "qadamName": "@aiqadam/qadam-tables",
-                                          "qadamVersion": "0.5.1"
-                                        },
-                                        "type": "PIECE",
-                                        "valid": true
-                                      },
-                                      "name": "step_31",
-                                      "nextAction": {
-                                        "displayName": "del: read sessions",
-                                        "name": "step_33",
-                                        "nextAction": {
-                                          "displayName": "del: loop sessions",
-                                          "firstLoopAction": {
-                                            "displayName": "del: delete session",
-                                            "name": "step_35",
-                                            "settings": {
-                                              "actionName": "tables-delete-record",
-                                              "errorHandlingOptions": {
-                                                "continueOnFailure": {
-                                                  "value": false
-                                                },
-                                                "retryOnFailure": {
-                                                  "value": false
-                                                }
-                                              },
-                                              "input": {
-                                                "records_ids": [
-                                                  "{{step_34['output'].item.id}}"
-                                                ],
-                                                "table_id": "toTKgngMTqDNJWDpQMh4d"
-                                              },
-                                              "propertySettings": {},
-                                              "qadamName": "@aiqadam/qadam-tables",
-                                              "qadamVersion": "0.5.0"
-                                            },
-                                            "type": "PIECE",
-                                            "valid": true
-                                          },
-                                          "name": "step_34",
-                                          "nextAction": {
-                                            "displayName": "del: read quiz answers",
-                                            "name": "step_40",
-                                            "nextAction": {
-                                              "displayName": "del: loop quiz answers",
-                                              "firstLoopAction": {
-                                                "displayName": "del: delete quiz answer",
-                                                "name": "step_42",
-                                                "settings": {
-                                                  "actionName": "tables-delete-record",
-                                                  "errorHandlingOptions": {
-                                                    "continueOnFailure": {
-                                                      "value": false
-                                                    },
-                                                    "retryOnFailure": {
-                                                      "value": false
-                                                    }
-                                                  },
-                                                  "input": {
-                                                    "records_ids": [
-                                                      "{{step_41['output'].item.id}}"
-                                                    ],
-                                                    "table_id": "tcwKTQH8W1EG4SHeHdoRr"
-                                                  },
-                                                  "propertySettings": {},
-                                                  "qadamName": "@aiqadam/qadam-tables",
-                                                  "qadamVersion": "0.5.1"
-                                                },
-                                                "type": "PIECE",
-                                                "valid": true
-                                              },
-                                              "name": "step_41",
-                                              "nextAction": {
-                                                "displayName": "del: read quiz attempts",
-                                                "name": "step_43",
-                                                "nextAction": {
-                                                  "displayName": "del: loop quiz attempts",
-                                                  "firstLoopAction": {
-                                                    "displayName": "del: delete quiz attempt",
-                                                    "name": "step_45",
-                                                    "settings": {
-                                                      "actionName": "tables-delete-record",
-                                                      "errorHandlingOptions": {
-                                                        "continueOnFailure": {
-                                                          "value": false
-                                                        },
-                                                        "retryOnFailure": {
-                                                          "value": false
-                                                        }
-                                                      },
-                                                      "input": {
-                                                        "records_ids": [
-                                                          "{{step_44['output'].item.id}}"
-                                                        ],
-                                                        "table_id": "JPo7yK4N9lxN8HxBwpmRs"
-                                                      },
-                                                      "propertySettings": {},
-                                                      "qadamName": "@aiqadam/qadam-tables",
-                                                      "qadamVersion": "0.5.1"
-                                                    },
-                                                    "type": "PIECE",
-                                                    "valid": true
-                                                  },
-                                                  "name": "step_44",
-                                                  "nextAction": {
-                                                    "displayName": "del: read users",
-                                                    "name": "step_36",
-                                                    "nextAction": {
-                                                      "displayName": "del: loop users",
-                                                      "firstLoopAction": {
-                                                        "displayName": "del: delete user",
-                                                        "name": "step_38",
-                                                        "settings": {
-                                                          "actionName": "tables-delete-record",
-                                                          "errorHandlingOptions": {
-                                                            "continueOnFailure": {
-                                                              "value": false
-                                                            },
-                                                            "retryOnFailure": {
-                                                              "value": false
-                                                            }
-                                                          },
-                                                          "input": {
-                                                            "records_ids": [
-                                                              "{{step_37['output'].item.id}}"
-                                                            ],
-                                                            "table_id": "xHhYjhwqKdONkrYJGcBsz"
-                                                          },
-                                                          "propertySettings": {},
-                                                          "qadamName": "@aiqadam/qadam-tables",
-                                                          "qadamVersion": "0.5.0"
-                                                        },
-                                                        "type": "PIECE",
-                                                        "valid": true
-                                                      },
-                                                      "name": "step_37",
-                                                      "nextAction": {
-                                                        "displayName": "respond (delete account)",
-                                                        "name": "step_39",
-                                                        "settings": {
-                                                          "actionName": "return_response",
-                                                          "errorHandlingOptions": {
-                                                            "continueOnFailure": {
-                                                              "value": false
-                                                            },
-                                                            "retryOnFailure": {
-                                                              "value": false
-                                                            }
-                                                          },
-                                                          "input": {
-                                                            "fields": {
-                                                              "body": {
-                                                                "error": "{{step_9['output'].error}}",
-                                                                "eventId": "{{step_9['output'].eventId}}",
-                                                                "ok": "{{step_9['output'].ok}}",
-                                                                "outcome": "{{step_9['output'].outcome}}",
-                                                                "reason": "{{step_9['output'].reason}}",
-                                                                "text": "{{step_9['output'].text}}"
-                                                              },
-                                                              "headers": {},
-                                                              "status": "{{step_9['output'].httpStatus}}"
-                                                            },
-                                                            "respond": "stop",
-                                                            "responseType": "json"
-                                                          },
-                                                          "propertySettings": {},
-                                                          "qadamName": "@aiqadam/qadam-webhook",
-                                                          "qadamVersion": "0.1.37"
-                                                        },
-                                                        "type": "PIECE",
-                                                        "valid": true
-                                                      },
-                                                      "settings": {
-                                                        "items": "{{step_36['output']}}"
-                                                      },
-                                                      "type": "LOOP_ON_ITEMS",
-                                                      "valid": true
-                                                    },
-                                                    "settings": {
-                                                      "actionName": "tables-find-records",
-                                                      "errorHandlingOptions": {
-                                                        "continueOnFailure": {
-                                                          "value": false
-                                                        },
-                                                        "retryOnFailure": {
-                                                          "value": false
-                                                        }
-                                                      },
-                                                      "input": {
-                                                        "columns": [
-                                                          "JtylZU291K7TuMn9c9F2t"
-                                                        ],
-                                                        "filters": {
-                                                          "filters": [
-                                                            {
-                                                              "field": {
-                                                                "id": "JtylZU291K7TuMn9c9F2t",
-                                                                "name": "telegram_id",
-                                                                "type": "TEXT"
-                                                              },
-                                                              "operator": "eq",
-                                                              "value": "{{step_2['output'].telegramId}}"
-                                                            }
-                                                          ]
-                                                        },
-                                                        "limit": 5,
-                                                        "record_ids": [],
-                                                        "table_id": "xHhYjhwqKdONkrYJGcBsz"
-                                                      },
-                                                      "propertySettings": {},
-                                                      "qadamName": "@aiqadam/qadam-tables",
-                                                      "qadamVersion": "0.5.0"
-                                                    },
-                                                    "type": "PIECE",
-                                                    "valid": true
-                                                  },
-                                                  "settings": {
-                                                    "items": "{{step_43['output']}}"
-                                                  },
-                                                  "type": "LOOP_ON_ITEMS",
-                                                  "valid": true
-                                                },
-                                                "settings": {
-                                                  "actionName": "tables-find-records",
-                                                  "errorHandlingOptions": {
-                                                    "continueOnFailure": {
-                                                      "value": false
-                                                    },
-                                                    "retryOnFailure": {
-                                                      "value": false
-                                                    }
-                                                  },
-                                                  "input": {
-                                                    "columns": [
-                                                      "zbgUjxPT1E7G6lE0u79Py"
-                                                    ],
-                                                    "filters": {
-                                                      "filters": [
-                                                        {
-                                                          "field": {
-                                                            "id": "YCln1HsH5h0pN0DQ6VzU5",
-                                                            "name": "telegram_id",
-                                                            "type": "TEXT"
-                                                          },
-                                                          "operator": "eq",
-                                                          "value": "{{step_2['output'].telegramId}}"
-                                                        }
-                                                      ]
-                                                    },
-                                                    "limit": 200,
-                                                    "record_ids": [],
-                                                    "table_id": "JPo7yK4N9lxN8HxBwpmRs"
-                                                  },
-                                                  "propertySettings": {},
-                                                  "qadamName": "@aiqadam/qadam-tables",
-                                                  "qadamVersion": "0.5.1"
-                                                },
-                                                "type": "PIECE",
-                                                "valid": true
-                                              },
-                                              "settings": {
-                                                "items": "{{step_40['output']}}"
-                                              },
-                                              "type": "LOOP_ON_ITEMS",
-                                              "valid": true
-                                            },
-                                            "settings": {
-                                              "actionName": "tables-find-records",
-                                              "errorHandlingOptions": {
-                                                "continueOnFailure": {
-                                                  "value": false
-                                                },
-                                                "retryOnFailure": {
-                                                  "value": false
-                                                }
-                                              },
-                                              "input": {
-                                                "columns": [
-                                                  "5KdiLsnBLjzmGztcRNVNE"
-                                                ],
-                                                "filters": {
-                                                  "filters": [
-                                                    {
-                                                      "field": {
-                                                        "id": "2BAq301w1b6cMrkFhi6wN",
-                                                        "name": "telegram_id",
-                                                        "type": "TEXT"
-                                                      },
-                                                      "operator": "eq",
-                                                      "value": "{{step_2['output'].telegramId}}"
-                                                    }
-                                                  ]
-                                                },
-                                                "limit": 200,
-                                                "record_ids": [],
-                                                "table_id": "tcwKTQH8W1EG4SHeHdoRr"
-                                              },
-                                              "propertySettings": {},
-                                              "qadamName": "@aiqadam/qadam-tables",
-                                              "qadamVersion": "0.5.1"
-                                            },
-                                            "type": "PIECE",
-                                            "valid": true
-                                          },
-                                          "settings": {
-                                            "items": "{{step_33['output']}}"
-                                          },
-                                          "type": "LOOP_ON_ITEMS",
-                                          "valid": true
-                                        },
-                                        "settings": {
-                                          "actionName": "tables-find-records",
-                                          "errorHandlingOptions": {
-                                            "continueOnFailure": {
-                                              "value": false
-                                            },
-                                            "retryOnFailure": {
-                                              "value": false
-                                            }
-                                          },
-                                          "input": {
-                                            "columns": [
-                                              "ESthrMwpn29JLvE2BNIj4"
-                                            ],
-                                            "filters": {
-                                              "filters": [
-                                                {
-                                                  "field": {
-                                                    "id": "N8CdPxcdxLX9vFCINvZbL",
-                                                    "name": "telegram_id",
-                                                    "type": "TEXT"
-                                                  },
-                                                  "operator": "eq",
-                                                  "value": "{{step_2['output'].telegramId}}"
-                                                }
-                                              ]
-                                            },
-                                            "limit": 50,
-                                            "record_ids": [],
-                                            "table_id": "toTKgngMTqDNJWDpQMh4d"
-                                          },
-                                          "propertySettings": {},
-                                          "qadamName": "@aiqadam/qadam-tables",
-                                          "qadamVersion": "0.5.1"
-                                        },
-                                        "type": "PIECE",
-                                        "valid": true
-                                      },
-                                      "settings": {
-                                        "items": "{{step_30['output']}}"
-                                      },
-                                      "type": "LOOP_ON_ITEMS",
-                                      "valid": true
-                                    },
-                                    "settings": {
-                                      "actionName": "tables-find-records",
-                                      "errorHandlingOptions": {
-                                        "continueOnFailure": {
-                                          "value": false
-                                        },
-                                        "retryOnFailure": {
-                                          "value": false
-                                        }
-                                      },
-                                      "input": {
-                                        "columns": [
-                                          "P9k6Pfcwfn67JQHQHQBle"
-                                        ],
-                                        "filters": {
-                                          "filters": [
-                                            {
-                                              "field": {
-                                                "id": "vzeXDhJwTFpXrbt04g5HY",
-                                                "name": "telegram_id",
-                                                "type": "TEXT"
-                                              },
-                                              "operator": "eq",
-                                              "value": "{{step_2['output'].telegramId}}"
-                                            }
-                                          ]
-                                        },
-                                        "limit": 200,
-                                        "record_ids": [],
-                                        "table_id": "PAH81WchbaOixGXSdFBK1"
-                                      },
-                                      "propertySettings": {},
-                                      "qadamName": "@aiqadam/qadam-tables",
-                                      "qadamVersion": "0.5.1"
-                                    },
-                                    "type": "PIECE",
-                                    "valid": true
-                                  },
-                                  "settings": {
-                                    "items": "{{step_27['output']}}"
-                                  },
-                                  "type": "LOOP_ON_ITEMS",
-                                  "valid": true
-                                },
+                                "displayName": "respond (delete account)",
+                                "name": "step_39",
                                 "settings": {
-                                  "actionName": "tables-find-records",
+                                  "actionName": "return_response",
                                   "errorHandlingOptions": {
                                     "continueOnFailure": {
                                       "value": false
@@ -980,41 +529,57 @@
                                     }
                                   },
                                   "input": {
-                                    "columns": [
-                                      "A5njEy7i4BUwpG0kh5omn"
-                                    ],
-                                    "filters": {
-                                      "filters": [
-                                        {
-                                          "field": {
-                                            "id": "Due6SRYplDMqO1qZzcy0N",
-                                            "name": "telegram_id",
-                                            "type": "TEXT"
-                                          },
-                                          "operator": "eq",
-                                          "value": "{{step_2['output'].telegramId}}"
-                                        }
-                                      ]
+                                    "fields": {
+                                      "body": {
+                                        "error": "{{step_47['output'].error}}",
+                                        "eventId": "{{step_47['output'].eventId}}",
+                                        "ok": "{{step_47['output'].ok}}",
+                                        "outcome": "{{step_47['output'].outcome}}",
+                                        "reason": "{{step_47['output'].reason}}",
+                                        "text": "{{step_47['output'].text}}"
+                                      },
+                                      "headers": {},
+                                      "status": "{{step_47['output'].httpStatus}}"
                                     },
-                                    "limit": 200,
-                                    "record_ids": [],
-                                    "table_id": "GgGUQEHp6g076nDb2XddP"
+                                    "respond": "stop",
+                                    "responseType": "json"
                                   },
                                   "propertySettings": {},
-                                  "qadamName": "@aiqadam/qadam-tables",
-                                  "qadamVersion": "0.5.1"
+                                  "qadamName": "@aiqadam/qadam-webhook",
+                                  "qadamVersion": "0.1.37"
                                 },
                                 "type": "PIECE",
                                 "valid": true
                               },
                               "settings": {
-                                "items": "{{step_24['output']}}"
+                                "errorHandlingOptions": {
+                                  "continueOnFailure": {
+                                    "value": false
+                                  },
+                                  "retryOnFailure": {
+                                    "value": false
+                                  }
+                                },
+                                "input": {
+                                  "deleted": "{{step_46['output'].data.deleted}}",
+                                  "done": "{{step_46['output'].data.done}}",
+                                  "eventId": "{{step_9['output'].eventId}}",
+                                  "httpStatus": "{{step_9['output'].httpStatus}}",
+                                  "outcome": "{{step_9['output'].outcome}}",
+                                  "reason": "{{step_46['output'].data.reason}}",
+                                  "textAuthor": "{{$t['profile.delete.author']}}",
+                                  "textDone": "{{step_9['output'].text}}"
+                                },
+                                "sourceCode": {
+                                  "code": "// reg-api del: outcome (ADR-0059 §4). Self-deletion answers ok only when fn-delete-person deleted\n// everything; an author of events gets 409 author_of_events and nothing is deleted. No PD here.\nexport const code = async (inputs) => {\n  const yes = (v) => v === true || v === 'true';\n  if (yes(inputs.done) && yes(inputs.deleted)) {\n    return { httpStatus: 200, ok: true, outcome: 'delete_account', error: '', reason: 'ok', text: String(inputs.textDone || ''), eventId: inputs.eventId || '' };\n  }\n  if (String(inputs.reason) === 'author_of_events' && !yes(inputs.deleted)) {\n    return { httpStatus: 409, ok: false, outcome: 'delete_account', error: 'author_of_events', reason: 'author_of_events', text: String(inputs.textAuthor || ''), eventId: inputs.eventId || '' };\n  }\n  throw new Error('delete_incomplete');\n};",
+                                  "packageJson": "{}"
+                                }
                               },
-                              "type": "LOOP_ON_ITEMS",
+                              "type": "CODE",
                               "valid": true
                             },
                             "settings": {
-                              "actionName": "tables-find-records",
+                              "actionName": "callFlow",
                               "errorHandlingOptions": {
                                 "continueOnFailure": {
                                   "value": false
@@ -1024,35 +589,35 @@
                                 }
                               },
                               "input": {
-                                "columns": [
-                                  "qQPYl9c0ew6n8w2CGYZII"
-                                ],
-                                "filters": {
-                                  "filters": [
-                                    {
-                                      "field": {
-                                        "id": "mVfpZFCwAZskWXNT7iCuI",
-                                        "name": "telegram_id",
-                                        "type": "TEXT"
-                                      },
-                                      "operator": "eq",
-                                      "value": "{{step_2['output'].telegramId}}"
+                                "executionMode": "inline",
+                                "flow": {
+                                  "exampleData": {
+                                    "sampleData": {
+                                      "telegramId": "9000000000000901"
                                     }
-                                  ]
+                                  },
+                                  "externalId": "fw93HfqLHPLC5gpllve1r"
                                 },
-                                "limit": 200,
-                                "record_ids": [],
-                                "table_id": "SM8tMxfQuQCHRDdAiNJyQ"
+                                "flowProps": {
+                                  "payload": {
+                                    "refuseIfAuthor": true,
+                                    "telegramId": "{{step_2['output'].telegramId}}"
+                                  }
+                                },
+                                "mode": "simple",
+                                "waitForResponse": true
                               },
                               "propertySettings": {},
-                              "qadamName": "@aiqadam/qadam-tables",
-                              "qadamVersion": "0.5.1"
+                              "qadamName": "@aiqadam/qadam-subflows",
+                              "qadamVersion": "0.4.17"
                             },
                             "type": "PIECE",
                             "valid": true
                           },
                           {
                             "displayName": "respond (mine / отказы)",
+                            "logInput": false,
+                            "logOutput": false,
                             "name": "step_16",
                             "settings": {
                               "actionName": "return_response",
@@ -1578,9 +1143,14 @@
         "authFields": {},
         "authType": "none"
       },
-      "propertySettings": {},
+      "propertySettings": {
+        "authFields": {
+          "schema": {},
+          "type": "MANUAL"
+        }
+      },
       "qadamName": "@aiqadam/qadam-webhook",
-      "qadamVersion": "0.1.35",
+      "qadamVersion": "0.1.38",
       "triggerName": "catch_webhook"
     },
     "type": "PIECE_TRIGGER",

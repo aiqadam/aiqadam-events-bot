@@ -42,6 +42,12 @@
     "source": "mcp"
   },
   {
+    "flow": "fn-delete-person",
+    "flowId": "7jtl15LMRI0bnxxRFCMeq",
+    "publishedVersionId": "P2uFC8YDe5X9uQmirANWa",
+    "source": "mcp"
+  },
+  {
     "flow": "fn-find-registration",
     "flowId": "2tUdR4D92NJB4f0kVgtAf",
     "publishedVersionId": "6cXVlA2F6m4Ts7Shb7YuK",
@@ -69,6 +75,12 @@
     "flow": "fn-verify-qr",
     "flowId": "JdHEzDO816Tc1bqYWLASQ",
     "publishedVersionId": "T80Fj7epvRxWhpgzU0Fz7",
+    "source": "mcp"
+  },
+  {
+    "flow": "id-member-deleted",
+    "flowId": "DnYhfp9irbV993MtLbIsh",
+    "publishedVersionId": "tJo8vdCZqHUkktyN0Ekoa",
     "source": "mcp"
   },
   {
@@ -122,7 +134,7 @@
   {
     "flow": "reg-api",
     "flowId": "SmutybV5qJQjQASJGY9vi",
-    "publishedVersionId": "4UE7iftapRWFtds4DxFeH",
+    "publishedVersionId": "xp52IqjKk9gqrroRbEt5J",
     "source": "mcp"
   },
   {

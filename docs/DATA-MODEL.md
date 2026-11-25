@@ -299,6 +299,22 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 после проверки `initData`; staff-гейта и проверки участия нет. Читает инбокс
 владелец вручную ([Q62](OPEN-QUESTIONS.md#q62)); автоуведомлений и digest нет.
 
+## `bot_contacts`
+
+Состояние доставки бота
+([ADR-0059](adr/0059-id-switch-prep-deletion-and-delivery-state.md) §2, W145). Данные модуля, в AI Qadam
+ID не уходят.
+
+| Поле | Тип | Примечание |
+| --- | --- | --- |
+| `telegram_id` | text, ключ (`keyFields`) | DAT-1 |
+| `lang` | text | `ru` \| `uz` \| `en`, язык интерфейса бота |
+| `blocked_bot` | boolean | ставит `bcast-run` на ответ Telegram 403 |
+| `last_contact_at` | timestamp | последний апдейт от человека, UTC |
+
+Пока пустая: писать в неё начинает пакет переключения (`tg-router` вместо `users`, `bcast-run` для
+`blocked_bot`). Удаляется подфлоу `fn-delete-person`.
+
 ## `quizzes`
 
 Окно викторины в чате ([ADR-0041](adr/0041-quiz-in-chat-not-a-page.md), W103).
@@ -354,8 +370,8 @@ limit = capacity пусто ? ∞ : ceil(capacity × (1 + overbook_pct / 100))
 Ключ `(quiz_id, telegram_id, question_idx)` — повторный ответ на тот же вопрос
 перезаписывает строку. Скоринга нет: победителей владелец определяет вне системы,
 выгружая таблицу. `answer` и `display_name` — ПД, поэтому самоудаление аккаунта
-([PAR-10](SPEC.md)) чистит и эти строки: `reg-api/delete_account` удаляет
-`quiz_answers` и `quiz_attempts` (W103, [ADR-0041](adr/0041-quiz-in-chat-not-a-page.md)).
+([PAR-10](SPEC.md)) чистит и эти строки: `fn-delete-person` удаляет
+`quiz_answers` и `quiz_attempts` (W103, [ADR-0041](adr/0041-quiz-in-chat-not-a-page.md); W145).
 
 ## Идемпотентность
 

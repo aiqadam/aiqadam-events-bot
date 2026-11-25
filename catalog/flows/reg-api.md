@@ -20,7 +20,7 @@
 | `register` | создать регистрацию идемпотентно (IDM-1) с двумя согласиями | `200 {ok, outcome:'registered', text}` / `200 {ok, outcome:'existing', text}` (повтор — та же строка) / отказы (см. ниже) |
 | `cancel` | отменить до `starts_at` (PAR-5) | `200 {ok, outcome:'cancelled', text}` / `404 not_registered` / `409 too_late` |
 | `set_lang` | выбор языка в табе «Профиль» (W114): пишет `users.lang` (`ru`/`uz`/`en`). Идёт существующей веткой `profile_saved` (перезапись того же профиля и согласия + `lang`); требует заполненный профиль | `200 {ok, outcome:'profile_saved', profile, lang}` / `400 profile_required` (профиль не заполнен) / `400 bad_request` (язык вне `ru\|uz\|en`) |
-| `delete_account` | самоудаление аккаунта (GDPR, W73, ADR-0039): строки вызывающего из `users`, `registrations`, `feedback`, `broadcast_targets`, `sessions`, `quiz_answers`, `quiz_attempts` (W103). Требует `confirm: true` | `200 {ok, outcome:'delete_account', text}` / `403 forbidden` (чужой `telegramId` в теле) / `400 bad_request` (нет подтверждения) |
+| `delete_account` | самоудаление аккаунта (GDPR, W73, ADR-0039, ADR-0059): вызов [`fn-delete-person`](fn-delete-person.md) с `refuseIfAuthor: true` — полный список удаления в одном месте (W145). Требует `confirm: true` | `200 {ok, outcome:'delete_account', text}` / `409 author_of_events` + текст `profile.delete.author` (человек — автор событий, ничего не удалено) / `403 forbidden` (чужой `telegramId` в теле) / `400 bad_request` (нет подтверждения) |
 
 Отказы `register`: `400 pdn_required` (PAR-1 не отмечен — сервер требует,
 кнопка в шите без него выключена), `400 bad_request`, `404 not_found`,
@@ -53,23 +53,17 @@
 | step_14 | `tables-upsert-records registrations` | отменить: `status = cancelled`, `cancelled_at = now`, ключ `(event_id, telegram_id)` |
 | step_15 | `return_response` (`stop`) | `200 {ok, outcome:'cancelled', text}` |
 | step_16 | `return_response` (`stop`) | `mine`, повторы, отказы — ответ из `step_9` без записей |
-| step_24→26 (`delete_account`) | `tables-find-records registrations` → `LOOP_ON_ITEMS` → `tables-delete-record` | строки вызывающего из `registrations`; удаление по внутреннему id, пустой список — ноль итераций (гоча 18) |
-| step_27→29 | то же по `feedback` | |
-| step_30→32 | то же по `broadcast_targets` | |
-| step_33→35 | то же по `sessions` | |
-| step_40→42 | то же по `quiz_answers` (W103) | ответы викторины; проекция — только `quiz_id`, чтобы текст ответа и имя не попадали в лог прогона (Q31) |
-| step_43→45 | то же по `quiz_attempts` (W103) | попытки викторины |
-| step_36→38 | то же по `users` | профиль удаляется последним: сбой раньше оставляет строку для повторного вызова |
-| step_39 | `return_response` (`stop`) | `200 {ok, outcome:'delete_account', text}` |
+| step_46 (`delete_account`) | `callFlow` [`fn-delete-person`](fn-delete-person.md) (`inline`, ждёт ответ; `logInput` off) | payload `{telegramId: step_2.telegramId, refuseIfAuthor: true}` (W145) |
+| step_47 | CODE — outcome | `done && deleted` → `200` с текстом `step_9`; `reason: author_of_events` без удаления → `409 author_of_events` с `$t['profile.delete.author']`; иначе `throw delete_incomplete` (fail closed) |
+| step_39 | `return_response` (`stop`) | статус и тело из `step_47` |
 
 ## Зависимости
 
-- **Таблицы**: `registrations` (чтение + запись + удаление), `users` (запись
-  согласий + удаление), `events` (чтение), а также `feedback`,
-  `broadcast_targets`, `sessions`, `quiz_answers`, `quiz_attempts`
-  (только удаление, W73/W103)
+- **Таблицы**: `registrations` (чтение + запись), `users` (запись
+  согласий), `events` (чтение); удаление — через `fn-delete-person` (W145)
 - **Переменные**: `BOT_TOKEN`
-- **Флоу**: `fn-hmac-init-data` (`inline` — ответ нужен для маршрутизации)
+- **Флоу**: `fn-hmac-init-data` (`inline` — ответ нужен для маршрутизации),
+  `fn-delete-person` (`inline`, `delete_account`)
 - **Connections**: —
 
 ## Заметки
@@ -129,18 +123,22 @@
   (`alreadyConsentedPdn`). Ветка `registered_profile` (`step_18→20`,
   регистрация из каталога с одновременным заполнением профиля) не тронута:
   там это первое и единственное согласие, писать обязательно.
-- **Самоудаление аккаунта (W73, #125, ADR-0039).** `delete_account` удаляет
-  строки вызывающего жёстко и без каскада. `telegram_id` — только из
-  проверенного `initData` (DAT-1); `telegramId` в теле, не равный
-  вызывающему, даёт `403` (попытка IDOR), а не «тихое своё удаление».
-  Подтверждение (`confirm: true`) обязательно — кнопка в табе «Профиль»
-  шлёт его после шита. Повтор безвреден: циклы по пустым выборкам делают
-  ноль итераций. **Границы Part 1:** удаляются `users`, `registrations`,
-  `feedback`, `broadcast_targets`, `sessions`, а с W103 — ещё `quiz_answers`
-  и `quiz_attempts` ([ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md):
-  ответы викторины — ПД, самоудаление обязано их стирать); права и
-  организационные касания (`event_staff`, `staff`, `staff_invites`,
-  `events.staff_id`) — Part 2 (ADR-0039, «Границы»).
+- **Самоудаление аккаунта (W73, #125, ADR-0039, ADR-0059).** `delete_account`
+  зовёт `fn-delete-person`: один список удаления для бота и приёмника ID.
+  `telegram_id` — только из проверенного `initData` (DAT-1); `telegramId` в
+  теле, не равный вызывающему, даёт `403` (попытка IDOR), а не «тихое своё
+  удаление». Подтверждение (`confirm: true`) обязательно — кнопка в табе
+  «Профиль» шлёт его после шита. Повтор безвреден: второй проход находит
+  пустые выборки. **Автор событий** (есть строка `events` с его `staff_id`)
+  получает `409 author_of_events` и текст `profile.delete.author`; удаления
+  нет, пока владелец не передаст события (ADR-0059 §4). Mini App показывает
+  `text` при `ok: false`. Части 1 и 2 ADR-0039 закрыты: список — в карточке
+  подфлоу.
+- **Логи без персональных данных (W145, 2026-11-25).** `logOutput: false` у триггера (`initData` целиком,
+  IP клиента); ввод и вывод выключены у шагов с `initData`, id, профилем и строками людей (`step_1`,
+  `step_2`, `step_6`, `step_9`, `step_17`, ответы с профилем `step_16/20/21/23`), вывод — у `step_7`,
+  `step_8`; у шагов записи (`step_11/12/14/18/19/22`) — ввод и вывод. В логе остаются маршруты, ответы без профиля и счётчики удаления.
+  Цена: прогон `reg-api` не ретраится (AGENTS.md, гоча 21).
 - **Проекция `columns` на `step_6`/`step_7` — защита логов от ПД, не от объёма
   ([Q31](../../docs/OPEN-QUESTIONS.md#q31)).** `step_7` без неё писал в лог
   прогона `telegram_id` каждого участника события на любой вызов `register`/

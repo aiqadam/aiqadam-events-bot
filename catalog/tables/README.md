@@ -8,7 +8,9 @@
 [`feedback`](feedback.md) — в [W45](../../docs/BACKLOG.md#w45-послесловие-благодарность-и-форма-отзыва)
 ([ADR-0028](../../docs/adr/0028-feedback-screen-fifth-miniapp-page.md)),
 [`reports`](reports.md) — в [W123](../../docs/BACKLOG.md#w123-сообщение-о-проблеме-из-продукта-q62--экран-mini-app)
-([ADR-0050](../../docs/adr/0050-sixth-miniapp-page-report.md)).
+([ADR-0050](../../docs/adr/0050-sixth-miniapp-page-report.md)),
+[`bot_contacts`](bot_contacts.md) — в [W145](../../docs/work/W145-id-switch-prep.md)
+([ADR-0059](../../docs/adr/0059-id-switch-prep-deletion-and-delivery-state.md)).
 Домен викторины — `quizzes`, `quiz_questions`, `quiz_attempts`, `quiz_answers` —
 в [W103](../../docs/BACKLOG.md#w103-викторина-в-боте-свободный-ответ-окно-одна-попытка)
 ([ADR-0041](../../docs/adr/0041-quiz-in-chat-not-a-page.md)). Модель и смысл полей —
