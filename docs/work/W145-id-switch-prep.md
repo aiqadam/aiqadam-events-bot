@@ -1,6 +1,6 @@
 # W145. Подготовка к переключению на AI Qadam ID: удаление человека, `bot_contacts`, приёмник удалений ID
 
-- **Статус**: на проверке (шаги 1–4 порядка ADR-0059 выполнены на QA 2026-11-25; независимое ревью, круг 1)
+- **Статус**: на проверке (шаги 1–4 порядка ADR-0059 выполнены на QA 2026-11-25; круг 1 ревью — замечания исправлены, круг 2)
 - **Владелец**: агент (сессия AI Qadam ID)
 - **Волна**: вне волн
 - **Зависит от**: [ADR-0059](../adr/0059-id-switch-prep-deletion-and-delivery-state.md) (принят 2026-11-25),
@@ -16,12 +16,12 @@ ADR-0039), место для состояния доставки вместо `u
 
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
-| flow `fn-delete-person` | `7jtl15LMRI0bnxxRFCMeq`, версия `VUGxCt8XEjEIYQSurP9bH` | [catalog/flows/fn-delete-person.md](../../catalog/flows/fn-delete-person.md) |
+| flow `fn-delete-person` | `7jtl15LMRI0bnxxRFCMeq`, версия `P2uFC8YDe5X9uQmirANWa` (после ревью, круг 1) | [catalog/flows/fn-delete-person.md](../../catalog/flows/fn-delete-person.md) |
 | flow `reg-api` (ветка `delete_account` → подфлоу; логи без ПД) | `SmutybV5qJQjQASJGY9vi`, версия `xp52IqjKk9gqrroRbEt5J` | [catalog/flows/reg-api.md](../../catalog/flows/reg-api.md) |
 | таблица `bot_contacts` | `lXsWetfliAWCaKwnDiOuA` (ext `JLPfHt5KW4PpanBBWX4V6`), пустая | [catalog/tables/bot_contacts.md](../../catalog/tables/bot_contacts.md) |
 | переменная `id_module_key` | секрет, равна ID QA `module_key_events`; значение не выводилось | [catalog/variables.md](../../catalog/variables.md) |
 | перевод `profile.delete.author` | ru / uz / en | [i18n/](../../i18n/) |
-| эталон `delete-person-plan` + 25 тестов | шаг `plan` (`step_19`) | [catalog/snippets/delete-person-plan.md](../../catalog/snippets/delete-person-plan.md) |
+| эталон `delete-person-plan` + 28 тестов | шаг `plan` (`step_19`) | [catalog/snippets/delete-person-plan.md](../../catalog/snippets/delete-person-plan.md) |
 | flow `id-member-deleted` (приёмник ID) | `DnYhfp9irbV993MtLbIsh`, версия `tJo8vdCZqHUkktyN0Ekoa`; в ID QA не подключён | [catalog/flows/id-member-deleted.md](../../catalog/flows/id-member-deleted.md) |
 | эталон `id-event-verify` + 30 тестов | шаг `verify` (`step_1`) приёмника | [catalog/snippets/id-event-verify.md](../../catalog/snippets/id-event-verify.md) |
 
@@ -134,3 +134,21 @@ ADR-0039), место для состояния доставки вместо `u
 - 2026-11-25 — владелец проверил `delete_account` из Mini App; ворота приняты; `module_delete_url_events` в ID QA
   → приёмник, сквозная проверка пройдена (ID: `migrations` `2026-11-25-w10-08`). Логи `reg-api` очищены от
   персональных данных, опубликован `xp52IqjKk9gqrroRbEt5J`; `migrations` `2026-11-25-w145-07`.
+
+## Ревью
+
+### Круг 1 (2026-11-25) — есть замечания: 3 «важно», 3 «на будущее»
+
+| # | Замечание | Как закрыто |
+|---|---|---|
+| 1 важно | Store-ключ `afterword:<event>-<id>` (`reg-afterword`, без TTL) не снимался — id удалённого жил вечно | `step_30` в цикле `rm_events`: `remove_value afterword:<item>-<id>`, лог выключен |
+| 2 важно | `broadcasts.media_chat_id` = личный чат автора = его id; не очищался | поле добавлено в очистку (`step_29` поиск, `ACTOR`), по принципу ADR-0059 §1 «всё, что бот знает о человеке» и правилу ADR-0039; цена — неотправленный фото-черновик удалённого автора больше не отправить |
+| 3 важно | своя строка и в удалении, и в очистке (свой чекин, права себе) → `404` на очистке после удаления, прогон падает | воспроизведено (`LPyPf8QSr8Kkf4N9sapoC`, `404 ENTITY_NOT_FOUND` в `step_23`); план исключает удаляемые строки из очистки и собирает все колонки строки в один элемент (без гонки двух обновлений одной строки); +3 теста |
+| 4 на будущее | fail closed циклов не доказан прогоном | тот же прогон: упавшая итерация → прогон `FAILED`, ответа `done` нет |
+| 5 на будущее | неточности карточек (`reason`, «следующий шаг», логи шагов записи) | исправлено |
+| 6 на будущее | гонка поиска и удаления | [Q72](../OPEN-QUESTIONS.md#q72) |
+
+Проверка исправлений (TESTING `6hapAzMZl6AJqPOriLLIr`, выдуманный `9000000000000907`): своя регистрация со
+своим чекином, черновик рассылки с `created_by` и `media_chat_id` = 907, ключ `afterword:w145evH-907` →
+`done: true`; регистрация удалена, оба поля рассылки пусты одним обновлением, ключа нет. Тестовые строки
+удалены. Опубликовано `P2uFC8YDe5X9uQmirANWa`; `migrations` `2026-11-25-w145-08`.

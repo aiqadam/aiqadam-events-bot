@@ -20,18 +20,21 @@
     `event_staff`, `staff`, `bot_contacts`, `users`;
   - `actor` — объект `{<таблица>.<поле>: выход}` для чужих строк: `registrations.checked_in_by`,
     `event_staff.granted_by`, `staff_invites.created_by`, `staff_invites.used_by`,
-    `broadcasts.created_by`.
+    `broadcasts.created_by`, `broadcasts.media_chat_id` (чат пересланного поста — личный чат автора с ботом).
 
 **Выход**
 
 - `author` — `true`, если есть хоть одна строка `events` с этим `staff_id`. События не трогаются.
 - `refused` — `true`, если `author` и `refuse_if_author`: списки `deletes`, `clears`, `rm_events` пустые.
 - `deletes` — `[{table, ids}]`, только для таблиц с найденными строками; `table` — externalId.
-- `clears` — `[{table, column, id}]`, по одной записи на строку и поле; `table` и `column` — externalId.
+- `clears` — `[{table, id, columns}]`, по одной записи на строку со всеми её полями сразу: два параллельных
+  обновления одной строки не гоняются. `table` и `columns` — externalId. Строка, которая и так удаляется
+  (свой чекин, права, выданные себе), в `clears` не попадает: обновление после удаления — `404`.
 - `rm_events` — `event_id` своих регистраций, без повторов. По ним шаг цикла удаляет Store-ключи
-  `rm:<event_id>:24h:<id>` и `rm:<event_id>:2h:<id>`. В списке нет `telegram_id`: вывод цикла (`item`)
+  `rm:<event_id>:24h:<id>`, `rm:<event_id>:2h:<id>` и `afterword:<event_id>-<id>` (без TTL, `reg-afterword`). В списке нет `telegram_id`: вывод цикла (`item`)
   пишется в лог, а ключ собирается внутри шага с выключенным логом.
-- `counts` — только числа: строк на удаление и очистку по каждому имени.
+- `counts` — только числа: строк на удаление и очистку по каждому имени (строки, которые удаляются, в счёт
+  очистки не входят).
 
 **Отказы (throw)** — `bad_telegram_id`, `bad_input:<имя>` (вход не массив и не `{records}`),
 `mismatch:<имя>` (поле строки не равно id), `no_record_id:<имя>`.
@@ -57,6 +60,7 @@ export const code = async (inputs) => {
     'staff_invites.created_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'created_by', 'fKQAjYvMBW5ZbGWX8AYgx'],
     'staff_invites.used_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'used_by', 'wSLuGfXNArBIdIUlIXenV'],
     'broadcasts.created_by': ['XrygYF5Q4EUOKkaBFallb', 'created_by', 'AQs7BEfN0hZ3OjPZXZNsc'],
+    'broadcasts.media_chat_id': ['XrygYF5Q4EUOKkaBFallb', 'media_chat_id', '0KCxjpZONVc1URjFBBlvr'],
   };
   const rows = (x, name) => {
     if (Array.isArray(x)) return x;
@@ -85,12 +89,22 @@ export const code = async (inputs) => {
       }
     }
   }
+  // A row that is deleted is not cleared too (self check-in, self-grant): an update after the delete is a 404.
+  const deleted = new Set(deletes.flatMap((d) => d.ids.map((id) => d.table + ':' + id)));
+  // One item per row, all its columns together: two concurrent updates of one row must not race.
+  const byRow = new Map();
   for (const name of Object.keys(ACTOR)) {
     const [table, f, column] = ACTOR[name];
-    const rs = checked(actor[name], name, f);
+    const rs = checked(actor[name], name, f).filter((r) => !deleted.has(table + ':' + String(r.id)));
     counts[name] = rs.length;
-    for (const r of rs) clears.push({ table, column, id: String(r.id) });
+    for (const r of rs) {
+      const k = table + ':' + String(r.id);
+      if (!byRow.has(k)) byRow.set(k, { table, id: String(r.id), columns: [] });
+      const it = byRow.get(k);
+      if (!it.columns.includes(column)) it.columns.push(column);
+    }
   }
+  clears.push(...byRow.values());
   const refuse = inputs.refuse_if_author === true || inputs.refuse_if_author === 'true';
   if (author && refuse) return { author, refused: true, deletes: [], clears: [], rm_events: [], counts };
   return { author, refused: false, deletes, clears, rm_events: Array.from(new Set(rm_events)), counts };

@@ -266,8 +266,9 @@ Payload обязан укладываться в эти рамки — см. [SE
 [ADR-0041](adr/0041-quiz-in-chat-not-a-page.md), W103), `reports`, `event_staff`,
 `staff`, `bot_contacts`. В чужих строках, где он записан исполнителем
 (`registrations.checked_in_by`, `event_staff.granted_by`,
-`staff_invites.created_by`/`used_by`, `broadcasts.created_by`), поле
-очищается, строка остаётся. Автор событий (`events.staff_id`) не удаляется:
+`staff_invites.created_by`/`used_by`, `broadcasts.created_by` и
+`broadcasts.media_chat_id`), поле очищается, строка остаётся. Store-ключи с id
+(напоминания `rm:*`, послесловие `afterword:*`) снимаются. Автор событий (`events.staff_id`) не удаляется:
 отказ `409 author_of_events` и текст `profile.delete.author`, пока владелец не
 передаст события другому организатору. `telegram_id` берётся
 только из проверенного `initData`; чужой

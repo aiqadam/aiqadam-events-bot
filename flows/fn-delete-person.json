@@ -102,48 +102,24 @@
                                         "logOutput": false,
                                         "name": "step_18",
                                         "nextAction": {
-                                          "displayName": "plan",
+                                          "displayName": "find broadcasts media_chat_id",
                                           "logInput": false,
                                           "logOutput": false,
-                                          "name": "step_19",
+                                          "name": "step_29",
                                           "nextAction": {
-                                            "displayName": "loop deletes",
-                                            "firstLoopAction": {
-                                              "displayName": "delete rows",
-                                              "logInput": false,
-                                              "logOutput": false,
-                                              "name": "step_21",
-                                              "settings": {
-                                                "actionName": "tables-delete-record",
-                                                "errorHandlingOptions": {
-                                                  "continueOnFailure": {
-                                                    "value": false
-                                                  },
-                                                  "retryOnFailure": {
-                                                    "value": false
-                                                  }
-                                                },
-                                                "input": {
-                                                  "records_ids": "{{step_20['output'].item.ids}}",
-                                                  "table_id": "{{step_20['output'].item.table}}"
-                                                },
-                                                "propertySettings": {},
-                                                "qadamName": "@aiqadam/qadam-tables",
-                                                "qadamVersion": "0.5.1"
-                                              },
-                                              "type": "PIECE",
-                                              "valid": true
-                                            },
-                                            "name": "step_20",
+                                            "displayName": "plan",
+                                            "logInput": false,
+                                            "logOutput": false,
+                                            "name": "step_19",
                                             "nextAction": {
-                                              "displayName": "loop clears",
+                                              "displayName": "loop deletes",
                                               "firstLoopAction": {
-                                                "displayName": "clear actor",
+                                                "displayName": "delete rows",
                                                 "logInput": false,
                                                 "logOutput": false,
-                                                "name": "step_23",
+                                                "name": "step_21",
                                                 "settings": {
-                                                  "actionName": "tables-update-record",
+                                                  "actionName": "tables-delete-record",
                                                   "errorHandlingOptions": {
                                                     "continueOnFailure": {
                                                       "value": false
@@ -153,15 +129,8 @@
                                                     }
                                                   },
                                                   "input": {
-                                                    "clear_columns": [
-                                                      "{{step_22['output'].item.column}}"
-                                                    ],
-                                                    "columns": [
-                                                      "{{step_22['output'].item.column}}"
-                                                    ],
-                                                    "record_id": "{{step_22['output'].item.id}}",
-                                                    "table_id": "{{step_22['output'].item.table}}",
-                                                    "values": {}
+                                                    "records_ids": "{{step_20['output'].item.ids}}",
+                                                    "table_id": "{{step_20['output'].item.table}}"
                                                   },
                                                   "propertySettings": {},
                                                   "qadamName": "@aiqadam/qadam-tables",
@@ -170,19 +139,99 @@
                                                 "type": "PIECE",
                                                 "valid": true
                                               },
-                                              "name": "step_22",
+                                              "name": "step_20",
                                               "nextAction": {
-                                                "displayName": "loop reminder events",
+                                                "displayName": "loop clears",
                                                 "firstLoopAction": {
-                                                  "displayName": "remove reminder key 24h",
+                                                  "displayName": "clear actor",
                                                   "logInput": false,
                                                   "logOutput": false,
-                                                  "name": "step_25",
-                                                  "nextAction": {
-                                                    "displayName": "remove reminder key 2h",
+                                                  "name": "step_23",
+                                                  "settings": {
+                                                    "actionName": "tables-update-record",
+                                                    "errorHandlingOptions": {
+                                                      "continueOnFailure": {
+                                                        "value": false
+                                                      },
+                                                      "retryOnFailure": {
+                                                        "value": false
+                                                      }
+                                                    },
+                                                    "input": {
+                                                      "clear_columns": "{{step_22['output'].item.columns}}",
+                                                      "columns": "{{step_22['output'].item.columns}}",
+                                                      "only_if": {},
+                                                      "record_id": "{{step_22['output'].item.id}}",
+                                                      "table_id": "{{step_22['output'].item.table}}",
+                                                      "values": {}
+                                                    },
+                                                    "propertySettings": {},
+                                                    "qadamName": "@aiqadam/qadam-tables",
+                                                    "qadamVersion": "0.5.1"
+                                                  },
+                                                  "type": "PIECE",
+                                                  "valid": true
+                                                },
+                                                "name": "step_22",
+                                                "nextAction": {
+                                                  "displayName": "loop reminder events",
+                                                  "firstLoopAction": {
+                                                    "displayName": "remove reminder key 24h",
                                                     "logInput": false,
                                                     "logOutput": false,
-                                                    "name": "step_28",
+                                                    "name": "step_25",
+                                                    "nextAction": {
+                                                      "displayName": "remove reminder key 2h",
+                                                      "logInput": false,
+                                                      "logOutput": false,
+                                                      "name": "step_28",
+                                                      "nextAction": {
+                                                        "displayName": "remove afterword key",
+                                                        "logInput": false,
+                                                        "logOutput": false,
+                                                        "name": "step_30",
+                                                        "settings": {
+                                                          "actionName": "remove_value",
+                                                          "errorHandlingOptions": {
+                                                            "continueOnFailure": {
+                                                              "value": false
+                                                            },
+                                                            "retryOnFailure": {
+                                                              "value": false
+                                                            }
+                                                          },
+                                                          "input": {
+                                                            "key": "afterword:{{step_24['output'].item}}-{{step_1['output'].telegramId}}",
+                                                            "store_scope": "COLLECTION"
+                                                          },
+                                                          "propertySettings": {},
+                                                          "qadamName": "@aiqadam/qadam-store",
+                                                          "qadamVersion": "0.7.0"
+                                                        },
+                                                        "type": "PIECE",
+                                                        "valid": true
+                                                      },
+                                                      "settings": {
+                                                        "actionName": "remove_value",
+                                                        "errorHandlingOptions": {
+                                                          "continueOnFailure": {
+                                                            "value": false
+                                                          },
+                                                          "retryOnFailure": {
+                                                            "value": false
+                                                          }
+                                                        },
+                                                        "input": {
+                                                          "key": "rm:{{step_24['output'].item}}:2h:{{step_1['output'].telegramId}}",
+                                                          "store_scope": "COLLECTION"
+                                                        },
+                                                        "propertySettings": {},
+                                                        "qadamName": "@aiqadam/qadam-store",
+                                                        "qadamVersion": "0.7.0"
+                                                      },
+                                                      "type": "PIECE",
+                                                      "valid": true
+                                                    },
                                                     "settings": {
                                                       "actionName": "remove_value",
                                                       "errorHandlingOptions": {
@@ -194,7 +243,7 @@
                                                         }
                                                       },
                                                       "input": {
-                                                        "key": "rm:{{step_24['output'].item}}:2h:{{step_1['output'].telegramId}}",
+                                                        "key": "rm:{{step_24['output'].item}}:24h:{{step_1['output'].telegramId}}",
                                                         "store_scope": "COLLECTION"
                                                       },
                                                       "propertySettings": {},
@@ -204,36 +253,42 @@
                                                     "type": "PIECE",
                                                     "valid": true
                                                   },
-                                                  "settings": {
-                                                    "actionName": "remove_value",
-                                                    "errorHandlingOptions": {
-                                                      "continueOnFailure": {
-                                                        "value": false
-                                                      },
-                                                      "retryOnFailure": {
-                                                        "value": false
-                                                      }
-                                                    },
-                                                    "input": {
-                                                      "key": "rm:{{step_24['output'].item}}:24h:{{step_1['output'].telegramId}}",
-                                                      "store_scope": "COLLECTION"
-                                                    },
-                                                    "propertySettings": {},
-                                                    "qadamName": "@aiqadam/qadam-store",
-                                                    "qadamVersion": "0.7.0"
-                                                  },
-                                                  "type": "PIECE",
-                                                  "valid": true
-                                                },
-                                                "name": "step_24",
-                                                "nextAction": {
-                                                  "displayName": "result",
-                                                  "name": "step_26",
+                                                  "name": "step_24",
                                                   "nextAction": {
-                                                    "displayName": "return",
-                                                    "name": "step_27",
+                                                    "displayName": "result",
+                                                    "name": "step_26",
+                                                    "nextAction": {
+                                                      "displayName": "return",
+                                                      "name": "step_27",
+                                                      "settings": {
+                                                        "actionName": "returnResponse",
+                                                        "errorHandlingOptions": {
+                                                          "continueOnFailure": {
+                                                            "value": false
+                                                          },
+                                                          "retryOnFailure": {
+                                                            "value": false
+                                                          }
+                                                        },
+                                                        "input": {
+                                                          "mode": "simple",
+                                                          "response": {
+                                                            "response": {
+                                                              "counts": "{{step_26['output'].counts}}",
+                                                              "deleted": "{{step_26['output'].deleted}}",
+                                                              "done": "{{step_26['output'].done}}",
+                                                              "reason": "{{step_26['output'].reason}}"
+                                                            }
+                                                          }
+                                                        },
+                                                        "propertySettings": {},
+                                                        "qadamName": "@aiqadam/qadam-subflows",
+                                                        "qadamVersion": "0.4.17"
+                                                      },
+                                                      "type": "PIECE",
+                                                      "valid": true
+                                                    },
                                                     "settings": {
-                                                      "actionName": "returnResponse",
                                                       "errorHandlingOptions": {
                                                         "continueOnFailure": {
                                                           "value": false
@@ -243,43 +298,27 @@
                                                         }
                                                       },
                                                       "input": {
-                                                        "mode": "simple",
-                                                        "response": {
-                                                          "response": {
-                                                            "counts": "{{step_26['output'].counts}}",
-                                                            "deleted": "{{step_26['output'].deleted}}",
-                                                            "done": "{{step_26['output'].done}}",
-                                                            "reason": "{{step_26['output'].reason}}"
-                                                          }
-                                                        }
+                                                        "author": "{{step_19['output'].author}}",
+                                                        "counts": "{{step_19['output'].counts}}",
+                                                        "refused": "{{step_19['output'].refused}}"
                                                       },
-                                                      "propertySettings": {},
-                                                      "qadamName": "@aiqadam/qadam-subflows",
-                                                      "qadamVersion": "0.4.17"
+                                                      "sourceCode": {
+                                                        "code": "// fn-delete-person result (ADR-0059 §1, §4): done only without authored events. Numbers only.\nexport const code = async (inputs) => {\n  const author = inputs.author === true || inputs.author === 'true';\n  const refused = inputs.refused === true || inputs.refused === 'true';\n  return { done: !author, deleted: !refused, reason: author ? 'author_of_events' : 'ok', counts: inputs.counts || {} };\n};",
+                                                        "packageJson": "{}"
+                                                      }
                                                     },
-                                                    "type": "PIECE",
+                                                    "type": "CODE",
                                                     "valid": true
                                                   },
                                                   "settings": {
-                                                    "errorHandlingOptions": {
-                                                      "continueOnFailure": {
-                                                        "value": false
-                                                      },
-                                                      "retryOnFailure": {
-                                                        "value": false
-                                                      }
+                                                    "execution": {
+                                                      "maxConcurrency": 6,
+                                                      "mode": "CONCURRENT"
                                                     },
-                                                    "input": {
-                                                      "author": "{{step_19['output'].author}}",
-                                                      "counts": "{{step_19['output'].counts}}",
-                                                      "refused": "{{step_19['output'].refused}}"
-                                                    },
-                                                    "sourceCode": {
-                                                      "code": "// fn-delete-person result (ADR-0059 §1, §4): done only without authored events. Numbers only.\nexport const code = async (inputs) => {\n  const author = inputs.author === true || inputs.author === 'true';\n  const refused = inputs.refused === true || inputs.refused === 'true';\n  return { done: !author, deleted: !refused, reason: author ? 'author_of_events' : 'ok', counts: inputs.counts || {} };\n};",
-                                                      "packageJson": "{}"
-                                                    }
+                                                    "items": "{{step_19['output'].rm_events}}",
+                                                    "keepBodies": "FAILED_ONLY"
                                                   },
-                                                  "type": "CODE",
+                                                  "type": "LOOP_ON_ITEMS",
                                                   "valid": true
                                                 },
                                                 "settings": {
@@ -287,7 +326,7 @@
                                                     "maxConcurrency": 6,
                                                     "mode": "CONCURRENT"
                                                   },
-                                                  "items": "{{step_19['output'].rm_events}}",
+                                                  "items": "{{step_19['output'].clears}}",
                                                   "keepBodies": "FAILED_ONLY"
                                                 },
                                                 "type": "LOOP_ON_ITEMS",
@@ -298,24 +337,57 @@
                                                   "maxConcurrency": 6,
                                                   "mode": "CONCURRENT"
                                                 },
-                                                "items": "{{step_19['output'].clears}}",
+                                                "items": "{{step_19['output'].deletes}}",
                                                 "keepBodies": "FAILED_ONLY"
                                               },
                                               "type": "LOOP_ON_ITEMS",
                                               "valid": true
                                             },
                                             "settings": {
-                                              "execution": {
-                                                "maxConcurrency": 6,
-                                                "mode": "CONCURRENT"
+                                              "errorHandlingOptions": {
+                                                "continueOnFailure": {
+                                                  "value": false
+                                                },
+                                                "retryOnFailure": {
+                                                  "value": false
+                                                }
                                               },
-                                              "items": "{{step_19['output'].deletes}}",
-                                              "keepBodies": "FAILED_ONLY"
+                                              "input": {
+                                                "actor": {
+                                                  "broadcasts.created_by": "{{step_18['output']}}",
+                                                  "broadcasts.media_chat_id": "{{step_29['output']}}",
+                                                  "event_staff.granted_by": "{{step_15['output']}}",
+                                                  "registrations.checked_in_by": "{{step_14['output']}}",
+                                                  "staff_invites.created_by": "{{step_16['output']}}",
+                                                  "staff_invites.used_by": "{{step_17['output']}}"
+                                                },
+                                                "author": "{{step_2['output']}}",
+                                                "own": {
+                                                  "bot_contacts": "{{step_12['output']}}",
+                                                  "broadcast_targets": "{{step_5['output']}}",
+                                                  "event_staff": "{{step_10['output']}}",
+                                                  "feedback": "{{step_4['output']}}",
+                                                  "quiz_answers": "{{step_7['output']}}",
+                                                  "quiz_attempts": "{{step_8['output']}}",
+                                                  "registrations": "{{step_3['output']}}",
+                                                  "reports": "{{step_9['output']}}",
+                                                  "sessions": "{{step_6['output']}}",
+                                                  "staff": "{{step_11['output']}}",
+                                                  "users": "{{step_13['output']}}"
+                                                },
+                                                "refuse_if_author": "{{trigger['output'].data.refuseIfAuthor}}",
+                                                "telegram_id": "{{step_1['output'].telegramId}}"
+                                              },
+                                              "sourceCode": {
+                                                "code": "// delete-person-plan (ADR-0059 §1). logInput/logOutput OFF: id и строки людей.\nexport const code = async (inputs) => {\n  const tid = inputs.telegram_id;\n  if (typeof tid !== 'string' || !/^[1-9][0-9]{0,15}$/.test(tid)) throw new Error('bad_telegram_id');\n  const OWN = {\n    registrations: ['SM8tMxfQuQCHRDdAiNJyQ', 'telegram_id'], feedback: ['GgGUQEHp6g076nDb2XddP', 'telegram_id'],\n    broadcast_targets: ['PAH81WchbaOixGXSdFBK1', 'telegram_id'], sessions: ['toTKgngMTqDNJWDpQMh4d', 'telegram_id'],\n    quiz_answers: ['tcwKTQH8W1EG4SHeHdoRr', 'telegram_id'], quiz_attempts: ['JPo7yK4N9lxN8HxBwpmRs', 'telegram_id'],\n    reports: ['LKEqlq1X7RuWz5WC4zkov', 'telegram_id'], event_staff: ['t1g8Vae3iEoDk93D6Rle7', 'telegram_id'],\n    staff: ['PnDy6gw9tlLUqTGk2EOUn', 'telegram_id'], bot_contacts: ['JLPfHt5KW4PpanBBWX4V6', 'telegram_id'],\n    users: ['xHhYjhwqKdONkrYJGcBsz', 'telegram_id'],\n  };\n  const ACTOR = {\n    'registrations.checked_in_by': ['SM8tMxfQuQCHRDdAiNJyQ', 'checked_in_by', 'atmJzUFotSzE9G0akUU2M'],\n    'event_staff.granted_by': ['t1g8Vae3iEoDk93D6Rle7', 'granted_by', '0wfqdr7vveoyWxJqjymZP'],\n    'staff_invites.created_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'created_by', 'fKQAjYvMBW5ZbGWX8AYgx'],\n    'staff_invites.used_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'used_by', 'wSLuGfXNArBIdIUlIXenV'],\n    'broadcasts.created_by': ['XrygYF5Q4EUOKkaBFallb', 'created_by', 'AQs7BEfN0hZ3OjPZXZNsc'],\n    'broadcasts.media_chat_id': ['XrygYF5Q4EUOKkaBFallb', 'media_chat_id', '0KCxjpZONVc1URjFBBlvr'],\n  };\n  const rows = (x, name) => {\n    if (Array.isArray(x)) return x;\n    if (x && Array.isArray(x.records)) return x.records;\n    throw new Error('bad_input:' + name);\n  };\n  const field = (r, n) => { const c = (r && r.cells) || {}; for (const k of Object.keys(c)) if (c[k] && c[k].fieldName === n) return c[k].value; return undefined; };\n  const checked = (x, name, f) => rows(x, name).map((r) => {\n    if (String(field(r, f)) !== tid) throw new Error('mismatch:' + name);\n    if (r.id == null || String(r.id) === '') throw new Error('no_record_id:' + name);\n    return r;\n  });\n  const author = checked(inputs.author, 'events.staff_id', 'staff_id').length > 0;\n  const own = inputs.own || {}, actor = inputs.actor || {};\n  const deletes = [], clears = [], counts = {}, rm_events = [];\n  for (const name of Object.keys(OWN)) {\n    const [table, f] = OWN[name];\n    const rs = checked(own[name], name, f);\n    counts[name] = rs.length;\n    if (rs.length) deletes.push({ table, ids: Array.from(new Set(rs.map((r) => String(r.id)))) });\n    if (name === 'registrations') {\n      for (const r of rs) {\n        const ev = field(r, 'event_id');\n        if (ev == null || String(ev) === '') continue;\n        rm_events.push(String(ev));\n      }\n    }\n  }\n  // A row that is deleted is not cleared too (self check-in, self-grant): an update after the delete is a 404.\n  const deleted = new Set(deletes.flatMap((d) => d.ids.map((id) => d.table + ':' + id)));\n  // One item per row, all its columns together: two concurrent updates of one row must not race.\n  const byRow = new Map();\n  for (const name of Object.keys(ACTOR)) {\n    const [table, f, column] = ACTOR[name];\n    const rs = checked(actor[name], name, f).filter((r) => !deleted.has(table + ':' + String(r.id)));\n    counts[name] = rs.length;\n    for (const r of rs) {\n      const k = table + ':' + String(r.id);\n      if (!byRow.has(k)) byRow.set(k, { table, id: String(r.id), columns: [] });\n      const it = byRow.get(k);\n      if (!it.columns.includes(column)) it.columns.push(column);\n    }\n  }\n  clears.push(...byRow.values());\n  const refuse = inputs.refuse_if_author === true || inputs.refuse_if_author === 'true';\n  if (author && refuse) return { author, refused: true, deletes: [], clears: [], rm_events: [], counts };\n  return { author, refused: false, deletes, clears, rm_events: Array.from(new Set(rm_events)), counts };\n};",
+                                                "packageJson": "{}"
+                                              }
                                             },
-                                            "type": "LOOP_ON_ITEMS",
+                                            "type": "CODE",
                                             "valid": true
                                           },
                                           "settings": {
+                                            "actionName": "tables-find-records",
                                             "errorHandlingOptions": {
                                               "continueOnFailure": {
                                                 "value": false
@@ -325,36 +397,30 @@
                                               }
                                             },
                                             "input": {
-                                              "actor": {
-                                                "broadcasts.created_by": "{{step_18['output']}}",
-                                                "event_staff.granted_by": "{{step_15['output']}}",
-                                                "registrations.checked_in_by": "{{step_14['output']}}",
-                                                "staff_invites.created_by": "{{step_16['output']}}",
-                                                "staff_invites.used_by": "{{step_17['output']}}"
+                                              "columns": [
+                                                "0KCxjpZONVc1URjFBBlvr"
+                                              ],
+                                              "filters": {
+                                                "filters": [
+                                                  {
+                                                    "field": {
+                                                      "id": "0KCxjpZONVc1URjFBBlvr",
+                                                      "name": "media_chat_id",
+                                                      "type": "TEXT"
+                                                    },
+                                                    "operator": "eq",
+                                                    "value": "{{step_1['output'].telegramId}}"
+                                                  }
+                                                ]
                                               },
-                                              "author": "{{step_2['output']}}",
-                                              "own": {
-                                                "bot_contacts": "{{step_12['output']}}",
-                                                "broadcast_targets": "{{step_5['output']}}",
-                                                "event_staff": "{{step_10['output']}}",
-                                                "feedback": "{{step_4['output']}}",
-                                                "quiz_answers": "{{step_7['output']}}",
-                                                "quiz_attempts": "{{step_8['output']}}",
-                                                "registrations": "{{step_3['output']}}",
-                                                "reports": "{{step_9['output']}}",
-                                                "sessions": "{{step_6['output']}}",
-                                                "staff": "{{step_11['output']}}",
-                                                "users": "{{step_13['output']}}"
-                                              },
-                                              "refuse_if_author": "{{trigger['output'].data.refuseIfAuthor}}",
-                                              "telegram_id": "{{step_1['output'].telegramId}}"
+                                              "record_ids": [],
+                                              "table_id": "XrygYF5Q4EUOKkaBFallb"
                                             },
-                                            "sourceCode": {
-                                              "code": "// delete-person-plan (ADR-0059 §1). logInput/logOutput OFF: id и строки людей.\nexport const code = async (inputs) => {\n  const tid = inputs.telegram_id;\n  if (typeof tid !== 'string' || !/^[1-9][0-9]{0,15}$/.test(tid)) throw new Error('bad_telegram_id');\n  const OWN = {\n    registrations: ['SM8tMxfQuQCHRDdAiNJyQ', 'telegram_id'], feedback: ['GgGUQEHp6g076nDb2XddP', 'telegram_id'],\n    broadcast_targets: ['PAH81WchbaOixGXSdFBK1', 'telegram_id'], sessions: ['toTKgngMTqDNJWDpQMh4d', 'telegram_id'],\n    quiz_answers: ['tcwKTQH8W1EG4SHeHdoRr', 'telegram_id'], quiz_attempts: ['JPo7yK4N9lxN8HxBwpmRs', 'telegram_id'],\n    reports: ['LKEqlq1X7RuWz5WC4zkov', 'telegram_id'], event_staff: ['t1g8Vae3iEoDk93D6Rle7', 'telegram_id'],\n    staff: ['PnDy6gw9tlLUqTGk2EOUn', 'telegram_id'], bot_contacts: ['JLPfHt5KW4PpanBBWX4V6', 'telegram_id'],\n    users: ['xHhYjhwqKdONkrYJGcBsz', 'telegram_id'],\n  };\n  const ACTOR = {\n    'registrations.checked_in_by': ['SM8tMxfQuQCHRDdAiNJyQ', 'checked_in_by', 'atmJzUFotSzE9G0akUU2M'],\n    'event_staff.granted_by': ['t1g8Vae3iEoDk93D6Rle7', 'granted_by', '0wfqdr7vveoyWxJqjymZP'],\n    'staff_invites.created_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'created_by', 'fKQAjYvMBW5ZbGWX8AYgx'],\n    'staff_invites.used_by': ['JIjKkDu3Im2ylBmkkH5Fu', 'used_by', 'wSLuGfXNArBIdIUlIXenV'],\n    'broadcasts.created_by': ['XrygYF5Q4EUOKkaBFallb', 'created_by', 'AQs7BEfN0hZ3OjPZXZNsc'],\n  };\n  const rows = (x, name) => {\n    if (Array.isArray(x)) return x;\n    if (x && Array.isArray(x.records)) return x.records;\n    throw new Error('bad_input:' + name);\n  };\n  const field = (r, n) => { const c = (r && r.cells) || {}; for (const k of Object.keys(c)) if (c[k] && c[k].fieldName === n) return c[k].value; return undefined; };\n  const checked = (x, name, f) => rows(x, name).map((r) => {\n    if (String(field(r, f)) !== tid) throw new Error('mismatch:' + name);\n    if (r.id == null || String(r.id) === '') throw new Error('no_record_id:' + name);\n    return r;\n  });\n  const author = checked(inputs.author, 'events.staff_id', 'staff_id').length > 0;\n  const own = inputs.own || {}, actor = inputs.actor || {};\n  const deletes = [], clears = [], counts = {}, rm_events = [];\n  for (const name of Object.keys(OWN)) {\n    const [table, f] = OWN[name];\n    const rs = checked(own[name], name, f);\n    counts[name] = rs.length;\n    if (rs.length) deletes.push({ table, ids: Array.from(new Set(rs.map((r) => String(r.id)))) });\n    if (name === 'registrations') {\n      for (const r of rs) {\n        const ev = field(r, 'event_id');\n        if (ev == null || String(ev) === '') continue;\n        rm_events.push(String(ev));\n      }\n    }\n  }\n  for (const name of Object.keys(ACTOR)) {\n    const [table, f, column] = ACTOR[name];\n    const rs = checked(actor[name], name, f);\n    counts[name] = rs.length;\n    for (const r of rs) clears.push({ table, column, id: String(r.id) });\n  }\n  const refuse = inputs.refuse_if_author === true || inputs.refuse_if_author === 'true';\n  if (author && refuse) return { author, refused: true, deletes: [], clears: [], rm_events: [], counts };\n  return { author, refused: false, deletes, clears, rm_events: Array.from(new Set(rm_events)), counts };\n};",
-                                              "packageJson": "{}"
-                                            }
+                                            "propertySettings": {},
+                                            "qadamName": "@aiqadam/qadam-tables",
+                                            "qadamVersion": "0.5.1"
                                           },
-                                          "type": "CODE",
+                                          "type": "PIECE",
                                           "valid": true
                                         },
                                         "settings": {
