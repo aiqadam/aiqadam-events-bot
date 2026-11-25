@@ -1,7 +1,6 @@
 # W145. Подготовка к переключению на AI Qadam ID: удаление человека, `bot_contacts`, приёмник удалений ID
 
-- **Статус**: в работе (шаги 1–3 порядка ADR-0059 собраны на `events-dev` 2026-11-25; ждёт проверки
-  `delete_account` из Mini App и ворот)
+- **Статус**: в работе (шаги 1–4 порядка ADR-0059 выполнены на QA 2026-11-25; ждёт независимого ревью)
 - **Владелец**: агент (сессия AI Qadam ID)
 - **Волна**: вне волн
 - **Зависит от**: [ADR-0059](../adr/0059-id-switch-prep-deletion-and-delivery-state.md) (принят 2026-11-25),
@@ -18,7 +17,7 @@ ADR-0039), место для состояния доставки вместо `u
 | Артефакт | ID / имя | Каталог |
 |----------|----------|---------|
 | flow `fn-delete-person` | `7jtl15LMRI0bnxxRFCMeq`, версия `VUGxCt8XEjEIYQSurP9bH` | [catalog/flows/fn-delete-person.md](../../catalog/flows/fn-delete-person.md) |
-| flow `reg-api` (ветка `delete_account` → подфлоу) | `SmutybV5qJQjQASJGY9vi`, версия `I5x2PFKqPmI6LNVQJXwd7` | [catalog/flows/reg-api.md](../../catalog/flows/reg-api.md) |
+| flow `reg-api` (ветка `delete_account` → подфлоу; логи без ПД) | `SmutybV5qJQjQASJGY9vi`, версия `xp52IqjKk9gqrroRbEt5J` | [catalog/flows/reg-api.md](../../catalog/flows/reg-api.md) |
 | таблица `bot_contacts` | `lXsWetfliAWCaKwnDiOuA` (ext `JLPfHt5KW4PpanBBWX4V6`), пустая | [catalog/tables/bot_contacts.md](../../catalog/tables/bot_contacts.md) |
 | переменная `id_module_key` | секрет, равна ID QA `module_key_events`; значение не выводилось | [catalog/variables.md](../../catalog/variables.md) |
 | перевод `profile.delete.author` | ru / uz / en | [i18n/](../../i18n/) |
@@ -35,7 +34,7 @@ ADR-0039), место для состояния доставки вместо `u
 - [x] Шаг 2: `bot_contacts` создана, пустая
 - [x] Сквозная проверка `reg-api` → `delete_account` из Mini App (владелец, 2026-11-25, ниже)
 - [x] Шаг 3: приёмник `id-member-deleted` — подпись, повтор, окно, тип, тело, ответы, время ≤ 15 с
-- [ ] Ворота: шаги 1–3 приняты владельцем; затем `module_delete_url_events` в ID QA → приёмник
+- [x] Ворота: шаги 1–3 приняты владельцем (2026-11-25); `module_delete_url_events` в ID QA → приёмник; сквозная проверка пройдена
 - [ ] Независимое ревью
 - [ ] `catalog/` совпадает с живым проектом
 
@@ -94,13 +93,27 @@ ADR-0039), место для состояния доставки вместо `u
 Не проверена ветка `500` (подфлоу упал): без правки подфлоу её не вызвать — вход приёмника и подфлоу
 проверяются одним и тем же шаблоном id.
 
+### Ворота и сквозная проверка (2026-11-25)
+
+- До переключения в ID QA не было открытых строк `deletion_log` для `events` (7 строк, все `done`).
+- `module_delete_url_events` в ID QA → `https://app.flow.aiqadam.org/api/v1/webhooks/DnYhfp9irbV993MtLbIsh/sync`.
+- Выдуманный человек `9000000000000906`: в ID — `members` и согласие `module`/`events`; в боте — регистрация
+  и `bot_contacts`. `fn-account-delete` в ID QA (TESTING `SXYvR3CGEAXXttD2jFXHN`) → `fn-notify-module` →
+  приёмник `200 {done: true}` → `deletion_log` `done`, подтверждено через 2 с. Человек удалён и в ID, и в
+  боте; строк тестового диапазона не осталось.
+
 ## Находки
 
-- **`reg-api` пишет персональные данные в лог прогона (было до W145).** Видно на прогоне проверки из
+- **`reg-api` писал персональные данные в лог прогона (было до W145).** Видно на прогоне проверки из
   Mini App: вход вебхука (весь `initData` — имя, username, фото, `hash`; IP клиента), выход проверки
-  `initData`, строки `registrations` и `users`. `initData` в логе можно повторить, пока он свежий
-  (`maxAgeSeconds` 3600). Решение — выключить `logOutput` у триггера и у шагов со строками людей, как
-  W112 сделал в `tg-router`; цена — прогон `reg-api` не ретраится. Ждёт решения владельца.
+  `initData`, строки `registrations` и `users`. `initData` из лога можно было повторить, пока он свежий
+  (`maxAgeSeconds` 3600). **Исправлено решением владельца 2026-11-25**, как W112 в `tg-router`:
+  `logOutput: false` у триггера; ввод и вывод выключены у `step_1`, `step_2`, `step_6`, `step_9`,
+  `step_17`, ответов с профилем (`step_16`, `step_20`, `step_21`, `step_23`); вывод — у `step_7`, `step_8`;
+  ввод — у шагов записи (`step_11`, `step_12`, `step_14`, `step_18`, `step_19`, `step_22`). Цена: прогон
+  `reg-api` не ретраится. Попутно `ap_update_trigger` поднял пин триггера `webhook` 0.1.35 → 0.1.38 (та
+  же версия, что у приёмника). Проверено запросом с неверным `initData`: `401`, в логе триггер и шаги с
+  данными — `**REDACTED**`. Старые прогоны в логе остаются до их очистки платформой.
 - **Старые поиски в `reg-api` шли с `limit 200`:** у человека с большим числом строк часть оставалась
   бы молча. В подфлоу поиски без `limit` (кроме проверки автора, `limit 1`).
 - **Вывод цикла (`item`) пишется в лог даже при выключенных логах шагов.** Поэтому в списках циклов
@@ -118,3 +131,6 @@ ADR-0039), место для состояния доставки вместо `u
   Строки `migrations` `2026-11-25-w145-01…05`.
 - 2026-11-25 — собран, проверен (9 подписанных запросов) и опубликован приёмник `id-member-deleted`; в ID QA
   не подключён до ворот. Строка `migrations` `2026-11-25-w145-06`.
+- 2026-11-25 — владелец проверил `delete_account` из Mini App; ворота приняты; `module_delete_url_events` в ID QA
+  → приёмник, сквозная проверка пройдена (ID: `migrations` `2026-11-25-w10-08`). Логи `reg-api` очищены от
+  персональных данных, опубликован `xp52IqjKk9gqrroRbEt5J`; `migrations` `2026-11-25-w145-07`.

@@ -9,38 +9,53 @@
   "state": "LOCKED",
   "trigger": {
     "displayName": "catch_webhook",
+    "logOutput": false,
     "name": "trigger",
     "nextAction": {
       "displayName": "verify initData",
+      "logInput": false,
+      "logOutput": false,
       "name": "step_1",
       "nextAction": {
         "displayName": "normalize request",
+        "logInput": false,
+        "logOutput": false,
         "name": "step_2",
         "nextAction": {
           "children": [
             {
               "displayName": "read my registrations",
+              "logInput": false,
+              "logOutput": false,
               "name": "step_6",
               "nextAction": {
                 "displayName": "read event registrations",
+                "logOutput": false,
                 "name": "step_7",
                 "nextAction": {
                   "displayName": "read event",
+                  "logOutput": false,
                   "name": "step_8",
                   "nextAction": {
                     "displayName": "read user profile",
+                    "logInput": false,
+                    "logOutput": false,
                     "name": "step_17",
                     "nextAction": {
                       "displayName": "decide",
+                      "logInput": false,
+                      "logOutput": false,
                       "name": "step_9",
                       "nextAction": {
                         "children": [
                           {
                             "displayName": "create or reactivate registration",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_11",
                             "nextAction": {
                               "displayName": "save consents (skipped, W60 — profileDone уже несёт согласия)",
+                              "logInput": false,
                               "logOutput": false,
                               "name": "step_12",
                               "nextAction": {
@@ -155,6 +170,7 @@
                           },
                           {
                             "displayName": "cancel registration",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_14",
                             "nextAction": {
@@ -230,14 +246,18 @@
                           },
                           {
                             "displayName": "create registration (with profile)",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_18",
                             "nextAction": {
                               "displayName": "save consents + profile",
+                              "logInput": false,
                               "logOutput": false,
                               "name": "step_19",
                               "nextAction": {
                                 "displayName": "respond (registered with profile)",
+                                "logInput": false,
+                                "logOutput": false,
                                 "name": "step_20",
                                 "settings": {
                                   "actionName": "return_response",
@@ -356,6 +376,8 @@
                           },
                           {
                             "displayName": "respond (profile)",
+                            "logInput": false,
+                            "logOutput": false,
                             "name": "step_21",
                             "settings": {
                               "actionName": "return_response",
@@ -397,10 +419,13 @@
                           },
                           {
                             "displayName": "save profile (tab)",
+                            "logInput": false,
                             "logOutput": false,
                             "name": "step_22",
                             "nextAction": {
                               "displayName": "respond (profile saved)",
+                              "logInput": false,
+                              "logOutput": false,
                               "name": "step_23",
                               "settings": {
                                 "actionName": "return_response",
@@ -591,6 +616,8 @@
                           },
                           {
                             "displayName": "respond (mine / отказы)",
+                            "logInput": false,
+                            "logOutput": false,
                             "name": "step_16",
                             "settings": {
                               "actionName": "return_response",
@@ -1123,7 +1150,7 @@
         }
       },
       "qadamName": "@aiqadam/qadam-webhook",
-      "qadamVersion": "0.1.35",
+      "qadamVersion": "0.1.38",
       "triggerName": "catch_webhook"
     },
     "type": "PIECE_TRIGGER",

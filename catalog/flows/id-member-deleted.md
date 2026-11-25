@@ -1,7 +1,7 @@
 # Flow: id-member-deleted
 
-- **Статус**: ENABLED (published). **В ID QA ещё не подключён:** `module_delete_url_events` указывает на
-  заглушку ID до ворот ADR-0059
+- **Статус**: ENABLED (published). Подключён в ID QA 2026-11-25 (`module_delete_url_events`), после ворот
+  ADR-0059; сквозная проверка — [W145](../../docs/work/W145-id-switch-prep.md)
 - **Триггер**: `@aiqadam/qadam-webhook : catch_webhook` — sync-ответ на
   `POST /api/v1/webhooks/DnYhfp9irbV993MtLbIsh/sync`; `authType: none`, авторизация — подпись ID.
   Тело — конверт ID `{type, module, ts, request_id, signature, body: {telegram_id}}`
