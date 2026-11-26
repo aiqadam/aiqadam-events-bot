@@ -1,6 +1,6 @@
 # 0060. Переключение бота на AI Qadam ID API: вызовы ID, экраны согласий, дневное обновление профиля, отказ при сбое ID
 
-**Статус:** черновик, на принятие владельцем. Выборы 1–3 сделаны владельцем 2026-11-26: 1(а), 2(а), 3(а). Исполняет на стороне бота шаг 3 порядка
+**Статус:** принято, 2026-11-26, решением владельца, с выборами 1(а), 2(а), 3(а). Исполняет на стороне бота шаг 3 порядка
 [ID ADR-0032](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0032-events-bot-switch-to-id-api.md) §7
 (принят владельцем 2026-11-24). Опирается на [ADR-0059](0059-id-switch-prep-deletion-and-delivery-state.md)
 (`fn-delete-person`, `bot_contacts`, приёмник `id-member-deleted`). Уточняет [ADR-0043](0043-shorter-onboarding.md)
@@ -150,7 +150,8 @@ ID ADR-0032 принят. Сторона ID готова на QA (ID W10, W11). 
 
 ### 3. Согласие на рассылку в табе «Профиль»
 
-`reg-api` берёт текущее значение переключателя из `profile-get` (`mailing`, выбор 2(а)). Переключение
+`reg-api` берёт текущее значение переключателя из `profile-get` (`mailing`, выбор 2(а),
+[ID ADR-0035](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0035-profile-get-returns-signer-mailing-consent.md)). Переключение
 вызывает `consent-set` `mailing`/`events` `grant` или `withdraw` с версией `mailing.events.v1.<lang>` или
 `withdraw.mailing.v1.<lang>`. `continueOnFailure` у записи согласия убирается (ID ADR-0032 §4).
 
@@ -207,7 +208,8 @@ ID ADR-0032 принят. Сторона ID готова на QA (ID W10, W11). 
 
 ## Порядок и ворота
 
-1. **ID:** ADR и пакет для выбора 2(а). До этого пакет переключения не публикует `reg-api`.
+1. **ID:** пакет по [ID ADR-0035](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0035-profile-get-returns-signer-mailing-consent.md) (выбор 2(а), принят 2026-11-26). До него пакет переключения не
+   публикует `reg-api`.
 2. **`fn-id-call`, `fn-id-refresh`, переменные адресов.** Проверка подписанными вызовами на выдуманных людях
    тестового диапазона: каждый `api`, неверный ключ (`401`), таймаут.
 3. **Переключение флоу в черновиках** по таблице §4, с офлайн-тестами эталонов. Перед публикацией
