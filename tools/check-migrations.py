@@ -116,7 +116,10 @@ def api_get_all(key, path):
 
 
 def parse_ts(value):
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # Старые строки migrations несут дату без времени и зоны (`2026-10-05`): считаем её UTC,
+    # иначе сравнение с датами в зоне падает TypeError (W146).
+    ts = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
 
 def migration_rows(key, table_id):
