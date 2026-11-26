@@ -1,0 +1,192 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "fn-id-call",
+  "localeSource": null,
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "logOutput": false,
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "sign",
+      "logInput": false,
+      "logOutput": false,
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "send",
+        "logInput": false,
+        "logOutput": false,
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "result",
+          "logInput": false,
+          "logOutput": false,
+          "name": "step_3",
+          "nextAction": {
+            "displayName": "trace",
+            "name": "step_4",
+            "nextAction": {
+              "displayName": "respond",
+              "logInput": false,
+              "logOutput": false,
+              "name": "step_5",
+              "settings": {
+                "actionName": "returnResponse",
+                "errorHandlingOptions": {
+                  "continueOnFailure": {
+                    "value": false
+                  },
+                  "retryOnFailure": {
+                    "value": false
+                  }
+                },
+                "input": {
+                  "mode": "simple",
+                  "response": {
+                    "response": {
+                      "body": "{{step_3['output'].body}}",
+                      "ok": "{{step_3['output'].ok}}",
+                      "reason": "{{step_3['output'].reason}}",
+                      "status": "{{step_3['output'].status}}"
+                    }
+                  }
+                },
+                "propertySettings": {},
+                "qadamName": "@aiqadam/qadam-subflows",
+                "qadamVersion": "0.4.17"
+              },
+              "type": "PIECE",
+              "valid": true
+            },
+            "settings": {
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "api": "{{trigger['output'].data.api}}",
+                "reason": "{{step_3['output'].reason}}",
+                "status": "{{step_3['output'].status}}"
+              },
+              "sourceCode": {
+                "code": "// fn-id-call trace (ADR-0060 §1). Logged on purpose: only the api name, the HTTP status and a reason code.\nexport const code = async (inputs) => {\n  const apis = ['profile-get', 'profile-upsert', 'profile-batch', 'consent-set', 'account-delete'];\n  const api = apis.includes(inputs.api) ? inputs.api : 'other';\n  const status = Number.isInteger(inputs.status) ? inputs.status : 0;\n  const reason = typeof inputs.reason === 'string' && /^[a-z0-9_]{1,20}$/.test(inputs.reason) ? inputs.reason : 'other';\n  return { api, status, reason };\n};",
+                "packageJson": "{}"
+              }
+            },
+            "type": "CODE",
+            "valid": true
+          },
+          "settings": {
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "out": "{{step_2['output']}}",
+              "sign_reason": "{{step_1['output'].reason}}"
+            },
+            "sourceCode": {
+              "code": "// fn-id-call result (ADR-0060 §1, §6). logInput/logOutput OFF: the ID answer carries personal data.\nexport const code = async (inputs) => {\n  const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);\n  const down = (reason) => ({ ok: false, status: 0, body: {}, reason });\n  const signReason = typeof inputs.sign_reason === 'string' ? inputs.sign_reason : '';\n  if (signReason !== 'ok') return down(/^[a-z_]{1,20}$/.test(signReason) ? signReason : 'not_configured');\n  const out = inputs.out;\n  if (!isObj(out)) return down('network');\n  // 2xx: {status, headers, body}; 4xx/5xx/timeout: {response: {status, body?}}.\n  const r = out.status === undefined && isObj(out.response) ? out.response : out;\n  const status = Number.isInteger(r.status) && r.status >= 100 && r.status <= 599 ? r.status : 0;\n  if (!status) return down('network');\n  if (!isObj(r.body)) return down('no_json');\n  const ok = status >= 200 && status < 300 && r.body.ok === true;\n  return { ok, status, body: r.body, reason: ok ? 'ok' : 'http_' + status };\n};",
+              "packageJson": "{}"
+            }
+          },
+          "type": "CODE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "send_request",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": true
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "authFields": {},
+            "authType": "NONE",
+            "body": {
+              "data": "{{step_1['output'].envelope}}"
+            },
+            "body_type": "json",
+            "failureMode": "continue_all",
+            "followRedirects": false,
+            "headers": {},
+            "method": "POST",
+            "proxy_settings": {},
+            "queryParams": {},
+            "response_is_binary": false,
+            "timeout": 10,
+            "url": "{{step_1['output'].url}}",
+            "use_proxy": false
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-http",
+          "qadamVersion": "0.13.0"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "api": "{{trigger['output'].data.api}}",
+          "body": "{{trigger['output'].data.body}}",
+          "key": "{{variables['id_module_key']}}",
+          "url_account_delete": "{{variables['id_url_account_delete']}}",
+          "url_consent_set": "{{variables['id_url_consent_set']}}",
+          "url_profile_batch": "{{variables['id_url_profile_batch']}}",
+          "url_profile_get": "{{variables['id_url_profile_get']}}",
+          "url_profile_upsert": "{{variables['id_url_profile_upsert']}}"
+        },
+        "sourceCode": {
+          "code": "// fn-id-call sign (ADR-0060 §1, ID ADR-0012). logInput/logOutput OFF: the key, the body, the signature.\nexport const code = async (inputs) => {\n  const crypto = require('node:crypto');\n  const fail = (reason) => ({ reason, url: '', envelope: {} });\n  const urls = {\n    'profile-get': inputs.url_profile_get,\n    'profile-upsert': inputs.url_profile_upsert,\n    'profile-batch': inputs.url_profile_batch,\n    'consent-set': inputs.url_consent_set,\n    'account-delete': inputs.url_account_delete,\n  };\n  const api = typeof inputs.api === 'string' ? inputs.api : '';\n  if (!Object.prototype.hasOwnProperty.call(urls, api)) return fail('bad_api');\n  const key = inputs.key;\n  if (typeof key !== 'string' || key.length < 32 || key.includes('{{')) return fail('not_configured');\n  const url = typeof urls[api] === 'string' ? urls[api] : '';\n  if (!/^https:\\/\\/app\\.flow\\.aiqadam\\.org\\/api\\/v1\\/webhooks\\/[A-Za-z0-9]{1,40}\\/sync$/.test(url)) return fail('not_configured');\n  const body = inputs.body;\n  if (body === null || typeof body !== 'object' || Array.isArray(body)) return fail('bad_body');\n  const canon = (v) => {\n    if (v === null || v === undefined) return 'null';\n    if (typeof v !== 'object') return JSON.stringify(v);\n    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';\n    return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';\n  };\n  const ts = String(Math.floor((Number.isFinite(inputs.now_ms) ? inputs.now_ms : Date.now()) / 1000));\n  const request_id = 'ev-' + crypto.randomBytes(16).toString('hex');\n  const bodyHash = crypto.createHash('sha256').update(canon(body), 'utf8').digest('hex');\n  const signature = crypto.createHmac('sha256', key).update('events\\n' + ts + '\\n' + request_id + '\\n' + bodyHash, 'utf8').digest('hex');\n  return { reason: 'ok', url, envelope: { module: 'events', ts, request_id, signature, body } };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "sampleData": {
+            "api": "profile-get",
+            "body": {
+              "telegram_id": "9000000000000951"
+            }
+          }
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.17",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

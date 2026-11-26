@@ -42,6 +42,8 @@ subflow'ах — она **встраивается** в тела флоу CODE-�
 | [find-registration](find-registration.md) | [`fn-find-registration`](../flows/fn-find-registration.md) | `checkin-api`, `my-qr-api` |
 | [delete-person-plan](delete-person-plan.md) | шаг `plan` в [`fn-delete-person`](../flows/fn-delete-person.md) (W145) | `reg-api`, приёмник `id-member-deleted` |
 | [id-event-verify](id-event-verify.md) | шаг `verify` в [`id-member-deleted`](../flows/id-member-deleted.md) (W145) | — (вебхук ID) |
+| [id-call-sign](id-call-sign.md), [id-call-result](id-call-result.md) | шаги `sign`, `result` в [`fn-id-call`](../flows/fn-id-call.md) (W146) | все вызовы ID |
+| [id-refresh-body](id-refresh-body.md) | шаг `body` в [`fn-id-refresh`](../flows/fn-id-refresh.md) (W146) | `tg-router` (после переключения) |
 
 Для остальных эталонов правила 1–3 остаются в силе, но состав изменился:
 
@@ -67,5 +69,6 @@ subflow'ах — она **встраивается** в тела флоу CODE-�
 Эталон с разделом «Тесты» гоняется офлайн: `for f in catalog/snippets/tests/*.test.mjs; do node $f; done`
 (загрузчик берёт блок кода из самого `.md`). Пока — `id-migrate-preflight`, `id-migrate-send`,
 `id-migrate-verify` ([W144](../../docs/work/W144-id-migrate.md)), `delete-person-plan`,
-`id-event-verify` ([W145](../../docs/work/W145-id-switch-prep.md)).
+`id-event-verify` ([W145](../../docs/work/W145-id-switch-prep.md)), `id-call-sign`, `id-call-result`,
+`id-refresh-body` ([W146](../../docs/work/W146-fn-id-call.md)).
 

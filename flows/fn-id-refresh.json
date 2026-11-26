@@ -1,0 +1,159 @@
+{
+  "agentIds": [],
+  "backupFiles": null,
+  "connectionIds": [],
+  "displayName": "fn-id-refresh",
+  "localeSource": null,
+  "notes": [],
+  "schemaVersion": "32",
+  "state": "LOCKED",
+  "trigger": {
+    "displayName": "callableFlow",
+    "logOutput": false,
+    "name": "trigger",
+    "nextAction": {
+      "displayName": "body",
+      "logInput": false,
+      "logOutput": false,
+      "name": "step_1",
+      "nextAction": {
+        "displayName": "call ID",
+        "logInput": false,
+        "logOutput": false,
+        "name": "step_2",
+        "nextAction": {
+          "displayName": "outcome",
+          "name": "step_3",
+          "nextAction": {
+            "displayName": "respond",
+            "name": "step_4",
+            "settings": {
+              "actionName": "returnResponse",
+              "errorHandlingOptions": {
+                "continueOnFailure": {
+                  "value": false
+                },
+                "retryOnFailure": {
+                  "value": false
+                }
+              },
+              "input": {
+                "mode": "simple",
+                "response": {
+                  "response": {
+                    "ok": "{{step_3['output'].ok}}",
+                    "reason": "{{step_3['output'].reason}}",
+                    "status": "{{step_3['output'].status}}",
+                    "written": "{{step_3['output'].written}}"
+                  }
+                }
+              },
+              "propertySettings": {},
+              "qadamName": "@aiqadam/qadam-subflows",
+              "qadamVersion": "0.4.17"
+            },
+            "type": "PIECE",
+            "valid": true
+          },
+          "settings": {
+            "errorHandlingOptions": {
+              "continueOnFailure": {
+                "value": false
+              },
+              "retryOnFailure": {
+                "value": false
+              }
+            },
+            "input": {
+              "ok": "{{step_2['output'].data.ok}}",
+              "reason": "{{step_2['output'].data.reason}}",
+              "status": "{{step_2['output'].data.status}}",
+              "written": "{{step_2['output'].data.body.written}}"
+            },
+            "sourceCode": {
+              "code": "// fn-id-refresh outcome (ADR-0060 §5). Logged on purpose: ok, the HTTP status, a reason code and written only.\nexport const code = async (inputs) => {\n  const status = Number.isInteger(inputs.status) ? inputs.status : 0;\n  const reason = typeof inputs.reason === 'string' && /^[a-z0-9_]{1,20}$/.test(inputs.reason) ? inputs.reason : 'other';\n  return { ok: inputs.ok === true, status, reason, written: inputs.written === true };\n};",
+              "packageJson": "{}"
+            }
+          },
+          "type": "CODE",
+          "valid": true
+        },
+        "settings": {
+          "actionName": "callFlow",
+          "errorHandlingOptions": {
+            "continueOnFailure": {
+              "value": false
+            },
+            "retryOnFailure": {
+              "value": false
+            }
+          },
+          "input": {
+            "executionMode": "inline",
+            "flow": {
+              "exampleData": {
+                "sampleData": {}
+              },
+              "externalId": "4RfJjWReJ5hqBWAZtpOOY"
+            },
+            "flowProps": {
+              "payload": {
+                "api": "profile-upsert",
+                "body": "{{step_1['output'].body}}"
+              }
+            },
+            "mode": "simple",
+            "waitForResponse": true
+          },
+          "propertySettings": {},
+          "qadamName": "@aiqadam/qadam-subflows",
+          "qadamVersion": "0.4.17"
+        },
+        "type": "PIECE",
+        "valid": true
+      },
+      "settings": {
+        "errorHandlingOptions": {
+          "continueOnFailure": {
+            "value": false
+          },
+          "retryOnFailure": {
+            "value": false
+          }
+        },
+        "input": {
+          "first_name": "{{trigger['output'].data.firstName}}",
+          "last_name": "{{trigger['output'].data.lastName}}",
+          "telegram_id": "{{trigger['output'].data.telegramId}}",
+          "username": "{{trigger['output'].data.username}}"
+        },
+        "sourceCode": {
+          "code": "// fn-id-refresh body (ADR-0060 §5, ID ADR-0034 §4). logInput/logOutput OFF: Telegram name and username.\nexport const code = async (inputs) => {\n  const raw = inputs.telegram_id;\n  const tid = typeof raw === 'number' && Number.isSafeInteger(raw) ? String(raw) : raw;\n  if (typeof tid !== 'string' || !/^[1-9][0-9]{0,15}$/.test(tid)) throw new Error('bad_telegram_id');\n  const has = (v) => typeof v === 'string' && v.trim() !== '';\n  if (!has(inputs.first_name)) throw new Error('no_first_name');\n  const body = { telegram_id: tid, update_only: true, first_name: inputs.first_name };\n  const clear = [];\n  for (const f of ['last_name', 'username']) {\n    if (has(inputs[f])) body[f] = inputs[f];\n    else clear.push(f);\n  }\n  if (clear.length) body.clear = clear;\n  return { body };\n};",
+          "packageJson": "{}"
+        }
+      },
+      "type": "CODE",
+      "valid": true
+    },
+    "settings": {
+      "input": {
+        "exampleData": {
+          "sampleData": {
+            "firstName": "Test963",
+            "telegramId": "9000000000000963",
+            "username": "test_963"
+          }
+        },
+        "mode": "simple"
+      },
+      "propertySettings": {},
+      "qadamName": "@aiqadam/qadam-subflows",
+      "qadamVersion": "0.4.17",
+      "sampleData": {},
+      "triggerName": "callableFlow"
+    },
+    "type": "PIECE_TRIGGER",
+    "valid": true
+  },
+  "valid": true
+}

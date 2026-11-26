@@ -22,6 +22,11 @@
 | `id_migrate_import_url` | вебхук ID `migrate-import` (`/sync`) | MCP / UI | — |
 | `id_migrate_verify_url` | вебхук ID `migrate-verify` (`/sync`) | MCP / UI | — |
 | `id_module_key` | модульный ключ бота в AI Qadam ID, равен `module_key_events` в ID; проверка подписи событий ID, `id.member-deleted.v1` ([ADR-0059](../docs/adr/0059-id-switch-prep-deletion-and-delivery-state.md) §5) | MCP (QA, риск принят владельцем) / UI (prod, другое значение) | — |
+| `id_url_profile_get` | вебхук ID `profile-get` (`/sync`) для [`fn-id-call`](flows/fn-id-call.md) ([ADR-0060](../docs/adr/0060-id-switch-flows-to-id-api.md) §1); не секрет | MCP (QA, решение владельца 2026-11-26) / владелец (prod) | `https://app.flow.aiqadam.org/api/v1/webhooks/nGuT33NzD6SNefzjs3079/sync` (QA) |
+| `id_url_profile_upsert` | вебхук ID `profile-upsert` (`/sync`) для [`fn-id-call`](flows/fn-id-call.md) ([ADR-0060](../docs/adr/0060-id-switch-flows-to-id-api.md) §1); не секрет | MCP (QA, решение владельца 2026-11-26) / владелец (prod) | `https://app.flow.aiqadam.org/api/v1/webhooks/mf8kl6X7FtNkW5ewrKMQ0/sync` (QA) |
+| `id_url_profile_batch` | вебхук ID `profile-batch` (`/sync`) для [`fn-id-call`](flows/fn-id-call.md) ([ADR-0060](../docs/adr/0060-id-switch-flows-to-id-api.md) §1); не секрет | MCP (QA, решение владельца 2026-11-26) / владелец (prod) | `https://app.flow.aiqadam.org/api/v1/webhooks/iFoOZcgSwuwgbZ30zA3X8/sync` (QA) |
+| `id_url_consent_set` | вебхук ID `consent-set` (`/sync`) для [`fn-id-call`](flows/fn-id-call.md) ([ADR-0060](../docs/adr/0060-id-switch-flows-to-id-api.md) §1); не секрет | MCP (QA, решение владельца 2026-11-26) / владелец (prod) | `https://app.flow.aiqadam.org/api/v1/webhooks/uCsqgXoSdeMSot9Bvrm1y/sync` (QA) |
+| `id_url_account_delete` | вебхук ID `account-delete` (`/sync`) для [`fn-id-call`](flows/fn-id-call.md) ([ADR-0060](../docs/adr/0060-id-switch-flows-to-id-api.md) §1); не секрет | MCP (QA, решение владельца 2026-11-26) / владелец (prod) | `https://app.flow.aiqadam.org/api/v1/webhooks/yfjpi8DvmoHyuGRYgJJTV/sync` (QA) |
 
 > Значения переменных — **на среду** (у dev и prod свои боты/ключи/адреса). Карта
 > сред и требования — [environments.md](environments.md). В таблице выше — dev.
