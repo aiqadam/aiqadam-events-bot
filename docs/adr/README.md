@@ -60,3 +60,4 @@
 | [0057](0057-broadcast-no-registration-segment.md) | Рассылка: пятый сегмент — согласие без регистрации `no_reg` (расширяет SPEC OWN-9; обкатка на dev) | **Черновик** (обкатка на dev) |
 | [0058](0058-id-migrate-users-to-id.md) | Перенос `users` в AI Qadam ID — флоу `id-migrate` в `events-dev` (исполняет ID ADR-0030; расширяет 0010) | Принято |
 | [0059](0059-id-switch-prep-deletion-and-delivery-state.md) | Подготовка к переключению на AI Qadam ID: подфлоу `fn-delete-person` (закрывает Part 2 0039), таблица `bot_contacts`, приёмник `id-member-deleted` (исполняет ID ADR-0032 §7 шаг 2; расширяет 0010) | Принято |
+| [0060](0060-id-switch-flows-to-id-api.md) | Переключение бота на AI Qadam ID API: `fn-id-call`, экраны согласий ID, дневное обновление профиля, отказ при сбое ID (исполняет ID ADR-0032 §7 шаг 3; уточняет 0039, 0043; расширяет 0010) | **Черновик** (на принятие владельцем) |
