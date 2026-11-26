@@ -384,6 +384,7 @@ Telegram; подробности и открытый вопрос — [OPEN-QUES
 | `FLOW_TIMEOUT_SECONDS` | `600` | `server/api/src/app/helper/system/system.ts:46` | одна рассылка ≤ 10 минут прогона → при 25 msg/s это ≤ 15 000 сообщений за run; всё равно бьём на чанки ради возобновляемости |
 | `TRIGGER_TIMEOUT_SECONDS` | `60` | там же, `:47` | вебхук-ответ для Mini App должен укладываться в минуту — чекин обязан быть коротким синхронным флоу |
 | `TRIGGER_HOOKS_TIMEOUT_SECONDS` | `180` | там же, `:49` | |
+| Размер запроса `tables-find-records` | не документирован; при превышении шаг падает с `400 Invalid request` | **замер, не исходники**: ID QA 2026-11-26, [ID W10](https://github.com/aiqadam/aiqadam-id/blob/main/docs/work/W10-bot-switch-id-side.md), [ID ADR-0033](https://github.com/aiqadam/aiqadam-id/blob/main/docs/adr/0033-profile-upsert-requires-consents-batch-pages-250.md) §2 | предел зависит от длины списка `in` и от числа запрошенных колонок: прошли 297 id по 16 цифр или 322 по 12 цифр (5 колонок), а с 10 колонками шаг упал раньше. Поэтому ID API-5 отдаёт не больше 250 человек на запрос. Свой фильтр `telegram_id in <csv>` (например, `manage-api`, W139) у границы ~250 id надо делить на страницы |
 
 ### Цена шага: что сколько стоит (замер 2026-09-13, после #417 и #412)
 
