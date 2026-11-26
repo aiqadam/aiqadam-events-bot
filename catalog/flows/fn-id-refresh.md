@@ -1,6 +1,6 @@
 # Flow: fn-id-refresh
 
-- **Статус**: ENABLED (published)
+- **Статус**: DISABLED (published, выключен 2026-11-26 по блокеру ревью W146 до исправления)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow`. Вход: `{telegramId, firstName, lastName,
   username}` — поля Telegram из апдейта
 - **Назначение**: дневное обновление имени и `username` в AI Qadam ID

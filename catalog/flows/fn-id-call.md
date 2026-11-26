@@ -1,6 +1,6 @@
 # Flow: fn-id-call
 
-- **Статус**: ENABLED (published)
+- **Статус**: DISABLED (published, выключен 2026-11-26 по блокеру ревью W146 до исправления)
 - **Триггер**: `@aiqadam/qadam-subflows : callableFlow` — вызывается `inline` с ожиданием ответа.
   Вход: `{api, body}`
 - **Назначение**: единственная дверь бота в AI Qadam ID
